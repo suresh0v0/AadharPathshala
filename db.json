@@ -1,0 +1,65 @@
+{
+  "news": [
+    {
+      "id": "1",
+      "title": "SEE 2083 Official Exam Date Announced",
+      "body": "The National Examination Board (NEB) has confirmed that the Secondary Education Examination (SEE) for the year 2083 will commence from Chaitra 15, 2083. Students are advised to accelerate their preparations.",
+      "date": "2024-05-10",
+      "imageUrl": "https://picsum.photos/seed/exam/800/400",
+      "tag": "Urgent",
+      "tagColor": "text-red-600",
+      "tagBg": "bg-red-50"
+    },
+    {
+      "id": "2",
+      "title": "New Model Question Sets Released",
+      "body": "The CDC has released updated model question sets reflecting the latest 2083 specification grid. We have integrated these into our Hub and Mock Test modules.",
+      "date": "2024-04-28",
+      "imageUrl": "https://picsum.photos/seed/book/800/400",
+      "tag": "Resource",
+      "tagColor": "text-blue-600",
+      "tagBg": "bg-blue-50"
+    }
+  ],
+  "subjects": {
+    "English": {
+      "id": "English",
+      "color": "blue",
+      "icon": "BookOpen",
+      "chapters": [
+        { "id": "e1", "title": "Reading Comprehension", "topics": "Inference, Context, Main Idea", "marks": 15 },
+        { "id": "e2", "title": "Grammar - Tenses", "topics": "Active/Passive, Direct/Indirect", "marks": 10 }
+      ],
+      "videos": [],
+      "pdfs": [],
+      "modelQuestions": []
+    },
+    "Science": {
+      "id": "Science",
+      "color": "emerald",
+      "icon": "Sparkles",
+      "chapters": [
+        { "id": "s1", "title": "Force and Motion", "topics": "Newton's Laws, Friction, Gravity", "marks": 12 },
+        { "id": "s2", "title": "Light and Optical Instruments", "topics": "Reflection, Refraction, Lenses", "marks": 8 }
+      ],
+      "videos": [],
+      "pdfs": [],
+      "modelQuestions": []
+    },
+    "Maths": {
+        "id": "Maths",
+        "color": "red",
+        "icon": "Calculator",
+        "chapters": [
+            { "id": "m1", "title": "Algebra - Quadratic Equations", "topics": "Roots, Discriminant, Factoring", "marks": 10 }
+        ],
+        "videos": [],
+        "pdfs": [],
+        "modelQuestions": []
+    }
+  },
+  "settings": {
+    "welcomeMessage": "Your SEE 2083 Journey Starts Here!",
+    "registrationOpen": true
+  }
+}
