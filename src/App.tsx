@@ -63,24 +63,26 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 flex justify-between items-center px-6 py-4">
-        <div className="logo cursor-pointer flex items-center gap-2 group" onClick={() => navigate('/')}>
-          <div className="flex flex-col leading-none">
-            <span className="text-[#E11D48] font-black text-xl tracking-tighter uppercase italic">Aadhar</span>
-            <span className="text-[#1D4ED8] font-black text-xl tracking-tighter uppercase italic">Pathshala</span>
+      <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+        <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
+          <div className="logo cursor-pointer flex items-center gap-2 group" onClick={() => navigate('/')}>
+            <div className="flex flex-col leading-none">
+              <span className="text-[#E11D48] font-black text-xl tracking-tighter uppercase italic">Aadhar</span>
+              <span className="text-[#1D4ED8] font-black text-xl tracking-tighter uppercase italic">Pathshala</span>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-4">
-           {user && (
-             <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
-                <UserIcon className="w-5 h-5 fill-current" />
-                <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
-             </button>
-           )}
+          <div className="flex items-center gap-4">
+             {user && (
+               <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
+                  <UserIcon className="w-5 h-5 fill-current" />
+                  <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
+               </button>
+             )}
+          </div>
         </div>
       </header>
 
-      <main className="max-w-[620px] mx-auto px-4 pt-24 pb-32 min-h-screen">
+      <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pt-24 pb-32 min-h-screen">
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -95,7 +97,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
-        <div className="max-w-[620px] mx-auto flex justify-between items-center px-2">
+        <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
@@ -238,7 +240,7 @@ const MockTest = () => {
 
                     <div className="space-y-4">
                         <label className="text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                             {(Object.keys(SUBJECTS_CONFIG) as SubjectType[]).map((sub) => {
                                 const cfg = SUBJECTS_CONFIG[sub];
                                 return (
@@ -341,7 +343,7 @@ const MockTest = () => {
             )}
 
             {status === 'result' && (
-                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl text-center animate-fade-up">
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl text-center animate-fade-up max-w-2xl mx-auto">
                     <Trophy className={cn("w-24 h-24 mx-auto mb-4 animate-bounce", `text-${currentSubjectConfig.color}-500`)} />
                     <h2 className="text-4xl font-black text-[#020617] italic tracking-tighter mb-2 uppercase">MISSION COMPLETE!</h2>
                     <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Board evaluation for {settings.subject} synchronized</p>
@@ -994,7 +996,7 @@ const AadharToolkit = () => {
                 </header>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {tools.map((t) => {
                     const Icon = t.icon;
                     return (
@@ -1304,7 +1306,7 @@ const StudyHub = () => {
                 <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-[0.3em] ml-1">Universal Core Curriculum V.22</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {Object.entries(data.subjects).map(([name, sub]: [string, any], i) => {
                     const config = SUBJECTS_CONFIG[name as SubjectType] || { color: 'slate', icon: BookOpen, gradient: 'from-slate-500 to-slate-700' };
                     const Icon = config.icon;
@@ -1643,17 +1645,19 @@ const DictionaryPage = () => {
                     </div>
                 </motion.div>
             ) : (
-                <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-6">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-4">Core Flashcards</h3>
-                    {terms.map(t => (
-                        <button key={t.word} onClick={() => setSearch(t.word)} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue transition-all active:scale-[0.98]">
-                            <div className="text-left">
-                                <h4 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-blue">{t.word}</h4>
-                                <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">{t.sub} Portal</p>
-                            </div>
-                            <ChevronRight className="w-8 h-8 text-slate-100 group-hover:text-blue group-hover:translate-x-1 transition-all" />
-                        </button>
-                    ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {terms.map(t => (
+                            <button key={t.word} onClick={() => setSearch(t.word)} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue transition-all active:scale-[0.98]">
+                                <div className="text-left">
+                                    <h4 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-blue">{t.word}</h4>
+                                    <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">{t.sub} Portal</p>
+                                </div>
+                                <ChevronRight className="w-8 h-8 text-slate-100 group-hover:text-blue group-hover:translate-x-1 transition-all" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             )}
         </div>
@@ -1979,31 +1983,33 @@ const NotePadPage = () => {
 
             <div className="space-y-4">
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 ml-2">Recent Archives</h2>
-                {notes.map(n => (
-                    <div key={n.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
-                        <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => downloadPDF(n)} title="Export PDF" className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100">
-                                <FileText className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => downloadText(n)} title="Export Text" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
-                                <Download className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => setNotes(notes.filter(nt => nt.id !== n.id))} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
-                                <Trash2 className="w-5 h-5" />
-                            </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {notes.map(n => (
+                        <div key={n.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
+                            <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => downloadPDF(n)} title="Export PDF" className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100">
+                                    <FileText className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => downloadText(n)} title="Export Text" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
+                                    <Download className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setNotes(notes.filter(nt => nt.id !== n.id))} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
+                                    <Trash2 className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2">{n.date}</p>
+                            <h3 className="font-black text-slate-900 text-xl mb-4 leading-tight uppercase tracking-tight pr-20">{n.title}</h3>
+                            <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-2">"{n.content}"</p>
+                            <div className="h-1 w-20 bg-slate-100 rounded-full group-hover:bg-emerald-500 transition-colors" />
                         </div>
-                        <p className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2">{n.date}</p>
-                        <h3 className="font-black text-slate-900 text-xl mb-4 leading-tight uppercase tracking-tight pr-20">{n.title}</h3>
-                        <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-2">"{n.content}"</p>
-                        <div className="h-1 w-20 bg-slate-100 rounded-full group-hover:bg-emerald-500 transition-colors" />
-                    </div>
-                ))}
-                {notes.length === 0 && (
-                    <div className="text-center py-20 opacity-25">
-                        <PenTool className="w-16 h-16 mx-auto mb-4" />
-                        <p className="font-black uppercase tracking-widest text-xs">No historical records found</p>
-                    </div>
-                )}
+                    ))}
+                    {notes.length === 0 && (
+                        <div className="text-center py-20 opacity-25">
+                            <PenTool className="w-16 h-16 mx-auto mb-4" />
+                            <p className="font-black uppercase tracking-widest text-xs">No historical records found</p>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
