@@ -422,6 +422,17 @@ const MockTest = () => {
 // ════════════════════════════════════════════
 
 const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) => {
+    const cycleColors = ['bg-rose-500', 'bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500', 'bg-indigo-500', 'bg-orange-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-purple-500'];
+    const [colorIndex, setColorIndex] = useState(0);
+
+    useEffect(() => {
+        if (mood !== 'idle') return;
+        const interval = setInterval(() => {
+            setColorIndex(prev => (prev + 1) % cycleColors.length);
+        }, 3000); // changes every 3 seconds to cycle through 10 colors
+        return () => clearInterval(interval);
+    }, [mood, cycleColors.length]);
+
     return (
         <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
             {/* Status Glow */}
@@ -439,8 +450,8 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
                 }}
                 transition={{ repeat: Infinity, duration: mood === 'thinking' ? 2 : 4, ease: "easeInOut" }}
                 className={cn(
-                    "w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-2xl relative z-10 border-4 border-white",
-                    mood === 'thinking' ? "bg-amber-500 text-white" : mood === 'talking' ? "bg-emerald-500 text-white" : "bg-blue text-white"
+                    "w-20 h-20 rounded-[1.5rem] flex items-center justify-center shadow-2xl relative z-10 border-4 border-white transition-colors duration-700",
+                    mood === 'thinking' ? "bg-amber-500 text-white" : mood === 'talking' ? "bg-emerald-500 text-white" : `${cycleColors[colorIndex]} text-white`
                 )}
             >
                 {mood === 'thinking' ? (
@@ -475,13 +486,6 @@ const AITutor = () => {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
-
-    const prompts = [
-        "Simplify Science Ch 1",
-        "Explain Nepali Byakaran",
-        "Maths Geometry Hacks",
-        "Social Question Pattern"
-    ];
 
     const { user } = useApp();
     const handleSend = async (txt: string) => {
@@ -550,22 +554,8 @@ const AITutor = () => {
                             <div className="space-y-2">
                                 <h2 className="text-xl font-black text-slate-800 tracking-tight">K chha Sathi! I'm Aadhar Pro.</h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[300px] mx-auto leading-relaxed italic border-l-2 border-slate-100 pl-4">
-                                    Don't take tension for SEE 2083! Choose a quick action below or ask me anything to level up your prep.
+                                    Don't take tension for SEE 2083! Ask me anything to level up your prep.
                                 </p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 max-w-[400px] mx-auto">
-                                {prompts.map(p => (
-                                    <button
-                                        key={p}
-                                        onClick={() => handleSend(p)}
-                                        className="p-5 bg-white border border-slate-100 rounded-[2rem] text-center shadow-sm hover:shadow-xl hover:border-blue transition-all group active:scale-95"
-                                    >
-                                        <div className="w-8 h-8 bg-blue/5 text-blue rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                            <Sparkles className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-[0.7rem] font-black uppercase tracking-tight text-slate-600 block">{p}</span>
-                                    </button>
-                                ))}
                             </div>
                         </div>
                     )}
@@ -1213,14 +1203,21 @@ const ProfilePage = () => {
     const { user } = useApp();
     const navigate = useNavigate();
 
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        navigate('/');
+    };
+
     return (
         <div className="space-y-10 animate-fade-up pb-24">
             <header className="flex items-center justify-between">
                 <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
-                <div className="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest border border-indigo-100">
-                    Student Profile
+                <div className="flex gap-2">
+                    <div className="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest border border-indigo-100 flex items-center">
+                        Student Profile
+                    </div>
                 </div>
             </header>
 
@@ -1273,6 +1270,13 @@ const ProfilePage = () => {
                     ))}
                 </div>
             </div>
+
+            <button 
+                onClick={handleLogout}
+                className="w-full py-5 border-2 border-rose-100 text-rose-500 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-rose-50 transition-colors"
+            >
+                Log Out Securely
+            </button>
         </div>
     );
 };
@@ -1897,26 +1901,113 @@ const UnitConverterPage = () => {
 };
 const NotePadPage = () => {
     const navigate = useNavigate();
-    const [notes, setNotes] = useState<any[]>(() => {
-        const saved = localStorage.getItem('aadhar_notes');
-        return saved ? JSON.parse(saved) : [];
-    });
+    const { user } = useApp();
+    const [notes, setNotes] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
+    const [mode, setMode] = useState<'write' | 'upload'>('write');
+    const [uploadedFile, setUploadedFile] = useState<any>(null); // { name, type, data }
 
     useEffect(() => {
-        localStorage.setItem('aadhar_notes', JSON.stringify(notes));
-    }, [notes]);
+        if (user) {
+            fetchNotes();
+        }
+    }, [user]);
 
-    const saveNote = () => {
-        if (!title.trim() && !content.trim()) return;
-        const newNote = { id: Date.now().toString(), title, content, date: new Date().toLocaleDateString() };
-        setNotes([newNote, ...notes]);
-        setTitle('');
-        setContent('');
+    const fetchNotes = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('notes')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            if (data) setNotes(data);
+        } catch (error) {
+            console.error('Error fetching notes:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const saveNote = async () => {
+        if (mode === 'write' && !title.trim() && !content.trim()) return;
+        if (mode === 'upload' && !uploadedFile) return;
+
+        let finalContent = content;
+        if (mode === 'upload') {
+            finalContent = JSON.stringify({
+                isFile: true,
+                fileName: uploadedFile.name,
+                fileType: uploadedFile.type,
+                data: uploadedFile.data
+            });
+        }
+
+        const newNoteData = { 
+            user_id: user.id, 
+            title: title || (mode === 'upload' ? uploadedFile.name : 'Untitled'), 
+            content: finalContent, 
+            date: new Date().toLocaleDateString() 
+        };
+
+        try {
+            const { data, error } = await supabase
+                .from('notes')
+                .insert([newNoteData])
+                .select()
+                .single();
+
+            if (error) throw error;
+            if (data) {
+                setNotes([data, ...notes]);
+                setTitle('');
+                setContent('');
+                setUploadedFile(null);
+            }
+        } catch (error) {
+            console.error('Error saving note:', error);
+        }
+    };
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setUploadedFile({
+                name: file.name,
+                type: file.type || file.name.split('.').pop(),
+                data: event.target?.result
+            });
+            if (!title) setTitle(file.name);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const deleteNote = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('notes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setNotes(notes.filter(n => n.id !== id));
+        } catch (error) {
+            console.error('Error deleting note:', error);
+        }
     };
 
     const downloadPDF = (note: any) => {
+        if (note.content.startsWith('{"isFile"')) {
+            const fileObj = JSON.parse(note.content);
+            downloadFileObj(fileObj);
+            return;
+        }
+
         const doc = new jsPDF();
         doc.setFont("helvetica", "bold");
         doc.text(note.title, 10, 10);
@@ -1928,12 +2019,27 @@ const NotePadPage = () => {
     };
 
     const downloadText = (note: any) => {
+        if (note.content.startsWith('{"isFile"')) {
+            const fileObj = JSON.parse(note.content);
+            downloadFileObj(fileObj);
+            return;
+        }
+
         const element = document.createElement("a");
         const file = new Blob([`Title: ${note.title}\nDate: ${note.date}\n\n${note.content}`], {type: 'text/plain'});
         element.href = URL.createObjectURL(file);
         element.download = `${note.title.replace(/\s+/g, '_')}.txt`;
         document.body.appendChild(element);
         element.click();
+    };
+
+    const downloadFileObj = (fileObj: any) => {
+        const element = document.createElement("a");
+        element.href = fileObj.data;
+        element.download = fileObj.fileName;
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
     };
 
     return (
@@ -1943,54 +2049,121 @@ const NotePadPage = () => {
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Pad</h1>
             </div>
 
+            <div className="flex gap-4 border-b border-slate-200 pb-2">
+                <button 
+                    onClick={() => setMode('write')} 
+                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all", mode === 'write' ? "text-emerald-500 border-emerald-500" : "text-slate-400 border-transparent hover:text-emerald-400")}
+                >
+                    Write Custom Note
+                </button>
+                <button 
+                    onClick={() => setMode('upload')} 
+                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all", mode === 'upload' ? "text-blue border-blue" : "text-slate-400 border-transparent hover:text-blue")}
+                >
+                    Upload Note File
+                </button>
+            </div>
+
             <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-6">
                 <input 
                     value={title}
                     onChange={e => setTitle(e.target.value)}
-                    placeholder="Note Title (e.g. Physics Ch 1 Revision)"
+                    placeholder={mode === 'upload' ? "File Note Title" : "Note Title (e.g. Physics Ch 1 Revision)"}
                     className="w-full bg-slate-50 border border-slate-100 p-6 rounded-2xl font-black text-xl outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300"
                 />
-                <textarea 
-                    value={content}
-                    onChange={e => setContent(e.target.value)}
-                    placeholder="Write your study notes here..."
-                    rows={8}
-                    className="w-full bg-slate-50 border border-slate-100 p-8 rounded-[2rem] font-bold text-slate-600 outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300 leading-relaxed"
-                />
+                
+                {mode === 'write' ? (
+                    <textarea 
+                        value={content}
+                        onChange={e => setContent(e.target.value)}
+                        placeholder="Write your study notes here..."
+                        rows={8}
+                        className="w-full bg-slate-50 border border-slate-100 p-8 rounded-[2rem] font-bold text-slate-600 outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300 leading-relaxed"
+                    />
+                ) : (
+                    <div className="w-full border-2 border-dashed border-slate-200 p-10 rounded-[2rem] text-center bg-slate-50 relative group hover:border-blue transition-colors">
+                        <input 
+                            type="file" 
+                            accept=".pdf,.doc,.docx,.txt"
+                            onChange={handleFileUpload}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="space-y-4">
+                            <div className="w-16 h-16 bg-blue-50 text-blue rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                                <Download className="w-8 h-8 rotate-180" />
+                            </div>
+                            <div>
+                                <p className="font-black text-slate-700">{uploadedFile ? uploadedFile.name : "Tap or Drag to Upload"}</p>
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">PDF, DOCX, TXT</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <button 
                     onClick={saveNote}
-                    className="w-full bg-emerald-500 text-white py-6 rounded-2xl font-black text-sm shadow-xl shadow-emerald-500/20 active:scale-95 transition-all uppercase tracking-widest"
+                    className={cn(
+                        "w-full text-white py-6 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest",
+                        mode === 'write' ? "bg-emerald-500 shadow-emerald-500/20" : "bg-blue shadow-blue/20"
+                    )}
                 >
-                    Save Study Note
+                    {mode === 'write' ? 'Save Study Note' : 'Save Uploaded Note'}
                 </button>
             </div>
 
             <div className="space-y-4">
                 <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 ml-2">Recent Archives</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {notes.map(n => (
+                    {notes.map(n => {
+                        const isFileJSON = n.content.startsWith('{"isFile"');
+                        const noteContent = isFileJSON ? JSON.parse(n.content) : { isFile: false };
+                        
+                        return (
                         <div key={n.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
                             <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => downloadPDF(n)} title="Export PDF" className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100">
-                                    <FileText className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => downloadText(n)} title="Export Text" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
-                                    <Download className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => setNotes(notes.filter(nt => nt.id !== n.id))} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
+                                {noteContent.isFile ? (
+                                    <>
+                                        <button onClick={() => downloadFileObj(noteContent)} title="Download File" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
+                                            <Download className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => deleteNote(n.id)} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => downloadPDF(n)} title="Export PDF" className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100">
+                                            <FileText className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => downloadText(n)} title="Export Text" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
+                                            <Download className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => deleteNote(n.id)} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
+                                            <Trash2 className="w-5 h-5" />
+                                        </button>
+                                    </>
+                                )}
                             </div>
-                            <p className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2">{n.date}</p>
+                            <p className={cn("text-[0.6rem] font-black uppercase tracking-widest mb-2", noteContent.isFile ? "text-blue" : "text-emerald-500")}>
+                                {n.date} {noteContent.isFile && '• FILE ARCHIVE'}
+                            </p>
                             <h3 className="font-black text-slate-900 text-xl mb-4 leading-tight uppercase tracking-tight pr-20">{n.title}</h3>
-                            <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-2">"{n.content}"</p>
-                            <div className="h-1 w-20 bg-slate-100 rounded-full group-hover:bg-emerald-500 transition-colors" />
+                            <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-2">
+                                "{noteContent.isFile ? "Encrypted File Data. Click to download." : n.content}"
+                            </p>
+                            <div className={cn("h-1 w-20 rounded-full transition-colors", noteContent.isFile ? "bg-blue/20 group-hover:bg-blue" : "bg-emerald-500/20 group-hover:bg-emerald-500")} />
                         </div>
-                    ))}
-                    {notes.length === 0 && (
+                    );
+                })}
+                    {notes.length === 0 && !isLoading && (
                         <div className="text-center py-20 opacity-25">
                             <PenTool className="w-16 h-16 mx-auto mb-4" />
                             <p className="font-black uppercase tracking-widest text-xs">No historical records found</p>
+                        </div>
+                    )}
+                    {isLoading && (
+                        <div className="col-span-full text-center py-10 opacity-50">
+                            <p className="font-bold tracking-widest text-sm uppercase">Loading Notes...</p>
                         </div>
                     )}
                 </div>
@@ -2001,24 +2174,83 @@ const NotePadPage = () => {
 
 const TodoListPage = () => {
     const navigate = useNavigate();
-    const [tasks, setTasks] = useState<{id: string, text: string, done: boolean}[]>([
-        { id: '1', text: 'Complete Mock Test', done: false },
-        { id: '2', text: 'Revise Science Notes', done: true },
-    ]);
+    const { user } = useApp();
+    const [tasks, setTasks] = useState<{id: string, text: string, done: boolean}[]>([]);
     const [newTask, setNewTask] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
-    const addTask = () => {
+    useEffect(() => {
+        if (user) {
+            fetchTasks();
+        }
+    }, [user]);
+
+    const fetchTasks = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .select('*')
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            if (data) setTasks(data);
+        } catch (error) {
+            console.error('Error fetching tasks:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const addTask = async () => {
         if (!newTask.trim()) return;
-        setTasks([{ id: Date.now().toString(), text: newTask, done: false }, ...tasks]);
-        setNewTask("");
+        const newTaskData = { text: newTask, done: false, user_id: user.id };
+        
+        try {
+            const { data, error } = await supabase
+                .from('tasks')
+                .insert([newTaskData])
+                .select()
+                .single();
+
+            if (error) throw error;
+            if (data) {
+                setTasks([data, ...tasks]);
+                setNewTask("");
+            }
+        } catch (error) {
+            console.error('Error saving task:', error);
+        }
     };
 
-    const toggleStatus = (id: string) => {
-        setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    const toggleStatus = async (id: string) => {
+        const taskToToggle = tasks.find(t => t.id === id);
+        if (!taskToToggle) return;
+
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .update({ done: !taskToToggle.done })
+                .eq('id', id);
+
+            if (error) throw error;
+            setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+        } catch (error) {
+            console.error('Error updating task:', error);
+        }
     };
 
-    const deleteStatus = (id: string) => {
-        setTasks(tasks.filter(t => t.id !== id));
+    const deleteStatus = async (id: string) => {
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            setTasks(tasks.filter(t => t.id !== id));
+        } catch (error) {
+            console.error('Error deleting task:', error);
+        }
     };
 
     return (
@@ -2054,8 +2286,11 @@ const TodoListPage = () => {
                             </button>
                         </div>
                     ))}
-                    {tasks.length === 0 && (
+                    {tasks.length === 0 && !isLoading && (
                         <p className="text-center text-slate-400 font-bold py-8 text-sm">All caught up! 🎉</p>
+                    )}
+                    {isLoading && (
+                        <p className="text-center text-slate-400 font-bold py-8 text-sm">Loading tasks...</p>
                     )}
                 </div>
             </div>
