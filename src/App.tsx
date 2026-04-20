@@ -555,7 +555,11 @@ const AITutor = () => {
         setMessages(prev => [...prev, { role: 'ai', text: '', highlights: ["SEE 2083"] }]);
 
         try {
-            const groqKey = process.env.GROQ_API_KEY || (typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env.VITE_GROQ_API_KEY : '');
+            // Vite statically analyzes `import.meta.env`, so it must be written out completely explicitly.
+            // @ts-ignore
+            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
+            const groqKey = processGroqKey || viteGroqKey;
             
             const groq = new Groq({ 
                 apiKey: groqKey, 
