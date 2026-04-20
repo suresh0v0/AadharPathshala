@@ -18,6 +18,7 @@ import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { GoogleGenAI } from "@google/genai";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
+import { supabase } from './supabaseClient.js';
 
 /**
  * Utility for Tailwind classes
@@ -2078,23 +2079,67 @@ const AuthPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!email || !password || (!isSignIn && !name)) return;
+        setLoading(true);
         
-        setUser({
-            id: 'user_' + Date.now().toString(),
-            name: isSignIn ? 'Adhyeta Nepal' : name,
-            email: email,
-            grade: '10',
-            xp: isSignIn ? 1250 : 0,
-            streak: isSignIn ? 5 : 1,
-            badges: isSignIn ? ['Early Bird', 'Quiz Master'] : [],
-            testsCompleted: 0,
-            avgScore: 0,
-            completedChapters: []
-        });
+        try {
+            if (isSignIn) {
+                const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (signInError) throw signInError;
+                
+                setUser({
+                    id: data.user?.id || 'user_' + Date.now().toString(),
+                    name: data.user?.user_metadata?.name || 'Adhyeta Nepal',
+                    email: email,
+                    grade: '10',
+                    xp: 1250,
+                    streak: 5,
+                    badges: ['Early Bird', 'Quiz Master'],
+                    testsCompleted: 0,
+                    avgScore: 0,
+                    completedChapters: []
+                });
+            } else {
+                const { data, error: signUpError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            name: name
+                        }
+                    }
+                });
+
+                if (signUpError) throw signUpError;
+                
+                setUser({
+                    id: data.user?.id || 'user_' + Date.now().toString(),
+                    name: name,
+                    email: email,
+                    grade: '10',
+                    xp: 0,
+                    streak: 1,
+                    badges: [],
+                    testsCompleted: 0,
+                    avgScore: 0,
+                    completedChapters: []
+                });
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during authentication.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -2149,12 +2194,19 @@ const AuthPage = () => {
                             className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl font-bold text-xl outline-none focus:ring-4 focus:ring-blue/10 transition-all"
                         />
                     </div>
+                    
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-500 text-xs font-bold rounded-xl text-center">
+                            {error}
+                        </div>
+                    )}
 
                     <button 
                         type="submit"
-                        className="w-full py-4 mt-8 bg-[linear-gradient(135deg,_#3b82f6_0%,_#8b5cf6_50%,_#f43f5e_100%)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        disabled={loading}
+                        className="w-full py-4 mt-8 bg-[linear-gradient(135deg,_#3b82f6_0%,_#8b5cf6_50%,_#f43f5e_100%)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70"
                     >
-                        {isSignIn ? 'Sign In' : 'Sign Up'}
+                        {loading ? 'Processing...' : (isSignIn ? 'Sign In' : 'Sign Up')}
                     </button>
                 </form>
 
