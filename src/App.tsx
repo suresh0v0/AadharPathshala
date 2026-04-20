@@ -524,6 +524,7 @@ const AITutor = () => {
     const { user } = useApp();
     const storageKey = `aadhar_chats_${user?.id || 'guest'}`;
     
+    const [activeTutor, setActiveTutor] = useState<'mam' | 'sir'>('mam');
     const [messages, setMessages] = useState<any[]>(() => {
         const saved = localStorage.getItem(storageKey);
         return saved ? JSON.parse(saved) : [];
@@ -554,12 +555,16 @@ const AITutor = () => {
         setMessages(prev => [...prev, { role: 'ai', text: '', highlights: ["SEE 2083"] }]);
 
         try {
+            const groqKey = process.env.GROQ_API_KEY || (typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env.VITE_GROQ_API_KEY : '');
+            
             const groq = new Groq({ 
-                apiKey: process.env.GROQ_API_KEY, 
+                apiKey: groqKey, 
                 dangerouslyAllowBrowser: true 
             });
             
-            const systemPrompt = `You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Provide clear explanations. Use professional Markdown. Always include a highlighted 'MASTER TIP'. Be highly motivating and use emojis! Keep responses short unless complex subject matter.\n\nContext: Student name is ${user?.name || 'Sathi'}, total XP is ${user?.xp || 0}, tests completed: ${user?.testsCompleted || 0}. Use this context to offer personalized advice.`;
+            const systemPrompt = activeTutor === 'mam' 
+                ? `You are Aadhar Mam, an encouraging, nurturing, and warm female teacher for Grade 10 students in Nepal preparing for SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Use polite and loving phrases like 'Nanu', 'Babu', 'Ekdam Ramro', 'Tension lina pardaina'. Provide clear, step-by-step explanations and be highly motivating with emojis! Keep responses short unless explaining complex matter.\n\nContext: Student name is ${user?.name || 'Student'}, total XP is ${user?.xp || 0}.`
+                : `You are Pathshala Sir, a strict but deeply caring male teacher for Grade 10 SEE students in Nepal. Speak in a formal, disciplined tone combining English and formal Nepali. Focus on syllabus accuracy, logic, and high standards. Use phrases like 'Dhyan diyera sunnu', 'Discipline is key', 'Ramro sanga padha'. Be practical, strict, but ultimately supportive. Use professional Markdown.\n\nContext: Student name is ${user?.name || 'Student'}, total XP is ${user?.xp || 0}.`;
 
             const chatHistory = updated.map(m => ({
                 role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -603,28 +608,50 @@ const AITutor = () => {
         <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
             <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
                 {/* Header Section */}
-                <div className="flex items-center justify-between p-4 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-600 animate-gradient rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                            <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800">Aadhar Pro</h1>
-                            <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantum AI Tutor V.2</p>
+                <div className="flex flex-col md:flex-row items-center justify-between p-4 shrink-0 gap-4">
+                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+                        <div className="flex items-center gap-3">
+                            <div className={cn("w-10 h-10 md:w-12 md:h-12 animate-gradient rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg", activeTutor === 'mam' ? "bg-linear-to-r from-pink-500 via-rose-500 to-purple-600 shadow-rose-500/20" : "bg-linear-to-r from-slate-700 via-slate-800 to-slate-900 shadow-slate-900/20")}>
+                                {activeTutor === 'mam' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> : <GraduationCap className="text-white w-5 h-5 md:w-6 md:h-6" />}
+                            </div>
+                            <div>
+                                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800">
+                                    {activeTutor === 'mam' ? 'Aadhar Mam' : 'Pathshala Sir'}
+                                </h1>
+                                <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantum AI Tutor</p>
+                            </div>
                         </div>
                     </div>
-                    <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[0.65rem] font-black border border-emerald-100">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                        NEURONS ACTIVE
-                    </div>
-                    {messages.length > 0 && (
+                    
+                    <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-full md:w-auto">
                         <button 
-                            onClick={clearChat}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[0.65rem] font-black hover:bg-rose-100 transition-colors"
+                            onClick={() => setActiveTutor('mam')}
+                            className={cn("flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", activeTutor === 'mam' ? "bg-white text-rose-500 shadow" : "text-slate-400 hover:text-slate-600")}
                         >
-                            <Trash2 className="w-3 h-3" /> CLEAR CHAT
+                            Mam
                         </button>
-                    )}
+                        <button 
+                            onClick={() => setActiveTutor('sir')}
+                            className={cn("flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", activeTutor === 'sir' ? "bg-white text-slate-800 shadow" : "text-slate-400 hover:text-slate-600")}
+                        >
+                            Sir
+                        </button>
+                    </div>
+
+                    <div className="hidden md:flex items-center gap-4">
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[0.65rem] font-black border border-emerald-100">
+                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                            NEURONS ACTIVE
+                        </div>
+                        {messages.length > 0 && (
+                            <button 
+                                onClick={clearChat}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[0.65rem] font-black hover:bg-rose-100 transition-colors"
+                            >
+                                <Trash2 className="w-3 h-3" /> CLEAR
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Messages Area */}
@@ -633,9 +660,11 @@ const AITutor = () => {
                         <div className="text-center py-10 space-y-8">
                             <Mascot mood={loading ? 'thinking' : 'idle'} />
                             <div className="space-y-2">
-                                <h2 className="text-xl font-black text-slate-800 tracking-tight">K chha Sathi! I'm Aadhar Pro.</h2>
+                                <h2 className="text-xl font-black text-slate-800 tracking-tight">K chha Sathi! I'm {activeTutor === 'mam' ? 'Aadhar Mam' : 'Pathshala Sir'}.</h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[300px] mx-auto leading-relaxed italic border-l-2 border-slate-100 pl-4">
-                                    Don't take tension for SEE 2083! Ask me anything to level up your prep.
+                                    {activeTutor === 'mam' 
+                                        ? "Don't take tension for SEE 2083! Ask me anything, Nanu/Babu, I'll help you out."
+                                        : "Discipline is the key to success in SEE! Drop your questions and let's solve them logically."}
                                 </p>
                             </div>
                         </div>
@@ -1656,11 +1685,40 @@ const DictionaryPage = () => {
     const findWord = async () => {
         if (!search) return;
         setLoading(true);
-        // Simulate deeper search
-        await new Promise(r => setTimeout(r, 800));
-        const found = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
-        setResult(found || { word: search, def: "Term meaning not found in core database. High-intensity AI lookup failed.", sub: "Unknown" });
-        setLoading(false);
+
+        try {
+            const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${search.trim()}`);
+            if (res.ok) {
+                const data = await res.json();
+                const meaning = data[0]?.meanings[0];
+                const definition = meaning?.definitions[0]?.definition || "Definition not found.";
+                const synonym = meaning?.synonyms?.[0] || meaning?.definitions[0]?.example || "";
+                
+                setResult({
+                    word: data[0]?.word || search,
+                    def: definition,
+                    sub: meaning?.partOfSpeech || 'Noun',
+                    detail: synonym ? `Example/Synonym: ${synonym}` : undefined
+                });
+            } else {
+                // Fallback to local terms if API fails or word not found
+                const found = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
+                setResult(found || { 
+                    word: search, 
+                    def: "Word not found in the global dictionary database. Try checking your spelling.", 
+                    sub: "Unknown" 
+                });
+            }
+        } catch (error) {
+            const found = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
+            setResult(found || { 
+                word: search, 
+                def: "Could not connect to the dictionary matrix. Please check your internet connection.", 
+                sub: "Offline" 
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
