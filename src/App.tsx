@@ -154,7 +154,7 @@ const MockTest = () => {
     });
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem(`${storageKey}_settings`);
-        return saved ? JSON.parse(saved) : { subject: 'Science' as SubjectType, count: 5 };
+        return saved ? { ...JSON.parse(saved), model: JSON.parse(saved).model || 'momo' } : { subject: 'Science' as SubjectType, count: 5, model: 'momo' as 'momo' | 'achar' };
     });
     const [questions, setQuestions] = useState<any[]>(() => {
         const saved = localStorage.getItem(`${storageKey}_questions`);
@@ -190,28 +190,49 @@ const MockTest = () => {
     const startTest = async () => {
         setLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
-            
             const prompt = `Generate ${settings.count} multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
             ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use English Language.'}
             Return JSON only: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }`;
 
-            const res = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json"
-                }
-            });
+            let quizData = [];
 
-            const text = res.text || "{}";
-            const data = JSON.parse(text);
-            setQuestions(data.quiz || []);
+            if (settings.model === 'achar') {
+                // GROQ (ACHAR) for questions
+                // @ts-ignore
+                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+                const groqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
+                const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+                
+                const completion = await groq.chat.completions.create({
+                    messages: [
+                        { role: "system", content: "You are an exam generator. Return ONLY raw JSON." },
+                        { role: "user", content: prompt }
+                    ],
+                    model: "llama-3.1-8b-instant",
+                    response_format: { type: "json_object" }
+                });
+                const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
+                quizData = data.quiz || [];
+            } else {
+                // GEMINI (MOMO) for questions
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+                const res = await ai.models.generateContent({
+                    model: "gemini-3-flash-preview",
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" }
+                });
+                const data = JSON.parse(res.text || "{}");
+                quizData = data.quiz || [];
+            }
+
+            if (quizData.length === 0) throw new Error("No questions generated");
+            
+            setQuestions(quizData);
             setStatus('quiz');
             setTimer(settings.count * 60);
         } catch (e) {
-            alert("Failed to start set. Try again.");
+            alert("Failed to start trial. " + (e instanceof Error ? e.message : "Try again."));
         } finally {
             setLoading(false);
         }
@@ -301,6 +322,45 @@ const MockTest = () => {
                                     )}
                                 >
                                     {c}Q
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 md:space-y-4">
+                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">AI Scholar Core</label>
+                        <div className="flex gap-2 md:gap-3">
+                            {[
+                                { id: 'momo', label: 'MOMO', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
+                                { id: 'achar', label: 'ACHAR', desc: 'Fast Analysis', color: 'emerald-500', icon: Zap }
+                            ].map((m) => (
+                                <button
+                                    key={m.id}
+                                    onClick={() => setSettings({ ...settings, model: m.id as any })}
+                                    className={cn(
+                                        "flex-1 py-4 md:py-6 rounded-[2rem] border-2 font-black transition-all flex flex-col items-center gap-2 group relative overflow-hidden",
+                                        settings.model === m.id 
+                                            ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-xl` 
+                                            : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                        settings.model === m.id ? "bg-white/20" : "bg-slate-50 text-slate-300"
+                                    )}>
+                                        <m.icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="text-center">
+                                        <span className="text-xs md:text-sm uppercase block tracking-wider">{m.label}</span>
+                                        <span className="text-[0.5rem] md:text-[0.55rem] font-bold opacity-60 uppercase tracking-widest">{m.desc}</span>
+                                    </div>
+                                    {settings.model === m.id && (
+                                        <motion.div layoutId="active-tick" className="absolute top-2 right-2">
+                                            <div className="p-1 bg-white/20 rounded-full">
+                                                <CheckCircle2 className="w-3 h-3" />
+                                            </div>
+                                        </motion.div>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -735,17 +795,20 @@ NEPALI MEDIUM: Use simple English + Nepali mix (Neplish).
 SAFETY: Never provide answers to illegal/harmful queries.
 ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
 
-                const chatHistory = updated.map(m => ({
-                    role: m.role === 'ai' ? 'model' : 'user',
-                    content: m.text
-                }));
+                const contents = [
+                    { role: 'user', parts: [{ text: systemInstruction }] },
+                    ...updated.map(m => ({
+                        role: m.role === 'ai' ? 'model' : 'user',
+                        parts: [{ text: m.text }]
+                    }))
+                ];
 
-                const res = await ai.models.generateContent({
-                    model: "gemini-1.5-flash",
-                    contents: `${systemInstruction}\n\nUser Question: ${text}`,
+                const response = await ai.models.generateContent({
+                    model: "gemini-3-flash-preview",
+                    contents: contents,
                 });
 
-                const fullResponse = res.text || "Brain freeze! Try again.";
+                const fullResponse = response.text || "Brain freeze! Try again.";
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].text = fullResponse;
