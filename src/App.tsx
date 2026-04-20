@@ -143,13 +143,45 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
 // --- MOCK TEST ---
 const MockTest = () => {
-    const [status, setStatus] = useState<'setup' | 'quiz' | 'result' | 'review'>('setup');
-    const [settings, setSettings] = useState({ subject: 'English' as SubjectType, count: 10 });
-    const [questions, setQuestions] = useState<any[]>([]);
-    const [currentIdx, setCurrentIdx] = useState(0);
-    const [timer, setTimer] = useState(0);
-    const [loading, setLoading] = useState(false);
     const { addTestResult, user } = useApp();
+    const storageKey = `aadhar_mock_${user?.id || 'guest'}`;
+
+    const [status, setStatus] = useState<'setup' | 'quiz' | 'result' | 'review'>(() => {
+        const saved = localStorage.getItem(`${storageKey}_status`);
+        return saved ? saved as any : 'setup';
+    });
+    const [settings, setSettings] = useState(() => {
+        const saved = localStorage.getItem(`${storageKey}_settings`);
+        return saved ? JSON.parse(saved) : { subject: 'Science' as SubjectType, count: 5 };
+    });
+    const [questions, setQuestions] = useState<any[]>(() => {
+        const saved = localStorage.getItem(`${storageKey}_questions`);
+        return saved ? JSON.parse(saved) : [];
+    });
+    const [currentIdx, setCurrentIdx] = useState(() => {
+        const saved = localStorage.getItem(`${storageKey}_idx`);
+        return saved ? parseInt(saved) : 0;
+    });
+    const [timer, setTimer] = useState(() => {
+        const saved = localStorage.getItem(`${storageKey}_timer`);
+        return saved ? parseInt(saved) : 0;
+    });
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem(`${storageKey}_status`, status);
+        localStorage.setItem(`${storageKey}_settings`, JSON.stringify(settings));
+        localStorage.setItem(`${storageKey}_questions`, JSON.stringify(questions));
+        localStorage.setItem(`${storageKey}_idx`, currentIdx.toString());
+        localStorage.setItem(`${storageKey}_timer`, timer.toString());
+    }, [status, settings, questions, currentIdx, timer, storageKey]);
+
+    const clearMockTest = () => {
+        setStatus('setup');
+        setQuestions([]);
+        setCurrentIdx(0);
+        setTimer(0);
+    };
 
     const currentSubjectConfig = SUBJECTS_CONFIG[settings.subject];
 
@@ -287,7 +319,13 @@ const MockTest = () => {
             )}
 
             {status === 'quiz' && (
-                <div className="space-y-6 pb-20">
+                <div className="space-y-6 pb-20 relative">
+                     <button 
+                         onClick={clearMockTest}
+                         className="absolute -top-10 right-0 bg-rose-50 text-rose-500 px-3 py-1.5 rounded-lg text-[0.65rem] font-black uppercase tracking-widest hover:bg-rose-100 transition-colors"
+                     >
+                         Quit Test
+                     </button>
                      <div className="flex justify-between items-center bg-white border border-slate-100 shadow-sm p-4 md:p-6 rounded-[2.5rem] relative z-20">
                         <div className="flex items-center gap-4">
                             <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg bg-linear-to-br", currentSubjectConfig.gradient)}>
@@ -409,7 +447,7 @@ const MockTest = () => {
 
                     <div className="space-y-3 relative z-10">
                         <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest">Review Protocol</button>
-                        <button onClick={() => window.location.reload()} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
+                        <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
                     </div>
                 </div>
             )}
@@ -482,12 +520,26 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
 };
 
 const AITutor = () => {
-    const [messages, setMessages] = useState<any[]>([]);
+    const { user } = useApp();
+    const storageKey = `aadhar_chats_${user?.id || 'guest'}`;
+    
+    const [messages, setMessages] = useState<any[]>(() => {
+        const saved = localStorage.getItem(storageKey);
+        return saved ? JSON.parse(saved) : [];
+    });
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const { user } = useApp();
+    useEffect(() => {
+        localStorage.setItem(storageKey, JSON.stringify(messages));
+    }, [messages, storageKey]);
+
+    const clearChat = () => {
+        setMessages([]);
+        localStorage.removeItem(storageKey);
+    };
+
     const handleSend = async (txt: string) => {
         const text = txt || input;
         if (!text.trim()) return;
@@ -497,26 +549,35 @@ const AITutor = () => {
         setInput('');
         setLoading(true);
 
+        // Add empty AI message placeholder for streaming
+        setMessages(prev => [...prev, { role: 'ai', text: '', highlights: ["SEE 2083"] }]);
+
         try {
             const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             
-            const result = await ai.models.generateContent({
+            const stream = await ai.models.generateContentStream({
                 model: "gemini-3-flash-preview",
                 contents: `Context: Student name is ${user?.name || 'Sathi'}, total XP is ${user?.xp || 0}, tests completed: ${user?.testsCompleted || 0}. Use this context to offer personalized advice.\nUser Question: ${text}`,
                 config: {
-                    systemInstruction: "You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Use phrases like 'Sathi', 'Ekdam kadak', 'Tension lina pardaina', 'Bujhyo ni?', 'Dammi', 'Babaru'. Provide clear, step-by-step explanations and personalized study advice referencing their progress (XP/tests taken) if mentioned in the context. Format using professional Markdown. Always include a highlighted 'MASTER TIP' encoded clearly. Be highly motivating and use emojis! Keep responses short unless complex subject matter."
+                    systemInstruction: "You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Provide clear explanations. Use Markdown."
                 }
             });
 
-            const resText = result.text || "I couldn't generate a response.";
-
-            setMessages([...updated, { 
-                role: 'ai', 
-                text: resText,
-                highlights: ["SEE 2083", "Expert Tip", "New Pattern"]
-            }]);
+            let fullResponse = "";
+            for await (const chunk of stream) {
+                fullResponse += chunk.text;
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].text = fullResponse;
+                    return newMessages;
+                });
+            }
         } catch (e) {
-            setMessages([...updated, { role: 'ai', text: "Error: Could not reach the AI brain. Please try again." }]);
+            setMessages(prev => {
+                const newMessages = [...prev];
+                newMessages[newMessages.length - 1].text = "Error: Could not reach the AI brain. Please try again.";
+                return newMessages;
+            });
         } finally {
             setLoading(false);
         }
@@ -544,6 +605,14 @@ const AITutor = () => {
                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                         NEURONS ACTIVE
                     </div>
+                    {messages.length > 0 && (
+                        <button 
+                            onClick={clearChat}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[0.65rem] font-black hover:bg-rose-100 transition-colors"
+                        >
+                            <Trash2 className="w-3 h-3" /> CLEAR CHAT
+                        </button>
+                    )}
                 </div>
 
                 {/* Messages Area */}
