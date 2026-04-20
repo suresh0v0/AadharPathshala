@@ -576,7 +576,7 @@ const AITutor = () => {
                     { role: "system", content: systemPrompt },
                     ...chatHistory
                 ],
-                model: "llama3-8b-8192",
+                model: "llama-3.1-8b-instant",
                 stream: true,
             });
 
@@ -589,10 +589,10 @@ const AITutor = () => {
                     return newMessages;
                 });
             }
-        } catch (e) {
+        } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1].text = "Error: Could not reach the AI brain. Please try again.";
+                newMessages[newMessages.length - 1].text = `Error: ${e.message || "Could not reach the AI brain."} Please check your API key in Vercel.`;
                 return newMessages;
             });
         } finally {
