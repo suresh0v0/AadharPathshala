@@ -2072,38 +2072,148 @@ const ScrollToTop = () => {
     return null;
 };
 
+const AuthPage = () => {
+    const { setUser } = useApp();
+    const [isSignIn, setIsSignIn] = useState(true);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!email || !password || (!isSignIn && !name)) return;
+        
+        setUser({
+            id: 'user_' + Date.now().toString(),
+            name: isSignIn ? 'Adhyeta Nepal' : name,
+            email: email,
+            grade: '10',
+            xp: isSignIn ? 1250 : 0,
+            streak: isSignIn ? 5 : 1,
+            badges: isSignIn ? ['Early Bird', 'Quiz Master'] : [],
+            testsCompleted: 0,
+            avgScore: 0,
+            completedChapters: []
+        });
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+            {/* Background elements */}
+            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-emerald-400/20 rounded-full blur-[100px] pointer-events-none" />
+            
+            <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl p-8 relative z-10 border border-slate-100 animate-fade-up">
+                <div className="text-center mb-8">
+                    <div className="flex flex-col leading-none items-center justify-center mb-4">
+                        <span className="text-[#E11D48] font-black text-3xl tracking-tighter uppercase italic">Aadhar</span>
+                        <span className="text-[#1D4ED8] font-black text-3xl tracking-tighter uppercase italic">Pathshala</span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                        {isSignIn ? 'Welcome Back!' : 'Create your account'}
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {!isSignIn && (
+                        <div className="space-y-1">
+                            <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4">Full Name</label>
+                            <input 
+                                type="text"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Your Name"
+                                className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue/10 transition-all"
+                            />
+                        </div>
+                    )}
+                    
+                    <div className="space-y-1">
+                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4">Email Address</label>
+                        <input 
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="student@aadhar.edu.np"
+                            className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue/10 transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4">Password</label>
+                        <input 
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full bg-slate-50 border border-slate-100 px-5 py-4 rounded-2xl font-bold text-xl outline-none focus:ring-4 focus:ring-blue/10 transition-all"
+                        />
+                    </div>
+
+                    <button 
+                        type="submit"
+                        className="w-full py-4 mt-8 bg-[linear-gradient(135deg,_#3b82f6_0%,_#8b5cf6_50%,_#f43f5e_100%)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                        {isSignIn ? 'Sign In' : 'Sign Up'}
+                    </button>
+                </form>
+
+                <div className="mt-8 text-center">
+                    <button 
+                        type="button"
+                        onClick={() => setIsSignIn(!isSignIn)}
+                        className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest"
+                    >
+                        {isSignIn ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AppContent = () => {
+    const { user } = useApp();
+    if (!user) {
+        return <AuthPage />;
+    }
+    return (
+        <Layout>
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/hub" element={<StudyHub />} />
+                <Route path="/hub/:name" element={<SubjectDetail />} />
+                <Route path="/hub/:name/chapters" element={<ChapterList />} />
+                <Route path="/hub/:name/chapters/:chapterId" element={<ChapterDetail />} />
+                <Route path="/hub/:name/videos" element={<VideoList />} />
+                <Route path="/hub/:name/pdfs" element={<PdfList />} />
+                <Route path="/hub/:name/notes" element={<NoteList />} />
+                <Route path="/hub/:name/model" element={<ModelList />} />
+                <Route path="/ai" element={<AITutor />} />
+                <Route path="/mock" element={<MockTest />} />
+                <Route path="/news" element={<NewsPage />} />
+                <Route path="/leaderboard" element={<LeaderboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/tools" element={<AadharToolkit />} />
+                <Route path="/tools/calculator" element={<CalculatorSuite />} />
+                <Route path="/tools/notes" element={<NotePadPage />} />
+                <Route path="/tools/dictionary" element={<DictionaryPage />} />
+                <Route path="/tools/timer" element={<StudyTimer />} />
+                <Route path="/tools/calendar" element={<ExamCalendar />} />
+                <Route path="/tools/formulas" element={<FormulaBankPage />} />
+                <Route path="/tools/converter" element={<UnitConverterPage />} />
+                <Route path="/tools/todo" element={<TodoListPage />} />
+            </Routes>
+        </Layout>
+    );
+};
+
 const App = () => {
     return (
         <AppProvider>
             <BrowserRouter>
                 <ScrollToTop />
-                <Layout>
-                    <Routes>
-                        <Route path="/" element={<HomePage />} />
-                        <Route path="/hub" element={<StudyHub />} />
-                        <Route path="/hub/:name" element={<SubjectDetail />} />
-                        <Route path="/hub/:name/chapters" element={<ChapterList />} />
-                        <Route path="/hub/:name/chapters/:chapterId" element={<ChapterDetail />} />
-                        <Route path="/hub/:name/videos" element={<VideoList />} />
-                        <Route path="/hub/:name/pdfs" element={<PdfList />} />
-                        <Route path="/hub/:name/notes" element={<NoteList />} />
-                        <Route path="/hub/:name/model" element={<ModelList />} />
-                        <Route path="/ai" element={<AITutor />} />
-                        <Route path="/mock" element={<MockTest />} />
-                        <Route path="/news" element={<NewsPage />} />
-                        <Route path="/leaderboard" element={<LeaderboardPage />} />
-                        <Route path="/profile" element={<ProfilePage />} />
-                        <Route path="/tools" element={<AadharToolkit />} />
-                        <Route path="/tools/calculator" element={<CalculatorSuite />} />
-                        <Route path="/tools/notes" element={<NotePadPage />} />
-                        <Route path="/tools/dictionary" element={<DictionaryPage />} />
-                        <Route path="/tools/timer" element={<StudyTimer />} />
-                        <Route path="/tools/calendar" element={<ExamCalendar />} />
-                        <Route path="/tools/formulas" element={<FormulaBankPage />} />
-                        <Route path="/tools/converter" element={<UnitConverterPage />} />
-                        <Route path="/tools/todo" element={<TodoListPage />} />
-                    </Routes>
-                </Layout>
+                <AppContent />
             </BrowserRouter>
         </AppProvider>
     );
@@ -2167,18 +2277,7 @@ const INITIAL_DATA: AppData = {
 };
 
 const AppProvider = ({ children }: any) => {
-    const [user, setUser] = useState<User | null>({
-        id: 'user_777',
-        name: 'Adhyeta Nepal',
-        email: 'student@aadhar.edu.np',
-        grade: '10',
-        xp: 1250,
-        streak: 5,
-        badges: ['Early Bird', 'Quiz Master'],
-        testsCompleted: 0,
-        avgScore: 0,
-        completedChapters: []
-    });
+    const [user, setUser] = useState<User | null>(null);
     const [data] = useState<AppData>(INITIAL_DATA);
 
     const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
@@ -2210,7 +2309,7 @@ const AppProvider = ({ children }: any) => {
     };
 
     return (
-        <AppContext.Provider value={{ user, data, addTestResult }}>
+        <AppContext.Provider value={{ user, setUser, data, addTestResult }}>
             {children}
         </AppContext.Provider>
     );
