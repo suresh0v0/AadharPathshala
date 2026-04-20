@@ -156,7 +156,8 @@ const MockTest = () => {
     const startTest = async () => {
         setLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
+            const ai = new GoogleGenAI({ apiKey });
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
             
             const prompt = `Generate ${settings.count} multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
@@ -498,7 +499,8 @@ const AITutor = () => {
         setLoading(true);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined);
+            const ai = new GoogleGenAI({ apiKey });
             
             const result = await ai.models.generateContent({
                 model: "gemini-3-flash-preview",
