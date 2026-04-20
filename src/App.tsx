@@ -9,7 +9,8 @@ import {
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
-  Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye
+  Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye,
+  ClipboardCheck, XCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -452,6 +453,116 @@ const MockTest = () => {
                     </div>
                 </div>
             )}
+
+            {status === 'review' && (
+                <div className="space-y-6 pb-32 animate-fade-up">
+                    <div className="flex items-center justify-between bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl">
+                        <div className="flex items-center gap-4">
+                            <div className={cn("w-12 h-12 bg-linear-to-br rounded-2xl flex items-center justify-center text-white", currentSubjectConfig.gradient)}>
+                                <ClipboardCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Review Protocol</h2>
+                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Analyzing Performance Metadata</p>
+                            </div>
+                        </div>
+                        <button onClick={() => setStatus('result')} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest">Back</button>
+                    </div>
+
+                    <div className="space-y-4">
+                        {questions.map((q, i) => (
+                            <ReviewCard key={i} question={q} index={i} subject={settings.subject} />
+                        ))}
+                    </div>
+
+                    <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ReviewCard = ({ question, index, subject }: { question: any, index: number, subject: string }) => {
+    const [explanation, setExplanation] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const getAIReview = async () => {
+        setLoading(true);
+        try {
+            // @ts-ignore
+            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
+            const groqKey = processGroqKey || viteGroqKey;
+            
+            const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+            const prompt = `Student made a mistake in Grade 10 Nepal SEE ${subject} Exam.
+Question: ${question.q}
+Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
+Correct: ${question.correct}
+Student Answered: ${question.userChoice}
+
+Please explain WHY the correct answer is ${question.correct} and why student's choice was wrong.
+Use simple "Neplish" (English + Nepali mix). Keep it under 100 words. Focus on logic and tips. 
+Start with "Oho Sathi!" if they were wrong, or "Ekdam Ramro!" if they were right but just curious.`;
+
+            const completion = await groq.chat.completions.create({
+                messages: [{ role: "user", content: prompt }],
+                model: "llama-3.1-8b-instant",
+            });
+            setExplanation(completion.choices[0]?.message?.content || "Could not generate review.");
+        } catch (e) {
+            setExplanation("Brain freeze! Groq API is acting up.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const isCorrect = question.userChoice === question.correct;
+
+    return (
+        <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
+            <div className="flex justify-between items-start gap-4">
+                <div className="flex gap-4">
+                    <span className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center font-black text-slate-400 text-sm">{index + 1}</span>
+                    <h3 className="text-lg font-black text-slate-800 leading-tight uppercase italic">{question.q}</h3>
+                </div>
+                {isCorrect ? <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" /> : <XCircle className="w-6 h-6 text-rose-500 shrink-0" />}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {['a', 'b', 'c', 'd'].map(key => (
+                    <div key={key} className={cn(
+                        "p-4 rounded-2xl border-2 text-sm font-bold flex items-center gap-3",
+                        key === question.correct ? "bg-emerald-50 border-emerald-500 text-emerald-700" : 
+                        (key === question.userChoice && !isCorrect) ? "bg-rose-50 border-rose-500 text-rose-700" :
+                        "bg-slate-50 border-transparent text-slate-400"
+                    )}>
+                        <span className="w-6 h-6 rounded-lg bg-white/50 flex items-center justify-center text-[0.65rem] shrink-0 uppercase">{key}</span>
+                        {question[key]}
+                    </div>
+                ))}
+            </div>
+
+            {explanation ? (
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 animate-fade-up">
+                    <div className="flex items-center gap-2 mb-3 text-blue">
+                        <Zap className="w-4 h-4 fill-current" />
+                        <span className="text-[0.6rem] font-black uppercase tracking-widest">ACHAR AI ANALYSIS</span>
+                    </div>
+                    <div className="prose prose-sm max-w-none text-slate-600 font-medium">
+                        <Markdown>{explanation}</Markdown>
+                    </div>
+                </div>
+            ) : (
+                <button 
+                    onClick={getAIReview}
+                    disabled={loading}
+                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
+                >
+                    {loading ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
+                    {loading ? 'Analyzing...' : 'AI Deep Insight'}
+                </button>
+            )}
         </div>
     );
 };
@@ -522,20 +633,30 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
 
 const AITutor = () => {
     const { user } = useApp();
-    const storageKey = `aadhar_chats_${user?.id || 'guest'}`;
+    const navigate = useNavigate();
     
-    const [activeTutor, setActiveTutor] = useState<'mam' | 'sir'>('mam');
-    const [messages, setMessages] = useState<any[]>(() => {
-        const saved = localStorage.getItem(storageKey);
-        return saved ? JSON.parse(saved) : [];
-    });
+    // Using simple view state instead of complex routing for better control
+    const [view, setView] = useState<'selection' | 'chat'>('selection');
+    const [activeTutor, setActiveTutor] = useState<'momo' | 'achar'>('momo');
+
+    const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
+    
+    const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // Initialize messages from localStorage when tutor changes
     useEffect(() => {
-        localStorage.setItem(storageKey, JSON.stringify(messages));
-    }, [messages, storageKey]);
+        const saved = localStorage.getItem(storageKey);
+        setMessages(saved ? JSON.parse(saved) : []);
+    }, [activeTutor, storageKey]);
+
+    useEffect(() => {
+        if (view === 'chat' && messages.length > 0) {
+            localStorage.setItem(storageKey, JSON.stringify(messages));
+        }
+    }, [messages, storageKey, view]);
 
     const clearChat = () => {
         setMessages([]);
@@ -551,42 +672,80 @@ const AITutor = () => {
         setInput('');
         setLoading(true);
 
-        // Add empty AI message placeholder for streaming
-        setMessages(prev => [...prev, { role: 'ai', text: '', highlights: ["SEE 2083"] }]);
+        // Add placeholder AI message
+        setMessages(prev => [...prev, { role: 'ai', text: '' }]);
 
         try {
-            // Vite statically analyzes `import.meta.env`, so it must be written out completely explicitly.
-            // @ts-ignore
-            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-            const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
-            const groqKey = processGroqKey || viteGroqKey;
-            
-            const groq = new Groq({ 
-                apiKey: groqKey, 
-                dangerouslyAllowBrowser: true 
-            });
-            
-            const systemPrompt = activeTutor === 'mam' 
-                ? `You are Aadhar Mam, an encouraging, nurturing, and warm female teacher for Grade 10 students in Nepal preparing for SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Use polite and loving phrases like 'Nanu', 'Babu', 'Ekdam Ramro', 'Tension lina pardaina'. Provide clear, step-by-step explanations and be highly motivating with emojis! Keep responses short unless explaining complex matter.\n\nContext: Student name is ${user?.name || 'Student'}, total XP is ${user?.xp || 0}.`
-                : `You are Pathshala Sir, a strict but deeply caring male teacher for Grade 10 SEE students in Nepal. Speak in a formal, disciplined tone combining English and formal Nepali. Focus on syllabus accuracy, logic, and high standards. Use phrases like 'Dhyan diyera sunnu', 'Discipline is key', 'Ramro sanga padha'. Be practical, strict, but ultimately supportive. Use professional Markdown.\n\nContext: Student name is ${user?.name || 'Student'}, total XP is ${user?.xp || 0}.`;
+            if (activeTutor === 'achar') {
+                // GROQ Implementation (ACHAR)
+                // @ts-ignore
+                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+                const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
+                const groqKey = processGroqKey || viteGroqKey;
+                
+                const groq = new Groq({ 
+                    apiKey: groqKey, 
+                    dangerouslyAllowBrowser: true 
+                });
+                
+                const systemPrompt = `You are ACHAR, the lighting-fast Assistant for Grade 10 SEE Nepal Students. 
+IDENTITY: High-energy, witty, and lightning-fast. 
+STYLE: Use bullet points, short sentences, and student slang (Neplish). e.g., "Oho! You're on fire!", "Jhatpat answer ready छ!"
+GOAL: Save time and provide "hot" tips for exams. Instant facts and formula checks.
+CATCHPHRASE: "Serving it hot! Here is your answer."
+FOCUS: Class 10 Nepal Curriculum (Science, Math, etc.).
+NEPALI MEDIUM: Use English + Nepali mix (Neplish).
+SAFETY: Never provide answers to illegal/harmful queries.
+ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
 
-            const chatHistory = updated.map(m => ({
-                role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
-                content: m.text
-            }));
+                const chatHistory = updated.map(m => ({
+                    role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+                    content: m.text
+                }));
 
-            const stream = await groq.chat.completions.create({
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    ...chatHistory
-                ],
-                model: "llama-3.1-8b-instant",
-                stream: true,
-            });
+                const stream = await groq.chat.completions.create({
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        ...chatHistory
+                    ],
+                    model: "llama-3.1-8b-instant",
+                    stream: true,
+                });
 
-            let fullResponse = "";
-            for await (const chunk of stream) {
-                fullResponse += chunk.choices[0]?.delta?.content || "";
+                let fullResponse = "";
+                for await (const chunk of stream) {
+                    fullResponse += chunk.choices[0]?.delta?.content || "";
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1].text = fullResponse;
+                        return newMessages;
+                    });
+                }
+            } else {
+                // GEMINI Implementation (MOMO)
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+                
+                const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
+IDENTITY: Warm, patient, and thorough. Like a supportive elder sibling (Dai/Didi).
+STYLE: Long-form explanations, relatable Nepali examples (Force manually explained using Doko/Rickshaw).
+GOAL: Explain the "WHY" behind Science/Math concepts. Deep conceptual learning.
+CATCHPHRASE: "Let's dive deep into this topic."
+FOCUS: Class 10 Nepal Curriculum (Science, Math, etc.).
+NEPALI MEDIUM: Use simple English + Nepali mix (Neplish).
+SAFETY: Never provide answers to illegal/harmful queries.
+ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
+
+                const chatHistory = updated.map(m => ({
+                    role: m.role === 'ai' ? 'model' : 'user',
+                    content: m.text
+                }));
+
+                const res = await ai.models.generateContent({
+                    model: "gemini-1.5-flash",
+                    contents: `${systemInstruction}\n\nUser Question: ${text}`,
+                });
+
+                const fullResponse = res.text || "Brain freeze! Try again.";
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].text = fullResponse;
@@ -596,7 +755,7 @@ const AITutor = () => {
         } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1].text = `Error: ${e.message || "Could not reach the AI brain."} Please check your API key in Vercel.`;
+                newMessages[newMessages.length - 1].text = `Error: ${e.message || "Brain freeze! Try again."}`;
                 return newMessages;
             });
         } finally {
@@ -608,112 +767,141 @@ const AITutor = () => {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, loading]);
 
+    if (view === 'selection') {
+        return (
+            <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up overflow-y-auto">
+                <div className="w-full max-w-[620px] p-6 space-y-8">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                            <Home className="w-6 h-6" />
+                        </button>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">AI Hub</h1>
+                    </div>
+
+                    <div className="text-center space-y-3 py-10">
+                        <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">K chha Sathi!</h2>
+                        <p className="text-slate-500 font-bold max-w-[300px] mx-auto leading-relaxed">Choose your study companion for SEE 2083 prep.</p>
+                    </div>
+
+                    <div className="grid gap-6">
+                        {/* MOMO Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('momo'); setView('chat'); }}
+                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-24 h-24 bg-linear-to-br from-pink-500 to-rose-600 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 text-white group-hover:scale-110 transition-transform">
+                                <Bot className="w-12 h-12" />
+                            </div>
+                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-2">MOMO Tutor</h3>
+                            <p className="text-[0.65rem] font-black text-pink-500 uppercase tracking-widest mb-4">The Detailed Expert (Gemini)</p>
+                            <p className="text-xs font-bold text-slate-400 leading-relaxed italic">"Let's dive deep into this topic." Warm explaining in detail for deep understanding.</p>
+                        </button>
+
+                        {/* ACHAR Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('achar'); setView('chat'); }}
+                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-24 h-24 bg-linear-to-br from-slate-700 to-slate-900 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 text-white group-hover:scale-110 transition-transform">
+                                <Zap className="w-12 h-12 text-emerald-400" />
+                            </div>
+                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-2">ACHAR Assistant</h3>
+                            <p className="text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest mb-4">The Fast Assistant (Groq)</p>
+                            <p className="text-xs font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Lightning fast answers, formulas, and quick exam tips.</p>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
             <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
                 {/* Header Section */}
-                <div className="flex flex-col md:flex-row items-center justify-between p-4 shrink-0 gap-4">
-                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
-                        <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 md:w-12 md:h-12 animate-gradient rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg", activeTutor === 'mam' ? "bg-linear-to-r from-pink-500 via-rose-500 to-purple-600 shadow-rose-500/20" : "bg-linear-to-r from-slate-700 via-slate-800 to-slate-900 shadow-slate-900/20")}>
-                                {activeTutor === 'mam' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> : <GraduationCap className="text-white w-5 h-5 md:w-6 md:h-6" />}
-                            </div>
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800">
-                                    {activeTutor === 'mam' ? 'Aadhar Mam' : 'Pathshala Sir'}
-                                </h1>
-                                <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantum AI Tutor</p>
-                            </div>
+                <div className="flex items-center justify-between p-4 shrink-0 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setView('selection')} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className={cn(
+                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg", 
+                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/20" : "bg-linear-to-r from-slate-700 to-slate-900 shadow-slate-900/20"
+                        )}>
+                            {activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : <Zap className="text-emerald-400 w-5 h-5 md:w-6 md:h-6" />}
+                        </div>
+                        <div>
+                            <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
+                                {activeTutor === 'momo' ? 'MOMO' : 'ACHAR'}
+                            </h1>
+                            <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                {activeTutor === 'momo' ? 'Conceptual Guru' : 'Instant Helper'}
+                            </p>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl w-full md:w-auto">
+                    {messages.length > 0 && (
                         <button 
-                            onClick={() => setActiveTutor('mam')}
-                            className={cn("flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", activeTutor === 'mam' ? "bg-white text-rose-500 shadow" : "text-slate-400 hover:text-slate-600")}
+                            onClick={clearChat}
+                            className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors"
                         >
-                            Mam
+                            <Trash2 className="w-4 h-4" />
                         </button>
-                        <button 
-                            onClick={() => setActiveTutor('sir')}
-                            className={cn("flex-1 md:flex-none px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", activeTutor === 'sir' ? "bg-white text-slate-800 shadow" : "text-slate-400 hover:text-slate-600")}
-                        >
-                            Sir
-                        </button>
-                    </div>
-
-                    <div className="hidden md:flex items-center gap-4">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[0.65rem] font-black border border-emerald-100">
-                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                            NEURONS ACTIVE
-                        </div>
-                        {messages.length > 0 && (
-                            <button 
-                                onClick={clearChat}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 text-rose-500 rounded-xl text-[0.65rem] font-black hover:bg-rose-100 transition-colors"
-                            >
-                                <Trash2 className="w-3 h-3" /> CLEAR
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto px-4 space-y-6 md:space-y-8 pb-4 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto px-4 space-y-8 py-6 custom-scrollbar">
                     {messages.length === 0 && (
-                        <div className="text-center py-10 space-y-8">
-                            <Mascot mood={loading ? 'thinking' : 'idle'} />
-                            <div className="space-y-2">
-                                <h2 className="text-xl font-black text-slate-800 tracking-tight">K chha Sathi! I'm {activeTutor === 'mam' ? 'Aadhar Mam' : 'Pathshala Sir'}.</h2>
-                                <p className="text-[0.85rem] font-bold text-slate-400 max-w-[300px] mx-auto leading-relaxed italic border-l-2 border-slate-100 pl-4">
-                                    {activeTutor === 'mam' 
-                                        ? "Don't take tension for SEE 2083! Ask me anything, Nanu/Babu, I'll help you out."
-                                        : "Discipline is the key to success in SEE! Drop your questions and let's solve them logically."}
+                        <div className="text-center py-20 space-y-8">
+                            <div className="relative w-24 h-24 mx-auto">
+                                <div className={cn("absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", activeTutor === 'momo' ? "bg-pink-500" : "bg-emerald-500")} />
+                                <div className={cn("w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-colors duration-700 text-white", activeTutor === 'momo' ? "bg-pink-500" : "bg-slate-900")}>
+                                    {activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : <Zap className="w-12 h-12 text-emerald-400" />}
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
+                                    {activeTutor === 'momo' ? "Let's dive deep into this topic." : "Serving it hot!"}
+                                </h2>
+                                <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
+                                    {activeTutor === 'momo' 
+                                        ? "Focus on the 'WHY'. I'll use real Nepali examples to help you master Class 10 concepts."
+                                        : "Fast tips, facts, and shortcuts for SEE 2083. No long stories, just results!"}
                                 </p>
                             </div>
                         </div>
                     )}
 
                     {messages.map((m, i) => (
-                        <div key={i} className={cn("flex flex-col gap-2 max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
+                        <div key={i} className={cn("flex flex-col gap-2 max-w-[92%] md:max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
                             <div className={cn(
-                                "p-6 rounded-[2.5rem] text-[0.92rem] leading-relaxed shadow-lg",
+                                "p-6 rounded-[2.5rem] text-[0.95rem] leading-relaxed shadow-xl border transition-all",
                                 m.role === 'ai' 
-                                    ? "bg-white border border-slate-100 text-slate-800 rounded-tl-sm relative" 
-                                    : "bg-blue text-white rounded-tr-sm shadow-2xl shadow-blue/20"
+                                    ? "bg-white border-slate-100 text-slate-800 rounded-tl-sm relative" 
+                                    : "bg-blue text-white border-blue shadow-2xl shadow-blue/20 rounded-tr-sm"
                             )}>
-                                <div className="prose prose-sm max-w-none prose-p:mb-4 prose-strong:text-blue prose-headings:text-slate-900 prose-headings:font-black">
+                                <div className={cn(
+                                    "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900",
+                                    m.role === 'ai' ? "prose-slate" : "prose-invert"
+                                )}>
                                     <Markdown>{m.text}</Markdown>
                                 </div>
                             </div>
-                            
-                            {m.role === 'ai' && m.highlights && (
-                                <div className="flex flex-wrap gap-2 mt-2 ml-4">
-                                    {m.highlights.map((h: string, hi: number) => (
-                                        <span key={hi} className={cn(
-                                            "px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border",
-                                            hi % 3 === 0 ? "bg-amber-50 text-amber-600 border-amber-100" : 
-                                            hi % 3 === 1 ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                            "bg-blue-50 text-blue border-blue-100"
-                                        )}>
-                                            ✨ {h}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
                         </div>
                     ))}
                     
                     {loading && (
-                        <div className="flex flex-col gap-4 self-start max-w-[85%]">
-                            <Mascot mood="thinking" />
-                            <div className="flex items-center gap-2 p-6 bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none shadow-sm">
+                        <div className="flex flex-col gap-4 self-start">
+                            <div className="flex items-center gap-3 p-6 bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none shadow-sm animate-pulse">
                                 <div className="flex gap-1.5">
-                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce" />
+                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce" />
                                 </div>
-                                <span className="text-[0.65rem] font-black uppercase text-slate-300 tracking-[0.2em]">Processing...</span>
+                                <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-[0.2em]">{activeTutor === 'momo' ? 'Momo is thinking deep...' : 'Achar is serving fast...'}</span>
                             </div>
                         </div>
                     )}
@@ -721,24 +909,24 @@ const AITutor = () => {
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 bg-[#F8FAFC] shrink-0">
-                    <div className="p-3 md:p-4 bg-white/90 backdrop-blur-md border border-slate-100 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.08)] flex items-center gap-3">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">
-                            <Sparkles className="text-blue w-5 h-5 md:w-6 md:h-6" />
-                        </div>
+                <div className="p-4 bg-[#F8FAFC] shrink-0 border-t border-slate-100">
+                    <div className="p-2 md:p-3 bg-white border-2 border-slate-100 rounded-full shadow-2xl flex items-center gap-2 focus-within:border-blue transition-all">
                         <input 
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSend('')}
-                            placeholder="Ask something (e.g. Solve x²)..."
-                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 placeholder:text-slate-400"
+                            placeholder={activeTutor === 'momo' ? "Ask MOMO for detailed help..." : "Ask ACHAR for quick answers..."}
+                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 px-6"
                         />
                         <button 
                             onClick={() => handleSend('')}
                             disabled={!input.trim() || loading}
-                            className="w-10 h-10 md:w-12 md:h-12 bg-blue text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue/20 active:scale-90 transition-all disabled:opacity-20 shrink-0"
+                            className={cn(
+                                "w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-20 shrink-0",
+                                activeTutor === 'momo' ? "bg-pink-500 shadow-pink-500/20" : "bg-slate-900 shadow-slate-900/20"
+                            )}
                         >
-                            <Send className="w-4 h-4 md:w-5 md:h-5" />
+                            <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -746,6 +934,7 @@ const AITutor = () => {
         </div>
     );
 };
+
 
 /* ── CALCULATOR SUITE ── */
 const StandardCalculator = () => {
