@@ -2080,11 +2080,13 @@ const AuthPage = () => {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [error, setError] = useState('');
+    const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setSuccessMsg('');
         if (!email || !password || (!isSignIn && !name)) return;
         setLoading(true);
         
@@ -2097,18 +2099,7 @@ const AuthPage = () => {
                 
                 if (signInError) throw signInError;
                 
-                setUser({
-                    id: data.user?.id || 'user_' + Date.now().toString(),
-                    name: data.user?.user_metadata?.name || 'Adhyeta Nepal',
-                    email: email,
-                    grade: '10',
-                    xp: 1250,
-                    streak: 5,
-                    badges: ['Early Bird', 'Quiz Master'],
-                    testsCompleted: 0,
-                    avgScore: 0,
-                    completedChapters: []
-                });
+                // Note: user state gets set securely via the onAuthStateChange listener on successful sign in
             } else {
                 const { data, error: signUpError } = await supabase.auth.signUp({
                     email,
@@ -2122,22 +2113,36 @@ const AuthPage = () => {
 
                 if (signUpError) throw signUpError;
                 
-                setUser({
-                    id: data.user?.id || 'user_' + Date.now().toString(),
-                    name: name,
-                    email: email,
-                    grade: '10',
-                    xp: 0,
-                    streak: 1,
-                    badges: [],
-                    testsCompleted: 0,
-                    avgScore: 0,
-                    completedChapters: []
-                });
+                if (!data.session) {
+                    setSuccessMsg('Your account has been created. Please check your email and verify your address before logging in.');
+                    setIsSignIn(true);
+                    setPassword(''); // Clear password for security, leave email for convenience
+                }
+                // if data.session exists, the listener inside AppProvider will pick it up
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred during authentication.');
         } finally {
+            setLoading(false);
+        }
+    };
+
+    const toggleMode = () => {
+        setIsSignIn(!isSignIn);
+        setError('');
+        setSuccessMsg('');
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            setLoading(true);
+            setError('');
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during Google Sign In.');
             setLoading(false);
         }
     };
@@ -2200,6 +2205,12 @@ const AuthPage = () => {
                             {error}
                         </div>
                     )}
+                    
+                    {successMsg && (
+                        <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-bold rounded-xl text-center">
+                            {successMsg}
+                        </div>
+                    )}
 
                     <button 
                         type="submit"
@@ -2208,12 +2219,36 @@ const AuthPage = () => {
                     >
                         {loading ? 'Processing...' : (isSignIn ? 'Sign In' : 'Sign Up')}
                     </button>
+                    
+                    <div className="relative mt-6 mb-6">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-100"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                            <span className="bg-white px-4 text-slate-400 font-bold uppercase tracking-widest">Or</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleGoogleLogin}
+                        disabled={loading}
+                        className="w-full py-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-black text-sm uppercase tracking-widest shadow-sm hover:bg-slate-50 hover:border-slate-200 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-70"
+                    >
+                        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                        </svg>
+                        Continue with Google
+                    </button>
                 </form>
 
                 <div className="mt-8 text-center">
                     <button 
                         type="button"
-                        onClick={() => setIsSignIn(!isSignIn)}
+                        onClick={toggleMode}
                         className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest"
                     >
                         {isSignIn ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
@@ -2331,6 +2366,52 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data] = useState<AppData>(INITIAL_DATA);
+    const [isInitializing, setIsInitializing] = useState(true);
+
+    useEffect(() => {
+        const initAuth = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+                setUser({
+                    id: session.user.id,
+                    name: session.user.user_metadata?.name || 'Adhyeta Nepal',
+                    email: session.user.email || '',
+                    grade: '10',
+                    xp: 1250, 
+                    streak: 5, 
+                    badges: ['Early Bird', 'Quiz Master'],
+                    testsCompleted: 0, 
+                    avgScore: 0, 
+                    completedChapters: []
+                });
+            }
+            setIsInitializing(false);
+        };
+        initAuth();
+
+        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session?.user) {
+                setUser({
+                    id: session.user.id,
+                    name: session.user.user_metadata?.name || 'Adhyeta Nepal',
+                    email: session.user.email || '',
+                    grade: '10',
+                    xp: 1250, 
+                    streak: 5, 
+                    badges: ['Early Bird', 'Quiz Master'],
+                    testsCompleted: 0, 
+                    avgScore: 0, 
+                    completedChapters: []
+                });
+            } else {
+                setUser(null);
+            }
+        });
+
+        return () => {
+            authListener.subscription.unsubscribe();
+        };
+    }, []);
 
     const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
         if (!user) return;
@@ -2359,6 +2440,19 @@ const AppProvider = ({ children }: any) => {
             badges: newBadges
         });
     };
+
+    if (isInitializing) {
+        return (
+            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center space-y-4">
+                <div className="flex gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" />
+                </div>
+                <div className="text-slate-400 font-bold uppercase tracking-widest text-xs">Authenticating</div>
+            </div>
+        );
+    }
 
     return (
         <AppContext.Provider value={{ user, setUser, data, addTestResult }}>
