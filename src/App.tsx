@@ -206,8 +206,12 @@ const MockTest = () => {
                 
                 const completion = await groq.chat.completions.create({
                     messages: [
-                        { role: "system", content: "You are an exam generator. Return ONLY raw JSON." },
-                        { role: "user", content: prompt }
+                        { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text." },
+                        { role: "user", content: `Generate ${settings.count} accurate and challenging multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+                        Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
+                        Ensure that options 'a', 'b', 'c', 'd' contain the actual answer, NOT the question itself.
+                        ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
+                        Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
                     ],
                     model: "llama-3.1-8b-instant",
                     response_format: { type: "json_object" }
@@ -748,15 +752,14 @@ const AITutor = () => {
                     dangerouslyAllowBrowser: true 
                 });
                 
-                const systemPrompt = `You are ACHAR, the lighting-fast Assistant for Grade 10 SEE Nepal Students. 
-IDENTITY: High-energy, witty, and lightning-fast. 
-STYLE: Use bullet points, short sentences, and student slang (Neplish). e.g., "Oho! You're on fire!", "Jhatpat answer ready छ!"
-GOAL: Save time and provide "hot" tips for exams. Instant facts and formula checks.
-CATCHPHRASE: "Serving it hot! Here is your answer."
-FOCUS: Class 10 Nepal Curriculum (Science, Math, etc.).
-NEPALI MEDIUM: Use English + Nepali mix (Neplish).
+                const systemPrompt = `You are ACHAR, an Instant Helper for Grade 10 SEE Nepal Students. 
+IDENTITY: Fast and efficient. 
+PERSONALITY: Straightforward, no greetings, no funny things. Answer directly what is asked.
+STYLE: Short answers, bullet points, factual. 
+GOAL: Provide quick facts, formula checks, and direct answers.
+NEPALI MEDIUM: Use Nepali LANGUAGE ONLY when the user explicitly asks in Nepali or asks for translation. Otherwise, use English.
 SAFETY: Never provide answers to illegal/harmful queries.
-ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
+NO GREETINGS: Do not GREET the user or use catchphrases at the start of every message. Just answer the query directly.`;
 
                 const chatHistory = updated.map(m => ({
                     role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -787,7 +790,7 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                 
                 const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
 IDENTITY: Warm, patient, and thorough. Like a supportive elder sibling (Dai/Didi).
-STYLE: Long-form explanations, relatable Nepali examples (Force manually explained using Doko/Rickshaw).
+STYLE: Long-form explanations, relatable Nepali examples.
 GOAL: Explain the "WHY" behind Science/Math concepts. Deep conceptual learning.
 CATCHPHRASE: "Let's dive deep into this topic."
 FOCUS: Class 10 Nepal Curriculum (Science, Math, etc.).
@@ -808,7 +811,7 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                     contents: contents,
                 });
 
-                const fullResponse = response.text || "Brain freeze! Try again.";
+                const fullResponse = response.text || "I'm sorry, I couldn't process that. Try again!";
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].text = fullResponse;
@@ -818,7 +821,17 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
         } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
-                newMessages[newMessages.length - 1].text = `Error: ${e.message || "Brain freeze! Try again."}`;
+                const errMsg = e.message || "";
+                let displayMsg = "MOMO is taking a short rest. Please try again in 30 seconds, Sathi!";
+                if (errMsg.includes("429") || errMsg.includes("quota")) {
+                    displayMsg = "We've hit a small limit! MOMO is re-energizing. Please wait a bit before asking again, Sathi.";
+                } else if (!errMsg) {
+                    displayMsg = "Brain freeze! Please check your connection and try again.";
+                } else {
+                    // Try to avoid technical jargon
+                    displayMsg = "Oops! Something went wrong in the study center. Let's try another question!";
+                }
+                newMessages[newMessages.length - 1].text = displayMsg;
                 return newMessages;
             });
         } finally {
@@ -1977,29 +1990,39 @@ const DictionaryPage = () => {
             }
 
             // Priority 3: MOMO AI Fallback (Gemini)
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-            const prompt = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
-            Explain it in MOMO's persona (warm, patient, like a big sibling). 
-            Include a relatable example if possible. Keep it concise but helpful. 
-            Format JSON: { "word": "${search}", "def": "definition here", "sub": "Subject category", "detail": "MOMO's special tip or insight" }`;
+            try {
+                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+                const prompt = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
+                Explain it in MOMO's persona (warm, patient, like a big sibling). 
+                Include a relatable example if possible. Keep it concise but helpful. 
+                Format JSON: { "word": "${search}", "def": "definition here", "sub": "Subject category", "detail": "MOMO's special tip or insight" }`;
 
-            const response = await ai.models.generateContent({
-                model: "gemini-3-flash-preview",
-                contents: prompt,
-                config: { responseMimeType: "application/json" }
-            });
+                const response = await ai.models.generateContent({
+                    model: "gemini-3-flash-preview",
+                    contents: prompt,
+                    config: { responseMimeType: "application/json" }
+                });
 
-            const aiData = JSON.parse(response.text || "{}");
-            setResult({
-                ...aiData,
-                source: 'MOMO AI'
-            });
+                const aiData = JSON.parse(response.text || "{}");
+                setResult({
+                    ...aiData,
+                    source: 'MOMO AI'
+                });
+            } catch (aiErr: any) {
+                const isQuotaVal = (aiErr.message || "").toLowerCase().includes("quota") || (aiErr.message || "").includes("429");
+                setResult({ 
+                    word: search, 
+                    def: isQuotaVal ? "MOMO is resting briefly (Limit Reached). Please check back in a few seconds!" : "MOMO is having a little brain freeze! Try again in a moment, Sathi.", 
+                    sub: "Notice",
+                    source: 'System'
+                });
+            }
 
         } catch (error) {
             setResult({ 
                 word: search, 
-                def: "MOMO is having a little brain freeze! Try again in a moment, Sathi.", 
-                sub: "Error",
+                def: "Dictionary Link Broken. Please check your internet connection.", 
+                sub: "Offline",
                 source: 'System'
             });
         } finally {
@@ -2075,12 +2098,17 @@ const DictionaryPage = () => {
                             
                             <div className="relative z-10 space-y-10">
                                 <div className="flex justify-between items-start">
-                                    <div className="space-y-2">
+                                    <div className="space-y-2 flex-1 min-w-0">
                                         <div className="flex items-center gap-3">
-                                            <span className="text-[0.65rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest border border-blue/10">{result.source || 'Verified'}</span>
-                                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{result.sub}</span>
+                                            <span className="text-[0.65rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest border border-blue/10 shrink-0">{result.source || 'Verified'}</span>
+                                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest truncate">{result.sub}</span>
                                         </div>
-                                        <h2 className="text-7xl font-black text-slate-900 italic tracking-tighter uppercase leading-none break-words">{result.word}</h2>
+                                        <h2 className={cn(
+                                            "font-black text-slate-900 italic tracking-tighter uppercase leading-none break-words",
+                                            result.word.length > 10 ? "text-4xl md:text-5xl lg:text-6xl" : "text-6xl md:text-7xl lg:text-8xl"
+                                        )}>
+                                            {result.word}
+                                        </h2>
                                     </div>
                                     <div className="w-20 h-20 bg-slate-50 flex items-center justify-center rounded-3xl">
                                         {result.source === 'MOMO AI' ? <Bot className="w-10 h-10 text-pink-500" /> : <BookOpen className="w-10 h-10 text-blue" />}
