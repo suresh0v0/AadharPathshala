@@ -17,6 +17,7 @@ import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 import { supabase } from './supabaseClient.js';
 
@@ -553,19 +554,30 @@ const AITutor = () => {
         setMessages(prev => [...prev, { role: 'ai', text: '', highlights: ["SEE 2083"] }]);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const groq = new Groq({ 
+                apiKey: process.env.GROQ_API_KEY, 
+                dangerouslyAllowBrowser: true 
+            });
             
-            const stream = await ai.models.generateContentStream({
-                model: "gemini-3-flash-preview",
-                contents: `Context: Student name is ${user?.name || 'Sathi'}, total XP is ${user?.xp || 0}, tests completed: ${user?.testsCompleted || 0}. Use this context to offer personalized advice.\nUser Question: ${text}`,
-                config: {
-                    systemInstruction: "You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Provide clear explanations. Use Markdown."
-                }
+            const systemPrompt = `You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Provide clear explanations. Use professional Markdown. Always include a highlighted 'MASTER TIP'. Be highly motivating and use emojis! Keep responses short unless complex subject matter.\n\nContext: Student name is ${user?.name || 'Sathi'}, total XP is ${user?.xp || 0}, tests completed: ${user?.testsCompleted || 0}. Use this context to offer personalized advice.`;
+
+            const chatHistory = updated.map(m => ({
+                role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+                content: m.text
+            }));
+
+            const stream = await groq.chat.completions.create({
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    ...chatHistory
+                ],
+                model: "llama3-8b-8192",
+                stream: true,
             });
 
             let fullResponse = "";
             for await (const chunk of stream) {
-                fullResponse += chunk.text;
+                fullResponse += chunk.choices[0]?.delta?.content || "";
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].text = fullResponse;
