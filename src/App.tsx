@@ -9,7 +9,7 @@ import {
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
-  Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool
+  Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -824,12 +824,25 @@ const HomePage = () => {
     const { user } = useApp();
     const navigate = useNavigate();
 
+    const cycleColors = ['bg-rose-500', 'bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500', 'bg-indigo-500', 'bg-orange-500', 'bg-cyan-500', 'bg-purple-500'];
+    const [colorIndex, setColorIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setColorIndex(prev => (prev + 1) % cycleColors.length);
+        }, 3000); // changes every 3 seconds
+        return () => clearInterval(interval);
+    }, [cycleColors.length]);
+
     return (
         <div className="space-y-6 pb-24">
             {/* HERO SECTION - GRADIENT ANIMATED BOX */}
             <div className="relative h-[180px] md:h-[220px]">
                 <div 
-                    className="absolute inset-0 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-600 animate-gradient rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white flex flex-col justify-center overflow-hidden"
+                    className={cn(
+                        "absolute inset-0 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white flex flex-col justify-center overflow-hidden transition-colors duration-1000 shadow-xl", 
+                        cycleColors[colorIndex]
+                    )}
                 >
                     <div className="relative z-10 space-y-2">
                         <p className="text-sm md:text-lg font-medium opacity-90">
@@ -939,18 +952,18 @@ const AadharToolkit = () => {
     const isToolsPage = location.pathname === '/tools';
 
     const tools = [
-        { id: 'hub', label: 'Study Hub', icon: GraduationCap, color: 'indigo', path: '/hub' },
+        { id: 'hub', label: 'Study Hub', icon: BookOpen, color: 'indigo', path: '/hub' },
         { id: 'dictionary', label: 'Dictionary', icon: Book, color: 'emerald', path: '/tools/dictionary' },
-        { id: 'calculator', label: 'Scientific Calc', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
+        { id: 'calculator', label: 'Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
         ...(isToolsPage ? [
-            { id: 'gpa', label: 'GPA Calc', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
-            { id: 'converter', label: 'Converter', icon: Scale, color: 'blue', path: '/tools/converter' },
-            { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'purple', path: '/tools/calendar' },
+            { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
+            { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'blue', path: '/tools/converter' },
+            { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'purple', path: '/tools/calendar' },
             { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'teal', path: '/tools/todo' }
         ] : []),
-        { id: 'timer', label: 'Study Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
+        { id: 'timer', label: 'Focus Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
         { id: 'formulas', label: 'Formulas', icon: Sigma, color: 'purple', path: '/tools/formulas' },
-        { id: 'notepad', label: 'Note Pad', icon: Edit3, color: 'orange', path: '/tools/notes' }
+        { id: 'notepad', label: 'Notepad & Files', icon: Edit3, color: 'orange', path: '/tools/notes' }
     ];
 
     return (
@@ -1906,7 +1919,7 @@ const NotePadPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [mode, setMode] = useState<'write' | 'upload'>('write');
+    const [mode, setMode] = useState<'write' | 'upload' | 'files'>('write');
     const [uploadedFile, setUploadedFile] = useState<any>(null); // { name, type, data }
 
     useEffect(() => {
@@ -2042,6 +2055,18 @@ const NotePadPage = () => {
         document.body.removeChild(element);
     };
 
+    const viewFileObj = (fileObj: any) => {
+        if (fileObj.type === 'application/pdf' || fileObj.data.startsWith('data:image')) {
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write(`<iframe src="${fileObj.data}" width="100%" height="100%" style="border:none; margin:0; padding:0;"></iframe>`);
+            }
+        } else {
+            // Fallback to download if it's docx/txt which browser might not preview easily
+            downloadFileObj(fileObj);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
@@ -2049,109 +2074,126 @@ const NotePadPage = () => {
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Pad</h1>
             </div>
 
-            <div className="flex gap-4 border-b border-slate-200 pb-2">
+            <div className="flex gap-4 border-b border-slate-200 pb-2 overflow-x-auto custom-scrollbar">
                 <button 
                     onClick={() => setMode('write')} 
-                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all", mode === 'write' ? "text-emerald-500 border-emerald-500" : "text-slate-400 border-transparent hover:text-emerald-400")}
+                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all whitespace-nowrap", mode === 'write' ? "text-emerald-500 border-emerald-500" : "text-slate-400 border-transparent hover:text-emerald-400")}
                 >
                     Write Custom Note
                 </button>
                 <button 
                     onClick={() => setMode('upload')} 
-                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all", mode === 'upload' ? "text-blue border-blue" : "text-slate-400 border-transparent hover:text-blue")}
+                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all whitespace-nowrap", mode === 'upload' ? "text-blue border-blue" : "text-slate-400 border-transparent hover:text-blue")}
                 >
                     Upload Note File
                 </button>
-            </div>
-
-            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-6">
-                <input 
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder={mode === 'upload' ? "File Note Title" : "Note Title (e.g. Physics Ch 1 Revision)"}
-                    className="w-full bg-slate-50 border border-slate-100 p-6 rounded-2xl font-black text-xl outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300"
-                />
-                
-                {mode === 'write' ? (
-                    <textarea 
-                        value={content}
-                        onChange={e => setContent(e.target.value)}
-                        placeholder="Write your study notes here..."
-                        rows={8}
-                        className="w-full bg-slate-50 border border-slate-100 p-8 rounded-[2rem] font-bold text-slate-600 outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300 leading-relaxed"
-                    />
-                ) : (
-                    <div className="w-full border-2 border-dashed border-slate-200 p-10 rounded-[2rem] text-center bg-slate-50 relative group hover:border-blue transition-colors">
-                        <input 
-                            type="file" 
-                            accept=".pdf,.doc,.docx,.txt"
-                            onChange={handleFileUpload}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        />
-                        <div className="space-y-4">
-                            <div className="w-16 h-16 bg-blue-50 text-blue rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
-                                <Download className="w-8 h-8 rotate-180" />
-                            </div>
-                            <div>
-                                <p className="font-black text-slate-700">{uploadedFile ? uploadedFile.name : "Tap or Drag to Upload"}</p>
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">PDF, DOCX, TXT</p>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <button 
-                    onClick={saveNote}
-                    className={cn(
-                        "w-full text-white py-6 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest",
-                        mode === 'write' ? "bg-emerald-500 shadow-emerald-500/20" : "bg-blue shadow-blue/20"
-                    )}
+                    onClick={() => setMode('files')} 
+                    className={cn("text-xs font-black uppercase tracking-widest pb-2 border-b-2 transition-all whitespace-nowrap", mode === 'files' ? "text-purple-500 border-purple-500" : "text-slate-400 border-transparent hover:text-purple-500")}
                 >
-                    {mode === 'write' ? 'Save Study Note' : 'Save Uploaded Note'}
+                    My Uploaded Files
                 </button>
             </div>
 
+            {mode !== 'files' && (
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-2xl space-y-6">
+                    <input 
+                        value={title}
+                        onChange={e => setTitle(e.target.value)}
+                        placeholder={mode === 'upload' ? "File Note Title" : "Note Title (e.g. Physics Ch 1 Revision)"}
+                        className="w-full bg-slate-50 border border-slate-100 p-6 rounded-2xl font-black text-xl outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300"
+                    />
+                    
+                    {mode === 'write' ? (
+                        <textarea 
+                            value={content}
+                            onChange={e => setContent(e.target.value)}
+                            placeholder="Write your study notes here..."
+                            rows={8}
+                            className="w-full bg-slate-50 border border-slate-100 p-8 rounded-[2rem] font-bold text-slate-600 outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all placeholder:text-slate-300 leading-relaxed"
+                        />
+                    ) : (
+                        <div className="w-full border-2 border-dashed border-slate-200 p-10 rounded-[2rem] text-center bg-slate-50 relative group hover:border-blue transition-colors">
+                            <input 
+                                type="file" 
+                                accept=".pdf,.doc,.docx,.txt"
+                                onChange={handleFileUpload}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="space-y-4">
+                                <div className="w-16 h-16 bg-blue-50 text-blue rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                                    <Download className="w-8 h-8 rotate-180" />
+                                </div>
+                                <div>
+                                    <p className="font-black text-slate-700">{uploadedFile ? uploadedFile.name : "Tap or Drag to Upload"}</p>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">PDF, DOCX, TXT</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <button 
+                        onClick={saveNote}
+                        className={cn(
+                            "w-full text-white py-6 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest",
+                            mode === 'write' ? "bg-emerald-500 shadow-emerald-500/20" : "bg-blue shadow-blue/20"
+                        )}
+                    >
+                        {mode === 'write' ? 'Save Study Note' : 'Save Uploaded Note'}
+                    </button>
+                </div>
+            )}
+
             <div className="space-y-4">
-                <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 ml-2">Recent Archives</h2>
+                <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 ml-2">
+                    {mode === 'files' ? "My Uploaded Files" : "Recent Archives"}
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {notes.map(n => {
+                    {notes
+                        .filter(n => mode === 'files' ? n.content.startsWith('{"isFile"') : true)
+                        .map(n => {
                         const isFileJSON = n.content.startsWith('{"isFile"');
                         const noteContent = isFileJSON ? JSON.parse(n.content) : { isFile: false };
                         
                         return (
-                        <div key={n.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
-                            <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div key={n.id} className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden flex flex-col h-full">
+                            <div className="flex-1">
+                                <p className={cn("text-[0.6rem] font-black uppercase tracking-widest mb-2", noteContent.isFile ? "text-blue" : "text-emerald-500")}>
+                                    {n.date} {noteContent.isFile && '• FILE ARCHIVE'}
+                                </p>
+                                <h3 className="font-black text-slate-900 text-xl mb-4 leading-tight uppercase tracking-tight">{n.title}</h3>
+                                <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-4">
+                                    "{noteContent.isFile ? "Encrypted File Data. Click Eye or Download to access." : n.content}"
+                                </p>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 pt-4 border-t border-slate-50 mt-auto">
                                 {noteContent.isFile ? (
                                     <>
-                                        <button onClick={() => downloadFileObj(noteContent)} title="Download File" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
-                                            <Download className="w-4 h-4" />
+                                        <button onClick={() => viewFileObj(noteContent)} title="View File" className="flex-1 py-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 flex items-center justify-center gap-2 font-black text-[0.65rem] uppercase tracking-widest">
+                                            <Eye className="w-4 h-4" /> View
                                         </button>
-                                        <button onClick={() => deleteNote(n.id)} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
-                                            <Trash2 className="w-5 h-5" />
+                                        <button onClick={() => downloadFileObj(noteContent)} title="Download File" className="flex-1 py-3 bg-blue-50 text-blue rounded-xl hover:bg-blue-100 flex items-center justify-center gap-2 font-black text-[0.65rem] uppercase tracking-widest">
+                                            <Download className="w-4 h-4" /> Save
+                                        </button>
+                                        <button onClick={() => deleteNote(n.id)} title="Delete File" className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 flex items-center justify-center">
+                                            <Trash2 className="w-4 h-4" />
                                         </button>
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={() => downloadPDF(n)} title="Export PDF" className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100">
-                                            <FileText className="w-4 h-4" />
+                                        <button onClick={() => downloadPDF(n)} title="Export PDF" className="flex-1 py-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 flex items-center justify-center gap-2 font-black text-[0.65rem] uppercase tracking-widest">
+                                            <FileText className="w-4 h-4" /> PDF
                                         </button>
-                                        <button onClick={() => downloadText(n)} title="Export Text" className="p-2 bg-blue-50 text-blue rounded-lg hover:bg-blue-100">
-                                            <Download className="w-4 h-4" />
+                                        <button onClick={() => downloadText(n)} title="Export Text" className="flex-1 py-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 flex items-center justify-center gap-2 font-black text-[0.65rem] uppercase tracking-widest">
+                                            <Download className="w-4 h-4" /> Text
                                         </button>
-                                        <button onClick={() => deleteNote(n.id)} className="p-2 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-lg">
-                                            <Trash2 className="w-5 h-5" />
+                                        <button onClick={() => deleteNote(n.id)} title="Delete Note" className="p-3 bg-slate-50 text-rose-300 hover:text-rose-500 rounded-xl flex items-center justify-center">
+                                            <Trash2 className="w-4 h-4" />
                                         </button>
                                     </>
                                 )}
                             </div>
-                            <p className={cn("text-[0.6rem] font-black uppercase tracking-widest mb-2", noteContent.isFile ? "text-blue" : "text-emerald-500")}>
-                                {n.date} {noteContent.isFile && '• FILE ARCHIVE'}
-                            </p>
-                            <h3 className="font-black text-slate-900 text-xl mb-4 leading-tight uppercase tracking-tight pr-20">{n.title}</h3>
-                            <p className="text-[0.85rem] text-slate-400 font-bold leading-relaxed line-clamp-3 italic mb-2">
-                                "{noteContent.isFile ? "Encrypted File Data. Click to download." : n.content}"
-                            </p>
-                            <div className={cn("h-1 w-20 rounded-full transition-colors", noteContent.isFile ? "bg-blue/20 group-hover:bg-blue" : "bg-emerald-500/20 group-hover:bg-emerald-500")} />
                         </div>
                     );
                 })}
