@@ -52,6 +52,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { user } = useApp();
 
+  useEffect(() => {
+     window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/hub', icon: BookOpen, label: 'Hub' },
@@ -83,17 +87,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </header>
 
       <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pt-24 pb-32 min-h-screen">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, scale: 0.98, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1.02, y: -10 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        {children}
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
@@ -119,29 +113,24 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                 onClick={() => navigate(item.path)}
                 className="relative flex flex-col items-center gap-1"
               >
-                <motion.div 
-                  whileTap={{ scale: 0.9 }}
+                <div 
                   className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 relative shadow-sm",
+                    "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-300 relative shadow-sm",
                     isActive 
-                      ? `${activeColor} text-white shadow-xl ring-4 ring-white` 
-                      : "bg-slate-50 text-slate-400 border border-slate-200"
+                      ? `${activeColor} text-white shadow-md ring-2 ring-white` 
+                      : "bg-transparent text-slate-400 group-hover:bg-slate-50"
                   )}
                 >
-                  <Icon className={cn("w-5 h-5 transition-transform duration-300", isActive && "scale-110")} />
-                </motion.div>
-                <AnimatePresence>
-                  {isActive && (
-                    <motion.span 
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 5 }}
-                      className="text-[0.6rem] font-black uppercase tracking-widest text-slate-900 mt-1"
-                    >
-                      {item.label}
-                    </motion.span>
+                  <Icon className={cn("w-5 h-5", isActive && "scale-110")} />
+                </div>
+                <span 
+                  className={cn(
+                    "text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-wider md:tracking-widest mt-1 text-center transition-colors duration-300",
+                    isActive ? "text-slate-900" : "text-slate-400"
                   )}
-                </AnimatePresence>
+                >
+                  {item.label}
+                </span>
               </button>
             );
           })}
@@ -159,14 +148,14 @@ const MockTest = () => {
     const [currentIdx, setCurrentIdx] = useState(0);
     const [timer, setTimer] = useState(0);
     const [loading, setLoading] = useState(false);
-    const { addTestResult } = useApp();
+    const { addTestResult, user } = useApp();
 
     const currentSubjectConfig = SUBJECTS_CONFIG[settings.subject];
 
     const startTest = async () => {
         setLoading(true);
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
             
             const prompt = `Generate ${settings.count} multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
@@ -211,9 +200,10 @@ const MockTest = () => {
     };
 
     const score = questions.filter(q => q.userChoice === q.correct).length;
+    const timeTaken = (settings.count * 60) - timer;
 
     useEffect(() => {
-        if (status === 'result') addTestResult(score);
+        if (status === 'result') addTestResult(score, settings.count, timeTaken);
     }, [status]);
 
     return (
@@ -229,18 +219,18 @@ const MockTest = () => {
             </div>
 
             {status === 'setup' && (
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-8 relative overflow-hidden">
+                <div className="bg-white p-5 md:p-8 rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-xl space-y-6 md:space-y-8 relative overflow-hidden">
                     <div className={cn("absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-10 transition-colors duration-700", `bg-${currentSubjectConfig.color}-500`)} />
                     
-                    <div className={cn("p-10 rounded-[2.5rem] text-center text-white relative shadow-2xl transition-all duration-700 bg-linear-to-br shadow-emerald-500/20", currentSubjectConfig.gradient)}>
-                        <Sparkles className="w-16 h-16 text-white/50 mx-auto mb-4 animate-pulse" />
-                        <h2 className="text-3xl font-black italic tracking-tighter uppercase">Board Trial Ready</h2>
-                        <p className="text-[0.65rem] font-bold text-white/60 uppercase mt-2 tracking-[0.2em] leading-relaxed">Synthesizing {settings.subject} Challenges</p>
+                    <div className={cn("p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] text-center text-white relative shadow-2xl transition-all duration-700 bg-linear-to-br shadow-emerald-500/20", currentSubjectConfig.gradient)}>
+                        <Sparkles className="w-10 h-10 md:w-16 md:h-16 text-white/50 mx-auto mb-2 md:mb-4 animate-pulse" />
+                        <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase">Board Trial Ready</h2>
+                        <p className="text-[0.6rem] md:text-[0.65rem] font-bold text-white/60 uppercase mt-2 tracking-[0.2em] leading-relaxed">Synthesizing {settings.subject} Challenges</p>
                     </div>
 
-                    <div className="space-y-4">
-                        <label className="text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    <div className="space-y-3 md:space-y-4">
+                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
                             {(Object.keys(SUBJECTS_CONFIG) as SubjectType[]).map((sub) => {
                                 const cfg = SUBJECTS_CONFIG[sub];
                                 return (
@@ -248,7 +238,7 @@ const MockTest = () => {
                                         key={sub}
                                         onClick={() => setSettings({ ...settings, subject: sub })}
                                         className={cn(
-                                            "py-4 px-4 rounded-2xl border-2 font-black text-[0.7rem] transition-all uppercase tracking-tight",
+                                            "py-3 md:py-4 px-3 md:px-4 rounded-[1rem] md:rounded-2xl border-2 font-black text-[0.65rem] md:text-[0.7rem] transition-all uppercase tracking-tight",
                                             settings.subject === sub 
                                                 ? `text-white border-transparent bg-linear-to-br ${cfg.gradient} shadow-lg scale-105` 
                                                 : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
@@ -261,21 +251,21 @@ const MockTest = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <label className="text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Challenge Intensity</label>
-                        <div className="flex gap-3">
+                    <div className="space-y-3 md:space-y-4">
+                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Challenge Intensity</label>
+                        <div className="flex gap-2 md:gap-3">
                             {[5, 10, 20, 30].map((c) => (
                                 <button
                                     key={c}
                                     onClick={() => setSettings({ ...settings, count: c })}
                                     className={cn(
-                                        "flex-1 py-5 rounded-2xl border-2 font-black text-sm transition-all",
+                                        "flex-1 py-3 md:py-5 rounded-[1rem] md:rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
                                         settings.count === c 
                                             ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-lg shadow-${currentSubjectConfig.color}-500/20` 
                                             : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
                                     )}
                                 >
-                                    {c}
+                                    {c}Q
                                 </button>
                             ))}
                         </div>
@@ -285,7 +275,7 @@ const MockTest = () => {
                         onClick={startTest}
                         disabled={loading}
                         className={cn(
-                            "w-full text-white py-7 rounded-[2rem] font-black text-lg shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 bg-linear-to-r",
+                            "w-full text-white py-5 md:py-7 rounded-[1.5rem] md:rounded-[2rem] font-black text-sm md:text-lg shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 bg-linear-to-r",
                             currentSubjectConfig.gradient
                         )}
                     >
@@ -297,18 +287,18 @@ const MockTest = () => {
 
             {status === 'quiz' && (
                 <div className="space-y-6 pb-20">
-                     <div className="flex justify-between items-center bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-100 shadow-2xl sticky top-24 z-50">
+                     <div className="flex justify-between items-center bg-white border border-slate-100 shadow-sm p-4 md:p-6 rounded-[2.5rem] relative z-20">
                         <div className="flex items-center gap-4">
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg bg-linear-to-br", currentSubjectConfig.gradient)}>
+                            <div className={cn("w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center text-white font-black italic shadow-lg bg-linear-to-br", currentSubjectConfig.gradient)}>
                                 {currentIdx + 1}
                             </div>
                             <div>
-                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none">Question</p>
-                                <span className="font-black text-slate-900 tracking-tight uppercase">{settings.subject} TRIAL</span>
+                                <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none">Question</p>
+                                <span className="text-sm md:text-base font-black text-slate-900 tracking-tight uppercase">{settings.subject} TRIAL</span>
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-slate-900 text-white rounded-3xl flex items-center gap-3 font-mono font-black text-lg shadow-xl shadow-slate-900/20">
-                            <Timer className="w-5 h-5 text-rose-500" />
+                        <div className="px-4 py-2 md:px-6 md:py-3 bg-slate-900 text-white rounded-3xl flex items-center gap-2 font-mono font-black text-sm md:text-lg shadow-xl shadow-slate-900/20">
+                            <Timer className="w-4 h-4 md:w-5 md:h-5 text-rose-500" />
                             {Math.floor(timer/60)}:{(timer%60).toString().padStart(2, '0')}
                         </div>
                     </div>
@@ -317,24 +307,25 @@ const MockTest = () => {
                         key={currentIdx}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-[0_50px_100px_rgba(0,0,0,0.05)] relative overflow-hidden"
+                        transition={{ duration: 0.2 }}
+                        className="bg-white p-6 md:p-12 rounded-[3rem] md:rounded-[4rem] border border-slate-100 shadow-[0_50px_100px_rgba(0,0,0,0.05)] relative overflow-hidden"
                     >
                         <div className={cn("absolute top-0 left-0 w-2 h-full bg-linear-to-b", currentSubjectConfig.gradient)} />
-                        <h2 className="text-3xl font-black text-slate-900 mb-12 leading-[1.1] tracking-tighter uppercase italic">{questions[currentIdx].q}</h2>
-                        <div className="grid grid-cols-1 gap-4">
+                        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-6 md:mb-12 leading-[1.15] tracking-tighter uppercase italic">{questions[currentIdx].q}</h2>
+                        <div className="grid grid-cols-1 gap-2 md:gap-4">
                             {['a', 'b', 'c', 'd'].map((c, i) => (
                                 <button
                                     key={c}
                                     onClick={() => handleAnswer(c)}
-                                    className="w-full text-left p-8 border-2 border-slate-50 rounded-[2.5rem] font-bold text-lg hover:border-blue hover:bg-blue/5 active:scale-[0.97] transition-all flex items-center gap-6 group relative"
+                                    className="w-full text-left p-4 md:p-8 border-2 border-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] font-bold text-[0.85rem] md:text-lg hover:border-blue hover:bg-blue/5 active:scale-[0.97] transition-all flex items-center gap-4 md:gap-6 group relative"
                                 >
                                     <span className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center text-sm font-black transition-all uppercase border-2",
+                                        "w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl flex items-center justify-center text-sm font-black transition-all uppercase border-2",
                                         "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-blue group-hover:text-blue"
                                     )}>
                                         {c}
                                     </span>
-                                    <span className="text-slate-700">{questions[currentIdx][c]}</span>
+                                    <span className="text-slate-700 leading-tight">{questions[currentIdx][c]}</span>
                                 </button>
                             ))}
                         </div>
@@ -343,23 +334,79 @@ const MockTest = () => {
             )}
 
             {status === 'result' && (
-                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl text-center animate-fade-up max-w-2xl mx-auto">
-                    <Trophy className={cn("w-24 h-24 mx-auto mb-4 animate-bounce", `text-${currentSubjectConfig.color}-500`)} />
-                    <h2 className="text-4xl font-black text-[#020617] italic tracking-tighter mb-2 uppercase">MISSION COMPLETE!</h2>
-                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] mb-10">Board evaluation for {settings.subject} synchronized</p>
+                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl text-center animate-fade-up max-w-2xl mx-auto overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
+                         <Trophy className="w-64 h-64 -rotate-12" />
+                    </div>
+                    <Trophy className={cn("w-24 h-24 mx-auto mb-4 animate-bounce relative z-10", `text-${currentSubjectConfig.color}-500`)} />
+                    <h2 className="text-4xl font-black text-[#020617] italic tracking-tighter mb-2 uppercase relative z-10">MISSION COMPLETE!</h2>
+                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] mb-10 relative z-10">Board evaluation for {settings.subject} synchronized</p>
 
-                    <div className="grid grid-cols-2 gap-4 mb-10">
-                        <div className="bg-emerald-50 p-8 rounded-[2rem] border border-emerald-100">
-                             <p className="text-[0.6rem] font-black uppercase text-emerald-600 mb-2 opacity-60">Score Prediction</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 relative z-10">
+                        <div className="bg-emerald-50 p-6 rounded-[2rem] border border-emerald-100 flex flex-col items-center justify-center">
+                             <p className="text-[0.55rem] font-black uppercase text-emerald-600 mb-2 opacity-60 tracking-widest">Score Prediction</p>
                              <p className="text-3xl font-black text-emerald-700">{score} / {questions.length}</p>
                         </div>
-                        <div className="bg-blue-50 p-8 rounded-[2rem] border border-blue-100">
-                             <p className="text-[0.6rem] font-black uppercase text-blue mb-2 opacity-60">XP Accrued</p>
+                        <div className="bg-blue-50 p-6 rounded-[2rem] border border-blue-100 flex flex-col items-center justify-center">
+                             <p className="text-[0.55rem] font-black uppercase text-blue mb-2 opacity-60 tracking-widest">XP Accrued</p>
                              <p className="text-3xl font-black text-blue">+{score * 25}</p>
+                        </div>
+                        <div className="bg-amber-50 p-6 rounded-[2rem] border border-amber-100 flex flex-col items-center justify-center">
+                             <p className="text-[0.55rem] font-black uppercase text-amber-600 mb-2 opacity-60 tracking-widest">Accuracy</p>
+                             <p className="text-3xl font-black text-amber-700">{Math.round((score/questions.length)*100)}%</p>
+                        </div>
+                        <div className="bg-purple-50 p-6 rounded-[2rem] border border-purple-100 flex flex-col items-center justify-center">
+                             <p className="text-[0.55rem] font-black uppercase text-purple-600 mb-2 opacity-60 tracking-widest">Time Taken</p>
+                             <p className="text-3xl font-black text-purple-700">{Math.floor(timeTaken / 60)}m {timeTaken % 60}s</p>
                         </div>
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="mb-10 text-left bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 relative z-10">
+                         <div className="flex justify-between items-center mb-6">
+                              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                                  <Users className="w-5 h-5 text-blue" />
+                                  Global Rank (Mock Tests)
+                              </h3>
+                              <span className="text-[0.6rem] bg-blue text-white px-3 py-1 rounded-full font-black uppercase tracking-widest">Live</span>
+                         </div>
+                         <div className="space-y-3">
+                              {[
+                                  { name: "Prashant K.", score: score >= questions.length ? score - 1 : Math.min(questions.length, score + 2), xp: 1450 },
+                                  { name: user?.name || "You", score: score, xp: (user?.xp || 0) + (score * 25), isUser: true },
+                                  { name: "Sita R.", score: Math.max(0, score - 1), xp: 1120 }
+                              ].sort((a,b) => b.score - a.score || b.xp - a.xp).map((entry, idx) => (
+                                  <div key={idx} className={cn("flex items-center justify-between p-4 rounded-2xl border", entry.isUser ? "bg-white border-emerald-500 shadow-md shadow-emerald-500/10" : "bg-white border-slate-100")}>
+                                       <div className="flex items-center gap-4">
+                                            <span className={cn("w-6 font-black text-sm", idx === 0 ? "text-amber-500" : idx === 1 ? "text-slate-400" : "text-amber-700")}>#{idx + 1}</span>
+                                            <span className={cn("font-black text-sm uppercase tracking-tight", entry.isUser ? "text-emerald-600" : "text-slate-700")}>{entry.name}</span>
+                                       </div>
+                                       <div className="flex gap-4">
+                                            <span className="text-xs font-bold text-slate-400">{entry.xp} XP</span>
+                                            <span className="text-xs font-black text-slate-800">{entry.score}/{questions.length}</span>
+                                       </div>
+                                  </div>
+                              ))}
+                         </div>
+                    </div>
+
+                    {(score === questions.length || timeTaken < (questions.length * 60) / 2) && (
+                        <div className="mb-10 p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] text-white shadow-xl shadow-orange-500/20 relative z-10 animate-fade-up">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                                    <Trophy className="w-6 h-6 text-white" />
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-sm font-black uppercase tracking-widest leading-none mb-1">Badges Unlocked!</h3>
+                                    <p className="text-[0.65rem] font-bold text-white/80 uppercase tracking-widest flex gap-2 mt-2">
+                                        {score === questions.length && <span className="bg-white/20 px-2 py-1 rounded-md">Perfect Score</span>}
+                                        {(timeTaken < (questions.length * 60) / 2 && score >= questions.length * 0.8) && <span className="bg-white/20 px-2 py-1 rounded-md">Speed Demon</span>}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-3 relative z-10">
                         <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest">Review Protocol</button>
                         <button onClick={() => window.location.reload()} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
                     </div>
@@ -435,6 +482,7 @@ const AITutor = () => {
         "Social Question Pattern"
     ];
 
+    const { user } = useApp();
     const handleSend = async (txt: string) => {
         const text = txt || input;
         if (!text.trim()) return;
@@ -445,13 +493,13 @@ const AITutor = () => {
         setLoading(true);
 
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
             
             const result = await ai.models.generateContent({
                 model: "gemini-3-flash-preview",
-                contents: text,
+                contents: `Context: Student name is ${user?.name || 'Sathi'}, total XP is ${user?.xp || 0}, tests completed: ${user?.testsCompleted || 0}. Use this context to offer personalized advice.\nUser Question: ${text}`,
                 config: {
-                    systemInstruction: "You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Provide step-by-step explanations, clear examples, and tips for SEE 2083 exams. Use professional Markdown formatting. Always include a 'MASTER TIP' at the end of every response. Be encouraging and use emojis when appropriate."
+                    systemInstruction: "You are the Aadhar Pro AI Tutor for Grade 10 students in Nepal. Your personality is an encouraging, slightly older sibling mentor who understands the stress of SEE 2083. Speak in a friendly, conversational tone combining English and common Nepali slang ('Neprish'). Use phrases like 'Sathi', 'Ekdam kadak', 'Tension lina pardaina', 'Bujhyo ni?', 'Dammi', 'Babaru'. Provide clear, step-by-step explanations and personalized study advice referencing their progress (XP/tests taken) if mentioned in the context. Format using professional Markdown. Always include a highlighted 'MASTER TIP' encoded clearly. Be highly motivating and use emojis! Keep responses short unless complex subject matter."
                 }
             });
 
@@ -474,114 +522,121 @@ const AITutor = () => {
     }, [messages, loading]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)] animate-fade-up">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-blue/10 rounded-2xl flex items-center justify-center">
-                        <Zap className="text-blue w-6 h-6" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Aadhar Pro</h1>
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantum AI Tutor V.2</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[0.65rem] font-black border border-emerald-100">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                    NEURONS ACTIVE
-                </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-8 pr-2 custom-scrollbar pb-10">
-                {messages.length === 0 && (
-                    <div className="text-center py-10 space-y-8">
-                        <Mascot mood={loading ? 'thinking' : 'idle'} />
-                        <div className="space-y-2">
-                            <h2 className="text-xl font-black text-slate-800 tracking-tight">Namaste! I'm Aadhar Pro.</h2>
-                            <p className="text-[0.85rem] font-bold text-slate-400 max-w-[300px] mx-auto leading-relaxed italic border-l-2 border-slate-100 pl-4">
-                                Choose a quick action below or ask any question about your SEE 2083 preparation.
-                            </p>
+        <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
+            <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
+                {/* Header Section */}
+                <div className="flex items-center justify-between p-4 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-600 animate-gradient rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />
                         </div>
-                        <div className="grid grid-cols-2 gap-3 max-w-[400px] mx-auto">
-                            {prompts.map(p => (
-                                <button
-                                    key={p}
-                                    onClick={() => handleSend(p)}
-                                    className="p-5 bg-white border border-slate-100 rounded-[2rem] text-center shadow-sm hover:shadow-xl hover:border-blue transition-all group active:scale-95"
-                                >
-                                    <div className="w-8 h-8 bg-blue/5 text-blue rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                                        <Sparkles className="w-4 h-4" />
-                                    </div>
-                                    <span className="text-[0.7rem] font-black uppercase tracking-tight text-slate-600 block">{p}</span>
-                                </button>
-                            ))}
+                        <div>
+                            <h1 className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800">Aadhar Pro</h1>
+                            <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-0.5">Quantum AI Tutor V.2</p>
                         </div>
                     </div>
-                )}
+                    <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl text-[0.65rem] font-black border border-emerald-100">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                        NEURONS ACTIVE
+                    </div>
+                </div>
 
-                {messages.map((m, i) => (
-                    <div key={i} className={cn("flex flex-col gap-2 max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
-                        <div className={cn(
-                            "p-6 rounded-[2.5rem] text-[0.92rem] leading-relaxed shadow-lg",
-                            m.role === 'ai' 
-                                ? "bg-white border border-slate-100 text-slate-800 rounded-tl-sm relative" 
-                                : "bg-blue text-white rounded-tr-sm shadow-2xl shadow-blue/20"
-                        )}>
-                            <div className="prose prose-sm max-w-none prose-p:mb-4 prose-strong:text-blue prose-headings:text-slate-900 prose-headings:font-black">
-                                <Markdown>{m.text}</Markdown>
+                {/* Messages Area */}
+                <div className="flex-1 overflow-y-auto px-4 space-y-6 md:space-y-8 pb-4 custom-scrollbar">
+                    {messages.length === 0 && (
+                        <div className="text-center py-10 space-y-8">
+                            <Mascot mood={loading ? 'thinking' : 'idle'} />
+                            <div className="space-y-2">
+                                <h2 className="text-xl font-black text-slate-800 tracking-tight">K chha Sathi! I'm Aadhar Pro.</h2>
+                                <p className="text-[0.85rem] font-bold text-slate-400 max-w-[300px] mx-auto leading-relaxed italic border-l-2 border-slate-100 pl-4">
+                                    Don't take tension for SEE 2083! Choose a quick action below or ask me anything to level up your prep.
+                                </p>
                             </div>
-                        </div>
-                        
-                        {m.role === 'ai' && m.highlights && (
-                            <div className="flex flex-wrap gap-2 mt-2 ml-4">
-                                {m.highlights.map((h: string, hi: number) => (
-                                    <span key={hi} className={cn(
-                                        "px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border",
-                                        hi % 3 === 0 ? "bg-amber-50 text-amber-600 border-amber-100" : 
-                                        hi % 3 === 1 ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                                        "bg-blue-50 text-blue border-blue-100"
-                                    )}>
-                                        ✨ {h}
-                                    </span>
+                            <div className="grid grid-cols-2 gap-3 max-w-[400px] mx-auto">
+                                {prompts.map(p => (
+                                    <button
+                                        key={p}
+                                        onClick={() => handleSend(p)}
+                                        className="p-5 bg-white border border-slate-100 rounded-[2rem] text-center shadow-sm hover:shadow-xl hover:border-blue transition-all group active:scale-95"
+                                    >
+                                        <div className="w-8 h-8 bg-blue/5 text-blue rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                                            <Sparkles className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-[0.7rem] font-black uppercase tracking-tight text-slate-600 block">{p}</span>
+                                    </button>
                                 ))}
                             </div>
-                        )}
-                    </div>
-                ))}
-                
-                {loading && (
-                    <div className="flex flex-col gap-4 self-start max-w-[85%]">
-                        <Mascot mood="thinking" />
-                        <div className="flex items-center gap-2 p-6 bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none shadow-sm">
-                            <div className="flex gap-1.5">
-                                <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce" />
-                            </div>
-                            <span className="text-[0.65rem] font-black uppercase text-slate-300 tracking-[0.2em]">Processing...</span>
                         </div>
-                    </div>
-                )}
-                <div ref={scrollRef} />
-            </div>
+                    )}
 
-            <div className="p-4 bg-white border border-slate-100 rounded-[2.5rem] shadow-2xl flex items-center gap-3 relative z-10">
-                <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0">
-                    <Sparkles className="text-blue w-6 h-6" />
+                    {messages.map((m, i) => (
+                        <div key={i} className={cn("flex flex-col gap-2 max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
+                            <div className={cn(
+                                "p-6 rounded-[2.5rem] text-[0.92rem] leading-relaxed shadow-lg",
+                                m.role === 'ai' 
+                                    ? "bg-white border border-slate-100 text-slate-800 rounded-tl-sm relative" 
+                                    : "bg-blue text-white rounded-tr-sm shadow-2xl shadow-blue/20"
+                            )}>
+                                <div className="prose prose-sm max-w-none prose-p:mb-4 prose-strong:text-blue prose-headings:text-slate-900 prose-headings:font-black">
+                                    <Markdown>{m.text}</Markdown>
+                                </div>
+                            </div>
+                            
+                            {m.role === 'ai' && m.highlights && (
+                                <div className="flex flex-wrap gap-2 mt-2 ml-4">
+                                    {m.highlights.map((h: string, hi: number) => (
+                                        <span key={hi} className={cn(
+                                            "px-3 py-1.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest border",
+                                            hi % 3 === 0 ? "bg-amber-50 text-amber-600 border-amber-100" : 
+                                            hi % 3 === 1 ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                            "bg-blue-50 text-blue border-blue-100"
+                                        )}>
+                                            ✨ {h}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    
+                    {loading && (
+                        <div className="flex flex-col gap-4 self-start max-w-[85%]">
+                            <Mascot mood="thinking" />
+                            <div className="flex items-center gap-2 p-6 bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none shadow-sm">
+                                <div className="flex gap-1.5">
+                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                                    <div className="w-2 h-2 bg-blue/40 rounded-full animate-bounce" />
+                                </div>
+                                <span className="text-[0.65rem] font-black uppercase text-slate-300 tracking-[0.2em]">Processing...</span>
+                            </div>
+                        </div>
+                    )}
+                    <div ref={scrollRef} />
                 </div>
-                <input 
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSend('')}
-                    placeholder="Ask something (e.g. Solve x² + 5x + 6)..."
-                    className="flex-1 bg-transparent border-none outline-none font-bold text-slate-700 placeholder:text-slate-300"
-                />
-                <button 
-                    onClick={() => handleSend('')}
-                    disabled={!input.trim() || loading}
-                    className="w-12 h-12 bg-blue text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue/20 active:scale-90 transition-all disabled:opacity-20"
-                >
-                    <Send className="w-5 h-5" />
-                </button>
+
+                {/* Input Area */}
+                <div className="p-4 bg-[#F8FAFC] shrink-0">
+                    <div className="p-3 md:p-4 bg-white/90 backdrop-blur-md border border-slate-100 rounded-[2rem] md:rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.08)] flex items-center gap-3">
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">
+                            <Sparkles className="text-blue w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <input 
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSend('')}
+                            placeholder="Ask something (e.g. Solve x²)..."
+                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 placeholder:text-slate-400"
+                        />
+                        <button 
+                            onClick={() => handleSend('')}
+                            disabled={!input.trim() || loading}
+                            className="w-10 h-10 md:w-12 md:h-12 bg-blue text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue/20 active:scale-90 transition-all disabled:opacity-20 shrink-0"
+                        >
+                            <Send className="w-4 h-4 md:w-5 md:h-5" />
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -743,7 +798,7 @@ const CalculatorSuite = () => {
     const [tab, setTab] = useState<'gpa' | 'standard'>((searchParams.get('tab') as any) || 'gpa');
 
     return (
-        <div className="space-y-8 animate-fade-up">
+        <div className="space-y-6 pb-24">
             <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-linear-to-br from-blue to-indigo rounded-2xl flex items-center justify-center shadow-lg">
                     <Calculator className="text-white w-6 h-6" />
@@ -755,14 +810,14 @@ const CalculatorSuite = () => {
                 <button 
                     onClick={() => setTab('gpa')}
                     className={cn(
-                        "flex-1 py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
+                        "flex-1 py-3 md:py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
                         tab === 'gpa' ? "bg-white text-blue shadow-lg border border-slate-100" : "text-slate-400"
                     )}
                 >GPA CALC</button>
                 <button 
                     onClick={() => setTab('standard')}
                     className={cn(
-                        "flex-1 py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
+                        "flex-1 py-3 md:py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
                         tab === 'standard' ? "bg-white text-blue shadow-lg border border-slate-100" : "text-slate-400"
                     )}
                 >SCIENTIFIC</button>
@@ -777,138 +832,47 @@ const CalculatorSuite = () => {
 const HomePage = () => {
     const { user } = useApp();
     const navigate = useNavigate();
-    const [cardIdx, setCardIdx] = useState(0);
-
-    const cards = [
-        { 
-            title: "Your SEE 2083 Journey", 
-            subtitle: "Keep learning. Keep growing!", 
-            bg: "from-[#2563EB] via-[#1E40AF] to-[#1E3A8A]", 
-            accent: "bg-blue-400/20"
-        },
-        { 
-            title: "Master Every Subject", 
-            subtitle: "1000+ modules ready for you.", 
-            bg: "from-[#7C3AED] via-[#5B21B6] to-[#4C1D95]", 
-            accent: "bg-purple-400/20"
-        },
-        { 
-            title: "Quantum Study Tools", 
-            subtitle: "Precision tools for precision results.", 
-            bg: "from-[#059669] via-[#065F46] to-[#064E3B]", 
-            accent: "bg-emerald-400/20"
-        },
-        { 
-            title: "Unstoppable Ambition", 
-            subtitle: "Victory is earned, not given.", 
-            bg: "from-rose-600 via-red-700 to-red-900", 
-            accent: "bg-red-400/20"
-        },
-        { 
-            title: "Radiant Future", 
-            subtitle: "Stay positive, work hard, and shine.", 
-            bg: "from-[#FBBF24] via-[#F59E0B] to-[#D97706]", 
-            accent: "bg-yellow-200/20"
-        },
-        { 
-            title: "The Power of Silence", 
-            subtitle: "Focus deep. Knowledge is your armor.", 
-            bg: "from-[#1E293B] via-[#0F172A] to-black", 
-            accent: "bg-slate-500/10"
-        },
-        { 
-            title: "Infinite Energy", 
-            subtitle: "Maximize your true potential now.", 
-            bg: "from-orange-500 via-orange-600 to-red-600", 
-            accent: "bg-orange-400/20"
-        },
-        { 
-            title: "Believe in Magic", 
-            subtitle: "Small steps lead to great heights.", 
-            bg: "from-pink-500 via-rose-600 to-purple-700", 
-            accent: "bg-pink-400/20"
-        }
-    ];
-
-    const nextCard = () => setCardIdx(prev => (prev + 1) % cards.length);
-    const prevCard = () => setCardIdx(prev => (prev - 1 + cards.length) % cards.length);
-
-    const currentCard = cards[cardIdx % cards.length];
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            {/* HERO SECTION SLIDER */}
-            <div className="relative h-[250px] sm:h-[220px] perspective-1000 touch-pan-y">
-                <AnimatePresence mode="wait">
-                    <motion.div 
-                        key={cardIdx}
-                        drag="x"
-                        dragConstraints={{ left: 0, right: 0 }}
-                        onDragEnd={(_, info) => {
-                            if (info.offset.x < -50) nextCard();
-                            if (info.offset.x > 50) prevCard();
-                        }}
-                        initial={{ opacity: 0, rotateY: 45, x: 100, scale: 0.9 }}
-                        animate={{ opacity: 1, rotateY: 0, x: 0, scale: 1 }}
-                        exit={{ opacity: 0, rotateY: -45, x: -100, scale: 0.9 }}
-                        transition={{ type: "spring", damping: 20, stiffness: 100 }}
-                        className={cn(
-                            "absolute inset-0 bg-linear-to-br rounded-[3rem] p-10 text-white shadow-[0_30px_60px_-12px_rgba(0,0,0,0.3)] flex flex-col justify-center overflow-hidden border border-white/10 cursor-grab active:cursor-grabbing",
-                            currentCard.bg
-                        )}
-                    >
-                        <div className="relative z-10 space-y-4">
-                            <motion.p 
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 0.9, y: 0 }}
-                                className="text-xl font-medium"
-                            >
-                                Namaste! 🙏
-                            </motion.p>
-                            <motion.h1 
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="text-4xl font-black tracking-tight leading-none uppercase italic drop-shadow-lg"
-                            >
-                                {currentCard.title}
-                            </motion.h1>
-                            <motion.p 
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 0.8 }}
-                                className="text-lg font-medium opacity-80"
-                            >
-                                {currentCard.subtitle}
-                            </motion.p>
-                        </div>
-                        
-                        {/* Decorative orbits */}
-                        <div className={cn("absolute -top-20 -right-20 w-64 h-64 rounded-full blur-[100px] opacity-40 animate-pulse transition-colors duration-1000", currentCard.accent)} />
-                        <div className={cn("absolute -bottom-20 -left-20 w-48 h-48 rounded-full blur-[80px] opacity-30 transition-colors duration-1000", currentCard.accent)} />
-                        
-                        {/* Grid overlay */}
-                        <div className="absolute inset-0 opacity-10 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
-                    </motion.div>
-                </AnimatePresence>
-                
-                {/* Swipe Guidance / Dots at Bottom */}
-                <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
-                    <div className="flex gap-2">
-                        {cards.map((_, i) => (
-                            <button 
-                                key={i}
-                                onClick={() => setCardIdx(i)}
-                                className={cn(
-                                    "h-1.5 rounded-full transition-all duration-500", 
-                                    i === (cardIdx % cards.length) ? "w-8 bg-slate-900 shadow-md" : "w-1.5 bg-slate-200 hover:bg-slate-300"
-                                )} 
-                            />
-                        ))}
+        <div className="space-y-6 pb-24">
+            {/* HERO SECTION - GRADIENT ANIMATED BOX */}
+            <div className="relative h-[180px] md:h-[220px]">
+                <div 
+                    className="absolute inset-0 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-600 animate-gradient rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white flex flex-col justify-center overflow-hidden"
+                >
+                    <div className="relative z-10 space-y-2">
+                        <p className="text-sm md:text-lg font-medium opacity-90">
+                            Namaste{user?.name ? `, ${user.name}` : ''}! 🙏
+                        </p>
+                        <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-none uppercase italic drop-shadow-lg">
+                            Ready to excel today?
+                        </h1>
+                        <p className="text-xs md:text-sm font-bold opacity-80 uppercase tracking-widest mt-2">
+                            Aadhar Pathshala SEE 2083
+                        </p>
                     </div>
+                    
+                    {/* Grid overlay */}
+                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
+                </div>
+            </div>
+
+            {/* DASHBOARD WIDGETS */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
+                    <Trophy className="w-8 h-8 text-amber-500 mb-2" />
+                    <span className="text-2xl font-black text-slate-800 leading-none">{user?.xp || 0}</span>
+                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Total XP</span>
+                </div>
+                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
+                    <Flame className="w-8 h-8 text-rose-500 mb-2" />
+                    <span className="text-2xl font-black text-slate-800 leading-none">{user?.streakDays || 1}</span>
+                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Day Streak</span>
                 </div>
             </div>
 
             {/* PROGRESS SECTION */}
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-50 space-y-4">
+            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-50 space-y-4">
                 <div className="flex justify-between items-center">
                     <h3 className="text-xl font-black text-slate-800 tracking-tight">Syllabus Progress</h3>
                     <span className="text-xl font-black text-rose-500">42%</span>
@@ -938,22 +902,39 @@ const HomePage = () => {
 
                 <div 
                     onClick={() => navigate('/news')}
-                    className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-50 flex items-center justify-between group cursor-pointer hover:shadow-md transition-all sm:p-5"
+                    className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-slate-50 flex items-center justify-between group cursor-pointer hover:shadow-md transition-all"
                 >
-                    <div className="flex items-center gap-5">
-                        <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center border border-rose-100">
-                             <Megaphone className="w-7 h-7" />
+                    <div className="flex items-center gap-3 md:gap-5">
+                        <div className="w-12 h-12 md:w-14 md:h-14 bg-rose-50 text-rose-500 rounded-xl md:rounded-2xl flex shrink-0 items-center justify-center border border-rose-100">
+                             <Megaphone className="w-5 h-5 md:w-7 md:h-7" />
                         </div>
                         <div>
-                            <p className="text-xl font-black text-slate-800 tracking-tight leading-none mb-1">CDC Board Updates</p>
-                            <p className="text-sm font-bold text-slate-400 font-sans tracking-normal">Latest SEE 2083 notices</p>
+                            <p className="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-none mb-1">CDC Board Updates</p>
+                            <p className="text-xs md:text-sm font-bold text-slate-400 font-sans tracking-normal">Latest SEE 2083 notices</p>
                         </div>
                     </div>
-                    <ChevronRight className="w-6 h-6 text-slate-300 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-300 group-hover:translate-x-1 transition-transform" />
                 </div>
 
                 <div className="mt-4">
                     <NoticeBoard />
+                </div>
+            </div>
+
+            {/* AI RECOMMENDATION / NEXT BEST STEP */}
+            <div className="bg-linear-to-br from-indigo-50 to-blue-50 p-6 md:p-8 rounded-[2rem] shadow-sm border border-indigo-100 flex flex-col md:flex-row items-center gap-5 md:gap-8 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/50 rounded-full blur-[40px] -translate-y-10 translate-x-10" />
+                <div className="w-16 h-16 shrink-0 bg-white shadow-md rounded-2xl flex items-center justify-center relative z-10 text-indigo-600">
+                    <Sparkles className="w-8 h-8" />
+                </div>
+                <div className="flex-1 relative z-10 text-center md:text-left">
+                    <h3 className="text-sm font-black text-indigo-400 uppercase tracking-widest mb-1">Aadhar Pro Suggests</h3>
+                    <p className="text-slate-800 font-bold text-[0.95rem] md:text-lg leading-tight mb-4">
+                        Based on your low score in the last Science Mock Test, you should review the <span className="text-indigo-600">Light and Magnification</span> module.
+                    </p>
+                    <button onClick={() => navigate('/hub/science')} className="px-6 py-2 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 transition-colors">
+                        Review Module
+                    </button>
                 </div>
             </div>
         </div>
@@ -973,7 +954,8 @@ const AadharToolkit = () => {
         ...(isToolsPage ? [
             { id: 'gpa', label: 'GPA Calc', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Converter', icon: Scale, color: 'blue', path: '/tools/converter' },
-            { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'purple', path: '/tools/calendar' }
+            { id: 'calendar', label: 'Calendar', icon: Calendar, color: 'purple', path: '/tools/calendar' },
+            { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'teal', path: '/tools/todo' }
         ] : []),
         { id: 'timer', label: 'Study Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
         { id: 'formulas', label: 'Formulas', icon: Sigma, color: 'purple', path: '/tools/formulas' },
@@ -1003,10 +985,10 @@ const AadharToolkit = () => {
                         <button
                             key={t.id}
                             onClick={() => navigate(t.path)}
-                            className="bg-white p-7 rounded-[2rem] border border-slate-50 shadow-[0_10px_25px_rgba(0,0,0,0.03)] flex flex-col items-center justify-center gap-3 hover:shadow-xl hover:border-blue/20 transition-all group active:scale-95 text-center relative overflow-hidden h-[160px]"
+                            className="bg-white p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-2 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-center h-[90px] md:h-[130px]"
                         >
                             <div className={cn(
-                                "w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-inner",
+                                "w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
                                 t.color === 'blue' ? "bg-blue-50 text-blue" :
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
@@ -1016,9 +998,9 @@ const AadharToolkit = () => {
                                 t.color === 'orange' ? "bg-orange-50 text-orange-600" :
                                 "bg-teal-50 text-teal-600"
                             )}>
-                                <Icon className="w-8 h-8" strokeWidth={2.5} />
+                                <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-bold text-slate-600 text-[1rem] tracking-tight">{t.label}</p>
+                            <p className="font-bold text-slate-600 text-[0.65rem] md:text-[0.9rem] tracking-tight leading-none w-full truncate px-1">{t.label}</p>
                         </button>
                     );
                 })}
@@ -1699,21 +1681,22 @@ const StudyTimer = () => {
                 <h2 className="text-7xl font-black text-white tracking-tighter leading-none mb-4">
                     {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}
                 </h2>
-                <div className="flex gap-4">
-                    <button onClick={() => { setIsActive(false); setTime(t => Math.max(0, t - 300)); }} className="bg-white/10 text-white p-3 rounded-full hover:bg-white/20 transition-all font-black text-xs">-5m</button>
-                    <button onClick={() => setIsActive(!isActive)} className="bg-white text-slate-900 p-4 rounded-full shadow-xl hover:scale-110 active:scale-90 transition-all">
-                        {isActive ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-0.5" />}
-                    </button>
-                    <button onClick={() => { setIsActive(false); setTime(t => t + 300); }} className="bg-white/10 text-white p-3 rounded-full hover:bg-white/20 transition-all font-black text-xs">+5m</button>
-                    <button onClick={() => { setIsActive(false); setTime(mode === 'focus' ? 25 * 60 : 5 * 60); }} className="bg-white/20 text-white p-4 rounded-full backdrop-blur-md hover:bg-white/30 transition-all">
-                        <RotateCcw className="w-6 h-6" />
-                    </button>
-                </div>
+            </div>
+            
+            <div className="flex justify-center gap-6 max-w-sm mx-auto">
+                <button onClick={() => { setIsActive(false); setTime(t => Math.max(0, t - 300)); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all font-black text-base shadow-sm">- 5m</button>
+                <button onClick={() => setIsActive(!isActive)} className="bg-slate-900 text-white p-5 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all">
+                    {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
+                </button>
+                <button onClick={() => { setIsActive(false); setTime(t => t + 300); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all font-black text-base shadow-sm">+ 5m</button>
+                <button onClick={() => { setIsActive(false); setTime(mode === 'focus' ? 25 * 60 : 5 * 60); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all shadow-sm">
+                    <RotateCcw className="w-6 h-6" />
+                </button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                <button onClick={() => { setMode('focus'); setTime(25*60); }} className={cn("p-6 rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'focus' ? "bg-rose-500 text-white border-rose-500" : "bg-white border-slate-100 text-slate-400")}>Focus Sprint</button>
-                <button onClick={() => { setMode('break'); setTime(5*60); }} className={cn("p-6 rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'break' ? "bg-emerald-500 text-white border-emerald-500" : "bg-white border-slate-100 text-slate-400")}>Brain Rest</button>
+                <button onClick={() => { setMode('focus'); setTime(25*60); }} className={cn("p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'focus' ? "bg-rose-500 text-white border-rose-500" : "bg-white border-slate-100 text-slate-400")}>Focus Sprint</button>
+                <button onClick={() => { setMode('break'); setTime(5*60); }} className={cn("p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'break' ? "bg-emerald-500 text-white border-emerald-500" : "bg-white border-slate-100 text-slate-400")}>Brain Rest</button>
             </div>
         </div>
     );
@@ -1895,7 +1878,7 @@ const UnitConverterPage = () => {
                     </div>
                     
                     <div className="flex items-center justify-center py-2">
-                         <div className="w-10 h-10 rounded-full bg-blue text-white flex items-center justify-center shadow-lg"><ArrowLeft className="rotate-270" /></div>
+                         <div className="w-10 h-10 rounded-full bg-blue text-white flex items-center justify-center shadow-lg"><ArrowLeft className="-rotate-90" /></div>
                     </div>
 
                     <div className="space-y-1">
@@ -2014,10 +1997,86 @@ const NotePadPage = () => {
         </div>
     );
 };
+
+const TodoListPage = () => {
+    const navigate = useNavigate();
+    const [tasks, setTasks] = useState<{id: string, text: string, done: boolean}[]>([
+        { id: '1', text: 'Complete Mock Test', done: false },
+        { id: '2', text: 'Revise Science Notes', done: true },
+    ]);
+    const [newTask, setNewTask] = useState("");
+
+    const addTask = () => {
+        if (!newTask.trim()) return;
+        setTasks([{ id: Date.now().toString(), text: newTask, done: false }, ...tasks]);
+        setNewTask("");
+    };
+
+    const toggleStatus = (id: string) => {
+        setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+    };
+
+    const deleteStatus = (id: string) => {
+        setTasks(tasks.filter(t => t.id !== id));
+    };
+
+    return (
+        <div className="space-y-6 pb-24">
+            <div className="flex items-center gap-3">
+                <button onClick={() => navigate('/tools')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">To-Do List</h1>
+            </div>
+
+            <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-xl max-w-lg mx-auto">
+                <div className="flex gap-2 mb-6">
+                    <input 
+                        value={newTask}
+                        onChange={e => setNewTask(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addTask()}
+                        placeholder="What needs to be done?"
+                        className="flex-1 bg-slate-50 border border-slate-100 px-4 py-3 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue transition-all"
+                    />
+                    <button onClick={addTask} className="bg-blue text-white px-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-colors">Add</button>
+                </div>
+
+                <div className="space-y-3">
+                    {tasks.map(t => (
+                        <div key={t.id} className={cn("flex items-center justify-between p-4 rounded-xl border transition-all", t.done ? "bg-slate-50 border-transparent opacity-60" : "bg-white border-slate-100 shadow-sm")}>
+                            <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleStatus(t.id)}>
+                                <div className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-colors shadow-sm", t.done ? "bg-emerald-500 text-white" : "bg-white border-2 border-slate-200")}>
+                                    {t.done && <ListChecks className="w-4 h-4" />}
+                                </div>
+                                <span className={cn("font-bold text-sm", t.done ? "line-through text-slate-400" : "text-slate-700")}>{t.text}</span>
+                            </div>
+                            <button onClick={() => deleteStatus(t.id)} className="text-slate-300 hover:text-rose-500 transition-colors ml-2">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                    {tasks.length === 0 && (
+                        <p className="text-center text-slate-400 font-bold py-8 text-sm">All caught up! 🎉</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ScrollToTop = () => {
+    const { pathname } = useLocation();
+    
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+    
+    return null;
+};
+
 const App = () => {
     return (
         <AppProvider>
             <BrowserRouter>
+                <ScrollToTop />
                 <Layout>
                     <Routes>
                         <Route path="/" element={<HomePage />} />
@@ -2042,6 +2101,7 @@ const App = () => {
                         <Route path="/tools/calendar" element={<ExamCalendar />} />
                         <Route path="/tools/formulas" element={<FormulaBankPage />} />
                         <Route path="/tools/converter" element={<UnitConverterPage />} />
+                        <Route path="/tools/todo" element={<TodoListPage />} />
                     </Routes>
                 </Layout>
             </BrowserRouter>
@@ -2121,9 +2181,32 @@ const AppProvider = ({ children }: any) => {
     });
     const [data] = useState<AppData>(INITIAL_DATA);
 
-    const addTestResult = (score: number) => {
+    const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
         if (!user) return;
-        setUser({ ...user, xp: user.xp + (score * 25) });
+        
+        let newXp = user.xp + (score * 25);
+        let newTests = user.testsCompleted + 1;
+        let newAvg = ((user.avgScore * user.testsCompleted) + ((score/total)*100)) / newTests;
+        
+        let newBadges = [...user.badges];
+        
+        if (score === total && !newBadges.includes('Perfect Score')) {
+            newBadges.push('Perfect Score');
+        }
+        if (timeSpentSecs < (total * 60) / 2 && score >= total * 0.8 && !newBadges.includes('Speed Demon')) {
+            newBadges.push('Speed Demon');
+        }
+        if (newTests >= 5 && !newBadges.includes('Consistent Performer')) {
+            newBadges.push('Consistent Performer');
+        }
+
+        setUser({ 
+            ...user, 
+            xp: newXp, 
+            testsCompleted: newTests, 
+            avgScore: newAvg,
+            badges: newBadges
+        });
     };
 
     return (

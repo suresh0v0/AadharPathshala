@@ -79,12 +79,23 @@
   100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
 }
 
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  animation: gradient 5s ease infinite;
+  background-size: 300% 300%;
+}
+
 .animate-fade-up {
-  animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  /* animation removed */
 }
 
 .animate-slide-down {
-  animation: slideDown 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  /* animation removed */
 }
 
 .hero-card {
