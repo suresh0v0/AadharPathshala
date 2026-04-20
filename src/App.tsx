@@ -1929,6 +1929,7 @@ const DictionaryPage = () => {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const { user } = useApp();
 
     const terms = [
         { word: 'Gravity', def: 'Attraction between two masses. It is the force that keeps the planets in orbit around the sun and the moon in orbit around the Earth.', sub: 'Science', detail: 'Formula: F = G(m1m2)/d²' },
@@ -1941,36 +1942,65 @@ const DictionaryPage = () => {
     const findWord = async () => {
         if (!search) return;
         setLoading(true);
+        setResult(null);
 
         try {
-            const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${search.trim()}`);
-            if (res.ok) {
-                const data = await res.json();
-                const meaning = data[0]?.meanings[0];
-                const definition = meaning?.definitions[0]?.definition || "Definition not found.";
-                const synonym = meaning?.synonyms?.[0] || meaning?.definitions[0]?.example || "";
-                
-                setResult({
-                    word: data[0]?.word || search,
-                    def: definition,
-                    sub: meaning?.partOfSpeech || 'Noun',
-                    detail: synonym ? `Example/Synonym: ${synonym}` : undefined
-                });
-            } else {
-                // Fallback to local terms if API fails or word not found
-                const found = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
-                setResult(found || { 
-                    word: search, 
-                    def: "Word not found in the global dictionary database. Try checking your spelling.", 
-                    sub: "Unknown" 
-                });
+            // Priority 1: Local Knowledge Base
+            const localFound = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
+            if (localFound) {
+                setResult(localFound);
+                setLoading(false);
+                return;
             }
+
+            // Priority 2: Free Dictionary API
+            try {
+                const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${search.trim()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    const meaning = data[0]?.meanings[0];
+                    const definition = meaning?.definitions[0]?.definition || "Definition not found.";
+                    const synonym = meaning?.synonyms?.[0] || meaning?.definitions[0]?.example || "";
+                    
+                    setResult({
+                        word: data[0]?.word || search,
+                        def: definition,
+                        sub: meaning?.partOfSpeech || 'Noun',
+                        detail: synonym ? `Example/Synonym: ${synonym}` : undefined,
+                        source: 'Global Lexicon'
+                    });
+                    setLoading(false);
+                    return;
+                }
+            } catch (e) {
+                console.warn("Dictionary API failed, falling back to MOMO");
+            }
+
+            // Priority 3: MOMO AI Fallback (Gemini)
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+            const prompt = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
+            Explain it in MOMO's persona (warm, patient, like a big sibling). 
+            Include a relatable example if possible. Keep it concise but helpful. 
+            Format JSON: { "word": "${search}", "def": "definition here", "sub": "Subject category", "detail": "MOMO's special tip or insight" }`;
+
+            const response = await ai.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: prompt,
+                config: { responseMimeType: "application/json" }
+            });
+
+            const aiData = JSON.parse(response.text || "{}");
+            setResult({
+                ...aiData,
+                source: 'MOMO AI'
+            });
+
         } catch (error) {
-            const found = terms.find(t => t.word.toLowerCase() === search.toLowerCase());
-            setResult(found || { 
+            setResult({ 
                 word: search, 
-                def: "Could not connect to the dictionary matrix. Please check your internet connection.", 
-                sub: "Offline" 
+                def: "MOMO is having a little brain freeze! Try again in a moment, Sathi.", 
+                sub: "Error",
+                source: 'System'
             });
         } finally {
             setLoading(false);
@@ -1978,83 +2008,171 @@ const DictionaryPage = () => {
     };
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <div className="flex items-center gap-4">
-                <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
-                    <ArrowLeft className="w-6 h-6" />
-                </button>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Lexicon Pro</h1>
+        <div className="space-y-10 animate-fade-up pb-32 max-w-3xl mx-auto">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Lexicon Pro</h1>
+                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Master every term</p>
+                    </div>
+                </div>
+                <Book className="w-8 h-8 text-blue/20" />
             </div>
 
             <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-blue w-6 h-6" />
-                <input 
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && findWord()}
-                    placeholder="Search keywords (e.g. Gravity, Cell, Area)..."
-                    className="w-full bg-white border-4 border-slate-100 p-8 pl-18 rounded-[3rem] font-black text-xl shadow-2xl outline-none focus:border-blue transition-all"
-                />
-                <button 
-                    onClick={findWord}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-blue text-white px-8 py-4 rounded-full font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all"
-                >
-                    Define
-                </button>
+                <div className="absolute inset-0 bg-blue/5 rounded-[3rem] blur-2xl group-focus-within:bg-blue/10 transition-all" />
+                <div className="relative bg-white border-4 border-slate-100 rounded-[3rem] p-4 flex gap-2 shadow-2xl focus-within:border-blue transition-all">
+                    <div className="flex-1 flex items-center pl-6">
+                        <Search className="text-blue w-6 h-6 shrink-0" />
+                        <input 
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && findWord()}
+                            placeholder="Enter any word or concept..."
+                            className="w-full bg-transparent p-4 font-black text-xl outline-none placeholder:text-slate-300"
+                        />
+                    </div>
+                    <button 
+                        onClick={findWord}
+                        className="bg-blue text-white px-10 rounded-[2.5rem] font-black text-sm uppercase tracking-widest shadow-xl active:scale-95 transition-all hover:bg-blue-600"
+                    >
+                        Search
+                    </button>
+                </div>
             </div>
 
-            {loading ? (
-                <div className="text-center py-20 animate-pulse">
-                    <Zap className="w-16 h-16 text-blue mx-auto mb-4 animate-bounce" />
-                    <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.3em]">Querying Board Database...</p>
-                </div>
-            ) : result ? (
-                <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-white p-12 rounded-[4rem] border-2 border-blue shadow-2xl relative overflow-hidden"
-                >
-                    <div className="absolute top-0 right-0 p-10 opacity-5">
-                        <Book className="w-64 h-64 -rotate-12" />
-                    </div>
-                    <div className="flex justify-between items-start mb-10 relative z-10">
-                        <div>
-                            <span className="text-[0.65rem] font-black text-blue uppercase tracking-[0.3em] mb-3 block">Board Authenticated</span>
-                            <h2 className="text-6xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">{result.word}</h2>
+            <AnimatePresence mode="wait">
+                {loading ? (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="text-center py-24"
+                    >
+                        <div className="relative inline-block">
+                            <Zap className="w-20 h-20 text-blue mx-auto mb-6 animate-pulse" />
+                            <motion.div 
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 border-4 border-blue/20 border-t-blue rounded-full"
+                            />
                         </div>
-                        <div className="px-6 py-2 bg-blue-50 text-blue rounded-2xl text-[0.7rem] font-black uppercase tracking-widest border border-blue-100">
-                            {result.sub}
-                        </div>
-                    </div>
-                    <div className="space-y-8 relative z-10">
-                        <div>
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Official Definition</h3>
-                            <p className="text-2xl font-bold text-slate-700 leading-tight">{result.def}</p>
-                        </div>
-                        {result.detail && (
-                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
-                                <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-3">Contextual Insight</h3>
-                                <p className="text-lg font-black text-blue italic tracking-tight">{result.detail}</p>
-                            </div>
-                        )}
-                    </div>
-                </motion.div>
-            ) : (
-                <div className="space-y-6">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-4">Core Flashcards</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {terms.map(t => (
-                            <button key={t.word} onClick={() => setSearch(t.word)} className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue transition-all active:scale-[0.98]">
-                                <div className="text-left">
-                                    <h4 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-blue">{t.word}</h4>
-                                    <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">{t.sub} Portal</p>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Consulting MOMO & Matrix...</p>
+                    </motion.div>
+                ) : result ? (
+                    <motion.div 
+                        key={result.word}
+                        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        className="group"
+                    >
+                        <div className="bg-white rounded-[4rem] border-4 border-slate-100 p-12 shadow-2xl relative overflow-hidden transition-all hover:border-blue/20">
+                            {/* Decorative background element */}
+                            <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue/5 rounded-full blur-3xl opacity-50 transition-all group-hover:scale-125" />
+                            
+                            <div className="relative z-10 space-y-10">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[0.65rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest border border-blue/10">{result.source || 'Verified'}</span>
+                                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{result.sub}</span>
+                                        </div>
+                                        <h2 className="text-7xl font-black text-slate-900 italic tracking-tighter uppercase leading-none break-words">{result.word}</h2>
+                                    </div>
+                                    <div className="w-20 h-20 bg-slate-50 flex items-center justify-center rounded-3xl">
+                                        {result.source === 'MOMO AI' ? <Bot className="w-10 h-10 text-pink-500" /> : <BookOpen className="w-10 h-10 text-blue" />}
+                                    </div>
                                 </div>
-                                <ChevronRight className="w-8 h-8 text-slate-100 group-hover:text-blue group-hover:translate-x-1 transition-all" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
+
+                                <div className="space-y-8">
+                                    <div className="space-y-4">
+                                        <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] border-l-4 border-blue pl-4">Definition</h3>
+                                        <p className="text-3xl font-black text-slate-800 leading-tight tracking-tight">
+                                            {result.def}
+                                        </p>
+                                    </div>
+
+                                    {result.detail && (
+                                        <div className={cn(
+                                            "p-10 rounded-[3rem] border shadow-sm relative overflow-hidden",
+                                            result.source === 'MOMO AI' ? "bg-pink-50/50 border-pink-100" : "bg-slate-50 border-slate-100"
+                                        )}>
+                                            <div className="relative z-10">
+                                                <h3 className="text-[0.6rem] font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                                                    {result.source === 'MOMO AI' ? (
+                                                        <><Sparkles className="w-4 h-4 text-pink-500 line-clamp-1" /> MOMO'S EXPLANATION</>
+                                                    ) : (
+                                                        <><Zap className="w-4 h-4 text-blue" /> QUICK CONTEXT</>
+                                                    )}
+                                                </h3>
+                                                <p className={cn(
+                                                    "text-xl font-bold italic tracking-tight leading-relaxed",
+                                                    result.source === 'MOMO AI' ? "text-pink-600" : "text-slate-600"
+                                                )}>
+                                                    {result.detail}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={() => {
+                                navigate('/ai');
+                                // Could pass the word to AI tutor state here if needed
+                            }}
+                            className="w-full mt-8 bg-[#020617] text-white p-8 rounded-[3rem] shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all"
+                        >
+                            <div className="flex items-center gap-6">
+                                <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
+                                    <Bot className="w-8 h-8 text-pink-400" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-pink-400 mb-1">Deep Dive Needed?</p>
+                                    <p className="text-xl font-black uppercase italic tracking-tighter">Discuss with MOMO Tutor</p>
+                                </div>
+                            </div>
+                            <ChevronRight className="w-8 h-8 opacity-40 group-hover:translate-x-2 transition-all" />
+                        </button>
+                    </motion.div>
+                ) : (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="space-y-8"
+                    >
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Trending Flashcards</h3>
+                            <TrendingUp className="w-4 h-4 text-slate-200" />
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {terms.map(t => (
+                                <button 
+                                    key={t.word} 
+                                    onClick={() => {
+                                        setSearch(t.word);
+                                        setResult(t);
+                                    }} 
+                                    className="bg-white p-6 rounded-[2.5rem] border-2 border-slate-50 shadow-sm flex items-center justify-between group hover:border-blue hover:shadow-xl transition-all text-left"
+                                >
+                                    <div className="space-y-1">
+                                        <h4 className="text-xl font-black text-slate-900 tracking-tighter italic uppercase group-hover:text-blue transition-colors leading-none">{t.word}</h4>
+                                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">{t.sub} Portal</p>
+                                    </div>
+                                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center group-hover:bg-blue/5 group-hover:text-blue transition-all">
+                                        <ChevronRight className="w-5 h-5 opacity-40 group-hover:opacity-100" />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
