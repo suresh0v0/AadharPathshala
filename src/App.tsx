@@ -30,33 +30,54 @@ function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * OpenRouter AI Fallback
+ * OpenRouter AI Fallback with Multi-Model Redundancy
  */
 const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured. MOMO is currently offline.");
 
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "HTTP-Referer": window.location.origin,
-      "X-Title": "Aadhar Pathshala",
-    },
-    body: JSON.stringify({
-      "model": "meta-llama/llama-3.1-8b-instruct:free",
-      "messages": messages.map(m => ({
-        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
-        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-      })),
-      "response_format": isJson ? { "type": "json_object" } : undefined
-    })
-  });
+  // We try multiple free models in case one is overloaded or down
+  const models = [
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "google/gemma-2-9b-it:free"
+  ];
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || "OpenRouter check failed");
-  return data.choices?.[0]?.message?.content || "";
+  let lastError = "";
+
+  for (const model of models) {
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": window.location.origin,
+          "X-Title": "Aadhar Pathshala",
+        },
+        body: JSON.stringify({
+          "model": model,
+          "messages": messages.map(m => ({
+            role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
+            content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+          })),
+          "response_format": isJson ? { "type": "json_object" } : undefined
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        lastError = data.error?.message || `Model ${model} failed`;
+        continue; // Try next model
+      }
+      return data.choices?.[0]?.message?.content || "";
+    } catch (err: any) {
+      lastError = err.message || "Fetch failed";
+      continue;
+    }
+  }
+
+  throw new Error(`MOMO is fully offline. All backup models failed. Last error: ${lastError}`);
 };
 
 // ════════════════════════════════════════════
