@@ -218,10 +218,10 @@ const MockTest = () => {
                 
                 const completion = await groq.chat.completions.create({
                     messages: [
-                        { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text." },
-                        { role: "user", content: `Generate ${settings.count} accurate and challenging multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+                        { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings or any conversational text in the JSON." },
+                        { role: "user", content: `Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+                        IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer. NEVER include the question text in the options.
                         Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
-                        Ensure that options 'a', 'b', 'c', 'd' contain the actual answer, NOT the question itself.
                         ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
                         Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
                     ],
@@ -571,15 +571,16 @@ const ReviewCard = ({ question, index, subject }: { question: any, index: number
             const groqKey = processGroqKey || viteGroqKey;
             
             const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-            const prompt = `Student made a mistake in Grade 10 Nepal SEE ${subject} Exam.
+            const prompt = `Student performed a Grade 10 Nepal SEE ${subject} Exam.
 Question: ${question.q}
 Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
 Correct: ${question.correct}
 Student Answered: ${question.userChoice}
 
-Please explain WHY the correct answer is ${question.correct} and why student's choice was wrong.
-Use simple "Neplish" (English + Nepali mix). Keep it under 100 words. Focus on logic and tips. 
-Start with "Oho Sathi!" if they were wrong, or "Ekdam Ramro!" if they were right but just curious.`;
+Explain WHY the correct answer is ${question.correct} and why student's choice was wrong.
+Be extremely direct and brief. Use bullet points if needed. No greetings, no catchphrases.
+Use simple "Neplish" (English + Nepali mix). Focus on logic. 
+Keep it under 50 words.`;
 
             const completion = await groq.chat.completions.create({
                 messages: [{ role: "user", content: prompt }],
@@ -2130,7 +2131,9 @@ const DictionaryPage = () => {
                                             <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest truncate">{result.sub}</span>
                                         </div>
                                         <h2 className={cn(
-                                            "font-black text-slate-900 italic tracking-tighter uppercase leading-none break-words",
+                                            "font-black text-slate-900 italic tracking-tighter uppercase leading-tight break-words overflow-hidden [hyphens:auto]",
+                                            result.word.length > 20 ? "text-xl md:text-2xl lg:text-3xl" :
+                                            result.word.length > 15 ? "text-2xl md:text-3xl lg:text-4xl" : 
                                             result.word.length > 10 ? "text-4xl md:text-5xl lg:text-6xl" : "text-6xl md:text-7xl lg:text-8xl"
                                         )}>
                                             {result.word}
