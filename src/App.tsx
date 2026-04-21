@@ -10,7 +10,7 @@ import {
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye,
-  ClipboardCheck, XCircle, Library, Grid3X3
+  ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -633,7 +633,10 @@ const MockTest = () => {
                     <div className="space-y-3 relative z-10">
                         <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest">Review Protocol</button>
                         <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
-                        <button onClick={() => navigate(`/hub/${settings.subject}`)} className="w-full py-6 bg-linear-to-r from-slate-700 to-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg">Return to Hub</button>
+                        <button onClick={() => navigate(`/hub/${settings.subject}`)} className="w-full py-6 bg-linear-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-emerald-500/20 group flex items-center justify-center gap-3">
+                            <Home className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+                            Return to Hub
+                        </button>
                     </div>
                 </div>
             )}
@@ -983,7 +986,7 @@ ${sharedFormatting}`;
                     </div>
 
                     <div className="text-center space-y-3 py-10 flex flex-col items-center">
-                        <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-2xl mb-4 animate-bounce">
+                        <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl mb-4 animate-bounce border-4 border-white">
                             <Bot className="w-10 h-10 text-white" />
                         </div>
                         <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">K chha Sathi!</h2>
@@ -1594,12 +1597,14 @@ const AadharToolkit = () => {
         { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'blue', path: '/tools/calendar' },
         ...(isToolsPage ? [
             { id: 'calculator', label: 'Sci-Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
-            { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/hub/Science/knowledge/periodic-table' },
+            { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
             { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/dictionary' },
             { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
             { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
-            { id: 'words', label: 'Word Counter', icon: FileText, color: 'emerald', path: '/tools/words' }
+            { id: 'words', label: 'Word Counter', icon: FileText, color: 'emerald', path: '/tools/words' },
+            { id: 'attendance', label: 'Attendance', icon: UserCheck, color: 'teal', path: '/tools/attendance' },
+            { id: 'flashcards', label: 'Flashcards', icon: GalleryVertical, color: 'orange', path: '/tools/flashcards' }
         ] : []),
     ];
 
@@ -1795,6 +1800,475 @@ const NewsPage = () => {
                         </div>
                     )}
                 </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
+/* ── PERIODIC TABLE TOOL ── */
+const PeriodicTablePage = () => {
+    const navigate = useNavigate();
+    const [view, setView] = useState<'modern' | 'mendeleev'>('modern');
+    const [zoom, setZoom] = useState(1);
+    const [selectedElement, setSelectedElement] = useState<any>(null);
+
+    const elementsData: any[] = [
+        { n: 1, s: 'H', name: 'Hydrogen', m: 1.008, x: 1, y: 1, c: 'nonmetal' },
+        { n: 2, s: 'He', name: 'Helium', m: 4.0026, x: 18, y: 1, c: 'noble' },
+        { n: 3, s: 'Li', name: 'Lithium', m: 6.94, x: 1, y: 2, c: 'alkali' },
+        { n: 4, s: 'Be', name: 'Beryllium', m: 9.0122, x: 2, y: 2, c: 'alkaline' },
+        { n: 5, s: 'B', name: 'Boron', m: 10.81, x: 13, y: 2, c: 'metalloid' },
+        { n: 6, s: 'C', name: 'Carbon', m: 12.011, x: 14, y: 2, c: 'nonmetal' },
+        { n: 7, s: 'N', name: 'Nitrogen', m: 14.007, x: 15, y: 2, c: 'nonmetal' },
+        { n: 8, s: 'O', name: 'Oxygen', m: 15.999, x: 16, y: 2, c: 'nonmetal' },
+        { n: 9, s: 'F', name: 'Fluorine', m: 18.998, x: 17, y: 2, c: 'nonmetal' },
+        { n: 10, s: 'Ne', name: 'Neon', m: 20.180, x: 18, y: 2, c: 'noble' },
+        { n: 11, s: 'Na', name: 'Sodium', m: 22.990, x: 1, y: 3, c: 'alkali' },
+        { n: 12, s: 'Mg', name: 'Magnesium', m: 24.305, x: 2, y: 3, c: 'alkaline' },
+        { n: 13, s: 'Al', name: 'Aluminum', m: 26.982, x: 13, y: 3, c: 'post-transition' },
+        { n: 14, s: 'Si', name: 'Silicon', m: 28.085, x: 14, y: 3, c: 'metalloid' },
+        { n: 15, s: 'P', name: 'Phosphorus', m: 30.974, x: 15, y: 3, c: 'nonmetal' },
+        { n: 16, s: 'S', name: 'Sulfur', m: 32.06, x: 16, y: 3, c: 'nonmetal' },
+        { n: 17, s: 'Cl', name: 'Chlorine', m: 35.45, x: 17, y: 3, c: 'nonmetal' },
+        { n: 18, s: 'Ar', name: 'Argon', m: 39.948, x: 18, y: 3, c: 'noble' },
+        { n: 19, s: 'K', name: 'Potassium', m: 39.098, x: 1, y: 4, c: 'alkali' },
+        { n: 20, s: 'Ca', name: 'Calcium', m: 40.078, x: 2, y: 4, c: 'alkaline' },
+        { n: 21, s: 'Sc', name: 'Scandium', m: 44.956, x: 3, y: 4, c: 'transition' },
+        { n: 22, s: 'Ti', name: 'Titanium', m: 47.867, x: 4, y: 4, c: 'transition' },
+        { n: 23, s: 'V', name: 'Vanadium', m: 50.942, x: 5, y: 4, c: 'transition' },
+        { n: 24, s: 'Cr', name: 'Chromium', m: 51.996, x: 6, y: 4, c: 'transition' },
+        { n: 25, s: 'Mn', name: 'Manganese', m: 54.938, x: 7, y: 4, c: 'transition' },
+        { n: 26, s: 'Fe', name: 'Iron', m: 55.845, x: 8, y: 4, c: 'transition' },
+        { n: 27, s: 'Co', name: 'Cobalt', m: 58.933, x: 9, y: 4, c: 'transition' },
+        { n: 28, s: 'Ni', name: 'Nickel', m: 58.693, x: 10, y: 4, c: 'transition' },
+        { n: 29, s: 'Cu', name: 'Copper', m: 63.546, x: 11, y: 4, c: 'transition' },
+        { n: 30, s: 'Zn', name: 'Zinc', m: 65.38, x: 12, y: 4, c: 'transition' },
+        { n: 31, s: 'Ga', name: 'Gallium', m: 69.723, x: 13, y: 4, c: 'post-transition' },
+        { n: 32, s: 'Ge', name: 'Germanium', m: 72.630, x: 14, y: 4, c: 'metalloid' },
+        { n: 33, s: 'As', name: 'Arsenic', m: 74.922, x: 15, y: 4, c: 'metalloid' },
+        { n: 34, s: 'Se', name: 'Selenium', m: 78.971, x: 16, y: 4, c: 'nonmetal' },
+        { n: 35, s: 'Br', name: 'Bromine', m: 79.904, x: 17, y: 4, c: 'nonmetal' },
+        { n: 36, s: 'Kr', name: 'Krypton', m: 83.798, x: 18, y: 4, c: 'noble' },
+        { n: 37, s: 'Rb', name: 'Rubidium', m: 85.468, x: 1, y: 5, c: 'alkali' },
+        { n: 38, s: 'Sr', name: 'Strontium', m: 87.62, x: 2, y: 5, c: 'alkaline' },
+        { n: 39, s: 'Y', name: 'Yttrium', m: 88.906, x: 3, y: 5, c: 'transition' },
+        { n: 40, s: 'Zr', name: 'Zirconium', m: 91.224, x: 4, y: 5, c: 'transition' },
+        { n: 41, s: 'Nb', name: 'Niobium', m: 92.906, x: 5, y: 5, c: 'transition' },
+        { n: 42, s: 'Mo', name: 'Molybdenum', m: 95.95, x: 6, y: 5, c: 'transition' },
+        { n: 43, s: 'Tc', name: 'Technetium', m: (98), x: 7, y: 5, c: 'transition' },
+        { n: 44, s: 'Ru', name: 'Ruthenium', m: 101.07, x: 8, y: 5, c: 'transition' },
+        { n: 45, s: 'Rh', name: 'Rhodium', m: 102.91, x: 9, y: 5, c: 'transition' },
+        { n: 46, s: 'Pd', name: 'Palladium', m: 106.42, x: 10, y: 5, c: 'transition' },
+        { n: 47, s: 'Ag', name: 'Silver', m: 107.87, x: 11, y: 5, c: 'transition' },
+        { n: 48, s: 'Cd', name: 'Cadmium', m: 112.41, x: 12, y: 5, c: 'transition' },
+        { n: 49, s: 'In', name: 'Indium', m: 114.82, x: 13, y: 5, c: 'post-transition' },
+        { n: 50, s: 'Sn', name: 'Tin', m: 118.71, x: 14, y: 5, c: 'post-transition' },
+        { n: 51, s: 'Sb', name: 'Antimony', m: 121.76, x: 15, y: 5, c: 'metalloid' },
+        { n: 52, s: 'Te', name: 'Tellurium', m: 127.60, x: 16, y: 5, c: 'metalloid' },
+        { n: 53, s: 'I', name: 'Iodine', m: 126.90, x: 17, y: 5, c: 'nonmetal' },
+        { n: 54, s: 'Xe', name: 'Xenon', m: 131.29, x: 18, y: 5, c: 'noble' },
+        { n: 55, s: 'Cs', name: 'Cesium', m: 132.91, x: 1, y: 6, c: 'alkali' },
+        { n: 56, s: 'Ba', name: 'Barium', m: 137.33, x: 2, y: 6, c: 'alkaline' },
+        { n: 57, s: 'La', name: 'Lanthanum', m: 138.91, x: 4, y: 9, c: 'lanthanide' },
+        { n: 58, s: 'Ce', name: 'Cerium', m: 140.12, x: 5, y: 9, c: 'lanthanide' },
+        { n: 59, s: 'Pr', name: 'Praseodymium', m: 140.91, x: 6, y: 9, c: 'lanthanide' },
+        { n: 60, s: 'Nd', name: 'Neodymium', m: 144.24, x: 7, y: 9, c: 'lanthanide' },
+        { n: 61, s: 'Pm', name: 'Promethium', m: (145), x: 8, y: 9, c: 'lanthanide' },
+        { n: 62, s: 'Sm', name: 'Samarium', m: 150.36, x: 9, y: 9, c: 'lanthanide' },
+        { n: 63, s: 'Eu', name: 'Europium', m: 151.96, x: 10, y: 9, c: 'lanthanide' },
+        { n: 64, s: 'Gd', name: 'Gadolinium', m: 157.25, x: 11, y: 9, c: 'lanthanide' },
+        { n: 65, s: 'Tb', name: 'Terbium', m: 158.93, x: 12, y: 9, c: 'lanthanide' },
+        { n: 66, s: 'Dy', name: 'Dysprosium', m: 162.50, x: 13, y: 9, c: 'lanthanide' },
+        { n: 67, s: 'Ho', name: 'Holmium', m: 164.93, x: 14, y: 9, c: 'lanthanide' },
+        { n: 68, s: 'Er', name: 'Erbium', m: 167.26, x: 15, y: 9, c: 'lanthanide' },
+        { n: 69, s: 'Tm', name: 'Thulium', m: 168.93, x: 16, y: 9, c: 'lanthanide' },
+        { n: 70, s: 'Yb', name: 'Ytterbium', m: 173.05, x: 17, y: 9, c: 'lanthanide' },
+        { n: 71, s: 'Lu', name: 'Lutetium', m: 174.97, x: 18, y: 9, c: 'lanthanide' },
+        { n: 72, s: 'Hf', name: 'Hafnium', m: 178.49, x: 4, y: 6, c: 'transition' },
+        { n: 73, s: 'Ta', name: 'Tantalum', m: 180.95, x: 5, y: 6, c: 'transition' },
+        { n: 74, s: 'W', name: 'Tungsten', m: 183.84, x: 6, y: 6, c: 'transition' },
+        { n: 75, s: 'Re', name: 'Rhenium', m: 186.21, x: 7, y: 6, c: 'transition' },
+        { n: 76, s: 'Os', name: 'Osmium', m: 190.23, x: 8, y: 6, c: 'transition' },
+        { n: 77, s: 'Ir', name: 'Iridium', m: 192.22, x: 9, y: 6, c: 'transition' },
+        { n: 78, s: 'Pt', name: 'Platinum', m: 195.08, x: 10, y: 6, c: 'transition' },
+        { n: 79, s: 'Au', name: 'Gold', m: 196.97, x: 11, y: 6, c: 'transition' },
+        { n: 80, s: 'Hg', name: 'Mercury', m: 200.59, x: 12, y: 6, c: 'transition' },
+        { n: 81, s: 'Tl', name: 'Thallium', m: 204.38, x: 13, y: 6, c: 'post-transition' },
+        { n: 82, s: 'Pb', name: 'Lead', m: 207.2, x: 14, y: 6, c: 'post-transition' },
+        { n: 83, s: 'Bi', name: 'Bismuth', m: 208.98, x: 15, y: 6, c: 'post-transition' },
+        { n: 84, s: 'Po', name: 'Polonium', m: (209), x: 16, y: 6, c: 'post-transition' },
+        { n: 85, s: 'At', name: 'Astatine', m: (210), x: 17, y: 6, c: 'metalloid' },
+        { n: 86, s: 'Rn', name: 'Radon', m: (222), x: 18, y: 6, c: 'noble' },
+        { n: 87, s: 'Fr', name: 'Francium', m: (223), x: 1, y: 7, c: 'alkali' },
+        { n: 88, s: 'Ra', name: 'Radium', m: (226), x: 2, y: 7, c: 'alkaline' },
+        { n: 89, s: 'Ac', name: 'Actinium', m: (227), x: 4, y: 10, c: 'actinide' },
+        { n: 90, s: 'Th', name: 'Thorium', m: 232.04, x: 5, y: 10, c: 'actinide' },
+        { n: 91, s: 'Pa', name: 'Protactinium', m: 231.04, x: 6, y: 10, c: 'actinide' },
+        { n: 92, s: 'U', name: 'Uranium', m: 238.03, x: 7, y: 10, c: 'actinide' },
+        { n: 93, s: 'Np', name: 'Neptunium', m: (237), x: 8, y: 10, c: 'actinide' },
+        { n: 94, s: 'Pu', name: 'Plutonium', m: (244), x: 9, y: 10, c: 'actinide' },
+        { n: 95, s: 'Am', name: 'Americium', m: (243), x: 10, y: 10, c: 'actinide' },
+        { n: 96, s: 'Cm', name: 'Curium', m: (247), x: 11, y: 10, c: 'actinide' },
+        { n: 97, s: 'Bk', name: 'Berkelium', m: (247), x: 12, y: 10, c: 'actinide' },
+        { n: 98, s: 'Cf', name: 'Californium', m: (251), x: 13, y: 10, c: 'actinide' },
+        { n: 99, s: 'Es', name: 'Einsteinium', m: (252), x: 14, y: 10, c: 'actinide' },
+        { n: 100, s: 'Fm', name: 'Fermium', m: (257), x: 15, y: 10, c: 'actinide' },
+        { n: 101, s: 'Md', name: 'Mendelevium', m: (258), x: 16, y: 10, c: 'actinide' },
+        { n: 102, s: 'No', name: 'Nobelium', m: (259), x: 17, y: 10, c: 'actinide' },
+        { n: 103, s: 'Lr', name: 'Lawrencium', m: (262), x: 18, y: 10, c: 'actinide' },
+        { n: 104, s: 'Rf', name: 'Rutherfordium', m: (267), x: 4, y: 7, c: 'transition' },
+        { n: 105, s: 'Db', name: 'Dubnium', m: (268), x: 5, y: 7, c: 'transition' },
+        { n: 106, s: 'Sg', name: 'Seaborgium', m: (271), x: 6, y: 7, c: 'transition' },
+        { n: 107, s: 'Bh', name: 'Bohrium', m: (270), x: 7, y: 7, c: 'transition' },
+        { n: 108, s: 'Hs', name: 'Hassium', m: (277), x: 8, y: 7, c: 'transition' },
+        { n: 109, s: 'Mt', name: 'Meitnerium', m: (276), x: 9, y: 7, c: 'transition' },
+        { n: 110, s: 'Ds', name: 'Darmstadtium', m: (281), x: 10, y: 7, c: 'transition' },
+        { n: 111, s: 'Rg', name: 'Roentgenium', m: (280), x: 11, y: 7, c: 'transition' },
+        { n: 112, s: 'Cn', name: 'Copernicium', m: (285), x: 12, y: 7, c: 'transition' },
+        { n: 113, s: 'Nh', name: 'Nihonium', m: (284), x: 13, y: 7, c: 'post-transition' },
+        { n: 114, s: 'Fl', name: 'Flerovium', m: (289), x: 14, y: 7, c: 'post-transition' },
+        { n: 115, s: 'Mc', name: 'Moscovium', m: (288), x: 15, y: 7, c: 'post-transition' },
+        { n: 116, s: 'Lv', name: 'Livermorium', m: (293), x: 16, y: 7, c: 'post-transition' },
+        { n: 117, s: 'Ts', name: 'Tennessine', m: (294), x: 17, y: 7, c: 'nonmetal' },
+        { n: 118, s: 'Og', name: 'Oganesson', m: (294), x: 18, y: 7, c: 'noble' },
+    ];
+
+    const elementDetails: Record<number, any> = {
+        1: { v: 1, ec: '1s¹', p: 1, n: 0, e: 1, f: 'Highly flammable, most abundant element.' },
+        2: { v: 0, ec: '1s²', p: 2, n: 2, e: 2, f: 'Noble gas, used in balloons and cryogenics.' },
+        3: { v: 1, ec: '[He] 2s¹', p: 3, n: 4, e: 3, f: 'Lightest metal, used in batteries.' },
+        4: { v: 2, ec: '[He] 2s²', p: 4, n: 5, e: 4, f: 'High melting point, used in structural materials.' },
+        5: { v: 3, ec: '[He] 2s² 2p¹', p: 5, n: 6, e: 5, f: 'Metalloid, used in glass and detergents.' },
+        6: { v: 4, ec: '[He] 2s² 2p²', p: 6, n: 6, e: 6, f: 'Basis of organic life, diamond/graphite.' },
+        7: { v: 3, ec: '[He] 2s² 2p³', p: 7, n: 7, e: 7, f: 'Makes up 78% of atmosphere.' },
+        8: { v: 2, ec: '[He] 2s² 2p⁴', p: 8, n: 8, e: 8, f: 'Essential for respiration and combustion.' },
+        9: { v: 1, ec: '[He] 2s² 2p⁵', p: 9, n: 10, e: 9, f: 'Most electronegative element.' },
+        10: { v: 0, ec: '[He] 2s² 2p⁶', p: 10, n: 10, e: 10, f: 'Noble gas, used in neon signs.' },
+        11: { v: 1, ec: '[Ne] 3s¹', p: 11, n: 12, e: 11, f: 'Highly reactive metal, part of salt.' },
+        12: { v: 2, ec: '[Ne] 3s²', p: 12, n: 12, e: 12, f: 'Lightweight metal, essential nutrient.' },
+        13: { v: 3, ec: '[Ne] 3s² 3p¹', p: 13, n: 14, e: 13, f: 'Light metal, used in packaging/aircraft.' },
+        14: { v: 4, ec: '[Ne] 3s² 3p²', p: 14, n: 14, e: 14, f: 'Semiconductor, used in electronics.' },
+        15: { v: '3, 5', ec: '[Ne] 3s² 3p³', p: 15, n: 16, e: 15, f: 'Found in DNA and fertilizers.' },
+        16: { v: '2, 4, 6', ec: '[Ne] 3s² 3p⁴', p: 16, n: 16, e: 16, f: 'Yellow solid, used in gunpowder.' },
+        17: { v: 1, ec: '[Ne] 3s² 3p⁵', p: 17, n: 18, e: 17, f: 'Toxic gas, used for water disinfection.' },
+        18: { v: 0, ec: '[Ne] 3s² 3p⁶', p: 18, n: 22, e: 18, f: 'Noble gas, used in light bulbs.' },
+        19: { v: 1, ec: '[Ar] 4s¹', p: 19, n: 20, e: 19, f: 'Reactive metal, essential for nerves.' },
+        20: { v: 2, ec: '[Ar] 4s²', p: 20, n: 20, e: 20, f: 'Main component of bones and teeth.' },
+    };
+
+    const getCategoryStyles = (c: string) => {
+        switch (c) {
+            case 'alkali': return 'bg-purple-500 text-white border-purple-600 shadow-purple-500/20';
+            case 'alkaline': return 'bg-violet-600 text-white border-violet-700 shadow-violet-600/20';
+            case 'transition': return 'bg-rose-500 text-white border-rose-600 shadow-rose-500/20';
+            case 'post-transition': return 'bg-sky-400 text-white border-sky-500 shadow-sky-400/20';
+            case 'metalloid': return 'bg-indigo-500 text-white border-indigo-600 shadow-indigo-500/20';
+            case 'nonmetal': return 'bg-amber-500 text-white border-amber-600 shadow-amber-500/20';
+            case 'noble': return 'bg-red-500 text-white border-red-600 shadow-red-500/20';
+            case 'lanthanide': return 'bg-emerald-400 text-white border-emerald-500 shadow-emerald-400/20';
+            case 'actinide': return 'bg-teal-500 text-white border-teal-600 shadow-teal-500/20';
+            default: return 'bg-slate-400 text-white border-slate-500';
+        }
+    };
+
+    const handleZoom = (delta: number) => {
+        setZoom(prev => Math.min(2, Math.max(0.5, prev + delta)));
+    };
+
+    const first20 = elementsData.slice(0, 20);
+
+    return (
+        <div className="space-y-8 animate-fade-up pb-24 overflow-hidden min-h-screen">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Periodic Realm</h1>
+                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Chemical Intelligence Hub</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm self-start">
+                    <button 
+                        onClick={() => setView('modern')}
+                        className={cn("px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", view === 'modern' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600")}
+                    >Modern</button>
+                    <button 
+                        onClick={() => setView('mendeleev')}
+                        className={cn("px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", view === 'mendeleev' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400 hover:text-slate-600")}
+                    >Mendeleev</button>
+                </div>
+
+                <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm self-start">
+                    <button onClick={() => handleZoom(-0.1)} className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 rounded-xl transition-all"><Search className="w-4 h-4" />-</button>
+                    <span className="text-[0.65rem] font-bold text-slate-400 w-12 text-center">{Math.round(zoom * 100)}%</span>
+                    <button onClick={() => handleZoom(0.1)} className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 rounded-xl transition-all"><Search className="w-4 h-4" />+</button>
+                </div>
+            </header>
+
+            {/* MAIN TABLE AREA */}
+            <div className="relative overflow-auto bg-slate-950 p-8 md:p-16 rounded-[4rem] border-[12px] border-slate-900 shadow-2xl min-h-[600px] scrollbar-hide">
+                <div 
+                    className="origin-top-left transition-transform duration-300" 
+                    style={{ transform: `scale(${zoom})`, width: view === 'modern' ? '1400px' : '1000px' }}
+                >
+                    {view === 'modern' ? (
+                        <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] grid-rows-[repeat(10,minmax(0,1fr))] gap-1.5 md:gap-2.5">
+                            {elementsData.map(el => (
+                                <motion.div
+                                    key={el.n}
+                                    layoutId={`el-${el.n}`}
+                                    style={{ gridColumn: el.x, gridRow: el.y }}
+                                    onClick={() => setSelectedElement(el)}
+                                    className={cn(
+                                        "aspect-square rounded-lg md:rounded-xl border-2 flex flex-col items-center justify-center p-1 md:p-2 cursor-pointer transition-all hover:scale-110 active:scale-95 group relative shadow-md",
+                                        getCategoryStyles(el.c)
+                                    )}
+                                >
+                                    <div className="absolute top-0.5 left-1 text-[0.45rem] md:text-[0.6rem] font-black opacity-60 leading-none group-hover:opacity-100">{el.n}</div>
+                                    <div className="text-sm md:text-xl font-black leading-none group-hover:scale-110 transition-transform">{el.s}</div>
+                                    <div className="text-[0.35rem] md:text-[0.5rem] font-bold truncate w-full text-center mt-0.5 tracking-tighter uppercase opacity-80">{el.name}</div>
+                                    <div className="absolute bottom-0.5 right-1 text-[0.35rem] md:text-[0.45rem] font-bold opacity-40 leading-none">{el.m}</div>
+                                </motion.div>
+                            ))}
+
+                            {/* LABELS FOR MODERN VIEW */}
+                            {[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].map(g => (
+                                <div key={g} style={{ gridColumn: g, gridRow: 0.5 }} className="text-center text-[0.6rem] font-black text-slate-700">{g}</div>
+                            ))}
+                        </div>
+                    ) : (
+                        /* MENDELEEV LAYOUT (Simplified Group/Series) */
+                        <div className="grid grid-cols-[100px_repeat(8,minmax(0,1fr))] gap-2">
+                            <div className="h-12 border-b border-slate-800 flex items-center justify-center text-[0.7rem] font-black text-slate-500 uppercase italic">Series</div>
+                            {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'].map(g => (
+                                <div key={g} className="h-12 border-b border-slate-800 flex items-center justify-center text-sm font-black text-slate-400 italic">Group {g}</div>
+                            ))}
+                            {[1,2,3,4,5,6,7,8,9,10,11,12].map(s => {
+                                // Simplified mapping for Mendeleev
+                                const seriesElements = elementsData.filter((_, i) => Math.floor(i / 8) + 1 === s);
+                                return (
+                                    <React.Fragment key={s}>
+                                        <div className="h-16 flex items-center justify-center text-2xl font-black text-slate-800 italic">{s}</div>
+                                        {seriesElements.map((el, i) => (
+                                            <div 
+                                                key={el.n}
+                                                onClick={() => setSelectedElement(el)}
+                                                className={cn(
+                                                    "h-16 rounded-xl border-2 flex flex-col items-center justify-center p-2 cursor-pointer transition-all hover:scale-105 active:scale-95 group relative shadow-md",
+                                                    getCategoryStyles(el.c)
+                                                )}
+                                            >
+                                                <div className="absolute top-1 left-2 text-[0.5rem] font-black opacity-60 leading-none">{el.n}</div>
+                                                <div className="text-lg font-black leading-none">{el.s}</div>
+                                                <div className="text-[0.4rem] font-bold truncate w-full text-center mt-1 uppercase opacity-80">{el.name}</div>
+                                            </div>
+                                        ))}
+                                        {/* Fills empty spots to keep grid aligned */}
+                                        {Array.from({ length: 8 - seriesElements.length }).map((_, i) => (
+                                            <div key={`empty-${s}-${i}`} className="h-16 border border-slate-900/50 rounded-xl bg-slate-900/20" />
+                                        ))}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* LEGEND SECTION */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {[
+                    { label: 'Alkali Metals', style: 'bg-purple-500' },
+                    { label: 'Alkaline Earth', style: 'bg-violet-600' },
+                    { label: 'Transition', style: 'bg-rose-500' },
+                    { label: 'Metalloids', style: 'bg-indigo-500' },
+                    { label: 'Nonmetals', style: 'bg-amber-500' },
+                    { label: 'Noble Gas', style: 'bg-red-500' },
+                    { label: 'Post-Transition', style: 'bg-sky-400' },
+                    { label: 'Lanthanides', style: 'bg-emerald-400' },
+                    { label: 'Actinides', style: 'bg-teal-500' }
+                ].map(l => (
+                    <div key={l.label} className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-slate-50 shadow-sm">
+                        <div className={cn("w-4 h-4 rounded-full", l.style)} />
+                        <span className="text-[0.65rem] font-black uppercase tracking-widest text-slate-600">{l.label}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* ELEMENT DETAILS DRAWER / SECTION */}
+            <AnimatePresence>
+                {selectedElement && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 100 }}
+                        className="fixed inset-x-0 bottom-0 z-50 p-6 md:p-10 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.1)] rounded-t-[4rem] border-t border-slate-100 max-h-[80vh] overflow-y-auto"
+                    >
+                        <div className="max-w-4xl mx-auto space-y-8">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-8">
+                                    <div className={cn(
+                                        "w-24 h-24 md:w-32 md:h-32 rounded-3xl md:rounded-[2.5rem] border-[4px] border-white shadow-2xl flex flex-col items-center justify-center relative",
+                                        getCategoryStyles(selectedElement.c)
+                                    )}>
+                                        <span className="absolute top-2 left-3 text-sm md:text-lg font-black opacity-60 leading-none">{selectedElement.n}</span>
+                                        <span className="text-4xl md:text-6xl font-black italic tracking-tighter leading-none">{selectedElement.s}</span>
+                                        <span className="absolute bottom-2 right-3 text-[0.6rem] md:text-[0.8rem] font-black opacity-40 leading-none">{selectedElement.m}</span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[0.65rem] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{selectedElement.c.replace('-', ' ')} Model</p>
+                                        <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{selectedElement.name}</h2>
+                                        <div className="flex gap-2 pt-2">
+                                            <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Atomic: {selectedElement.n}</span>
+                                            <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Mass: {selectedElement.m}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedElement(null)} className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
+                                    <ArrowLeft className="w-6 h-6 rotate-270" />
+                                </button>
+                            </div>
+
+                            {/* FIRST 20 DETAILS */}
+                            {elementDetails[selectedElement.n] ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up">
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue"><Sigma className="w-5 h-5" /></div>
+                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Configuration</p>
+                                        </div>
+                                        <p className="text-3xl font-black text-slate-800 italic tracking-tighter font-mono">{elementDetails[selectedElement.n].ec}</p>
+                                        <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase">Stable arrangement of orbiting electrons.</p>
+                                    </div>
+                                    
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500"><Zap className="w-5 h-5" /></div>
+                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Valency</p>
+                                        </div>
+                                        <p className="text-3xl font-black text-slate-800 italic tracking-tighter">{elementDetails[selectedElement.n].v}</p>
+                                        <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase">Combining capacity of the atom.</p>
+                                    </div>
+
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500"><Activity className="w-5 h-5" /></div>
+                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Nucleus Data</p>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                                            <span className="text-[0.6rem] font-black text-emerald-600 uppercase tracking-widest">Protons</span>
+                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].p}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-slate-200 pb-2">
+                                            <span className="text-[0.6rem] font-black text-blue-600 uppercase tracking-widest">Neutrons</span>
+                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].n}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest">Electrons</span>
+                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].e}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-linear-to-br from-indigo-900 to-slate-900 p-10 rounded-[3rem] shadow-2xl md:col-span-2 lg:col-span-3 text-white relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
+                                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-ping" />
+                                                    <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-[0.4em]">Expert Key Features</p>
+                                                </div>
+                                                <p className="text-xl md:text-2xl font-black italic tracking-tighter leading-snug">
+                                                    {elementDetails[selectedElement.n].f}
+                                                </p>
+                                            </div>
+                                            <button 
+                                                onClick={() => navigate('/ai')}
+                                                className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
+                                            >
+                                                Learn More via AI
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-4">
+                                    <Info className="w-12 h-12 text-slate-300 mx-auto" />
+                                    <div className="space-y-1">
+                                        <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">Atomic Profile Partial</h3>
+                                        <p className="text-sm font-bold text-slate-400">Deep structural analysis is available for the first 20 elements. Ask Aadhar Pro for other elements.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate('/ai')}
+                                        className="inline-flex items-center gap-3 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:shadow-slate-900/20 mt-4"
+                                    >
+                                        <Zap className="w-4 h-4 text-amber-400 shadow-[0_0_10px_white]" /> Consult Expert
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+/* ── ATTENDANCE TRACKER ── */
+const AttendanceTracker = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="space-y-10 animate-fade-up">
+            <header className="flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Attendance</h1>
+            </header>
+            <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-6 shadow-xl">
+                <div className="w-24 h-24 bg-teal-50 rounded-[2.5rem] flex items-center justify-center mx-auto">
+                    <UserCheck className="w-12 h-12 text-teal-500" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">Attendance Log</h2>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Track your study consistency and school presence metadata.</p>
+                </div>
+                <div className="grid grid-cols-7 gap-2 max-w-sm mx-auto">
+                    {Array.from({ length: 31 }).map((_, i) => (
+                        <div key={i} className="aspect-square bg-slate-50 rounded-lg flex items-center justify-center text-[0.6rem] font-bold text-slate-300 border border-slate-100">{i+1}</div>
+                    ))}
+                </div>
+                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Select dates to mark presence</p>
+            </div>
+        </div>
+    );
+};
+
+/* ── FLASHCARDS APP ── */
+const FlashcardApp = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="space-y-10 animate-fade-up">
+            <header className="flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Flashcards</h1>
+            </header>
+            <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-10 opacity-5">
+                    <GalleryVertical className="w-32 h-32" />
+                </div>
+                <div className="w-64 h-80 bg-linear-to-br from-orange-500 to-amber-600 rounded-[3rem] mx-auto shadow-2xl flex items-center justify-center p-8 text-white relative group cursor-pointer hover:rotate-1 transition-transform">
+                   <p className="text-2xl font-black italic tracking-tighter uppercase">What is Valency?</p>
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-slate-800">Knowledge Decks</h2>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Active recall synthesis for rapid memorization.</p>
+                </div>
+                <button className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl">Create New Deck</button>
             </div>
         </div>
     );
@@ -2238,7 +2712,10 @@ const MCQTestPlayer = () => {
 
                     <div className="space-y-4">
                         <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl", config.gradient)}>Retake Intelligence Test</button>
-                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-linear-to-r from-blue to-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-blue/20">Return to Hub</button>
+                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-linear-to-r from-rose-500 to-pink-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-rose-500/20 group flex items-center justify-center gap-3">
+                            <Home className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
+                            Return to Hub
+                        </button>
                     </div>
                 </div>
             )}
@@ -4021,6 +4498,9 @@ const AppContent = () => {
                 <Route path="/tools/converter" element={<UnitConverterPage />} />
                 <Route path="/tools/todo" element={<TodoListPage />} />
                 <Route path="/tools/words" element={<WordCounterPage />} />
+                <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
+                <Route path="/tools/attendance" element={<AttendanceTracker />} />
+                <Route path="/tools/flashcards" element={<FlashcardApp />} />
             </Routes>
         </Layout>
     );
