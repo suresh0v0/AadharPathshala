@@ -261,15 +261,29 @@ const MockTest = () => {
                 const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
                 quizData = data.quiz || [];
             } else {
-                // GEMINI (MOMO) for questions
-                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-                const res = await ai.models.generateContent({
-                    model: "gemini-3-flash-preview",
-                    contents: prompt,
-                    config: { responseMimeType: "application/json" }
-                });
-                const data = JSON.parse(res.text || "{}");
-                quizData = data.quiz || [];
+                // GEMINI (MOMO) for questions with Fallback
+                try {
+                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+                    const res = await ai.models.generateContent({
+                        model: "gemini-3-flash-preview",
+                        contents: prompt,
+                        config: { responseMimeType: "application/json" }
+                    });
+                    const data = JSON.parse(res.text || "{}");
+                    quizData = data.quiz || [];
+                } catch (gemErr) {
+                    console.warn("Gemini Quiz generation failed, trying OpenRouter fallback", gemErr);
+                    try {
+                        const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: prompt }], true);
+                        const data = JSON.parse(fallbackJson || "{}");
+                        quizData = data.quiz || [];
+                    } catch (fallbackErr: any) {
+                        if (fallbackErr.message?.includes("OPENROUTER_API_KEY")) {
+                            throw new Error("Gemini quota full and OpenRouter fallback is not configured. Please set OPENROUTER_API_KEY in Secrets.");
+                        }
+                        throw fallbackErr;
+                    }
+                }
             }
 
             if (quizData.length === 0) throw new Error("No questions generated");
@@ -883,7 +897,10 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                 const newMessages = [...prev];
                 const errMsg = e.message || "";
                 let displayMsg = "MOMO is taking a short rest. Please try again in 30 seconds, Sathi!";
-                if (errMsg.includes("429") || errMsg.includes("quota")) {
+                
+                if (errMsg.includes("OPENROUTER_API_KEY")) {
+                    displayMsg = "MOMO fallback is not configured. Please add OPENROUTER_API_KEY to your Secrets to avoid quota errors, Sathi!";
+                } else if (errMsg.includes("429") || errMsg.includes("quota")) {
                     displayMsg = "We've hit a small limit! MOMO is re-energizing. Please wait a bit before asking again, Sathi.";
                 } else if (!errMsg) {
                     displayMsg = "Brain freeze! Please check your connection and try again.";
