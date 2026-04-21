@@ -39,8 +39,10 @@ const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) =>
   // We try multiple free models in case one is overloaded or down
   const models = [
     "meta-llama/llama-3.1-8b-instruct:free",
+    "meta-llama/llama-3.2-3b-instruct:free",
     "mistralai/mistral-7b-instruct:free",
-    "google/gemma-2-9b-it:free"
+    "google/gemma-2-9b-it:free",
+    "qwen/qwen-2-5-7b-instruct:free"
   ];
 
   let lastError = "";
@@ -286,7 +288,7 @@ const MockTest = () => {
                 try {
                     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
                     const res = await ai.models.generateContent({
-                        model: "gemini-3-flash-preview",
+                        model: "gemini-1.5-flash",
                         contents: prompt,
                         config: { responseMimeType: "application/json" }
                     });
@@ -886,7 +888,7 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                     ];
 
                     const response = await ai.models.generateContent({
-                        model: "gemini-3-flash-preview",
+                        model: "gemini-1.5-flash",
                         contents: contents,
                     });
 
@@ -2111,7 +2113,7 @@ const DictionaryPage = () => {
 
                 try {
                     const response = await ai.models.generateContent({
-                        model: "gemini-3-flash-preview",
+                        model: "gemini-1.5-flash",
                         contents: persona,
                         config: { responseMimeType: "application/json" }
                     });
