@@ -42,6 +42,7 @@ const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) =>
     "meta-llama/llama-3.2-3b-instruct:free",
     "mistralai/mistral-7b-instruct:free",
     "meta-llama/llama-3.1-8b-instruct:free",
+    "meta-llama/llama-3-8b-instruct:free",
     "google/gemma-2-9b-it:free",
     "qwen/qwen-2-5-7b-instruct:free"
   ];
@@ -50,6 +51,8 @@ const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) =>
 
   for (const model of models) {
     try {
+      // Add a tiny delay between retries if it's not the first model
+      if (lastError) await new Promise(r => setTimeout(r, 500));
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -1745,19 +1748,22 @@ const SubjectDetail = () => {
             <div className="mt-8">
                 <button 
                     onClick={() => navigate(`/hub/${name}/mcq-sets`)}
-                    className="w-full bg-[#020617] text-white p-8 rounded-[3rem] shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-slate-900"
+                    className={cn(
+                        "w-full p-8 rounded-[3rem] shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all text-white bg-linear-to-br",
+                        config.gradient
+                    )}
                 >
                     <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
-                            <PenTool className="w-8 h-8 text-blue" />
+                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20">
+                            <PenTool className="w-8 h-8 text-white" />
                         </div>
                         <div className="text-left">
                             <h3 className="text-xl font-black italic tracking-tighter uppercase leading-none">MCQ's Test</h3>
-                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest mt-2">Curated Exam Sets (Admin)</p>
+                            <p className="text-[0.65rem] font-black text-white/60 uppercase tracking-widest mt-2">Curated Exam Sets (Admin)</p>
                         </div>
                     </div>
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center group-hover:bg-blue transition-all">
-                        <Zap className="w-6 h-6 text-blue group-hover:text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]" />
+                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white group-hover:text-blue transition-all">
+                        <Zap className="w-6 h-6 text-white group-hover:text-amber-500 shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
                     </div>
                 </button>
             </div>
@@ -1769,6 +1775,7 @@ const SubjectDetail = () => {
 const MCQTestSelection = () => {
     const { name } = useParams();
     const navigate = useNavigate();
+    const [useTimer, setUseTimer] = useState(true);
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
     
     const sets = STATIC_MCQS[name as string] || [];
@@ -1784,9 +1791,22 @@ const MCQTestSelection = () => {
                 </div>
             </header>
 
-            <div className="space-y-2">
-                <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Subject: {name}</h1>
-                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em]">Verified Official Question Sets</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                <div className="space-y-1">
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{name} Tests</h1>
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em]">Verified Official Question Sets</p>
+                </div>
+                
+                <button 
+                    onClick={() => setUseTimer(!useTimer)}
+                    className={cn(
+                        "flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
+                        useTimer ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-400 border border-slate-200"
+                    )}
+                >
+                    <Timer className={cn("w-4 h-4", useTimer ? "animate-pulse" : "")} />
+                    Timer: {useTimer ? "Enabled" : "Disabled"}
+                </button>
             </div>
 
             {sets.length > 0 ? (
@@ -1794,7 +1814,7 @@ const MCQTestSelection = () => {
                     {sets.map((set, idx) => (
                         <button 
                             key={idx}
-                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}`)}
+                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}?timer=${useTimer}`)}
                             className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-center justify-between group hover:border-blue transition-all"
                         >
                             <div className="flex items-center gap-6">
@@ -1830,24 +1850,26 @@ const MCQTestSelection = () => {
 /* ── MCQ TEST PLAYER ── */
 const MCQTestPlayer = () => {
     const { name, setIndex } = useParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
     const [currentIdx, setCurrentIdx] = useState(0);
     const [answers, setAnswers] = useState<Record<number, string>>({});
     const [timer, setTimer] = useState(1800); // 30 minutes
+    const isTimerEnabled = searchParams.get('timer') !== 'false';
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     const setData = STATIC_MCQS[name as string]?.[parseInt(setIndex || '0')];
     const questions = setData?.questions || [];
 
     useEffect(() => {
-        if (status === 'quiz' && timer > 0) {
+        if (status === 'quiz' && isTimerEnabled && timer > 0) {
             const interval = setInterval(() => setTimer(t => t - 1), 1000);
             return () => clearInterval(interval);
-        } else if (timer === 0 && status === 'quiz') {
+        } else if (isTimerEnabled && timer === 0 && status === 'quiz') {
             setStatus('result');
         }
-    }, [status, timer]);
+    }, [status, timer, isTimerEnabled]);
 
     const formatTime = (seconds: number) => {
         const m = Math.floor(seconds / 60);
@@ -1864,32 +1886,32 @@ const MCQTestPlayer = () => {
     return (
         <div className="animate-fade-up pb-24">
             {status === 'quiz' ? (
-                <div className="space-y-8">
+                <div className="space-y-6 md:space-y-8">
                     <header className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", config.gradient)}>
-                                <Timer className="w-5 h-5" />
+                                {isTimerEnabled ? <Timer className="w-5 h-5 animate-pulse" /> : <ClipboardCheck className="w-5 h-5" />}
                             </div>
-                            <div className="text-3xl font-black italic tracking-tighter text-slate-900 tabular-nums">
-                                {formatTime(timer)}
+                            <div className="text-2xl md:text-3xl font-black italic tracking-tighter text-slate-900 tabular-nums">
+                                {isTimerEnabled ? formatTime(timer) : "Practice Mode"}
                             </div>
                         </div>
                         <button 
                             onClick={() => { if(confirm("End test?")) setStatus('result'); }}
-                            className="px-6 py-2 bg-rose-500 text-white rounded-xl font-black text-[0.6rem] uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
+                            className="px-5 py-2 bg-rose-500 text-white rounded-xl font-black text-[0.6rem] uppercase tracking-widest shadow-lg active:scale-95 transition-all"
                         >
-                            Finalize Test
+                            End Test
                         </button>
                     </header>
 
-                    <div className="grid grid-cols-10 gap-1.5 overflow-x-auto pb-4 scrollbar-hide">
+                    <div className="grid grid-cols-10 gap-1 overflow-x-auto pb-4 scrollbar-hide">
                         {questions.map((_: any, idx: number) => (
                             <button 
                                 key={idx}
                                 onClick={() => setCurrentIdx(idx)}
                                 className={cn(
-                                    "w-10 h-10 rounded-xl font-black text-[0.65rem] transition-all border shrink-0",
-                                    currentIdx === idx ? "bg-slate-900 text-white border-slate-900 shadow-xl scale-110" : 
+                                    "w-9 h-9 rounded-lg font-black text-[0.6rem] transition-all border shrink-0",
+                                    currentIdx === idx ? "bg-slate-900 text-white border-slate-900 scale-105" : 
                                     answers[idx] ? "bg-blue/10 text-blue border-blue/20" : "bg-white text-slate-400 border-slate-100"
                                 )}
                             >
@@ -1898,40 +1920,40 @@ const MCQTestPlayer = () => {
                         ))}
                     </div>
 
-                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] border-4 border-slate-50 shadow-2xl space-y-10 relative overflow-hidden">
+                    <div className="bg-white p-5 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border-2 md:border-4 border-slate-50 shadow-2xl space-y-6 md:space-y-10 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-8 opacity-5">
                             <GraduationCap className="w-32 h-32" />
                         </div>
                         
-                        <div className="space-y-4 relative z-10">
-                            <span className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                Question {currentIdx + 1}
+                        <div className="space-y-3 relative z-10">
+                            <span className="px-3 py-1 bg-slate-900 text-white rounded-full text-[0.55rem] font-black uppercase tracking-widest">
+                                Q {currentIdx + 1} / {questions.length}
                             </span>
-                            <h2 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight italic tracking-tighter uppercase whitespace-pre-wrap">
+                            <h2 className="text-xl md:text-3xl font-black text-slate-800 leading-tight italic tracking-tighter uppercase whitespace-pre-wrap">
                                 {questions[currentIdx].q}
                             </h2>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4 relative z-10">
+                        <div className="grid grid-cols-1 gap-3 md:gap-4 relative z-10">
                             {['a', 'b', 'c', 'd'].map(opt => (
                                 <button
                                     key={opt}
                                     onClick={() => setAnswers(prev => ({ ...prev, [currentIdx]: opt }))}
                                     className={cn(
-                                        "p-6 rounded-[2rem] border-2 text-left transition-all flex items-center gap-5 group active:scale-95",
+                                        "p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 text-left transition-all flex items-center gap-4 md:gap-5 group active:scale-95",
                                         answers[currentIdx] === opt ? 
-                                        "bg-blue border-blue shadow-[0_15px_30px_rgba(59,130,246,0.3)] translate-x-2" : 
+                                        "bg-blue border-blue shadow-lg translate-x-1 md:translate-x-2" : 
                                         "bg-slate-50 border-transparent hover:border-slate-200"
                                     )}
                                 >
                                     <div className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase transition-all shadow-sm",
+                                        "w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-black uppercase transition-all shadow-sm",
                                         answers[currentIdx] === opt ? "bg-white text-blue" : "bg-white text-slate-400 group-hover:scale-110"
                                     )}>
                                         {opt}
                                     </div>
                                     <span className={cn(
-                                        "font-bold text-lg",
+                                        "font-bold text-base md:text-lg",
                                         answers[currentIdx] === opt ? "text-white" : "text-slate-600"
                                     )}>
                                         {questions[currentIdx][opt as 'a'|'b'|'c'|'d']}
@@ -1940,27 +1962,27 @@ const MCQTestPlayer = () => {
                             ))}
                         </div>
 
-                        <div className="flex gap-4 pt-10">
+                        <div className="flex gap-3 md:gap-4 pt-6 md:pt-10">
                             <button 
                                 disabled={currentIdx === 0}
                                 onClick={() => setCurrentIdx(prev => prev - 1)}
-                                className="flex-1 py-5 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs disabled:opacity-50"
+                                className="flex-1 py-4 md:py-5 bg-slate-100 text-slate-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] disabled:opacity-50"
                             >
-                                Previous
+                                Back
                             </button>
                             {currentIdx === questions.length - 1 ? (
                                 <button 
                                     onClick={() => setStatus('result')}
-                                    className="flex-3 py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-500/20"
+                                    className="flex-3 py-4 md:py-5 bg-emerald-500 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-emerald-500/20"
                                 >
-                                    Complete Session
+                                    Finish
                                 </button>
                             ) : (
                                 <button 
                                     onClick={() => setCurrentIdx(prev => prev + 1)}
-                                    className="flex-3 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20"
+                                    className="flex-3 py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-slate-900/20"
                                 >
-                                    Next Intelligence
+                                    Continue
                                 </button>
                             )}
                         </div>
