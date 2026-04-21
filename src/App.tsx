@@ -29,6 +29,36 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * OpenRouter AI Fallback
+ */
+const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) => {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured. MOMO is currently offline.");
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": window.location.origin,
+      "X-Title": "Aadhar Pathshala",
+    },
+    body: JSON.stringify({
+      "model": "google/gemma-2-9b-it:free",
+      "messages": messages.map(m => ({
+        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
+        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+      })),
+      "response_format": isJson ? { "type": "json_object" } : undefined
+    })
+  });
+
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || "OpenRouter check failed");
+  return data.choices?.[0]?.message?.content || "";
+};
+
 // ════════════════════════════════════════════
 // CONSTANTS
 // ════════════════════════════════════════════
@@ -811,25 +841,42 @@ NEPALI MEDIUM: Use simple English + Nepali mix (Neplish).
 SAFETY: Never provide answers to illegal/harmful queries.
 ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
 
-                const contents = [
-                    { role: 'user', parts: [{ text: systemInstruction }] },
-                    ...updated.map(m => ({
-                        role: m.role === 'ai' ? 'model' : 'user',
-                        parts: [{ text: m.text }]
-                    }))
-                ];
+                try {
+                    const contents = [
+                        { role: 'user', parts: [{ text: systemInstruction }] },
+                        ...updated.map(m => ({
+                            role: m.role === 'ai' ? 'model' : 'user',
+                            parts: [{ text: m.text }]
+                        }))
+                    ];
 
-                const response = await ai.models.generateContent({
-                    model: "gemini-3-flash-preview",
-                    contents: contents,
-                });
+                    const response = await ai.models.generateContent({
+                        model: "gemini-3-flash-preview",
+                        contents: contents,
+                    });
 
-                const fullResponse = response.text || "I'm sorry, I couldn't process that. Try again!";
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].text = fullResponse;
-                    return newMessages;
-                });
+                    const fullResponse = response.text || "I'm sorry, I couldn't process that. Try again!";
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1].text = fullResponse;
+                        return newMessages;
+                    });
+                } catch (geminiErr: any) {
+                    console.warn("Gemini failed, falling back to OpenRouter", geminiErr);
+                    const contents = [
+                        { role: 'user', content: systemInstruction },
+                        ...updated.map(m => ({
+                            role: m.role === 'ai' ? 'assistant' : 'user',
+                            content: m.text
+                        }))
+                    ];
+                    const fallbackResponse = await callOpenRouterToMomo(contents);
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1].text = fallbackResponse;
+                        return newMessages;
+                    });
+                }
             }
         } catch (e: any) {
             setMessages(prev => {
@@ -2016,25 +2063,29 @@ const DictionaryPage = () => {
                 console.warn("Dictionary API failed, falling back to MOMO");
             }
 
-            // Priority 3: MOMO AI Fallback (Gemini)
+            // Priority 3: MOMO AI Fallback (Gemini with OpenRouter Fallback)
             try {
                 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-                const prompt = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
+                const persona = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
                 Explain it in MOMO's persona (warm, patient, like a big sibling). 
                 Include a relatable example if possible. Keep it concise but helpful. 
                 Format JSON: { "word": "${search}", "def": "definition here", "sub": "Subject category", "detail": "MOMO's special tip or insight" }`;
 
-                const response = await ai.models.generateContent({
-                    model: "gemini-3-flash-preview",
-                    contents: prompt,
-                    config: { responseMimeType: "application/json" }
-                });
+                try {
+                    const response = await ai.models.generateContent({
+                        model: "gemini-3-flash-preview",
+                        contents: persona,
+                        config: { responseMimeType: "application/json" }
+                    });
 
-                const aiData = JSON.parse(response.text || "{}");
-                setResult({
-                    ...aiData,
-                    source: 'MOMO AI'
-                });
+                    const aiData = JSON.parse(response.text || "{}");
+                    setResult({ ...aiData, source: 'MOMO AI' });
+                } catch (geminiErr) {
+                    console.warn("Gemini Dictionary fallback failed, using OpenRouter", geminiErr);
+                    const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: persona }], true);
+                    const aiData = JSON.parse(fallbackJson || "{}");
+                    setResult({ ...aiData, source: 'MOMO AI (Fallback)' });
+                }
             } catch (aiErr: any) {
                 const isQuotaVal = (aiErr.message || "").toLowerCase().includes("quota") || (aiErr.message || "").includes("429");
                 setResult({ 
