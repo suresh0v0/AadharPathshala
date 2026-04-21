@@ -38,7 +38,7 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
     // @ts-ignore
     const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
 
-    if (!apiKey) throw new Error("CEREBRAS_API_KEY is not configured.");
+    if (!apiKey) throw new Error("API key is not configured. Please add VITE_CEREBRAS_API_KEY to your environment variables.");
 
     const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
         method: "POST",
@@ -56,8 +56,8 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
         })
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "Cerebras API Error");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error?.message || "Cerebras API Error - It might be a CORS issue from browser fetch.");
     return data.choices?.[0]?.message?.content || "";
 };
 
@@ -68,7 +68,7 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
     // @ts-ignore
     const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
 
-    if (!apiKey) throw new Error("SAMBANOVA_API_KEY is not configured.");
+    if (!apiKey) throw new Error("API key is not configured. Please add VITE_SAMBANOVA_API_KEY to your environment variables.");
 
     const response = await fetch("https://api.sambanova.ai/v1/chat/completions", {
         method: "POST",
@@ -86,8 +86,8 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
         })
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "SambaNova API Error");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error?.message || "SambaNova API Error - It might be a CORS issue from browser fetch.");
     return data.choices?.[0]?.message?.content || "";
 };
 
@@ -845,11 +845,10 @@ const AITutor = () => {
             // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
-1. LATEX: EVERYTHING mathematically related (numbers, variables, formulas, equations, symbols) MUST be wrapped in LaTeX: $...$ for inline or $$...$$ for blocks.
-   Example: The value of $x$ is $5$. The formula is $E=mc^2$. NEVER use plain text for math.
-2. IMAGES: Include a relevant diagram or photo using markdown ONLY in this format: 
-   ![description](https://picsum.photos/seed/{SEARCH_TERM}/800/450)
-   Replace {SEARCH_TERM} with a specific English topic keyword that describes exactly what to show (e.g., "human_heart_diagram", "nepal_topography", "algebraic_graph").
+1. MATH & LATEX: ALWAYS use standard LaTeX formatting. Wrap inline math with $ and block math with $$. e.g. $$ E = mc^2 $$. DO NOT write words inside math arrays or equations unless absolutely necessary.
+2. IMAGES: When explaining a concept, always include a relevant diagram using markdown in this EXACT format: 
+   ![Image](https://image.pollinations.ai/prompt/{DESCRIPTION}?width=800&height=450&nologo=true)
+   Replace {DESCRIPTION} with a highly detailed, URL-encoded English description (e.g. detailed%20diagram%20of%20a%20plant%20cell).
 3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
@@ -929,8 +928,8 @@ ${sharedFormatting}`;
         } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
-                const errMsg = e.message || "";
-                let displayMsg = "Opp! Something went wrong in the study center. Please try again later, Sathi!";
+                const errMsg = e.message || String(e);
+                let displayMsg = `Opp! Something went wrong: ${errMsg}`;
                 if (errMsg.includes("429") || errMsg.includes("quota")) {
                     displayMsg = "We've hit a small limit! Please wait a bit before asking again, Sathi.";
                 }
@@ -1525,7 +1524,7 @@ const AadharToolkit = () => {
                             )}>
                                 <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-snug w-full px-1 group-hover:scale-105 transition-transform">{t.label}</p>
+                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-normal w-full px-1 pb-[2px] group-hover:scale-105 transition-transform">{t.label}</p>
                         </button>
                     );
                 })}
