@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
@@ -868,8 +869,8 @@ $$
 2. IMAGES & VISUALS: Whenever a student asks for a diagram, figure, or illustration, or when a visual would help explain a concept (like Science or Geography), you must provide an image using Markdown. 
    - For AI-Generated Diagrams/Art (Pollinations): Use this format: ![Figure](https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true). Replace 'DESCRIPTION' with a detailed subject using underscores instead of spaces (e.g., human_heart_diagram_labeled). 
    - For Real-Life Photos (Unsplash): Use this format: ![Photo](https://email.api.unsplash.com/search/photos?query=TOPIC&per_page=1). Replace 'TOPIC' with a simple keyword (e.g., Mt_Everest). 
-   - Image Formatting: NEVER include spaces in the URL. ALWAYS put the image on a new line. If the user doesn't specify the type, use Pollinations for diagrams and Unsplash for real photos.
-3. COLORS & TOPICS: Formulate answers using distinct HTML color spans for headings to separate topics. Example: <h3 style="color: #0ea5e9;">Topic Title</h3> or <strong style="color: #10b981;">Key Term</strong>. Use varied colors (like #e11d48, #0ea5e9, #10b981, #f59e0b) depending on the topic.
+   - Image Formatting: NEVER include spaces in the URL. ALWAYS put the image on a new line (use double newline before and after the image). If the user doesn't specify the type, use Pollinations for diagrams and Unsplash for real photos.
+3. HEADINGS & EMPHASIS: NEVER use HTML tags (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them.
 4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
@@ -1122,7 +1123,7 @@ ${sharedFormatting}`;
                                 )}>
                                     <Markdown 
                                         remarkPlugins={[remarkMath]} 
-                                        rehypePlugins={[rehypeKatex]}
+                                        rehypePlugins={[rehypeKatex, rehypeRaw]}
                                         components={{
                                             h1: ({node, ...props}) => <h1 className="text-3xl font-black text-rose-500 uppercase tracking-tighter mt-6 mb-2" {...props} />,
                                             h2: ({node, ...props}) => <h2 className="text-2xl font-black text-blue uppercase tracking-tighter mt-5 mb-2" {...props} />,
@@ -2696,7 +2697,7 @@ const DictionaryPage = () => {
                                     <div className="space-y-4">
                                         <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] border-l-4 border-blue pl-4">Definition</h3>
                                         <div className="text-3xl font-black text-slate-800 leading-tight tracking-tight">
-                                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
                                                 {result.def}
                                             </Markdown>
                                         </div>
@@ -2719,7 +2720,7 @@ const DictionaryPage = () => {
                                                     "text-xl font-bold italic tracking-tight leading-relaxed",
                                                     result.source === 'MOMO AI' ? "text-pink-600" : "text-slate-600"
                                                 )}>
-                                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
                                                         {result.detail}
                                                     </Markdown>
                                                 </div>
@@ -3131,7 +3132,7 @@ const FormulaBankPage = () => {
                         <span className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2 block">{activeSubject}</span>
                         <h3 className="font-black text-xl text-slate-900 mb-4">{f.title}</h3>
                         <div className="bg-slate-900 text-white p-6 rounded-2xl font-mono text-lg overflow-x-auto shadow-inner prose prose-invert prose-p:my-0 max-w-none">
-                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
                                 {`$$\n${f.formula}\n$$`}
                             </Markdown>
                         </div>
