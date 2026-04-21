@@ -10,7 +10,7 @@ import {
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye,
-  ClipboardCheck, XCircle, Library
+  ClipboardCheck, XCircle, Library, Grid3X3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -277,6 +277,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 // --- MOCK TEST ---
 const MockTest = () => {
     const { addTestResult, user } = useApp();
+    const navigate = useNavigate();
     const storageKey = `aadhar_mock_${user?.id || 'guest'}`;
 
     const [status, setStatus] = useState<'setup' | 'quiz' | 'result' | 'review'>(() => {
@@ -632,6 +633,7 @@ const MockTest = () => {
                     <div className="space-y-3 relative z-10">
                         <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest">Review Protocol</button>
                         <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
+                        <button onClick={() => navigate(`/hub/${settings.subject}`)} className="w-full py-6 bg-linear-to-r from-slate-700 to-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg">Return to Hub</button>
                     </div>
                 </div>
             )}
@@ -862,25 +864,21 @@ const AITutor = () => {
             // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
-1. MATH & LATEX: ALWAYS use standard LaTeX. Wrap inline math with $. CRITICAL: For block math, you MUST put double dollar signs $$ on their own separate lines. Example:
-$$
-E = mc^2
-$$
-2. IMAGES & VISUALS (CRITICAL): You MUST provide a suitable figure/image related to the topic for ALMOST EVERY response where a visual helps (Science, Geography, History, objects). 
-   - ALWAYS use Pollinations AI for all images, diagrams, or photos.
-   - Format: Use exactly <img src="https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" referrerpolicy="no-referrer" />
-   - Replace DESCRIPTION with a descriptive prompt using underscores instead of spaces. Keep the prompt under 10 words.
-   - Placement: The <img /> tag MUST be on its own line surrounded by empty lines. NEVER use Markdown ![alt](url) format.
-3. HEADINGS & EMPHASIS: NEVER use HTML tags for text styling (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them. (You may only use HTML for the <img> tag).
-4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
-5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
+1. MATH & LATEX: Use standard LaTeX. Wrap inline math with $. For block math, use double dollar signs $$ on separate lines.
+2. IMAGES & VISUALS (MANDATORY): You MUST provide a suitable figure/image related to the topic for Science, Geography, History, or complex objects.
+   - ALWAYS use Pollinations AI: <img src="https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" referrerpolicy="no-referrer" />
+   - Replace DESCRIPTION with a simple English prompt (max 5 words, underscores instead of spaces).
+   - CRITICAL: The <img /> tag MUST be on its own line with NO other text, backticks, or brackets on that line.
+3. HEADINGS: Use ### for headings. DO NOT use HTML for text.
+4. NO GREETINGS: Answer directly. No "Sure", "I can help", etc.
+5. PARAGRAPHS: Max 2 short sentences each.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
                 const systemPrompt = `You are ACHAR, the Instant Helper. 
-IDENTITY: Fast and efficient. 
-PERSONALITY: No greetings, no greetings, no unnecessary words.
+IDENTITY: Fast, efficient, concise.
 STYLE: Short bullet points.
+RESTRICTION: Avoid complex formulas unless directly asked for a math solution. Focus on quick facts.
 ${sharedFormatting}`;
 
                 const chatHistory = updated.map(m => ({
@@ -979,7 +977,10 @@ ${sharedFormatting}`;
                         <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">AI Hub</h1>
                     </div>
 
-                    <div className="text-center space-y-3 py-10">
+                    <div className="text-center space-y-3 py-10 flex flex-col items-center">
+                        <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-[2rem] flex items-center justify-center shadow-2xl mb-4 animate-bounce">
+                            <Bot className="w-10 h-10 text-white" />
+                        </div>
                         <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">K chha Sathi!</h2>
                         <p className="text-slate-500 font-bold max-w-[300px] mx-auto leading-relaxed">Choose your study companion for SEE 2083 prep.</p>
                     </div>
@@ -999,20 +1000,6 @@ ${sharedFormatting}`;
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
                         </button>
 
-                        {/* MANGO Card */}
-                        <button 
-                            onClick={() => { setActiveTutor('mango'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Sparkles className="w-8 h-8 text-white" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Reliable Backup (SambaNova)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
-                        </button>
-
                         {/* ACHAR Card */}
                         <button 
                             onClick={() => { setActiveTutor('achar'); setView('chat'); }}
@@ -1025,6 +1012,20 @@ ${sharedFormatting}`;
                             <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
                             <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
+                        </button>
+
+                        {/* MANGO Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('mango'); setView('chat'); }}
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-8 h-8 text-white" />
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Reliable Backup (SambaNova)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
                         </button>
                     </div>
                 </div>
@@ -1521,7 +1522,9 @@ const AadharToolkit = () => {
         { id: 'formulas', label: 'Formulas', icon: Sigma, color: 'purple', path: '/tools/formulas' },
         { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'blue', path: '/tools/calendar' },
         ...(isToolsPage ? [
-            { id: 'calculator', label: 'Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
+            { id: 'calculator', label: 'Sci-Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
+            { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/hub/Science/knowledge/periodic-table' },
+            { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/dictionary' },
             { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
             { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
@@ -2164,7 +2167,7 @@ const MCQTestPlayer = () => {
 
                     <div className="space-y-4">
                         <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl", config.gradient)}>Retake Intelligence Test</button>
-                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-slate-100 text-slate-600 rounded-[2rem] font-black uppercase tracking-widest text-sm">Return to Hub</button>
+                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-linear-to-r from-blue to-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-blue/20">Return to Hub</button>
                     </div>
                 </div>
             )}
