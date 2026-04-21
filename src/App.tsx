@@ -864,18 +864,17 @@ const AITutor = () => {
             // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
-1. MATH: Use $ for inline math and $$ for block math.
-2. IMAGES (PERFECTION): You MUST provide a highly relevant scientific/educational figure.
-   - USE THE EXACT TEMPLATE: <img src="https://image.pollinations.ai/prompt/DESCRIPTION" alt="DESCRIPTION" />
-   - Replace DESCRIPTION with a 6-word prompt that includes "labeled_scientific_diagram_high_quality".
-   - CRITICAL: DESCRIPTION must be identical in both src and alt. Use underscores for spaces.
-   - Example: human_nervous_system_anatomy_labeled_scientific_diagram
-3. VIBRANCY & STRUCTURE: Use Markdown headings (###, ##, #) liberally.
-   - MOMO (Expert): Use "### 🧬 Conceptual Foundation" and "### 💡 Real-world Case".
-   - MANGO (Precision): Use "### 📊 Data Analysis" and "### 🔍 Verified Factual Check".
-   - ACHAR (Speed): Use "### ⚡ Quick Logic Recap".
+1. MATH: Use $ for inline and $$ for block math on their own lines.
+2. IMAGES (MANDATORY): You MUST provide a clear scientific figure.
+   - USE EXACTLY: <img src="https://pollinations.ai/p/DESCRIPTION?width=1000&height=750&nologo=true" alt="DESCRIPTION" />
+   - Replace DESCRIPTION with a 5-word English prompt (labels, science, diagram). Use underscores for spaces.
+   - Example: human_cell_anatomy_scientific_diagram
+3. VIBRANCY: Use headers (###) and emojis to make answers colourful.
+   - MOMO (Guru): Use "### 🧬 Concept Dive" and "### 💡 Expert Insight".
+   - MANGO (Precision): Use "### 📊 Case Study" and "### 🔍 Fact Verified".
+   - ACHAR (Speed): Use "### ⚡ Quick Logic".
 4. NO GREETINGS: Answer directly.
-5. PARAGRAPHS: Max 2 short sentences per block. Use bold text for key terms.`;
+5. PARAGRAPHS: Max 2 short sentences. Use **bold** for key words.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
@@ -913,7 +912,7 @@ ${sharedFormatting}`;
                 // CEREBRAS (MOMO) Implementation
                 const systemInstruction = `You are MOMO, the Concept Tutor.
 IDENTITY: Academic Expert. Deep conceptual dives.
-STRUCTURE: ALWAYS use Markdown headings (###) for sections to provide a colorful, structured answer.
+VIBRANCY PERFECTION: You MUST start your response with "### 🧬 Concept Dive" and include "### 💡 Expert Insight".
 ${sharedFormatting}`;
 
                 const contents = [
@@ -934,7 +933,7 @@ ${sharedFormatting}`;
                 // SAMBANOVA (MANGO) Implementation
                 const systemInstruction = `You are MANGO, the Precise Assistant.
 IDENTITY: Fact-checker. Accurate, data-driven.
-STRUCTURE: ALWAYS use Markdown headings (###) for sections to provide a colorful, structured answer.
+VIBRANCY PERFECTION: You MUST start your response with "### 📊 Case Study" and include "### 🔍 Fact Verified".
 ${sharedFormatting}`;
 
                 const contents = [
@@ -1049,14 +1048,14 @@ ${sharedFormatting}`;
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div className={cn(
-                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg", 
-                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/20" : 
-                            activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/20" :
-                            "bg-linear-to-r from-slate-700 to-slate-900 shadow-slate-900/20"
+                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110", 
+                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
+                            activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
+                            "bg-linear-to-r from-emerald-500 to-teal-700 shadow-emerald-500/30"
                         )}>
                             {activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
                              activeTutor === 'mango' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
-                             <Zap className="text-emerald-400 w-5 h-5 md:w-6 md:h-6" />}
+                             <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />}
                         </div>
                         <div>
                             <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
@@ -1139,30 +1138,31 @@ ${sharedFormatting}`;
                                             h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
                                             strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
                                             img: ({node, ...props}) => {
-                                                const altText = props.alt || "educational_visual";
-                                                const prompt = altText.replace(/_/g, ' ');
-                                                // Using a more reliable strategy: detailed educational keywords baked into the URL
-                                                const highPrecisionUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt + ' highly detailed educational scientific textbook illustration white background')}?width=1024&height=768&nologo=true&seed=${i}`;
+                                                const altText = props.alt || "educational_diagram";
+                                                const prompt = altText.replace(/_/g, ' ').toLowerCase();
+                                                // Simplified URL structure that is more resilient to redirections
+                                                const stableUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt + ' educational scientific textbook diagram white background')}?width=1024&height=768&nologo=true&seed=${i}`;
                                                 
                                                 return (
-                                                    <div className="my-8 relative group">
-                                                        <div className="absolute -inset-1 bg-linear-to-r from-blue-500 to-indigo-600 rounded-[2.8rem] blur-xl opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200" />
-                                                        <img 
-                                                            src={highPrecisionUrl}
-                                                            alt={altText}
-                                                            className="relative rounded-[2.5rem] shadow-2xl border-4 border-white max-w-full h-auto mx-auto hover:scale-[1.03] transition-all duration-500 bg-slate-50 min-h-[300px] object-cover"
-                                                            referrerPolicy="no-referrer"
-                                                            loading="lazy"
-                                                            onError={(e) => {
-                                                                const target = e.target as HTMLImageElement;
-                                                                // If primary fails, try a slightly different but still relevant URL instead of random picsum
-                                                                if (!target.src.includes('retry=true')) {
-                                                                    target.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' realistic scientific diagram')}?width=800&height=600&nologo=true&retry=true`;
-                                                                }
-                                                            }}
-                                                        />
-                                                        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full text-[0.55rem] font-black text-blue uppercase tracking-widest shadow-sm">
-                                                            Aadhar Visual Core
+                                                    <div className="my-10 relative group-visual">
+                                                        <div className="absolute -inset-1.5 bg-linear-to-r from-blue-600 to-cyan-500 rounded-[3rem] blur-xl opacity-20" />
+                                                        <div className="relative overflow-hidden rounded-[2.8rem] bg-white border-[6px] border-white shadow-2xl">
+                                                            <img 
+                                                                src={stableUrl}
+                                                                alt={altText}
+                                                                className="w-full h-auto min-h-[350px] object-cover hover:scale-[1.05] transition-transform duration-700"
+                                                                referrerPolicy="no-referrer"
+                                                                loading="lazy"
+                                                                onError={(e) => {
+                                                                    const target = e.target as HTMLImageElement;
+                                                                    if (!target.src.includes('retry=true')) {
+                                                                        target.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' high quality science illustration')}?width=800&height=600&nologo=true&retry=true`;
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur-md px-4 py-1.5 rounded-full text-[0.6rem] font-black text-blue uppercase tracking-widest shadow-xl border border-blue/10">
+                                                                Aadhar Visual Engine
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 );
