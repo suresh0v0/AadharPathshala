@@ -48,7 +48,7 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
     try {
         const client = new Groq({ apiKey, baseURL: "https://api.cerebras.ai/v1", dangerouslyAllowBrowser: true });
         const response = await client.chat.completions.create({
-            model: "llama3.1-70b",
+            model: "llama-3.3-70b",
             messages: formattedMessages as any,
             response_format: isJson ? { type: "json_object" } : undefined
         });
@@ -61,7 +61,7 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
         
         const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
         const response = await backupClient.chat.completions.create({
-            model: "llama-3.1-70b-versatile",
+            model: "llama-3.3-70b-versatile",
             messages: formattedMessages as any,
             response_format: isJson ? { type: "json_object" } : undefined
         });
@@ -86,7 +86,7 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
     try {
         const client = new Groq({ apiKey, baseURL: "https://api.sambanova.ai/v1", dangerouslyAllowBrowser: true });
         const response = await client.chat.completions.create({
-            model: "Meta-Llama-3.1-70B-Instruct",
+            model: "Meta-Llama-3.3-70B-Instruct",
             messages: formattedMessages as any,
             response_format: isJson ? { type: "json_object" } : undefined
         });
@@ -99,7 +99,7 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
         
         const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
         const response = await backupClient.chat.completions.create({
-            model: "llama-3.1-70b-versatile",
+            model: "llama-3.3-70b-versatile",
             messages: formattedMessages as any,
             response_format: isJson ? { type: "json_object" } : undefined
         });
@@ -865,11 +865,9 @@ FORMATTING RULES:
 $$
 E = mc^2
 $$
-2. IMAGES: When explaining a concept, always include a relevant diagram using markdown in this EXACT format ON A SEPARATE DOUBLE NEWLINE:
-
-![Image](https://image.pollinations.ai/prompt/{DESCRIPTION}?width=800&height=450&nologo=true)
-
-Replace {DESCRIPTION} with a highly detailed, URL-encoded English description (e.g. detailed%20diagram%20of%20a%20plant%20cell). DO NOT append this to the same line as math equations. Always put double newlines before the image.
+2. IMAGES: If the user asks for a figure or image, please provide a Markdown image link like this: 
+![Figure](https://pollinations.ai/p/DESCRIPTION_OF_IMAGE)
+Replace DESCRIPTION_OF_IMAGE with a highly detailed, URL-encoded English description (e.g. diagram_of_two_planets_with_gravity_force_arrows). DO NOT append this to the same line as math equations. Always put double newlines before the image.
 3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
