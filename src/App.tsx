@@ -865,16 +865,17 @@ const AITutor = () => {
             const sharedFormatting = `
 FORMATTING RULES:
 1. MATH: Use $ for inline math and $$ for block math.
-2. IMAGES: You MUST include an image for Science/Geo/History.
-   - FORMAT: Use <img src="https://image.pollinations.ai/prompt/DESCRIPTION" alt="DESCRIPTION" />
-   - Replace DESCRIPTION with a 3-word prompt using underscores (e.g. respiratory_system_diagram).
-   - Put the tag on its own line with empty lines around it.
-3. STRUCTURE: Use ### for headings to make answers colorful.
-   - MOMO: "### Conceptual Core"
-   - MANGO: "### Factual Data"
-   - ACHAR: "### Quick Recap"
+2. IMAGES (PERFECTION): You MUST provide a highly relevant scientific/educational figure.
+   - USE THE EXACT TEMPLATE: <img src="https://image.pollinations.ai/prompt/DESCRIPTION" alt="DESCRIPTION" />
+   - Replace DESCRIPTION with a 6-word prompt that includes "labeled_scientific_diagram_high_quality".
+   - CRITICAL: DESCRIPTION must be identical in both src and alt. Use underscores for spaces.
+   - Example: human_nervous_system_anatomy_labeled_scientific_diagram
+3. VIBRANCY & STRUCTURE: Use Markdown headings (###, ##, #) liberally.
+   - MOMO (Expert): Use "### 🧬 Conceptual Foundation" and "### 💡 Real-world Case".
+   - MANGO (Precision): Use "### 📊 Data Analysis" and "### 🔍 Verified Factual Check".
+   - ACHAR (Speed): Use "### ⚡ Quick Logic Recap".
 4. NO GREETINGS: Answer directly.
-5. PARAGRAPHS: Max 2 sentences. Keep it short.`;
+5. PARAGRAPHS: Max 2 short sentences per block. Use bold text for key terms.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
@@ -1138,28 +1139,30 @@ ${sharedFormatting}`;
                                             h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
                                             strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
                                             img: ({node, ...props}) => {
-                                                const description = props.alt || "educational_diagram";
-                                                const cleanDescription = description.replace(/\s+/g, '_').toLowerCase();
-                                                // We use a robust endpoint and add a seed to bypass cache if it's broken
-                                                const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanDescription}_educational_high_quality_diagram?width=800&height=600&nologo=true&seed=${i}`;
+                                                const altText = props.alt || "educational_visual";
+                                                const prompt = altText.replace(/_/g, ' ');
+                                                // Using a more reliable strategy: detailed educational keywords baked into the URL
+                                                const highPrecisionUrl = `https://pollinations.ai/p/${encodeURIComponent(prompt + ' highly detailed educational scientific textbook illustration white background')}?width=1024&height=768&nologo=true&seed=${i}`;
                                                 
                                                 return (
-                                                    <div className="relative group my-8">
+                                                    <div className="my-8 relative group">
+                                                        <div className="absolute -inset-1 bg-linear-to-r from-blue-500 to-indigo-600 rounded-[2.8rem] blur-xl opacity-10 group-hover:opacity-20 transition duration-1000 group-hover:duration-200" />
                                                         <img 
-                                                            src={pollinationsUrl}
-                                                            alt={description}
-                                                            className="rounded-[2.5rem] shadow-2xl border-4 border-white max-w-full h-auto mx-auto hover:scale-[1.02] transition-transform duration-500 bg-slate-100 min-h-[200px]"
+                                                            src={highPrecisionUrl}
+                                                            alt={altText}
+                                                            className="relative rounded-[2.5rem] shadow-2xl border-4 border-white max-w-full h-auto mx-auto hover:scale-[1.03] transition-all duration-500 bg-slate-50 min-h-[300px] object-cover"
                                                             referrerPolicy="no-referrer"
                                                             loading="lazy"
                                                             onError={(e) => {
                                                                 const target = e.target as HTMLImageElement;
-                                                                if (!target.src.includes('picsum')) {
-                                                                    target.src = `https://picsum.photos/seed/${cleanDescription}/800/600`;
+                                                                // If primary fails, try a slightly different but still relevant URL instead of random picsum
+                                                                if (!target.src.includes('retry=true')) {
+                                                                    target.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' realistic scientific diagram')}?width=800&height=600&nologo=true&retry=true`;
                                                                 }
                                                             }}
                                                         />
-                                                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full text-[0.6rem] text-white font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            Interactive Visual Core
+                                                        <div className="absolute top-4 right-4 bg-white/80 backdrop-blur-md px-3 py-1 rounded-full text-[0.55rem] font-black text-blue uppercase tracking-widest shadow-sm">
+                                                            Aadhar Visual Core
                                                         </div>
                                                     </div>
                                                 );
