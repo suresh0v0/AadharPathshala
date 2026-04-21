@@ -16,10 +16,10 @@ export default defineConfig(({mode}) => {
   return {
     plugins: [react(), tailwindcss()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
-      'process.env.GROQ_API_KEY': JSON.stringify(groqKey),
-      'process.env.CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
-      'process.env.SAMBANOVA_API_KEY': JSON.stringify(sambanovaKey),
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
+      'import.meta.env.VITE_GROQ_API_KEY': JSON.stringify(groqKey),
+      'import.meta.env.VITE_CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
+      'import.meta.env.VITE_SAMBANOVA_API_KEY': JSON.stringify(sambanovaKey),
     },
     resolve: {
       alias: {

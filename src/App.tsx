@@ -36,9 +36,7 @@ function cn(...inputs: ClassValue[]) {
  */
 const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => {
     // @ts-ignore
-    const viteKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
-    const processKey = typeof process !== 'undefined' && process.env ? process.env.CEREBRAS_API_KEY : "";
-    const apiKey = processKey || viteKey;
+    const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
 
     if (!apiKey) throw new Error("CEREBRAS_API_KEY is not configured.");
 
@@ -68,9 +66,7 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
  */
 const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) => {
     // @ts-ignore
-    const viteKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
-    const processKey = typeof process !== 'undefined' && process.env ? process.env.SAMBANOVA_API_KEY : "";
-    const apiKey = processKey || viteKey;
+    const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
 
     if (!apiKey) throw new Error("SAMBANOVA_API_KEY is not configured.");
 
@@ -871,9 +867,7 @@ ${sharedFormatting}`;
                 }));
 
                 // @ts-ignore
-                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                const processGroqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
-                const groqKey = processGroqKey || viteGroqKey;
+                const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
                 const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
 
                 const stream = await groq.chat.completions.create({
@@ -1531,7 +1525,7 @@ const AadharToolkit = () => {
                             )}>
                                 <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-short w-full px-1 group-hover:scale-105 transition-transform">{t.label}</p>
+                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-snug w-full px-1 group-hover:scale-105 transition-transform">{t.label}</p>
                         </button>
                     );
                 })}
@@ -2460,9 +2454,7 @@ const DictionaryPage = () => {
                         console.warn("SambaNova also failed for Dictionary, trying Groq...", sambaErr);
                         // Tertiary Fallback: Groq for JSON definitions
                         // @ts-ignore
-                        const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                        const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
-                        const groqKey = processGroqKey || viteGroqKey;
+                        const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
                         
                         if (!groqKey) throw sambaErr;
 
