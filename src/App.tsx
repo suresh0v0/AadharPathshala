@@ -865,11 +865,10 @@ FORMATTING RULES:
 $$
 E = mc^2
 $$
-2. IMAGES: If the user asks for a figure or image, please provide a Markdown image link like this: 
-![Figure](https://image.pollinations.ai/prompt/DESCRIPTION_OF_IMAGE)
-Replace DESCRIPTION_OF_IMAGE with a highly detailed, URL-encoded English description (e.g. diagram_of_two_planets_with_gravity_force_arrows). DO NOT append this to the same line as math equations. Always put double newlines before the image.
-3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
-4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
+2. NO IMAGES/FIGURES: NEVER generate or respond with image links or markdown figures. Only respond with high-quality text, tables, and mathematical LaTeX.
+3. COLORS & TOPICS: Formulate answers using distinct HTML color spans for headings to separate topics. Example: <h3 style="color: #0ea5e9;">Topic Title</h3> or <strong style="color: #10b981;">Key Term</strong>. Use varied colors (like #e11d48, #0ea5e9, #10b981, #f59e0b) depending on the topic.
+4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
+5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
@@ -1121,6 +1120,13 @@ ${sharedFormatting}`;
                                     <Markdown 
                                         remarkPlugins={[remarkMath]} 
                                         rehypePlugins={[rehypeKatex]}
+                                        components={{
+                                            h1: ({node, ...props}) => <h1 className="text-3xl font-black text-rose-500 uppercase tracking-tighter mt-6 mb-2" {...props} />,
+                                            h2: ({node, ...props}) => <h2 className="text-2xl font-black text-blue uppercase tracking-tighter mt-5 mb-2" {...props} />,
+                                            h3: ({node, ...props}) => <h3 className="text-xl font-black text-emerald-500 uppercase tracking-tight mt-4 mb-2" {...props} />,
+                                            h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
+                                            strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />
+                                        }}
                                     >
                                         {m.text}
                                     </Markdown>
@@ -1269,10 +1275,21 @@ const GPACalculator = () => {
     };
 
     const gpa = calculateGPA();
+    
+    const getGpaColor = (gpaVal: number) => {
+        if (gpaVal >= 3.6) return 'from-emerald-400 to-emerald-600'; // A+
+        if (gpaVal >= 3.2) return 'from-green-400 to-green-600'; // A
+        if (gpaVal >= 2.8) return 'from-blue-400 to-blue-600'; // B+
+        if (gpaVal >= 2.4) return 'from-indigo-400 to-indigo-600'; // B
+        if (gpaVal >= 2.0) return 'from-amber-400 to-amber-600'; // C+
+        if (gpaVal >= 1.6) return 'from-orange-400 to-orange-600'; // C
+        if (gpaVal > 0) return 'from-rose-400 to-rose-600'; // D
+        return 'from-slate-400 to-slate-600'; // NG or 0
+    };
 
     return (
         <div className="space-y-6">
-            <div className="bg-linear-to-br from-indigo-500 to-blue-600 p-10 rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden">
+            <div className={cn("p-10 rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden transition-colors duration-500 bg-linear-to-br", getGpaColor(gpa))}>
                 <p className="text-[0.7rem] font-black uppercase tracking-[0.4em] mb-3 opacity-60">Composite GPA Estimate</p>
                 <h1 className="text-8xl font-black italic tracking-tighter mb-6">{gpa.toFixed(2)}</h1>
                 <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/10 rounded-full text-[0.7rem] font-black uppercase tracking-widest backdrop-blur-md border border-white/10">
@@ -1493,16 +1510,17 @@ const AadharToolkit = () => {
     const tools = [
         { id: 'hub', label: 'Study Hub', icon: BookOpen, color: 'indigo', path: '/hub' },
         { id: 'dictionary', label: 'Dictionary', icon: Book, color: 'emerald', path: '/tools/dictionary' },
-        { id: 'calculator', label: 'Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
-        ...(isToolsPage ? [
-            { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
-            { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'blue', path: '/tools/converter' },
-            { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'purple', path: '/tools/calendar' },
-            { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'teal', path: '/tools/todo' }
-        ] : []),
+        { id: 'notepad', label: 'Notepad & Files', icon: Edit3, color: 'orange', path: '/tools/notes' },
         { id: 'timer', label: 'Focus Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
         { id: 'formulas', label: 'Formulas', icon: Sigma, color: 'purple', path: '/tools/formulas' },
-        { id: 'notepad', label: 'Notepad & Files', icon: Edit3, color: 'orange', path: '/tools/notes' }
+        { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'blue', path: '/tools/calendar' },
+        ...(isToolsPage ? [
+            { id: 'calculator', label: 'Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
+            { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
+            { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
+            { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
+            { id: 'words', label: 'Word Counter', icon: FileText, color: 'emerald', path: '/tools/words' }
+        ] : []),
     ];
 
     return (
@@ -1615,69 +1633,139 @@ const NoticeBoard = () => {
 
 const NewsPage = () => {
     const { data } = useApp();
+    const [activeTab, setActiveTab] = useState<'All' | 'Exams' | 'Results' | 'General'>('All');
+
+    const filteredNews = data.news.filter(n => {
+        if (activeTab === 'All') return true;
+        return n.tag === activeTab;
+    });
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
-            <div className="space-y-1 mb-10">
-                <h1 className="text-5xl font-black text-[#020617] italic tracking-tighter uppercase">the pulse</h1>
-                <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-[0.3em] ml-1">Official NEB & Board Updates</p>
-            </div>
+        <div className="space-y-8 animate-fade-up pb-24">
+            <header className="space-y-2 mb-10">
+                <h1 className="text-5xl md:text-6xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Pulse</h1>
+                <p className="text-xs text-rose-500 font-bold uppercase tracking-[0.3em] ml-1">Official NEB & Board Updates</p>
+            </header>
 
             <NoticeBoard />
 
-            <div className="space-y-12">
-                <div className="flex items-center gap-3 px-1">
-                    <History className="w-5 h-5 text-slate-300" />
-                    <h2 className="text-xs font-black uppercase tracking-widest text-slate-400">Bulletin Archive</h2>
-                    <div className="flex-1 h-[1px] bg-slate-100" />
-                </div>
-
-                {data.news.map((n, i) => (
-                    <motion.div
-                        key={n.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="bg-white rounded-[3rem] border border-slate-100 shadow-[0_30px_60px_rgba(0,0,0,0.03)] overflow-hidden relative group active:scale-[0.98] transition-transform"
-                    >
-                        {n.imageUrl && (
-                            <div className="w-full h-72 overflow-hidden relative">
-                                <img 
-                                    src={n.imageUrl} 
-                                    alt={n.title} 
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
-                                    referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute inset-0 bg-linear-to-t from-[#020617]/90 via-[#020617]/20 to-transparent" />
-                                <div className="absolute bottom-6 left-8 flex gap-2">
-                                    <span className={cn("text-[0.6rem] font-black px-4 py-2 rounded-2xl uppercase tracking-widest text-white border border-white/20 backdrop-blur-xl", n.tagBg || 'bg-blue/80')}>
-                                        {n.tag}
-                                    </span>
-                                </div>
-                            </div>
+            <div className="flex bg-slate-100 p-2 rounded-[2rem] shadow-inner mt-8 overflow-x-auto custom-scrollbar">
+                {['All', 'Exams', 'Results', 'General'].map(tab => (
+                    <button 
+                        key={tab}
+                        onClick={() => setActiveTab(tab as any)}
+                        className={cn(
+                            "flex-1 min-w-[80px] py-3 px-4 rounded-[1.5rem] font-black text-[0.65rem] md:text-sm uppercase tracking-widest transition-all",
+                            activeTab === tab ? "bg-white text-blue shadow-lg" : "text-slate-400 hover:text-slate-600"
                         )}
-                        <div className="p-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-100">
-                                    <Calendar className="w-5 h-5 text-slate-400" />
-                                </div>
-                                <div>
-                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Date Published</p>
-                                    <span className="text-[0.75rem] font-black text-slate-800 uppercase tracking-tight">{n.date}</span>
-                                </div>
-                            </div>
-                            <h2 className="text-2xl font-black text-slate-900 mb-4 leading-[1.1] tracking-tight uppercase group-hover:text-blue transition-colors">{n.title}</h2>
-                            <p className="text-[0.92rem] text-slate-500 leading-relaxed font-bold mb-8">{n.body}</p>
-                            
-                            <div className="flex items-center justify-between border-t border-slate-50 pt-6">
-                                <div className="flex items-center gap-2 text-blue text-[0.7rem] font-black uppercase tracking-widest">
-                                    <span>Read Full Report</span>
-                                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                    >
+                        {tab}
+                    </button>
                 ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                <AnimatePresence mode="popLayout">
+                    {filteredNews.length > 0 ? filteredNews.map((n, i) => (
+                        <motion.div
+                            key={n.id}
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                            transition={{ delay: i * 0.05 }}
+                            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden relative group flex flex-col h-full"
+                        >
+                            {n.imageUrl && (
+                                <div className="w-full h-56 overflow-hidden relative shrink-0">
+                                    <img 
+                                        src={n.imageUrl} 
+                                        alt={n.title} 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                        referrerPolicy="no-referrer"
+                                    />
+                                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
+                                    <div className="absolute bottom-5 left-6 flex gap-2">
+                                        <span className={cn("text-[0.55rem] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest text-white border border-white/20 backdrop-blur-md", n.tagBg || 'bg-blue/80')}>
+                                            {n.tag}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="p-6 md:p-8 flex flex-col flex-1">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
+                                        <Calendar className="w-4 h-4 text-slate-400" />
+                                    </div>
+                                    <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{n.date}</span>
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-3 leading-tight tracking-tight uppercase group-hover:text-blue transition-colors">{n.title}</h2>
+                                <p className="text-[0.8rem] text-slate-500 leading-relaxed font-bold mb-6 flex-1 line-clamp-3">{n.body}</p>
+                                
+                                <div className="flex items-center justify-between border-t border-slate-50 pt-5 mt-auto">
+                                    <div className="flex items-center gap-2 text-rose-500 text-[0.65rem] font-black uppercase tracking-widest group-hover:gap-3 transition-all cursor-pointer">
+                                        <span>Read Full Report</span>
+                                        <ArrowLeft className="w-4 h-4 rotate-180" />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )) : (
+                        <div className="col-span-full py-12 text-center text-slate-400 font-black italic uppercase tracking-widest">
+                            No news found in this category.
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
+const WordCounterPage = () => {
+    const navigate = useNavigate();
+    const [text, setText] = useState('');
+
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    const readingTime = Math.ceil(words / 200);
+
+    return (
+        <div className="space-y-8 animate-fade-up pb-24">
+            <div className="flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Word Counter</h1>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+                <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] text-center shadow-xs">
+                    <div className="text-3xl font-black text-emerald-600 leading-none mb-1">{words}</div>
+                    <div className="text-[0.6rem] font-black uppercase tracking-widest text-emerald-400">Words</div>
+                </div>
+                <div className="bg-blue-50 border border-blue-100 p-6 rounded-[2rem] text-center shadow-xs">
+                    <div className="text-3xl font-black text-blue leading-none mb-1">{chars}</div>
+                    <div className="text-[0.6rem] font-black uppercase tracking-widest text-blue-400">Chars</div>
+                </div>
+                <div className="bg-amber-50 border border-amber-100 p-6 rounded-[2rem] text-center shadow-xs">
+                    <div className="text-3xl font-black text-amber-600 leading-none mb-1">{readingTime}</div>
+                    <div className="text-[0.6rem] font-black uppercase tracking-widest text-amber-400">Min Read</div>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+                <textarea
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder="Paste or type your essay here..."
+                    className="w-full h-64 p-6 outline-none resize-none text-slate-700 font-medium leading-relaxed bg-transparent"
+                />
+                <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center">
+                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400">Real-time analysis</span>
+                    <button 
+                        onClick={() => setText('')}
+                        className="text-xs font-black uppercase tracking-wider text-rose-500 hover:text-rose-600"
+                    >
+                        Clear Text
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -2190,7 +2278,7 @@ const ChapterList = () => {
     return (
         <div className="space-y-6 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Learning Modules</h1>
             </div>
 
@@ -2233,7 +2321,7 @@ const ChapterDetail = () => {
     return (
         <div className="space-y-8 animate-fade-up pb-24 text-slate-800">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}/chapters`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 line-clamp-1">{chapter.title}</h1>
             </div>
 
@@ -2281,7 +2369,7 @@ const VideoList = () => {
     return (
         <div className="space-y-6 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Explainer TV</h1>
             </div>
 
@@ -2322,7 +2410,7 @@ const PdfList = () => {
     return (
         <div className="space-y-6 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Knowledge Base</h1>
             </div>
 
@@ -2353,7 +2441,7 @@ const NoteList = () => {
     return (
         <div className="space-y-6 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Repository</h1>
             </div>
             <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
@@ -2374,7 +2462,7 @@ const ModelList = () => {
     return (
         <div className="space-y-6 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(`/hub/${name}`)} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Question Bank</h1>
             </div>
 
@@ -2716,7 +2804,7 @@ const StudyTimer = () => {
     return (
         <div className="space-y-8 animate-fade-up pb-24 text-center">
             <div className="flex items-center gap-3 text-left">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Deep Focus</h1>
             </div>
 
@@ -2761,28 +2849,43 @@ const ExamCalendar = () => {
     ];
 
     const months2083 = [
-        { name: 'Baisakh', days: 31 },
-        { name: 'Jestha', days: 31 },
-        { name: 'Ashadh', days: 32 },
-        { name: 'Shrawan', days: 32 },
-        { name: 'Bhadra', days: 31 },
-        { name: 'Ashwin', days: 30 },
-        { name: 'Kartik', days: 30 },
-        { name: 'Mangsir', days: 29 },
-        { name: 'Poush', days: 30 },
-        { name: 'Magh', days: 29 },
-        { name: 'Falgun', days: 30 },
-        { name: 'Chaitra', days: 30 }
+        { name: 'Baisakh', days: 31, offset: 2 },
+        { name: 'Jestha', days: 31, offset: 5 },
+        { name: 'Ashadh', days: 32, offset: 1 },
+        { name: 'Shrawan', days: 32, offset: 5 },
+        { name: 'Bhadra', days: 31, offset: 2 },
+        { name: 'Ashwin', days: 30, offset: 5 },
+        { name: 'Kartik', days: 30, offset: 0 },
+        { name: 'Mangsir', days: 29, offset: 2 },
+        { name: 'Poush', days: 30, offset: 3 },
+        { name: 'Magh', days: 29, offset: 5 },
+        { name: 'Falgun', days: 30, offset: 6 },
+        { name: 'Chaitra', days: 30, offset: 1 }
     ];
 
     const [activeMonth, setActiveMonth] = useState('Baisakh');
 
     const activeMonthData = months2083.find(m => m.name === activeMonth)!;
 
+    const monthColors: Record<string, string> = {
+        'Baisakh': 'bg-rose-50 text-rose-800 border-rose-200',
+        'Jestha': 'bg-orange-50 text-orange-800 border-orange-200',
+        'Ashadh': 'bg-amber-50 text-amber-800 border-amber-200',
+        'Shrawan': 'bg-emerald-50 text-emerald-800 border-emerald-200',
+        'Bhadra': 'bg-teal-50 text-teal-800 border-teal-200',
+        'Ashwin': 'bg-cyan-50 text-cyan-800 border-cyan-200',
+        'Kartik': 'bg-blue-50 text-blue-800 border-blue-200',
+        'Mangsir': 'bg-indigo-50 text-indigo-800 border-indigo-200',
+        'Poush': 'bg-violet-50 text-violet-800 border-violet-200',
+        'Magh': 'bg-purple-50 text-purple-800 border-purple-200',
+        'Falgun': 'bg-fuchsia-50 text-fuchsia-800 border-fuchsia-200',
+        'Chaitra': 'bg-pink-50 text-pink-800 border-pink-200',
+    };
+
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Board Cal. 2083</h1>
             </div>
 
@@ -2790,7 +2893,7 @@ const ExamCalendar = () => {
                 <select 
                     value={activeMonth}
                     onChange={(e) => setActiveMonth(e.target.value)}
-                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-lg outline-none text-slate-800"
+                    className={cn("w-full p-4 rounded-2xl font-black text-lg outline-none transition-colors border", monthColors[activeMonth])}
                 >
                     {months2083.map(m => (
                         <option key={m.name} value={m.name}>{m.name} 2083</option>
@@ -2799,7 +2902,10 @@ const ExamCalendar = () => {
 
                 <div className="grid grid-cols-7 gap-2">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                        <div key={i} className="text-center font-black text-[0.6rem] text-slate-400 py-2">{d}</div>
+                        <div key={i} className={cn("text-center font-black text-[0.6rem] py-2", i === 6 ? "text-red-500" : "text-slate-400")}>{d}</div>
+                    ))}
+                    {Array.from({ length: activeMonthData.offset }).map((_, i) => (
+                        <div key={`offset-${i}`} className="p-2" />
                     ))}
                     {Array.from({ length: activeMonthData.days }).map((_, i) => {
                         const dayNum = i + 1;
@@ -2811,7 +2917,8 @@ const ExamCalendar = () => {
                                 key={i} 
                                 className={cn(
                                     "aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold relative transition-all",
-                                    event ? "bg-blue/10 text-blue border border-blue/20 shadow-sm" : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                    (i + activeMonthData.offset) % 7 === 6 ? "text-red-500" : "text-slate-700",
+                                    event ? "bg-blue/10 border border-blue/20 shadow-sm font-black" : "bg-slate-50 hover:bg-slate-100"
                                 )}
                             >
                                 {dayNum}
@@ -2858,7 +2965,7 @@ const LeaderboardPage = () => {
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">SEE Board</h1>
             </div>
 
@@ -2910,66 +3017,119 @@ const LeaderboardPage = () => {
 
 const FormulaBankPage = () => {
     const navigate = useNavigate();
-    const formulas = [
-        { title: 'Ohm\'s Law', formula: 'V = I × R', sub: 'Physics' },
-        { title: 'Quadratic Equation', formula: 'x = (-b ± √(b²-4ac)) / 2a', sub: 'Maths' },
-        { title: 'Photosynthesis', formula: '6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂', sub: 'Science' },
-        { title: 'Simple Interest', formula: 'I = (P × T × R) / 100', sub: 'Maths' },
-        { title: 'Compound Interest (Yearly)', formula: 'CI = P[(1 + R/100)^T - 1]', sub: 'Maths' },
-        { title: 'Compound Amount', formula: 'CA = P(1 + R/100)^T', sub: 'Maths' },
-        { title: 'Population Growth', formula: 'Pt = P0(1 + R/100)^T', sub: 'Maths' },
-        { title: 'Depreciation', formula: 'Vt = V0(1 - R/100)^T', sub: 'Maths' },
-        { title: 'Area of Triangle (Base & Height)', formula: 'A = 1/2 × b × h', sub: 'Maths' },
-        { title: 'Area of Equilateral Triangle', formula: 'A = (√3 / 4) × a²', sub: 'Maths' },
-        { title: 'Area of Scalene Triangle (Heron)', formula: 'A = √[s(s-a)(s-b)(s-c)]', sub: 'Maths' },
-        { title: 'Area of Isosceles Triangle', formula: 'A = (b/4) × √(4a² - b²)', sub: 'Maths' },
-        { title: 'Curved Surface Area of Cylinder', formula: 'CSA = 2πrh', sub: 'Maths' },
-        { title: 'Total Surface Area of Cylinder', formula: 'TSA = 2πr(r + h)', sub: 'Maths' },
-        { title: 'Volume of Cylinder', formula: 'V = πr²h', sub: 'Maths' },
-        { title: 'Volume of Cone', formula: 'V = 1/3 πr²h', sub: 'Maths' },
-        { title: 'Curved Surface Area of Cone', formula: 'CSA = πrl', sub: 'Maths' },
-        { title: 'Total Surface Area of Cone', formula: 'TSA = πr(r + l)', sub: 'Maths' },
-        { title: 'Volume of Sphere', formula: 'V = 4/3 πr³', sub: 'Maths' },
-        { title: 'Surface Area of Sphere', formula: 'SA = 4πr²', sub: 'Maths' },
-        { title: 'Volume of Hemisphere', formula: 'V = 2/3 πr³', sub: 'Maths' },
-        { title: 'Total Surface Area of Hemisphere', formula: 'TSA = 3πr²', sub: 'Maths' },
-        { title: 'Median (Continuous Series)', formula: 'Md = L + [(N/2 - c.f.) / f] × i', sub: 'Maths' },
-        { title: 'Newton\'s Law of Gravitation', formula: 'F = G(m₁m₂) / d²', sub: 'Physics' },
-        { title: 'Acceleration Due to Gravity', formula: 'g = GM / R²', sub: 'Physics' },
-        { title: 'Weight', formula: 'W = mg', sub: 'Physics' },
-        { title: 'Liquid Pressure', formula: 'P = hdg', sub: 'Physics' },
-        { title: 'Archimedes\' Principle (Upthrust)', formula: 'U = Vρg', sub: 'Physics' },
-        { title: 'Specific Heat Capacity (Heat Equation)', formula: 'Q = msΔθ', sub: 'Physics' },
-        { title: 'Power of a Lens', formula: 'P = 1 / f (in meters)', sub: 'Physics' },
-        { title: 'Magnification', formula: 'M = v / u', sub: 'Physics' },
-        { title: 'Electric Power', formula: 'P = V × I', sub: 'Physics' },
-        { title: 'Electric Energy', formula: 'E = P × t', sub: 'Physics' },
-        { title: 'Work Done', formula: 'W = F × d', sub: 'Physics' },
-        { title: 'Kinetic Energy', formula: 'KE = 1/2 mv²', sub: 'Physics' },
-        { title: 'Potential Energy', formula: 'PE = mgh', sub: 'Physics' },
-        { title: 'Wave Velocity', formula: 'v = f × λ (lambda)', sub: 'Physics' },
-        { title: 'Distance between two points', formula: 'd = √[(x₂ - x₁)² + (y₂ - y₁)²]', sub: 'Opt. Maths' },
-        { title: 'Mid-point Formula', formula: 'M(x, y) = ((x₁ + x₂) / 2, (y₁ + y₂) / 2)', sub: 'Opt. Maths' },
-        { title: 'Section Formula (Internal)', formula: '(x, y) = ((m₁x₂ + m₂x₁)/(m₁ + m₂), (m₁y₂ + m₂y₁)/(m₁ + m₂))', sub: 'Opt. Maths' },
-        { title: 'Slope of a Line', formula: 'm = (y₂ - y₁) / (x₂ - x₁)', sub: 'Opt. Maths' },
-        { title: 'Sine Rule', formula: 'a/sinA = b/sinB = c/sinC', sub: 'Opt. Maths' },
-        { title: 'Cosine Rule', formula: 'c² = a² + b² - 2ab(cosC)', sub: 'Opt. Maths' }
-    ];
+    const [activeSubject, setActiveSubject] = useState<'Maths' | 'Opt. Maths' | 'Science'>('Maths');
+
+    const formulasList: Record<'Maths' | 'Opt. Maths' | 'Science', any[]> = {
+        'Maths': [
+            { title: '(a+b)²', formula: '(a+b)^2 = a^2 + 2ab + b^2' },
+            { title: '(a-b)²', formula: '(a-b)^2 = a^2 - 2ab + b^2' },
+            { title: 'a² - b²', formula: 'a^2 - b^2 = (a-b)(a+b)' },
+            { title: '(a+b)³', formula: '(a+b)^3 = a^3 + 3a^2b + 3ab^2 + b^3' },
+            { title: 'a³ + b³', formula: 'a^3 + b^3 = (a+b)(a^2 - ab + b^2)' },
+            { title: 'a³ - b³', formula: 'a^3 - b^3 = (a-b)(a^2 + ab + b^2)' },
+            { title: 'Quadratic Equation Roots', formula: 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}' },
+            { title: 'Product Law of Indices', formula: 'a^m \\times a^n = a^{m+n}' },
+            { title: 'Quotient Law of Indices', formula: '\\frac{a^m}{a^n} = a^{m-n}' },
+            { title: 'Power Law of Indices', formula: '(a^m)^n = a^{mn}' },
+            { title: 'Simple Interest', formula: 'I = \\frac{P \\times T \\times R}{100}' },
+            { title: 'Amount', formula: 'A = P + I = P\\left(1 + \\frac{TR}{100}\\right)' },
+            { title: 'Compound Interest (Yearly)', formula: 'C.I. = P\\left[\\left(1 + \\frac{R}{100}\\right)^T - 1\\right]' },
+            { title: 'Compound Amount (Yearly)', formula: 'C.A. = P\\left(1 + \\frac{R}{100}\\right)^T' },
+            { title: 'Compound Interest (Half-Yearly)', formula: 'C.I. = P\\left[\\left(1 + \\frac{R}{200}\\right)^{2T} - 1\\right]' },
+            { title: 'Population Growth', formula: 'P_t = P_0\\left(1 + \\frac{R}{100}\\right)^T' },
+            { title: 'Depreciation', formula: 'D = V_0\\left(1 - \\frac{R}{100}\\right)^T' },
+            { title: 'Area of Triangle (Base & Height)', formula: 'A = \\frac{1}{2} b h' },
+            { title: 'Area of Equilateral Triangle', formula: 'A = \\frac{\\sqrt{3}}{4} a^2' },
+            { title: 'Area of Scalene Triangle (Heron\'s)', formula: 'A = \\sqrt{s(s-a)(s-b)(s-c)}' },
+            { title: 'Area of Isosceles Triangle', formula: 'A = \\frac{b}{4} \\sqrt{4a^2 - b^2}' },
+            { title: 'Curved Surface Area of Cylinder', formula: 'C.S.A. = 2\\pi rh' },
+            { title: 'Total Surface Area of Cylinder', formula: 'T.S.A. = 2\\pi r(r + h)' },
+            { title: 'Volume of Cylinder', formula: 'V = \\pi r^2 h' },
+            { title: 'Volume of Cone', formula: 'V = \\frac{1}{3} \\pi r^2 h' },
+            { title: 'Curved Surface Area of Cone', formula: 'C.S.A. = \\pi rl' },
+            { title: 'Total Surface Area of Cone', formula: 'T.S.A. = \\pi r(r + l)' },
+            { title: 'Volume of Sphere', formula: 'V = \\frac{4}{3} \\pi r^3' },
+            { title: 'Surface Area of Sphere', formula: 'S.A. = 4\\pi r^2' },
+            { title: 'Volume of Hemisphere', formula: 'V = \\frac{2}{3} \\pi r^3' },
+            { title: 'Total Surface Area of Hemisphere', formula: 'T.S.A. = 3\\pi r^2' },
+            { title: 'Mean (Ungrouped)', formula: '\\overline{X} = \\frac{\\sum x}{N}' },
+            { title: 'Mean (Grouped)', formula: '\\overline{X} = \\frac{\\sum fx}{N}' },
+            { title: 'Median (Continuous Series)', formula: 'M_d = L + \\frac{\\frac{N}{2} - c.f.}{f} \\times i' },
+            { title: 'Mode (Continuous Series)', formula: 'M_o = L + \\frac{f_1 - f_0}{2f_1 - f_0 - f_2} \\times i' }
+        ],
+        'Opt. Maths': [
+            { title: 'Distance between two points', formula: 'd = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}' },
+            { title: 'Mid-point Formula', formula: 'M(x, y) = \\left(\\frac{x_1 + x_2}{2}, \\frac{y_1 + y_2}{2}\\right)' },
+            { title: 'Section Formula (Internal)', formula: '(x, y) = \\left(\\frac{m_1x_2 + m_2x_1}{m_1 + m_2}, \\frac{m_1y_2 + m_2y_1}{m_1 + m_2}\\right)' },
+            { title: 'Section Formula (External)', formula: '(x, y) = \\left(\\frac{m_1x_2 - m_2x_1}{m_1 - m_2}, \\frac{m_1y_2 - m_2y_1}{m_1 - m_2}\\right)' },
+            { title: 'Slope of a Line', formula: 'm = \\frac{y_2 - y_1}{x_2 - x_1}' },
+            { title: 'Equation of straight line (Slope-intercept)', formula: 'y = mx + c' },
+            { title: 'Equation of straight line (Point-slope)', formula: 'y - y_1 = m(x - x_1)' },
+            { title: 'Angle between two lines', formula: '\\tan\\theta = \\pm \\frac{m_1 - m_2}{1 + m_1m_2}' },
+            { title: 'Sine Rule', formula: '\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}' },
+            { title: 'Cosine Rule (for cos C)', formula: '\\cos C = \\frac{a^2 + b^2 - c^2}{2ab}' },
+            { title: 'Sin(A+B)', formula: '\\sin(A+B) = \\sin A\\cos B + \\cos A\\sin B' },
+            { title: 'Cos(A+B)', formula: '\\cos(A+B) = \\cos A\\cos B - \\sin A\\sin B' },
+            { title: 'Tan(A+B)', formula: '\\tan(A+B) = \\frac{\\tan A + \\tan B}{1 - \\tan A\\tan B}' },
+            { title: 'Sin 2A', formula: '\\sin 2A = 2\\sin A\\cos A = \\frac{2\\tan A}{1 + \\tan^2 A}' },
+            { title: 'Cos 2A', formula: '\\cos 2A = \\cos^2 A - \\sin^2 A = 1 - 2\\sin^2 A = 2\\cos^2 A - 1' },
+            { title: 'Tan 2A', formula: '\\tan 2A = \\frac{2\\tan A}{1 - \\tan^2 A}' },
+            { title: 'Dot Product', formula: '\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos\\theta' },
+            { title: 'Magnitude of Vector', formula: '|\\vec{v}| = \\sqrt{x^2 + y^2}' }
+        ],
+        'Science': [
+            { title: 'Newton\'s Law of Gravitation', formula: 'F = G\\frac{m_1 m_2}{d^2}' },
+            { title: 'Acceleration Due to Gravity', formula: 'g = \\frac{GM}{R^2}' },
+            { title: 'Weight', formula: 'W = mg' },
+            { title: 'Liquid Pressure', formula: 'P = \\rho g h' },
+            { title: 'Archimedes\' Principle (Upthrust)', formula: 'U = V \\rho g' },
+            { title: 'Specific Heat Capacity (Heat Equation)', formula: 'Q = ms\\Delta\\theta' },
+            { title: 'Power of a Lens', formula: 'P = \\frac{1}{f}' },
+            { title: 'Magnification', formula: 'M = \\frac{v}{u}' },
+            { title: 'Electric Power', formula: 'P = V \\times I = I^2 R = \\frac{V^2}{R}' },
+            { title: 'Electric Energy', formula: 'E = P \\times t' },
+            { title: 'Work Done', formula: 'W = F \\times d' },
+            { title: 'Kinetic Energy', formula: 'K.E. = \\frac{1}{2} mv^2' },
+            { title: 'Potential Energy', formula: 'P.E. = mgh' },
+            { title: 'Ohm\'s Law', formula: 'V = I \\times R' },
+            { title: 'Resistance in Series', formula: 'R_{eq} = R_1 + R_2 + ... + R_n' },
+            { title: 'Resistance in Parallel', formula: '\\frac{1}{R_{eq}} = \\frac{1}{R_1} + \\frac{1}{R_2} + ... + \\frac{1}{R_n}' },
+            { title: 'Velocity of Wave', formula: 'v = f \\times \\lambda' },
+            { title: 'Refractive Index', formula: '\\mu = \\frac{\\sin i}{\\sin r} = \\frac{c}{v}' }
+        ]
+    };
 
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Formula Bank</h1>
             </div>
 
+            <div className="flex bg-slate-100 p-2 rounded-[2rem] shadow-inner mb-6">
+                {(Object.keys(formulasList) as ('Maths' | 'Opt. Maths' | 'Science')[]).map(subj => (
+                    <button 
+                        key={subj}
+                        onClick={() => setActiveSubject(subj)}
+                        className={cn(
+                            "flex-1 py-3 px-4 rounded-[1.5rem] font-black text-[0.65rem] md:text-sm uppercase tracking-widest transition-all",
+                            activeSubject === subj ? "bg-white text-blue shadow-lg" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        {subj}
+                    </button>
+                ))}
+            </div>
+
             <div className="space-y-4">
-                {formulas.map(f => (
+                {formulasList[activeSubject].map(f => (
                     <div key={f.title} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm group hover:border-blue transition-all">
-                        <span className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2 block">{f.sub}</span>
+                        <span className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2 block">{activeSubject}</span>
                         <h3 className="font-black text-xl text-slate-900 mb-4">{f.title}</h3>
-                        <div className="bg-slate-900 text-white p-6 rounded-2xl font-mono text-lg overflow-x-auto shadow-inner">
-                            {f.formula}
+                        <div className="bg-slate-900 text-white p-6 rounded-2xl font-mono text-lg overflow-x-auto shadow-inner prose prose-invert prose-p:my-0 max-w-none">
+                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                {`$$\n${f.formula}\n$$`}
+                            </Markdown>
                         </div>
                     </div>
                 ))}
@@ -3255,7 +3415,7 @@ const NotePadPage = () => {
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Pad</h1>
             </div>
 
@@ -3754,6 +3914,7 @@ const AppContent = () => {
                 <Route path="/tools/formulas" element={<FormulaBankPage />} />
                 <Route path="/tools/converter" element={<UnitConverterPage />} />
                 <Route path="/tools/todo" element={<TodoListPage />} />
+                <Route path="/tools/words" element={<WordCounterPage />} />
             </Routes>
         </Layout>
     );
