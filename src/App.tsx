@@ -10,7 +10,7 @@ import {
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye,
-  ClipboardCheck, XCircle
+  ClipboardCheck, XCircle, Library
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -44,6 +44,18 @@ const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient:
   'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' },
   'Economics': { color: 'green', icon: TrendingUp, gradient: 'from-green-500 to-emerald-600' },
   'Health': { color: 'rose', icon: Activity, gradient: 'from-rose-400 to-red-500' }
+};
+
+const BOOK_LINKS: Record<string, string> = {
+    'Maths': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
+    'Optional Maths': 'https://drive.google.com/file/d/1vJS4bY7fkLs5QbrLXFNKmvFFhrznzGrg/view?usp=drivesdk',
+    'Science': 'https://drive.google.com/file/d/1lwcVyKC2tZyzScya7Qfw1p-9CWdVfkKm/view?usp=drivesdk',
+    'सामाजिक': 'https://drive.google.com/file/d/1t3hbvuPC2CgPGvdwmKRbrCVOHPiKSAhl/view?usp=drivesdk',
+    'English': 'https://drive.google.com/file/d/1kmRslmTG3vzXFGwjE5xsdE0SzAPi75bt/view?usp=drivesdk',
+    'नेपाली': 'https://drive.google.com/file/d/1aaVFJKXRRIrW4UriLQaaopVpkaA9AQZY/view?usp=drivesdk',
+    'Computer': 'https://drive.google.com/file/d/1XL9dSK7Vjvxo888E4Thlxbb5yQSIjUdb/view?usp=drivesdk',
+    'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
+    'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
 };
 
 // ════════════════════════════════════════════
@@ -1532,16 +1544,30 @@ const SubjectDetail = () => {
 
     const sections = [
         { id: 'chapters', label: 'Study Chapters', icon: Book, color: 'bg-emerald-50 text-emerald-600', count: '12 Units' },
+        { id: 'book', label: 'Digital Textbook', icon: Library, color: 'bg-cyan-50 text-cyan-600', count: 'Official PDF' },
         { id: 'videos', label: 'Video Tutorials', icon: PlayCircle, color: 'bg-rose-50 text-rose-600', count: '45+ Videos' },
         { id: 'pdfs', label: 'Note Archives', icon: FileText, color: 'bg-blue-50 text-blue-600', count: '10 PDFs' },
         { id: 'notes', label: 'Shared Notes', icon: Edit3, color: 'bg-amber-50 text-amber-600', count: 'Community' },
         { id: 'model', label: 'Model Questions', icon: ListChecks, color: 'bg-indigo-50 text-indigo-600', count: '2083 Pattern' }
     ];
 
+    const handleSectionClick = (sectionId: string) => {
+        if (sectionId === 'book') {
+            const link = BOOK_LINKS[name as string];
+            if (link) {
+                window.open(link, '_blank');
+            } else {
+                alert("Note: This book section is currently being updated for the 2083 session. Please check back in a few hours!");
+            }
+        } else {
+            navigate(`/hub/${name}/${sectionId}`);
+        }
+    };
+
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
+        <div className="space-y-8 animate-fade-up pb-24 text-[#020617]">
             <header className="flex items-center justify-between">
-                <button onClick={() => navigate('/hub')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                <button onClick={() => navigate('/hub')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
                 <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", `bg-${config.color}-50 text-${config.color}-600`)}>
@@ -1568,8 +1594,8 @@ const SubjectDetail = () => {
                 {sections.map(Section => (
                     <button 
                         key={Section.id} 
-                        onClick={() => navigate(`/hub/${name}/${Section.id}`)}
-                        className="bg-white p-7 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all hover:border-blue"
+                        onClick={() => handleSectionClick(Section.id)}
+                        className="bg-white p-7 rounded-[2.5rem] border-2 border-slate-50 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all hover:border-blue hover:shadow-xl"
                     >
                         <div className="flex items-center gap-5">
                             <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform", Section.color)}>
@@ -1581,7 +1607,7 @@ const SubjectDetail = () => {
                             </div>
                         </div>
                         <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-blue group-hover:text-white transition-all">
-                            <ChevronRight className="w-5 h-5" />
+                            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </div>
                     </button>
                 ))}
