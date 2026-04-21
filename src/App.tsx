@@ -30,60 +30,62 @@ function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * OpenRouter AI Fallback with Multi-Model Redundancy
+ * OpenRouter AI Fallback with Multi-Model Redundancy and Multi-Source Support
  */
 const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) => {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured. MOMO is currently offline.");
+    // Try to get key from Vite env or process.env
+    // @ts-ignore
+    const viteKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+    const processKey = typeof process !== 'undefined' && process.env ? process.env.OPENROUTER_API_KEY : "";
+    const apiKey = processKey || viteKey;
 
-  // We try multiple free models in case one is overloaded or down
-  const models = [
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.2-3b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "google/gemma-2-9b-it:free",
-    "qwen/qwen-2-5-7b-instruct:free"
-  ];
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured. Please check your Secrets.");
 
-  let lastError = "";
+    const models = [
+        "google/gemini-2.0-flash-exp:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "mistralai/mistral-7b-instruct:free",
+        "qwen/qwen-2-5-7b-instruct:free",
+        "meta-llama/llama-3.1-8b-instruct:free",
+    ];
 
-  for (const model of models) {
-    try {
-      // Add a tiny delay between retries if it's not the first model
-      if (lastError) await new Promise(r => setTimeout(r, 500));
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": window.location.origin,
-          "X-Title": "Aadhar Pathshala",
-        },
-        body: JSON.stringify({
-          "model": model,
-          "messages": messages.map(m => ({
-            role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
-            content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-          })),
-          "response_format": isJson ? { "type": "json_object" } : undefined
-        })
-      });
+    let lastError = "";
 
-      const data = await response.json();
-      if (!response.ok) {
-        lastError = data.error?.message || `Model ${model} failed`;
-        continue; // Try next model
-      }
-      return data.choices?.[0]?.message?.content || "";
-    } catch (err: any) {
-      lastError = err.message || "Fetch failed";
-      continue;
+    for (const model of models) {
+        try {
+            if (lastError) await new Promise(r => setTimeout(r, 400));
+            
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": window.location.origin,
+                    "X-Title": "Aadhar Pathshala",
+                },
+                body: JSON.stringify({
+                    "model": model,
+                    "messages": messages.map(m => ({
+                        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
+                        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+                    })),
+                    "response_format": isJson ? { "type": "json_object" } : undefined
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                lastError = data.error?.message || `Model ${model} failed`;
+                continue;
+            }
+            return data.choices?.[0]?.message?.content || "";
+        } catch (err: any) {
+            lastError = err.message || "Network failed";
+            continue;
+        }
     }
-  }
 
-  throw new Error(`MOMO is fully offline. All backup models failed. Last error: ${lastError}`);
+    throw new Error(`MOMO All-Source Failure. Last error: ${lastError}`);
 };
 
 // ════════════════════════════════════════════
@@ -910,7 +912,12 @@ NO GREETINGS: Do not GREET the user or use catchphrases at the start of every me
                 }
             } else {
                 // GEMINI Implementation (MOMO)
-                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+                // @ts-ignore
+                const geminiVite = import.meta.env.VITE_GEMINI_API_KEY || "";
+                const geminiProcess = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : "";
+                const geminiKey = geminiProcess || geminiVite;
+                
+                const ai = new GoogleGenAI({ apiKey: geminiKey });
                 
                 const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
 IDENTITY: Warm, patient, and thorough. Like a supportive elder sibling (Dai/Didi).
@@ -943,20 +950,50 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                         return newMessages;
                     });
                 } catch (geminiErr: any) {
-                    console.warn("Gemini failed, falling back to OpenRouter", geminiErr);
-                    const contents = [
-                        { role: 'user', content: systemInstruction },
-                        ...updated.map(m => ({
-                            role: m.role === 'ai' ? 'assistant' : 'user',
-                            content: m.text
-                        }))
-                    ];
-                    const fallbackResponse = await callOpenRouterToMomo(contents);
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].text = fallbackResponse;
-                        return newMessages;
-                    });
+                    console.warn("Gemini failed, trying OpenRouter...", geminiErr);
+                    try {
+                        const contents = [
+                            { role: 'user', content: systemInstruction },
+                            ...updated.map(m => ({
+                                role: m.role === 'ai' ? 'assistant' : 'user',
+                                content: m.text
+                            }))
+                        ];
+                        const fallbackResponse = await callOpenRouterToMomo(contents);
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1].text = fallbackResponse;
+                            return newMessages;
+                        });
+                    } catch (orErr: any) {
+                        console.warn("OpenRouter also failed, trying Groq as last resort...", orErr);
+                        // Tertiary Fallback: Groq (using ACHAR logic)
+                        // @ts-ignore
+                        const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+                        const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
+                        const groqKey = processGroqKey || viteGroqKey;
+                        
+                        if (!groqKey) throw orErr; // Rethrow OR error if no Groq key
+
+                        const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+                        const groqRes = await groq.chat.completions.create({
+                            messages: [
+                                { role: "system", content: systemInstruction },
+                                ...updated.map(m => ({
+                                    role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
+                                    content: m.text
+                                }))
+                            ],
+                            model: "llama-3.1-8b-instant",
+                        });
+
+                        const groqText = groqRes.choices[0]?.message?.content || "";
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1].text = groqText;
+                            return newMessages;
+                        });
+                    }
                 }
             }
         } catch (e: any) {
@@ -2453,10 +2490,35 @@ const DictionaryPage = () => {
                     const aiData = JSON.parse(response.text || "{}");
                     setResult({ ...aiData, source: 'MOMO AI' });
                 } catch (geminiErr) {
-                    console.warn("Gemini Dictionary fallback failed, using OpenRouter", geminiErr);
-                    const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: persona }], true);
-                    const aiData = JSON.parse(fallbackJson || "{}");
-                    setResult({ ...aiData, source: 'MOMO AI (Fallback)' });
+                    console.warn("Gemini Dictionary failed, trying OpenRouter...", geminiErr);
+                    try {
+                        const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: persona }], true);
+                        const aiData = JSON.parse(fallbackJson || "{}");
+                        setResult({ ...aiData, source: 'MOMO AI (Fallback)' });
+                    } catch (orErr) {
+                        console.warn("OpenRouter also failed for Dictionary, trying Groq...", orErr);
+                        // Tertiary Fallback: Groq for JSON definitions
+                        // @ts-ignore
+                        const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+                        const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
+                        const groqKey = processGroqKey || viteGroqKey;
+                        
+                        if (!groqKey) throw orErr;
+
+                        const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+                        const groqRes = await groq.chat.completions.create({
+                            messages: [
+                                { role: "system", content: "You are a Grade 10 Dictionary. Output ONLY valid JSON." },
+                                { role: "user", content: persona }
+                            ],
+                            model: "llama-3.3-70b-versatile", // Use 70b if available for better JSON
+                            response_format: { type: "json_object" }
+                        });
+
+                        const groqText = groqRes.choices[0]?.message?.content || "{}";
+                        const aiData = JSON.parse(groqText);
+                        setResult({ ...aiData, source: 'MOMO AI (Survival Mode)' });
+                    }
                 }
             } catch (aiErr: any) {
                 const isQuotaVal = (aiErr.message || "").toLowerCase().includes("quota") || (aiErr.message || "").includes("429");
