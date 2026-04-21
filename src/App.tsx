@@ -868,8 +868,8 @@ E = mc^2
 $$
 2. IMAGES & VISUALS (CRITICAL): You MUST provide a suitable figure/image related to the topic for ALMOST EVERY response where a visual helps (Science, Geography, History, objects). 
    - ALWAYS use Pollinations AI for all images, diagrams, or photos.
-   - Format: Use exactly <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" />
-   - Replace DESCRIPTION with a highly detailed English prompt using underscores instead of spaces (e.g., human_heart_diagram_labeled).
+   - Format: Use exactly <img src="https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" referrerpolicy="no-referrer" />
+   - Replace DESCRIPTION with a descriptive prompt using underscores instead of spaces. Keep the prompt under 10 words.
    - Placement: The <img /> tag MUST be on its own line surrounded by empty lines. NEVER use Markdown ![alt](url) format.
 3. HEADINGS & EMPHASIS: NEVER use HTML tags for text styling (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them. (You may only use HTML for the <img> tag).
 4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
