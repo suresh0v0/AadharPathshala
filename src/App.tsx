@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -883,9 +886,12 @@ IDENTITY: Fast and efficient.
 PERSONALITY: Straightforward, no greetings, no funny things. Answer directly what is asked.
 STYLE: Short answers, bullet points, factual. 
 GOAL: Provide quick facts, formula checks, and direct answers.
-NEPALI MEDIUM: Use Nepali LANGUAGE ONLY when the user explicitly asks in Nepali or asks for translation. Otherwise, use English.
-SAFETY: Never provide answers to illegal/harmful queries.
-NO GREETINGS: Do not GREET the user or use catchphrases at the start of every message. Just answer the query directly.`;
+
+FORMATTING RULES:
+1. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX ($...$ or $$...$$).
+2. HIGHLIGHTING: Use **bold text** for the final answer.
+3. NO GREETINGS: Do not GREET the user or use catchphrases. Just answer.
+NEPALI MEDIUM: Use English by default. Use Nepali mix ONLY if the user asks in Nepali.`;
 
                 const chatHistory = updated.map(m => ({
                     role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -920,14 +926,20 @@ NO GREETINGS: Do not GREET the user or use catchphrases at the start of every me
                 const ai = new GoogleGenAI({ apiKey: geminiKey });
                 
                 const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
-IDENTITY: Warm, patient, and thorough. Like a supportive elder sibling (Dai/Didi).
-STYLE: Long-form explanations, relatable Nepali examples.
-GOAL: Explain the "WHY" behind Science/Math concepts. Deep conceptual learning.
+IDENTITY: Warm, patient, thorough (Dai/Didi tone).
+GOAL: Explain the "WHY" behind Science/Math concepts.
 CATCHPHRASE: "Let's dive deep into this topic."
-FOCUS: Class 10 Nepal Curriculum (Science, Math, etc.).
-NEPALI MEDIUM: Use simple English + Nepali mix (Neplish).
-SAFETY: Never provide answers to illegal/harmful queries.
-ALWAYS start your FIRST response in a session with your catchphrase. Current User: ${user?.name || 'Sathi'}.`;
+
+FORMATTING RULES:
+1. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX. Use $...$ for inline math and $$...$$ for standalone equations. Never write math as plain text.
+2. STEP-BY-STEP: Break down complex problems into a numbered list.
+3. SHORT PARAGRAPHS: Do not write more than TWO sentences in a single paragraph.
+4. LANGUAGE SEPARATION: When explaining in Nepali (Romanized), START A NEW PARAGRAPH or use a bullet point.
+5. HIGHLIGHTING: Use **bold text** for the final answer or very important concepts.
+6. CLEANLINESS: Organized and encouraging tone. No slang unless it helps understanding.
+7. NEPALI MEDIUM: Use "Neplish" (English + Romanized Nepali).
+
+Current User: ${user?.name || 'Sathi'}. ALWAYS start your first response with your catchphrase.`;
 
                 try {
                     const contents = [
@@ -1144,7 +1156,12 @@ ALWAYS start your FIRST response in a session with your catchphrase. Current Use
                                     "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900",
                                     m.role === 'ai' ? "prose-slate" : "prose-invert"
                                 )}>
-                                    <Markdown>{m.text}</Markdown>
+                                    <Markdown 
+                                        remarkPlugins={[remarkMath]} 
+                                        rehypePlugins={[rehypeKatex]}
+                                    >
+                                        {m.text}
+                                    </Markdown>
                                 </div>
                             </div>
                         </div>
@@ -2632,9 +2649,11 @@ const DictionaryPage = () => {
                                 <div className="space-y-8">
                                     <div className="space-y-4">
                                         <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] border-l-4 border-blue pl-4">Definition</h3>
-                                        <p className="text-3xl font-black text-slate-800 leading-tight tracking-tight">
-                                            {result.def}
-                                        </p>
+                                        <div className="text-3xl font-black text-slate-800 leading-tight tracking-tight">
+                                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                                {result.def}
+                                            </Markdown>
+                                        </div>
                                     </div>
 
                                     {result.detail && (
@@ -2650,12 +2669,14 @@ const DictionaryPage = () => {
                                                         <><Zap className="w-4 h-4 text-blue" /> QUICK CONTEXT</>
                                                     )}
                                                 </h3>
-                                                <p className={cn(
+                                                <div className={cn(
                                                     "text-xl font-bold italic tracking-tight leading-relaxed",
                                                     result.source === 'MOMO AI' ? "text-pink-600" : "text-slate-600"
                                                 )}>
-                                                    {result.detail}
-                                                </p>
+                                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                                                        {result.detail}
+                                                    </Markdown>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
