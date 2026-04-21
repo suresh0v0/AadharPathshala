@@ -864,17 +864,17 @@ const AITutor = () => {
             // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
-1. MATH: Use $ for inline (e.g. $E=mc^2$) and $$ for block math on their own lines.
-2. IMAGES (MANDATORY): You MUST include a relevant figure for Science, Geography, History, or complex topics.
-   - USE THIS EXACT TEMPLATE: <img src="https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" />
-   - Replace DESCRIPTION with a 3-word English prompt using underscores (e.g. human_brain_anatomy).
-   - CRITICAL: The entire <img /> tag MUST be on ONE SINGLE LINE. DO NOT break it into multiple lines. Put empty lines before and after it.
-3. VIBRANCY & STRUCTURE: Use standard Markdown headings (###, ##) and bold text (**). The app will automatically color-code them.
-   - For MOMO: Use "### Conceptual Core" and "### Application Case".
-   - For MANGO: Use "### Factual Data" and "### Verified Details".
-   - For ACHAR: Use "### Quick Recap".
-4. NO GREETINGS: Answer directly. No conversational filler.
-5. PARAGRAPHS: Max 2 short sentences per block.`;
+1. MATH: Use $ for inline math and $$ for block math.
+2. IMAGES: You MUST include an image for Science/Geo/History.
+   - FORMAT: Use <img src="https://image.pollinations.ai/prompt/DESCRIPTION" alt="DESCRIPTION" />
+   - Replace DESCRIPTION with a 3-word prompt using underscores (e.g. respiratory_system_diagram).
+   - Put the tag on its own line with empty lines around it.
+3. STRUCTURE: Use ### for headings to make answers colorful.
+   - MOMO: "### Conceptual Core"
+   - MANGO: "### Factual Data"
+   - ACHAR: "### Quick Recap"
+4. NO GREETINGS: Answer directly.
+5. PARAGRAPHS: Max 2 sentences. Keep it short.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
@@ -1137,7 +1137,33 @@ ${sharedFormatting}`;
                                             h3: ({node, ...props}) => <h3 className="text-xl font-black text-emerald-500 uppercase tracking-tight mt-4 mb-2" {...props} />,
                                             h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
                                             strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
-                                            img: ({node, ...props}) => <img className="rounded-[2rem] shadow-lg border border-slate-100 max-w-full mt-4 mb-6" referrerPolicy="no-referrer" {...props} />
+                                            img: ({node, ...props}) => {
+                                                const description = props.alt || "educational_diagram";
+                                                const cleanDescription = description.replace(/\s+/g, '_').toLowerCase();
+                                                // We use a robust endpoint and add a seed to bypass cache if it's broken
+                                                const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanDescription}_educational_high_quality_diagram?width=800&height=600&nologo=true&seed=${i}`;
+                                                
+                                                return (
+                                                    <div className="relative group my-8">
+                                                        <img 
+                                                            src={pollinationsUrl}
+                                                            alt={description}
+                                                            className="rounded-[2.5rem] shadow-2xl border-4 border-white max-w-full h-auto mx-auto hover:scale-[1.02] transition-transform duration-500 bg-slate-100 min-h-[200px]"
+                                                            referrerPolicy="no-referrer"
+                                                            loading="lazy"
+                                                            onError={(e) => {
+                                                                const target = e.target as HTMLImageElement;
+                                                                if (!target.src.includes('picsum')) {
+                                                                    target.src = `https://picsum.photos/seed/${cleanDescription}/800/600`;
+                                                                }
+                                                            }}
+                                                        />
+                                                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-black/40 backdrop-blur-md rounded-full text-[0.6rem] text-white font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            Interactive Visual Core
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
                                         }}
                                     >
                                         {m.text}
