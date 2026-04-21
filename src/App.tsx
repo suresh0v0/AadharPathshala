@@ -38,9 +38,10 @@ const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) =>
 
   // We try multiple free models in case one is overloaded or down
   const models = [
-    "meta-llama/llama-3.1-8b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
     "meta-llama/llama-3.2-3b-instruct:free",
     "mistralai/mistral-7b-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct:free",
     "google/gemma-2-9b-it:free",
     "qwen/qwen-2-5-7b-instruct:free"
   ];
@@ -109,6 +110,46 @@ const BOOK_LINKS: Record<string, string> = {
     'Computer': 'https://drive.google.com/file/d/1XL9dSK7Vjvxo888E4Thlxbb5yQSIjUdb/view?usp=drivesdk',
     'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
     'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
+};
+
+const STATIC_MCQS: Record<string, any[]> = {
+    'Science': [
+        {
+            setName: 'MCQ SET 1',
+            questions: [
+                { q: "What is the SI unit of force?", a: "Joule", b: "Newton", c: "Watt", d: "Pascal", correct: "b", explanation: "Newton is the SI unit of force, named after Sir Isaac Newton." },
+                { q: "What is the SI unit of power?", a: "Volt", b: "Ohm", c: "Watt", d: "Ampere", correct: "c", explanation: "Watt (W) is the unit of power, defined as one joule per second." },
+                { q: "Which gas is filled in electric bulbs?", a: "Oxygen", b: "Hydrogen", c: "Argon", d: "Carbon dioxide", correct: "c", explanation: "Argon is an inert gas used to prevent the filament from oxidizing." },
+                { q: "What is the chemical formula of common salt?", a: "KCl", b: "NaCl", c: "MgCl2", d: "NaOH", correct: "b", explanation: "Sodium Chloride (NaCl) is known as table salt." },
+                { q: "What is the acceleration due to gravity on Earth's surface?", a: "8.9 m/s²", b: "9.8 m/s²", c: "10.8 m/s²", d: "7.8 m/s²", correct: "b", explanation: "Standard gravity is approximately 9.80665 m/s²." },
+                { q: "Which lens is used to correct short-sightedness (Myopia)?", a: "Convex", b: "Concave", c: "Bifocal", d: "Cylindrical", correct: "b", explanation: "Concave lenses are used to diverge light rays before they enter the eye." },
+                { q: "What is the power of a lens with focal length 20 cm?", a: "2D", b: "4D", c: "5D", d: "10D", correct: "c", explanation: "Power = 1/f(m). 1/0.2 = 5D." },
+                { q: "Which part of the eye controls the amount of light entering?", a: "Retina", b: "Cornea", c: "Iris", d: "Lens", correct: "c", explanation: "The iris regulates the size of the pupil." },
+                { q: "What is the primary cause of global warming?", a: "Acid rain", b: "Greenhouse effect", c: "Ozone depletion", d: "Volcanic eruptions", correct: "b", explanation: "Increased concentration of greenhouse gases traps more heat." },
+                { q: "Which element has atomic number 10?", a: "Fluorine", b: "Neon", c: "Sodium", d: "Magnesium", correct: "b", explanation: "Neon is a noble gas with atomic number 10." },
+                { q: "What is the valency of Carbon?", a: "2", b: "3", c: "4", d: "1", correct: "c", explanation: "Carbon has 4 electrons in its outer shell." },
+                { q: "Which indicator turns red in an acidic solution?", a: "Red litmus", b: "Blue litmus", c: "Phenolphthalein", d: "Turmeric", correct: "b", explanation: "Acid turns blue litmus red." },
+                { q: "Which metal is liquid at room temperature?", a: "Sodium", b: "Mercury", c: "Lead", d: "Iron", correct: "b", explanation: "Mercury is the only common metal liquid at standard temperature." },
+                { q: "What is the electronic configuration of Sodium (Na)?", a: "2, 8", b: "2, 8, 1", c: "2, 7", d: "2, 8, 2", correct: "b", explanation: "Sodium has atomic number 11." },
+                { q: "Which device converts electrical energy into mechanical energy?", a: "Generator", b: "Transformer", c: "Electric Motor", d: "Battery", correct: "c", explanation: "Motors use electromagnetism to create motion." },
+                { q: "What is the chemical name of Vitamin C?", a: "Citric acid", b: "Ascorbic acid", c: "Folic acid", d: "Acetic acid", correct: "b", explanation: "Ascorbic acid is necessary for collagen synthesis." },
+                { q: "Which tissue transports water in plants?", a: "Phloem", b: "Xylem", c: "Parenchyma", d: "Cambium", correct: "b", explanation: "Xylem carries water/minerals; Phloem carries food." },
+                { q: "How many chromosomes are in a normal human cell?", a: "23", b: "44", c: "46", d: "48", correct: "c", explanation: "Humans have 23 pairs of chromosomes." },
+                { q: "Which hormone is known as the emergency hormone?", a: "Insulin", b: "Adrenaline", c: "Thyroxine", d: "Estrogen", correct: "b", explanation: "Adrenaline prepares the body for fight or flight." },
+                { q: "Which element is a semiconductor?", a: "Copper", b: "Silicon", c: "Aluminum", d: "Gold", correct: "b", explanation: "Silicon is widely used in electronics as a semiconductor." },
+                { q: "What is the focal length of a plane mirror?", a: "Zero", b: "10 cm", c: "Infinity", d: "20 cm", correct: "c", explanation: "The radius of curvature of a plane mirror is infinite." },
+                { q: "Which blood group is known as the universal donor?", a: "AB positive", b: "O negative", c: "A positive", d: "B negative", correct: "b", explanation: "O- can be given to patients of any blood type." },
+                { q: "What is the main component of natural gas?", a: "Ethane", b: "Propane", c: "Methane", d: "Butane", correct: "c", explanation: "Natural gas is mostly Methane (CH4)." },
+                { q: "What is the symbol of Silver?", a: "Si", b: "Ag", c: "Au", d: "Pb", correct: "b", explanation: "From Latin 'Argentum'." },
+                { q: "What is the unit of frequency?", a: "Hertz", b: "Joule", c: "Newton", d: "Watt", correct: "a", explanation: "One hertz (Hz) is one cycle per second." },
+                { q: "Which process occurs in the sun to produce energy?", a: "Nuclear fission", b: "Nuclear fusion", c: "Chemical burning", d: "Oxidation", correct: "b", explanation: "Hydrogen nuclei fuse to form Helium." },
+                { q: "What is the functional unit of the kidney?", a: "Neuron", b: "Nephron", c: "Alveoli", d: "Capillary", correct: "b", explanation: "Nephrons filter blood and produce urine." },
+                { q: "Which part of the brain controls body balance?", a: "Cerebrum", b: "Cerebellum", c: "Medulla", d: "Pons", correct: "b", explanation: "The cerebellum coordinates movement and balance." },
+                { q: "Which base is commonly used in antacids?", a: "Sodium hydroxide", b: "Magnesium hydroxide", c: "Calcium oxide", d: "Ammonium hydroxide", correct: "b", explanation: "It neutralizes excess stomach acid." },
+                { q: "Which acid is present in an ant's sting?", a: "Oxalic acid", b: "Methanoic acid", c: "Citric acid", d: "Lactic acid", correct: "b", explanation: "Also known as Formic acid." }
+            ]
+        }
+    ]
 };
 
 // ════════════════════════════════════════════
@@ -1700,6 +1741,275 @@ const SubjectDetail = () => {
                     </button>
                 ))}
             </div>
+            
+            <div className="mt-8">
+                <button 
+                    onClick={() => navigate(`/hub/${name}/mcq-sets`)}
+                    className="w-full bg-[#020617] text-white p-8 rounded-[3rem] shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all hover:bg-slate-900"
+                >
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
+                            <PenTool className="w-8 h-8 text-blue" />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="text-xl font-black italic tracking-tighter uppercase leading-none">MCQ's Test</h3>
+                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest mt-2">Curated Exam Sets (Admin)</p>
+                        </div>
+                    </div>
+                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center group-hover:bg-blue transition-all">
+                        <Zap className="w-6 h-6 text-blue group-hover:text-white shadow-[0_0_15px_rgba(59,130,246,0.3)]" />
+                    </div>
+                </button>
+            </div>
+        </div>
+    );
+};
+
+/* ── MCQ SET SELECTION ── */
+const MCQTestSelection = () => {
+    const { name } = useParams();
+    const navigate = useNavigate();
+    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+    
+    const sets = STATIC_MCQS[name as string] || [];
+
+    return (
+        <div className="space-y-10 animate-fade-up pb-24">
+            <header className="flex items-center justify-between">
+                <button onClick={() => navigate(`/hub/${name}`)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[0.6rem] font-black uppercase tracking-widest">
+                    Select MCQ Set
+                </div>
+            </header>
+
+            <div className="space-y-2">
+                <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Subject: {name}</h1>
+                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em]">Verified Official Question Sets</p>
+            </div>
+
+            {sets.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                    {sets.map((set, idx) => (
+                        <button 
+                            key={idx}
+                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}`)}
+                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-center justify-between group hover:border-blue transition-all"
+                        >
+                            <div className="flex items-center gap-6">
+                                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl group-hover:scale-110 transition-transform bg-linear-to-br", config.gradient, "text-white")}>
+                                    {idx + 1}
+                                </div>
+                                <div className="text-left">
+                                    <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">{set.setName}</h3>
+                                    <p className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest mt-2">{set.questions.length} Questions • 30 Mins</p>
+                                </div>
+                            </div>
+                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue group-hover:text-white transition-all">
+                                <Play className="w-5 h-5 fill-current" />
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <div className="bg-slate-50 p-12 rounded-[3.5rem] border-2 border-dashed border-slate-200 text-center space-y-4">
+                    <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-lg">
+                        <AlertTriangle className="w-10 h-10 text-amber-500" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-800">Coming Soon</h3>
+                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1max-w-xs mx-auto">Admin is preparing verified MCQ sets for {name}. Please check back later!</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+/* ── MCQ TEST PLAYER ── */
+const MCQTestPlayer = () => {
+    const { name, setIndex } = useParams();
+    const navigate = useNavigate();
+    const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
+    const [currentIdx, setCurrentIdx] = useState(0);
+    const [answers, setAnswers] = useState<Record<number, string>>({});
+    const [timer, setTimer] = useState(1800); // 30 minutes
+    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+
+    const setData = STATIC_MCQS[name as string]?.[parseInt(setIndex || '0')];
+    const questions = setData?.questions || [];
+
+    useEffect(() => {
+        if (status === 'quiz' && timer > 0) {
+            const interval = setInterval(() => setTimer(t => t - 1), 1000);
+            return () => clearInterval(interval);
+        } else if (timer === 0 && status === 'quiz') {
+            setStatus('result');
+        }
+    }, [status, timer]);
+
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, '0')}`;
+    };
+
+    if (!setData) return <div>Set not found.</div>;
+
+    const score = questions.reduce((acc: number, q: any, idx: number) => {
+        return acc + (answers[idx] === q.correct ? 1 : 0);
+    }, 0);
+
+    return (
+        <div className="animate-fade-up pb-24">
+            {status === 'quiz' ? (
+                <div className="space-y-8">
+                    <header className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", config.gradient)}>
+                                <Timer className="w-5 h-5" />
+                            </div>
+                            <div className="text-3xl font-black italic tracking-tighter text-slate-900 tabular-nums">
+                                {formatTime(timer)}
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => { if(confirm("End test?")) setStatus('result'); }}
+                            className="px-6 py-2 bg-rose-500 text-white rounded-xl font-black text-[0.6rem] uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all"
+                        >
+                            Finalize Test
+                        </button>
+                    </header>
+
+                    <div className="grid grid-cols-10 gap-1.5 overflow-x-auto pb-4 scrollbar-hide">
+                        {questions.map((_: any, idx: number) => (
+                            <button 
+                                key={idx}
+                                onClick={() => setCurrentIdx(idx)}
+                                className={cn(
+                                    "w-10 h-10 rounded-xl font-black text-[0.65rem] transition-all border shrink-0",
+                                    currentIdx === idx ? "bg-slate-900 text-white border-slate-900 shadow-xl scale-110" : 
+                                    answers[idx] ? "bg-blue/10 text-blue border-blue/20" : "bg-white text-slate-400 border-slate-100"
+                                )}
+                            >
+                                {idx + 1}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] border-4 border-slate-50 shadow-2xl space-y-10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5">
+                            <GraduationCap className="w-32 h-32" />
+                        </div>
+                        
+                        <div className="space-y-4 relative z-10">
+                            <span className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[0.6rem] font-black uppercase tracking-widest">
+                                Question {currentIdx + 1}
+                            </span>
+                            <h2 className="text-2xl md:text-3xl font-black text-slate-800 leading-tight italic tracking-tighter uppercase whitespace-pre-wrap">
+                                {questions[currentIdx].q}
+                            </h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 relative z-10">
+                            {['a', 'b', 'c', 'd'].map(opt => (
+                                <button
+                                    key={opt}
+                                    onClick={() => setAnswers(prev => ({ ...prev, [currentIdx]: opt }))}
+                                    className={cn(
+                                        "p-6 rounded-[2rem] border-2 text-left transition-all flex items-center gap-5 group active:scale-95",
+                                        answers[currentIdx] === opt ? 
+                                        "bg-blue border-blue shadow-[0_15px_30px_rgba(59,130,246,0.3)] translate-x-2" : 
+                                        "bg-slate-50 border-transparent hover:border-slate-200"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-xl flex items-center justify-center font-black uppercase transition-all shadow-sm",
+                                        answers[currentIdx] === opt ? "bg-white text-blue" : "bg-white text-slate-400 group-hover:scale-110"
+                                    )}>
+                                        {opt}
+                                    </div>
+                                    <span className={cn(
+                                        "font-bold text-lg",
+                                        answers[currentIdx] === opt ? "text-white" : "text-slate-600"
+                                    )}>
+                                        {questions[currentIdx][opt as 'a'|'b'|'c'|'d']}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex gap-4 pt-10">
+                            <button 
+                                disabled={currentIdx === 0}
+                                onClick={() => setCurrentIdx(prev => prev - 1)}
+                                className="flex-1 py-5 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-xs disabled:opacity-50"
+                            >
+                                Previous
+                            </button>
+                            {currentIdx === questions.length - 1 ? (
+                                <button 
+                                    onClick={() => setStatus('result')}
+                                    className="flex-3 py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-500/20"
+                                >
+                                    Complete Session
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => setCurrentIdx(prev => prev + 1)}
+                                    className="flex-3 py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20"
+                                >
+                                    Next Intelligence
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="max-w-md mx-auto space-y-8 text-center pt-10">
+                    <div className="relative inline-block">
+                        <div className={cn("w-32 h-32 rounded-[3rem] p-1 animate-pulse bg-linear-to-br", config.gradient)}>
+                            <div className="w-full h-full bg-white rounded-[2.8rem] flex items-center justify-center">
+                                <Trophy className="w-16 h-16 text-amber-500" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <h1 className="text-5xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">Evaluation</h1>
+                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Score Data Synced to Profile</p>
+                    </div>
+
+                    <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-6">
+                        <div className="flex justify-center items-baseline gap-2">
+                            <span className="text-7xl font-black text-slate-900 tracking-tighter italic">{score}</span>
+                            <span className="text-2xl font-black text-slate-300">/ {questions.length}</span>
+                        </div>
+                        <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
+                            <div 
+                                className={cn("h-full transition-all duration-1000", config.gradient)} 
+                                style={{ width: `${(score / questions.length) * 100}%` }} 
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-2xl">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</p>
+                                <p className="text-xl font-black text-slate-800 italic tracking-tighter leading-none">{Math.round((score / questions.length) * 100)}%</p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-2xl">
+                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Time Remaining</p>
+                                <p className="text-xl font-black text-slate-800 italic tracking-tighter leading-none">{formatTime(timer)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl", config.gradient)}>Retake Intelligence Test</button>
+                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-slate-100 text-slate-600 rounded-[2rem] font-black uppercase tracking-widest text-sm">Return to Hub</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -3214,6 +3524,8 @@ const AppContent = () => {
                 <Route path="/hub/:name/pdfs" element={<PdfList />} />
                 <Route path="/hub/:name/notes" element={<NoteList />} />
                 <Route path="/hub/:name/model" element={<ModelList />} />
+                <Route path="/hub/:name/mcq-sets" element={<MCQTestSelection />} />
+                <Route path="/hub/:name/mcq-test/:setIndex" element={<MCQTestPlayer />} />
                 <Route path="/ai" element={<AITutor />} />
                 <Route path="/mock" element={<MockTest />} />
                 <Route path="/news" element={<NewsPage />} />
