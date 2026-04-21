@@ -853,7 +853,7 @@ FORMATTING RULES:
    Example: The value of $x$ is $5$. The formula is $E=mc^2$. NEVER use plain text for math.
 2. IMAGES: Include a relevant diagram or photo using markdown ONLY in this format: 
    ![description](https://picsum.photos/seed/{SEARCH_TERM}/800/450)
-   Replace {SEARCH_TERM} with a relevant keyword (e.g., science, history, diagram).
+   Replace {SEARCH_TERM} with a specific English topic keyword that describes exactly what to show (e.g., "human_heart_diagram", "nepal_topography", "algebraic_graph").
 3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
@@ -1516,7 +1516,7 @@ const AadharToolkit = () => {
                         <button
                             key={t.id}
                             onClick={() => navigate(t.path)}
-                            className="bg-white p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-2 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-center h-[90px] md:h-[130px]"
+                            className="bg-white p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-center min-h-[100px] md:min-h-[140px]"
                         >
                             <div className={cn(
                                 "w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
@@ -1531,7 +1531,7 @@ const AadharToolkit = () => {
                             )}>
                                 <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-extrabold text-[#020617] text-[0.85rem] md:text-[1.15rem] tracking-tight leading-none w-full truncate px-1 group-hover:scale-105 transition-transform">{t.label}</p>
+                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-short w-full px-1 group-hover:scale-105 transition-transform">{t.label}</p>
                         </button>
                     );
                 })}
