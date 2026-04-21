@@ -866,11 +866,11 @@ FORMATTING RULES:
 $$
 E = mc^2
 $$
-2. IMAGES & VISUALS: Whenever a student asks for a diagram, figure, or illustration, or when a visual would help explain a concept (like Science or Geography), you must provide an image using Markdown. 
-   - For AI-Generated Diagrams/Art (Pollinations): Use this format: ![Figure](https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true). Replace 'DESCRIPTION' with a detailed subject using underscores instead of spaces (e.g., human_heart_diagram_labeled). 
-   - For Real-Life Photos (Unsplash): Use this format: ![Photo](https://email.api.unsplash.com/search/photos?query=TOPIC&per_page=1). Replace 'TOPIC' with a simple keyword (e.g., Mt_Everest). 
-   - Image Formatting: NEVER include spaces in the URL. ALWAYS put the image on a new line (use double newline before and after the image). If the user doesn't specify the type, use Pollinations for diagrams and Unsplash for real photos.
-3. HEADINGS & EMPHASIS: NEVER use HTML tags (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them.
+2. IMAGES & VISUALS: Whenever a student asks for a diagram, figure, or illustration, or when a visual would help explain a concept (like Science or Geography), you MUST provide an image using an HTML <img> tag. 
+   - For AI-Generated Diagrams/Art (Pollinations): Use exactly: <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" /> (Replace DESCRIPTION with a detailed English prompt using underscores instead of spaces).
+   - For Real-Life Photos (Unsplash): Use exactly: <img src="https://email.api.unsplash.com/search/photos?query=TOPIC&per_page=1" alt="TOPIC" /> (Use underscores in TOPIC).
+   - Image Formatting: YOU MUST put the <img /> tag on its own separate line with empty lines before and after it. Do NOT use markdown ![alt](url) format. Use ONLY the <img /> tag.
+3. HEADINGS & EMPHASIS: NEVER use HTML tags for text styling (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them. (You may only use HTML for the <img> tag).
 4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
