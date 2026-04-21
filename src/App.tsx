@@ -878,17 +878,16 @@ const AITutor = () => {
                     dangerouslyAllowBrowser: true 
                 });
                 
-                const systemPrompt = `You are ACHAR, an Instant Helper for Grade 10 SEE Nepal Students. 
+                const systemPrompt = `You are ACHAR, an Instant Helper for Grade 10 Nepal Students. 
 IDENTITY: Fast and efficient. 
-PERSONALITY: Straightforward, no greetings, no funny things. Answer directly what is asked.
-STYLE: Short answers, bullet points, factual. 
-GOAL: Provide quick facts, formula checks, and direct answers.
+PERSONALITY: No greetings, no slang, no unnecessary words. Direct tool-like responses.
+STYLE: Very short, bullet points, factual. 
+GOAL: Quick formulas and facts.
 
 FORMATTING RULES:
-1. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX ($...$ or $$...$$).
-2. HIGHLIGHTING: Use **bold text** for the final answer.
-3. NO GREETINGS: Do not GREET the user or use catchphrases. Just answer.
-NEPALI MEDIUM: Use English by default. Use Nepali mix ONLY if the user asks in Nepali.`;
+1. IMAGES: Whenever relevant (diagrams, photos), include markdown: ![description](https://source.unsplash.com/featured/?keyword)
+2. MATH: ALWAYS use LaTeX ($...$).
+3. NO GREETINGS: Do not greet or say "Here is your answer". Just provide the content.`;
 
                 const chatHistory = updated.map(m => ({
                     role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
@@ -915,21 +914,20 @@ NEPALI MEDIUM: Use English by default. Use Nepali mix ONLY if the user asks in N
                 }
             } else {
                 // Cerebras & SambaNova Implementation (MOMO)
-                const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
-IDENTITY: Warm, patient, thorough (Dai/Didi tone).
-GOAL: Explain the "WHY" behind Science/Math concepts.
-CATCHPHRASE: "Let's dive deep into this topic."
+                const systemInstruction = `You are MOMO, the Short & Precise Tutor for Grade 10 Nepal Students.
+IDENTITY: Academic, professional (Dai/Didi tone but strictly educational).
+GOAL: Efficient conceptual explanation.
+LENGTH: Keep total response under 150 words. Be very concise.
+NO GREETINGS: Do not use any catchphrase, greeting, or polite intro. Start immediately with the answer.
 
 FORMATTING RULES:
-1. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX. Use $...$ for inline math and $$...$$ for standalone equations. Never write math as plain text.
-2. STEP-BY-STEP: Break down complex problems into a numbered list.
-3. SHORT PARAGRAPHS: Do not write more than TWO sentences in a single paragraph.
-4. LANGUAGE SEPARATION: When explaining in Nepali (Romanized), START A NEW PARAGRAPH or use a bullet point.
-5. HIGHLIGHTING: Use **bold text** for the final answer or very important concepts.
-6. CLEANLINESS: Organized and encouraging tone. No slang unless it helps understanding.
-7. NEPALI MEDIUM: Use "Neplish" (English + Romanized Nepali).
+1. IMAGES: Include a relevant diagram or photo using markdown if requested or randomly: ![Scene](https://source.unsplash.com/featured/?keyword)
+2. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX.
+3. STEP-BY-STEP: Use numbered lists but keep points short.
+4. PARAGRAPHS: Max 2 sentences each.
+5. NO SLANG: Use standard, clean Nepali/English mix.
 
-Current User: ${user?.name || 'Sathi'}. ALWAYS start your first response with your catchphrase.`;
+Current User: ${user?.name || 'Sathi'}. Answer directly.`;
 
                 try {
                     const contents = [
@@ -1139,7 +1137,7 @@ Current User: ${user?.name || 'Sathi'}. ALWAYS start your first response with yo
                                     : "bg-blue text-white border-blue shadow-2xl shadow-blue/20 rounded-tr-sm"
                             )}>
                                 <div className={cn(
-                                    "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900",
+                                    "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
                                     m.role === 'ai' ? "prose-slate" : "prose-invert"
                                 )}>
                                     <Markdown 
@@ -1567,7 +1565,7 @@ const AadharToolkit = () => {
                             )}>
                                 <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-bold text-slate-600 text-[0.65rem] md:text-[0.9rem] tracking-tight leading-none w-full truncate px-1">{t.label}</p>
+                            <p className="font-black text-slate-800 text-[0.75rem] md:text-[1rem] tracking-tight leading-none w-full truncate px-1">{t.label}</p>
                         </button>
                     );
                 })}
@@ -3650,8 +3648,9 @@ const useApp = () => useContext(AppContext);
 
 const INITIAL_DATA: AppData = {
     news: [
-        { id: '1', title: 'SEE 2083 Model Questions Released', body: 'The National Examination Board has released the latest pattern for the upcoming SEE exams. Students are advised to practice accordingly.', date: '2083/01/10', tag: 'OFFICIAL', tagBg: 'bg-emerald-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/neb/800/400' },
-        { id: '2', title: 'District Level Merit Scholarship', body: 'Applications are now open for the Aadhar Academic Excellence Scholarship for Grade 10 students.', date: '2083/01/05', tag: 'SCHOLARSHIP', tagBg: 'bg-indigo-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/study/800/400' }
+        { id: '1', title: 'NEB Postpones SEE Practical Exams in 5 Districts', body: 'Due to local conditions, practical exams in Taplejung and Solukhumbu are rescheduled for Jestha 15. Check official NEB portal.', date: '2081/01/22', tag: 'URGENT', tagBg: 'bg-rose-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/nepalnews/800/400' },
+        { id: '2', title: 'HSEB Scholarships for Bagmati Province', body: 'Bagmati Province Education Directorate announces 150 more scholarship seats for Class 10 graduates.', date: '2081/01/18', tag: 'SCHOLARSHIP', tagBg: 'bg-indigo-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/k Kathmandu/800/400' },
+        { id: '3', title: 'Digital Literacy Campaign in Rural Schools', body: 'MoEST launches Tablet-based learning pilot program in 50 community schools across Gandaki.', date: '2081/01/12', tag: 'TECH', tagBg: 'bg-emerald-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/laptop/800/400' }
     ],
     subjects: {
         'Science': {
