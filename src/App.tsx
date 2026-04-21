@@ -865,7 +865,10 @@ FORMATTING RULES:
 $$
 E = mc^2
 $$
-2. NO IMAGES/FIGURES: NEVER generate or respond with image links or markdown figures. Only respond with high-quality text, tables, and mathematical LaTeX.
+2. IMAGES & VISUALS: Whenever a student asks for a diagram, figure, or illustration, or when a visual would help explain a concept (like Science or Geography), you must provide an image using Markdown. 
+   - For AI-Generated Diagrams/Art (Pollinations): Use this format: ![Figure](https://pollinations.ai/p/DESCRIPTION?width=600&height=400&nologo=true). Replace 'DESCRIPTION' with a detailed subject using underscores instead of spaces (e.g., human_heart_diagram_labeled). 
+   - For Real-Life Photos (Unsplash): Use this format: ![Photo](https://email.api.unsplash.com/search/photos?query=TOPIC&per_page=1). Replace 'TOPIC' with a simple keyword (e.g., Mt_Everest). 
+   - Image Formatting: NEVER include spaces in the URL. ALWAYS put the image on a new line. If the user doesn't specify the type, use Pollinations for diagrams and Unsplash for real photos.
 3. COLORS & TOPICS: Formulate answers using distinct HTML color spans for headings to separate topics. Example: <h3 style="color: #0ea5e9;">Topic Title</h3> or <strong style="color: #10b981;">Key Term</strong>. Use varied colors (like #e11d48, #0ea5e9, #10b981, #f59e0b) depending on the topic.
 4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
