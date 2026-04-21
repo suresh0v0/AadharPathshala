@@ -10,7 +10,7 @@ import {
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye,
-  ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical
+  BrainCircuit, Check, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -1265,52 +1265,82 @@ const StandardCalculator = () => {
     const [equation, setEquation] = useState('');
 
     const btns = [
+        'sin', 'cos', 'tan', 'log',
         'C', 'DEL', '%', '/',
         '7', '8', '9', '*',
         '4', '5', '6', '-',
         '1', '2', '3', '+',
-        '0', '.', '=', '√'
+        '0', '.', '=', '√',
+        'π', 'e', '^', '('
     ];
 
     const handleClick = (val: string) => {
         if (val === 'C') { setDisplay('0'); setEquation(''); }
-        else if (val === 'DEL') setDisplay(d => d.length > 1 ? d.slice(0, -1) : '0');
+        else if (val === 'DEL') {
+            setDisplay(d => d.length > 1 ? d.slice(0, -1) : '0');
+            setEquation(e => e.slice(0, -1));
+        }
         else if (val === '=') {
             try { 
-                // Using a safer alternative to eval for a simple calculator
-                const res = Function(`"use strict"; return (${equation || display})`)();
-                setDisplay(res.toString()); 
+                let expr = equation || display;
+                expr = expr.replace(/sin/g, 'Math.sin');
+                expr = expr.replace(/cos/g, 'Math.cos');
+                expr = expr.replace(/tan/g, 'Math.tan');
+                expr = expr.replace(/log/g, 'Math.log10');
+                expr = expr.replace(/π/g, 'Math.PI');
+                expr = expr.replace(/e/g, 'Math.E');
+                expr = expr.replace(/\^/g, '**');
+                
+                const res = Function(`"use strict"; return (${expr})`)();
+                setDisplay(parseFloat(res.toFixed(8)).toString()); 
                 setEquation(''); 
             } catch { setDisplay('Error'); }
-        } else if (val === '√') setDisplay(Math.sqrt(parseFloat(display)).toString());
-        else {
+        } else if (val === '√') {
+            try {
+                const res = Math.sqrt(eval(equation || display));
+                setDisplay(res.toString());
+                setEquation(`sqrt(${equation || display})`);
+            } catch { setDisplay('Error'); }
+        } else if (['sin', 'cos', 'tan', 'log'].includes(val)) {
+            setEquation(e => e + val + '(');
+            setDisplay(val + '(');
+        } else if (val === 'π') {
+            setEquation(e => e + 'π');
+            setDisplay('π');
+        } else if (val === 'e') {
+            setEquation(e => e + 'e');
+            setDisplay('e');
+        } else {
+            (document.activeElement as HTMLElement)?.blur();
             setDisplay(d => d === '0' && !isNaN(Number(val)) ? val : d + val);
             setEquation(e => e + val);
         }
     };
 
     return (
-        <div className="bg-slate-900 p-8 rounded-[3rem] shadow-2xl border border-white/5 max-w-[400px] mx-auto overflow-hidden relative">
-            <div className="text-right mb-6 h-28 flex flex-col justify-end px-4">
-                <p className="text-blue font-mono text-sm mb-2 opacity-60 tracking-widest uppercase">{equation || 'Input Value'}</p>
-                <p className="text-5xl font-black text-white tracking-tighter truncate leading-none">{display}</p>
+        <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] shadow-2xl border border-white/5 max-w-[450px] mx-auto overflow-hidden relative">
+            <div className="text-right mb-6 h-32 flex flex-col justify-end px-4">
+                <p className="text-blue font-mono text-xs mb-2 opacity-60 tracking-widest uppercase truncate">{equation || 'Scientific Mode'}</p>
+                <p className="text-4xl md:text-5xl font-black text-white tracking-tighter truncate leading-none">{display}</p>
             </div>
-            <div className="grid grid-cols-4 gap-3 relative z-10">
+            <div className="grid grid-cols-4 gap-2 md:gap-3 relative z-10">
                 {btns.map(b => (
                     <button
                         key={b}
                         onClick={() => handleClick(b)}
                         className={cn(
-                            "h-16 rounded-2xl flex items-center justify-center font-black text-lg transition-all active:scale-90",
-                            ['/', '*', '-', '+', '=', '√'].includes(b) ? "bg-blue text-white shadow-lg shadow-blue/20" :
-                            ['C', 'DEL'].includes(b) ? "bg-rose-500 text-white" : "bg-white/5 text-slate-300 hover:bg-white/10"
+                            "h-12 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-[0.7rem] md:text-base transition-all active:scale-90",
+                            ['/', '*', '-', '+', '=', '√', '^'].includes(b) ? "bg-blue text-white shadow-lg shadow-blue/20" :
+                            ['C', 'DEL'].includes(b) ? "bg-rose-50 text-white" : 
+                            ['sin', 'cos', 'tan', 'log'].includes(b) ? "bg-white/10 text-blue font-mono text-[0.6rem] md:text-xs" :
+                            "bg-white/5 text-slate-300 hover:bg-white/10"
                         )}
                     >
                         {b}
                     </button>
                 ))}
             </div>
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue/10 rounded-full blur-3xl" />
+            <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue/10 rounded-full blur-3xl pointer-events-none" />
         </div>
     );
 };
@@ -1598,7 +1628,7 @@ const AadharToolkit = () => {
         ...(isToolsPage ? [
             { id: 'calculator', label: 'Sci-Calculator', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
             { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
-            { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/dictionary' },
+            { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/translator' },
             { id: 'gpa', label: 'GPA Calculator', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
             { id: 'todo', label: 'To-Do List', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
@@ -1934,26 +1964,26 @@ const PeriodicTablePage = () => {
     ];
 
     const elementDetails: Record<number, any> = {
-        1: { v: 1, ec: '1s¹', p: 1, n: 0, e: 1, f: 'Highly flammable, most abundant element.' },
-        2: { v: 0, ec: '1s²', p: 2, n: 2, e: 2, f: 'Noble gas, used in balloons and cryogenics.' },
-        3: { v: 1, ec: '[He] 2s¹', p: 3, n: 4, e: 3, f: 'Lightest metal, used in batteries.' },
-        4: { v: 2, ec: '[He] 2s²', p: 4, n: 5, e: 4, f: 'High melting point, used in structural materials.' },
-        5: { v: 3, ec: '[He] 2s² 2p¹', p: 5, n: 6, e: 5, f: 'Metalloid, used in glass and detergents.' },
-        6: { v: 4, ec: '[He] 2s² 2p²', p: 6, n: 6, e: 6, f: 'Basis of organic life, diamond/graphite.' },
-        7: { v: 3, ec: '[He] 2s² 2p³', p: 7, n: 7, e: 7, f: 'Makes up 78% of atmosphere.' },
-        8: { v: 2, ec: '[He] 2s² 2p⁴', p: 8, n: 8, e: 8, f: 'Essential for respiration and combustion.' },
-        9: { v: 1, ec: '[He] 2s² 2p⁵', p: 9, n: 10, e: 9, f: 'Most electronegative element.' },
-        10: { v: 0, ec: '[He] 2s² 2p⁶', p: 10, n: 10, e: 10, f: 'Noble gas, used in neon signs.' },
-        11: { v: 1, ec: '[Ne] 3s¹', p: 11, n: 12, e: 11, f: 'Highly reactive metal, part of salt.' },
-        12: { v: 2, ec: '[Ne] 3s²', p: 12, n: 12, e: 12, f: 'Lightweight metal, essential nutrient.' },
-        13: { v: 3, ec: '[Ne] 3s² 3p¹', p: 13, n: 14, e: 13, f: 'Light metal, used in packaging/aircraft.' },
-        14: { v: 4, ec: '[Ne] 3s² 3p²', p: 14, n: 14, e: 14, f: 'Semiconductor, used in electronics.' },
-        15: { v: '3, 5', ec: '[Ne] 3s² 3p³', p: 15, n: 16, e: 15, f: 'Found in DNA and fertilizers.' },
-        16: { v: '2, 4, 6', ec: '[Ne] 3s² 3p⁴', p: 16, n: 16, e: 16, f: 'Yellow solid, used in gunpowder.' },
-        17: { v: 1, ec: '[Ne] 3s² 3p⁵', p: 17, n: 18, e: 17, f: 'Toxic gas, used for water disinfection.' },
-        18: { v: 0, ec: '[Ne] 3s² 3p⁶', p: 18, n: 22, e: 18, f: 'Noble gas, used in light bulbs.' },
-        19: { v: 1, ec: '[Ar] 4s¹', p: 19, n: 20, e: 19, f: 'Reactive metal, essential for nerves.' },
-        20: { v: 2, ec: '[Ar] 4s²', p: 20, n: 20, e: 20, f: 'Main component of bones and teeth.' },
+        1: { v: 1, ec: '1', p: 1, n: 0, e: 1, f: 'Highly flammable, most abundant element in the universe.' },
+        2: { v: 0, ec: '2', p: 2, n: 2, e: 2, f: 'Noble gas, inert, used in balloons and high-tech cryogenics.' },
+        3: { v: 1, ec: '2, 1', p: 3, n: 4, e: 3, f: 'Lightest alkali metal, highly reactive with water, used in rechargeable batteries.' },
+        4: { v: 2, ec: '2, 2', p: 4, n: 5, e: 4, f: 'Alkaline earth metal, high melting point, very strong yet lightweight.' },
+        5: { v: 3, ec: '2, 3', p: 5, n: 6, e: 5, f: 'Metalloid, found in borax, essential for plant growth and fiberglass.' },
+        6: { v: 4, ec: '2, 4', p: 6, n: 6, e: 6, f: 'Basis of all life, forms diamonds and graphite. Crucial for carbon dating.' },
+        7: { v: 3, ec: '2, 5', p: 7, n: 7, e: 7, f: 'Colorless gas, makes up 78% of the atmosphere, vital for fertilizers.' },
+        8: { v: 2, ec: '2, 6', p: 8, n: 8, e: 8, f: 'Highly reactive non-metal, 21% of atmosphere, essential for respiration.' },
+        9: { v: 1, ec: '2, 7', p: 9, n: 10, e: 9, f: 'Pale yellow gas, most reactive element, found in toothpaste for tooth security.' },
+        10: { v: 0, ec: '2, 8', p: 10, n: 10, e: 10, f: 'Noble gas, completely inert, glows bright orange-red in discharge tubes.' },
+        11: { v: 1, ec: '2, 8, 1', p: 11, n: 12, e: 11, f: 'Soft alkali metal, highly reactive, found in table salt (NaCl).' },
+        12: { v: 2, ec: '2, 8, 2', p: 12, n: 12, e: 12, f: 'Strong, lightweight metal, burns with a blinding white flame.' },
+        13: { v: 3, ec: '2, 8, 3', p: 13, n: 14, e: 13, f: 'Most abundant metal in Earth crust, lightweight and corrosion-resistant.' },
+        14: { v: 4, ec: '2, 8, 4', p: 14, n: 14, e: 14, f: 'Semiconductor, used in computer chips and solar cells. 2nd most abundant in crust.' },
+        15: { v: '3, 5', ec: '2, 8, 5', p: 15, n: 16, e: 15, f: 'Highly reactive non-metal, found in DNA, bones, and matches.' },
+        16: { v: '2, 4, 6', ec: '2, 8, 6', p: 16, n: 16, e: 16, f: 'Bright yellow non-metal, found in volcanic areas, used in sulfuric acid.' },
+        17: { v: 1, ec: '2, 8, 7', p: 17, n: 18, e: 17, f: 'Toxic green gas, used for water purification and as a disinfectant.' },
+        18: { v: 0, ec: '2, 8, 8', p: 18, n: 22, e: 18, f: 'Noble gas, used as an inert shield in welding and light bulbs.' },
+        19: { v: 1, ec: '2, 8, 8, 1', p: 19, n: 20, e: 19, f: 'Highly reactive alkali metal, essential electrolyte for nerve conduction.' },
+        20: { v: 2, ec: '2, 8, 8, 2', p: 20, n: 20, e: 20, f: 'Alkaline earth metal, vital for bones, teeth, and muscle movement.' },
     };
 
     const getCategoryStyles = (c: string) => {
@@ -2009,13 +2039,17 @@ const PeriodicTablePage = () => {
             </header>
 
             {/* MAIN TABLE AREA */}
-            <div className="relative overflow-auto bg-slate-950 p-8 md:p-16 rounded-[4rem] border-[12px] border-slate-900 shadow-2xl min-h-[600px] scrollbar-hide">
+            <div className="relative overflow-x-auto bg-slate-950 p-6 md:p-16 rounded-[2.5rem] md:rounded-[4rem] border-[8px] md:border-[12px] border-slate-900 shadow-2xl min-h-[400px] md:min-h-[600px] scrollbar-hide">
                 <div 
-                    className="origin-top-left transition-transform duration-300" 
-                    style={{ transform: `scale(${zoom})`, width: view === 'modern' ? '1400px' : '1000px' }}
+                    className="origin-top-left transition-transform duration-300 pr-8 pb-8" 
+                    style={{ 
+                        transform: `scale(${zoom})`, 
+                        width: view === 'modern' ? '1200px' : '900px',
+                        minWidth: '100%' 
+                    }}
                 >
                     {view === 'modern' ? (
-                        <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] grid-rows-[repeat(10,minmax(0,1fr))] gap-1.5 md:gap-2.5">
+                        <div className="grid grid-cols-[repeat(18,minmax(0,1fr))] grid-rows-[repeat(10,minmax(0,1fr))] gap-1 md:gap-2.5">
                             {elementsData.map(el => (
                                 <motion.div
                                     key={el.n}
@@ -2098,6 +2132,48 @@ const PeriodicTablePage = () => {
                 ))}
             </div>
 
+            {/* ADDITIONAL ELEMENT CARDS (FIRST 20) */}
+            <div className="space-y-6 mt-12 bg-white/30 backdrop-blur-md p-8 rounded-[3.5rem] border border-white/50 shadow-inner">
+                <div className="flex items-center gap-3 px-2">
+                    <div className="w-2 h-8 bg-blue-500 rounded-full" />
+                    <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter">Detailed Element Profiles (First 20)</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {first20.map(el => (
+                        <div 
+                            key={`card-${el.n}`} 
+                            onClick={() => setSelectedElement(el)}
+                            className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue/20 transition-all cursor-pointer group relative overflow-hidden"
+                        >
+                            <div className={cn("absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 rounded-full", getCategoryStyles(el.c))} />
+                            <div className="flex items-center gap-4">
+                                <div className={cn("w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 border-white shadow-md", getCategoryStyles(el.c))}>
+                                    <span className="text-xl font-black">{el.s}</span>
+                                    <span className="text-[0.5rem] font-bold opacity-60 leading-none">{el.n}</span>
+                                </div>
+                                <div className="min-w-0">
+                                    <h4 className="font-black text-slate-800 uppercase tracking-tight truncate">{el.name}</h4>
+                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">{el.c}</p>
+                                </div>
+                            </div>
+                            {elementDetails[el.n] && (
+                                <div className="mt-4 pt-4 border-t border-slate-50 grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <p className="text-[0.5rem] font-black text-slate-300 uppercase">Valency</p>
+                                        <p className="text-sm font-black text-slate-700">{elementDetails[el.n].v}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[0.5rem] font-black text-slate-300 uppercase">Conf.</p>
+                                        <p className="text-sm font-black text-slate-700 truncate">{elementDetails[el.n].ec}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+                <p className="text-center text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] py-4 italic">Analysis powered by Aadhar Scientific Engine</p>
+            </div>
+
             {/* ELEMENT DETAILS DRAWER / SECTION */}
             <AnimatePresence>
                 {selectedElement && (
@@ -2105,9 +2181,9 @@ const PeriodicTablePage = () => {
                         initial={{ opacity: 0, y: 100 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 100 }}
-                        className="fixed inset-x-0 bottom-0 z-50 p-6 md:p-10 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.1)] rounded-t-[4rem] border-t border-slate-100 max-h-[80vh] overflow-y-auto"
+                        className="fixed inset-x-0 bottom-0 z-50 p-6 md:p-10 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.1)] rounded-t-[4rem] border-t border-slate-100 max-h-[90vh] overflow-y-auto"
                     >
-                        <div className="max-w-4xl mx-auto space-y-8">
+                        <div className="max-w-4xl mx-auto space-y-8 pb-48">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-8">
                                     <div className={cn(
@@ -2219,28 +2295,84 @@ const PeriodicTablePage = () => {
 /* ── ATTENDANCE TRACKER ── */
 const AttendanceTracker = () => {
     const navigate = useNavigate();
+    const [attendance, setAttendance] = useState<Record<string, 'present' | 'absent' | null>>({});
+    
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const monthName = today.toLocaleString('default', { month: 'long' });
+
+    const toggleAttendance = (day: number) => {
+        const key = `${day}`;
+        setAttendance(prev => ({
+            ...prev,
+            [key]: prev[key] === 'present' ? 'absent' : 'present'
+        }));
+    };
+
+    const presentCount = Object.values(attendance).filter(v => v === 'present').length;
+
     return (
-        <div className="space-y-10 animate-fade-up">
+        <div className="space-y-10 animate-fade-up pb-24">
             <header className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Attendance</h1>
+                <div>
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Attendance</h1>
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Consistency Log</p>
+                </div>
             </header>
-            <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-6 shadow-xl">
-                <div className="w-24 h-24 bg-teal-50 rounded-[2.5rem] flex items-center justify-center mx-auto">
-                    <UserCheck className="w-12 h-12 text-teal-500" />
+
+            <div className="bg-white p-6 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <UserCheck className="w-48 h-48" />
                 </div>
-                <div className="space-y-2">
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">Attendance Log</h2>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">Track your study consistency and school presence metadata.</p>
+                
+                <div className="flex items-center justify-between mb-8 relative z-10">
+                    <div>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">{monthName} {year}</h2>
+                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest leading-relaxed">TAP A DATE TO LOG PRESENCE</p>
+                    </div>
+                    <div className="bg-teal-50 px-6 py-3 rounded-2xl border border-teal-100 text-center">
+                        <p className="text-[0.6rem] font-black text-teal-400 uppercase tracking-widest">Present</p>
+                        <p className="text-2xl font-black text-teal-600 leading-none">{presentCount}</p>
+                    </div>
                 </div>
-                <div className="grid grid-cols-7 gap-2 max-w-sm mx-auto">
-                    {Array.from({ length: 31 }).map((_, i) => (
-                        <div key={i} className="aspect-square bg-slate-50 rounded-lg flex items-center justify-center text-[0.6rem] font-bold text-slate-300 border border-slate-100">{i+1}</div>
-                    ))}
+
+                <div className="grid grid-cols-7 gap-2 md:gap-4 max-w-lg mx-auto relative z-10">
+                    {Array.from({ length: daysInMonth }).map((_, i) => {
+                        const day = i + 1;
+                        const status = attendance[day.toString()];
+                        return (
+                            <button 
+                                key={i} 
+                                onClick={() => toggleAttendance(day)}
+                                className={cn(
+                                    "aspect-square rounded-xl md:rounded-2xl flex items-center justify-center text-xs md:text-sm font-black transition-all border group",
+                                    status === 'present' ? "bg-teal-500 text-white border-teal-600 shadow-lg shadow-teal-500/20" : 
+                                    status === 'absent' ? "bg-rose-500 text-white border-rose-600 shadow-lg shadow-rose-500/20" : 
+                                    "bg-slate-50 text-slate-400 border-slate-100 hover:border-teal-200 shadow-sm"
+                                )}
+                            >
+                                {day}
+                            </button>
+                        );
+                    })}
                 </div>
-                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Select dates to mark presence</p>
+                
+                <div className="mt-10 flex gap-6 justify-center">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-teal-500 shadow-sm shadow-teal-500/40" />
+                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Present</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" />
+                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Absent</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -2249,26 +2381,92 @@ const AttendanceTracker = () => {
 /* ── FLASHCARDS APP ── */
 const FlashcardApp = () => {
     const navigate = useNavigate();
+    const [index, setIndex] = useState(0);
+    const [flipped, setFlipped] = useState(false);
+
+    const cards = [
+        { q: "Valency of Carbon?", a: "4 (Tetravalent). It forms 4 covalent bonds." },
+        { q: "Newton's 2nd Law equation?", a: "F = ma (Force = Mass × Acceleration)." },
+        { q: "pH of pure water?", a: "7 (Neutral)." },
+        { q: "Mendel's First Law?", a: "Law of Segregation." },
+        { q: "Symbol for Iron?", a: "Fe (Ferrum)." },
+        { q: "Unit of Voltage?", a: "Volt (V)." }
+    ];
+
+    const next = () => {
+        setFlipped(false);
+        setTimeout(() => setIndex((index + 1) % cards.length), 200);
+    };
+
+    const prev = () => {
+        setFlipped(false);
+        setTimeout(() => setIndex((index - 1 + cards.length) % cards.length), 200);
+    };
+
     return (
-        <div className="space-y-10 animate-fade-up">
+        <div className="space-y-10 animate-fade-up pb-24">
             <header className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
-                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Flashcards</h1>
+                <div>
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Flashcards</h1>
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Active Recall Desk</p>
+                </div>
             </header>
-            <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-6 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-10 opacity-5">
-                    <GalleryVertical className="w-32 h-32" />
+
+            <div className="flex flex-col items-center gap-8">
+                <div 
+                    onClick={() => setFlipped(!flipped)}
+                    className="w-full max-w-sm aspect-[4/5] perspective-1000 cursor-pointer"
+                >
+                    <div className={cn(
+                        "relative w-full h-full text-center transition-all duration-500 transform-style-3d",
+                        flipped ? "rotate-y-180" : ""
+                    )}>
+                        {/* Front */}
+                        <div className="absolute w-full h-full backface-hidden bg-white rounded-[3.5rem] shadow-2xl border border-slate-100 flex flex-col items-center justify-center p-12 space-y-8">
+                            <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner">
+                                <Zap className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-[0.65rem] font-black text-slate-300 uppercase tracking-[0.4em]">Knowledge Spark {index + 1}</h3>
+                            <p className="text-3xl font-black text-slate-900 italic tracking-tighter uppercase leading-tight">
+                                {cards[index].q}
+                            </p>
+                            <div className="pt-4 flex flex-col items-center gap-2">
+                                <Search className="w-5 h-5 text-slate-200 animate-pulse" />
+                                <p className="text-[0.6rem] font-bold text-slate-300 uppercase tracking-widest">Tap to flip</p>
+                            </div>
+                        </div>
+                        
+                        {/* Back */}
+                        <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-linear-to-br from-indigo-900 to-slate-900 rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-12 space-y-8 text-white relative overflow-hidden">
+                            <div className="absolute inset-0 bg-white/5 opacity-20 pointer-events-none" />
+                            <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/10 relative z-10">
+                                <BrainCircuit className="w-7 h-7" />
+                            </div>
+                            <h3 className="text-[0.65rem] font-black text-white/40 uppercase tracking-[0.4em] relative z-10">Scientific Accuracy</h3>
+                            <p className="text-xl md:text-2xl font-black italic tracking-tighter leading-snug relative z-10">
+                                {cards[index].a}
+                            </p>
+                            <div className="pt-4 flex flex-col items-center gap-2 relative z-10">
+                                <p className="text-[0.6rem] font-bold text-white/30 uppercase tracking-widest">Tap to return</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="w-64 h-80 bg-linear-to-br from-orange-500 to-amber-600 rounded-[3rem] mx-auto shadow-2xl flex items-center justify-center p-8 text-white relative group cursor-pointer hover:rotate-1 transition-transform">
-                   <p className="text-2xl font-black italic tracking-tighter uppercase">What is Valency?</p>
+
+                <div className="flex items-center gap-6">
+                    <button onClick={prev} className="w-16 h-16 bg-white border border-slate-100 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-blue hover:scale-110 active:scale-95 transition-all">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div className="px-6 py-3 bg-slate-900 rounded-2xl text-white font-black text-sm shadow-xl min-w-[100px] text-center">
+                        {index + 1} <span className="opacity-40">/</span> {cards.length}
+                    </div>
+                    <button onClick={next} className="w-16 h-16 bg-white border border-slate-100 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-blue hover:scale-110 active:scale-95 transition-all">
+                        <ArrowLeft className="w-6 h-6 rotate-180" />
+                    </button>
                 </div>
-                <div className="space-y-2">
-                    <h2 className="text-xl font-black uppercase italic tracking-tighter text-slate-800">Knowledge Decks</h2>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Active recall synthesis for rapid memorization.</p>
-                </div>
-                <button className="px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-widest shadow-xl">Create New Deck</button>
             </div>
         </div>
     );
@@ -3070,6 +3268,121 @@ const ModelList = () => {
     );
 };
 
+/* ── TRANSLATOR TOOL ── */
+const TranslatorPage = () => {
+    const navigate = useNavigate();
+    const [text, setText] = useState('');
+    const [translated, setTranslated] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [sourceLang, setSourceLang] = useState('English');
+    const [targetLang, setTargetLang] = useState('Nepali');
+
+    const handleTranslate = async () => {
+        if (!text.trim()) return;
+        setLoading(true);
+        try {
+            const prompt = `You are a professional translator for Nepalese students.
+            Translate the following text from ${sourceLang} to ${targetLang}.
+            Provide only the translation, no extra chatter.
+            
+            TEXT: "${text}"`;
+
+            const result = await callCerebrasForMomo([{ role: 'user', content: prompt }], false);
+            setTranslated(result || "Translation failed.");
+        } catch (e) {
+            console.error(e);
+            setTranslated("Error: Could not connect to translation engine.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const swapLangs = () => {
+        setSourceLang(targetLang);
+        setTargetLang(sourceLang);
+        setText(translated);
+        setTranslated(text);
+    };
+
+    return (
+        <div className="space-y-8 animate-fade-up pb-24">
+            <header className="flex items-center gap-3 px-1">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div>
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Translator</h1>
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Multi-Lingual Bridge</p>
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* SOURCE AREA */}
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <span className="text-xs font-black text-blue uppercase tracking-widest">{sourceLang}</span>
+                        <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue">
+                             <Languages className="w-5 h-5" />
+                        </div>
+                    </div>
+                    <textarea 
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Type text to translate..."
+                        className="w-full h-48 bg-slate-50 border-none rounded-3xl p-6 text-lg font-bold text-slate-800 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-blue/10 resize-none transition-all"
+                    />
+                </div>
+
+                {/* TARGET AREA */}
+                <div className="bg-slate-900 p-8 rounded-[3rem] shadow-2xl space-y-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-10 opacity-5">
+                         <Globe className="w-32 h-32 text-white" />
+                    </div>
+                    <div className="flex items-center justify-between px-2 relative z-10">
+                        <span className="text-xs font-black text-amber-400 uppercase tracking-widest">{targetLang}</span>
+                        <button 
+                            onClick={swapLangs}
+                            className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white hover:bg-white/20 transition-all"
+                        >
+                             <RotateCcw className="w-5 h-5 rotate-90" />
+                        </button>
+                    </div>
+                    <div className="w-full h-48 bg-white/5 rounded-3xl p-6 text-lg font-bold text-white relative z-10 overflow-y-auto">
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 text-white/40">
+                                <Sparkles className="w-8 h-8 animate-pulse" />
+                                <p className="text-xs uppercase tracking-widest font-black">AI Translating...</p>
+                            </div>
+                        ) : translated || (
+                            <p className="text-white/20 italic">Translation results appear here...</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-center pt-4">
+                <button 
+                    onClick={handleTranslate}
+                    disabled={loading || !text.trim()}
+                    className="px-12 py-5 bg-linear-to-r from-blue-600 to-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-sm shadow-xl shadow-blue-600/30 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-4"
+                >
+                    <Languages className="w-5 h-5" />
+                    {loading ? 'Synthesizing...' : 'Execute Translation'}
+                </button>
+            </div>
+
+            <div className="bg-blue-50 p-6 rounded-3xl border border-blue-100 flex items-center gap-4">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-blue shrink-0 shadow-sm">
+                    <Info className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-bold text-blue-800 leading-relaxed uppercase">
+                    Our AI model is specialized in English-to-Nepali academic translations, perfect for science and social studies homework.
+                </p>
+            </div>
+        </div>
+    );
+};
+
 const DictionaryPage = () => {
     const navigate = useNavigate();
     const [search, setSearch] = useState('');
@@ -3663,22 +3976,18 @@ const FormulaBankPage = () => {
         'Science': [
             { title: 'Newton\'s Law of Gravitation', formula: 'F = G\\frac{m_1 m_2}{d^2}' },
             { title: 'Acceleration Due to Gravity', formula: 'g = \\frac{GM}{R^2}' },
-            { title: 'Weight', formula: 'W = mg' },
             { title: 'Liquid Pressure', formula: 'P = \\rho g h' },
-            { title: 'Archimedes\' Principle (Upthrust)', formula: 'U = V \\rho g' },
-            { title: 'Specific Heat Capacity (Heat Equation)', formula: 'Q = ms\\Delta\\theta' },
-            { title: 'Power of a Lens', formula: 'P = \\frac{1}{f}' },
-            { title: 'Magnification', formula: 'M = \\frac{v}{u}' },
-            { title: 'Electric Power', formula: 'P = V \\times I = I^2 R = \\frac{V^2}{R}' },
-            { title: 'Electric Energy', formula: 'E = P \\times t' },
-            { title: 'Work Done', formula: 'W = F \\times d' },
-            { title: 'Kinetic Energy', formula: 'K.E. = \\frac{1}{2} mv^2' },
-            { title: 'Potential Energy', formula: 'P.E. = mgh' },
-            { title: 'Ohm\'s Law', formula: 'V = I \\times R' },
-            { title: 'Resistance in Series', formula: 'R_{eq} = R_1 + R_2 + ... + R_n' },
-            { title: 'Resistance in Parallel', formula: '\\frac{1}{R_{eq}} = \\frac{1}{R_1} + \\frac{1}{R_2} + ... + \\frac{1}{R_n}' },
-            { title: 'Velocity of Wave', formula: 'v = f \\times \\lambda' },
-            { title: 'Refractive Index', formula: '\\mu = \\frac{\\sin i}{\\sin r} = \\frac{c}{v}' }
+            { title: 'Upthrust', formula: 'U = v \\rho g' },
+            { title: 'Heat Equation', formula: 'Q = ms\\Delta\\theta' },
+            { title: 'Lens Formula', formula: '\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}' },
+            { title: 'Power of Lens', formula: 'P = \\frac{1}{f} \\text{ (in meters)}' },
+            { title: 'Ohm\'s Law', formula: 'V = IR' },
+            { title: 'Power (Electricity)', formula: 'P = VI = I^2 R = \\frac{V^2}{R}' },
+            { title: 'Energy (Electricity)', formula: 'E = Pt = Vit' },
+            { title: 'Transformer Formula', formula: '\\frac{N_p}{N_s} = \\frac{V_p}{V_s} = \\frac{I_s}{I_p}' },
+            { title: 'Kinetic Energy', formula: 'KE = \\frac{1}{2}mv^2' },
+            { title: 'Potential Energy', formula: 'PE = mgh' },
+            { title: 'Wave Velocity', formula: 'v = f \\lambda' }
         ]
     };
 
@@ -3729,18 +4038,18 @@ const UnitConverterPage = () => {
     const unitsList = ['length', 'mass', 'temp', 'area', 'volume', 'speed', 'time', 'data'];
 
     const unitMap: Record<string, string[]> = {
-        'length': ['m', 'cm', 'km', 'ft', 'inch', 'mile'],
-        'mass': ['kg', 'g', 'mg', 'lb', 'oz'],
-        'temp': ['C', 'F', 'K'],
-        'area': ['sq.m', 'sq.km', 'sq.ft', 'hectare', 'acre'],
-        'volume': ['L', 'mL', 'gal', 'cubic.m'],
+        'length': ['meter', 'centimeter', 'kilometer', 'feet', 'inch', 'mile'],
+        'mass': ['kilogram', 'gram', 'milligram', 'pound', 'ounce'],
+        'temp': ['Celsius', 'Fahrenheit', 'Kelvin'],
+        'area': ['sq.meter', 'sq.km', 'sq.feet', 'hectare', 'acre'],
+        'volume': ['Liter', 'milliliter', 'gallon', 'cubic.m'],
         'speed': ['m/s', 'km/h', 'mph'],
         'time': ['sec', 'min', 'hour', 'day'],
-        'data': ['B', 'KB', 'MB', 'GB', 'TB']
+        'data': ['Byte', 'KB', 'MB', 'GB', 'TB']
     };
 
-    const [fromUnits, setFromUnits] = useState('m');
-    const [toUnits, setToUnits] = useState('ft');
+    const [fromUnits, setFromUnits] = useState('meter');
+    const [toUnits, setToUnits] = useState('feet');
 
     useEffect(() => {
         setFromUnits(unitMap[type][0]);
@@ -3750,23 +4059,23 @@ const UnitConverterPage = () => {
     const convert = () => {
         const input = parseFloat(val) || 0;
         if (type === 'temp') {
-            if (fromUnits === 'C' && toUnits === 'F') return (input * 9/5) + 32;
-            if (fromUnits === 'F' && toUnits === 'C') return (input - 32) * 5/9;
-            if (fromUnits === 'C' && toUnits === 'K') return input + 273.15;
-            if (fromUnits === 'K' && toUnits === 'C') return input - 273.15;
-            if (fromUnits === 'F' && toUnits === 'K') return (input - 32) * 5/9 + 273.15;
-            if (fromUnits === 'K' && toUnits === 'F') return (input - 273.15) * 9/5 + 32;
+            if (fromUnits === 'Celsius' && toUnits === 'Fahrenheit') return (input * 9/5) + 32;
+            if (fromUnits === 'Fahrenheit' && toUnits === 'Celsius') return (input - 32) * 5/9;
+            if (fromUnits === 'Celsius' && toUnits === 'Kelvin') return input + 273.15;
+            if (fromUnits === 'Kelvin' && toUnits === 'Celsius') return input - 273.15;
+            if (fromUnits === 'Fahrenheit' && toUnits === 'Kelvin') return (input - 32) * 5/9 + 273.15;
+            if (fromUnits === 'Kelvin' && toUnits === 'Fahrenheit') return (input - 273.15) * 9/5 + 32;
             return input;
         }
 
         const rates: Record<string, number> = {
-            'length_m': 1, 'length_cm': 0.01, 'length_km': 1000, 'length_ft': 0.3048, 'length_inch': 0.0254, 'length_mile': 1609.34,
-            'mass_kg': 1, 'mass_g': 0.001, 'mass_mg': 0.000001, 'mass_lb': 0.453592, 'mass_oz': 0.0283495,
-            'area_sq.m': 1, 'area_sq.km': 1000000, 'area_sq.ft': 0.092903, 'area_hectare': 10000, 'area_acre': 4046.86,
-            'volume_L': 1, 'volume_mL': 0.001, 'volume_gal': 3.78541, 'volume_cubic.m': 1000,
+            'length_meter': 1, 'length_centimeter': 0.01, 'length_kilometer': 1000, 'length_feet': 0.3048, 'length_inch': 0.0254, 'length_mile': 1609.34,
+            'mass_kilogram': 1, 'mass_gram': 0.001, 'mass_milligram': 0.000001, 'mass_pound': 0.453592, 'mass_ounce': 0.0283495,
+            'area_sq.meter': 1, 'area_sq.km': 1000000, 'area_sq.feet': 0.092903, 'area_hectare': 10000, 'area_acre': 4046.86,
+            'volume_Liter': 1, 'volume_milliliter': 0.001, 'volume_gallon': 3.78541, 'volume_cubic.m': 1000,
             'speed_m/s': 1, 'speed_km/h': 0.277778, 'speed_mph': 0.44704,
             'time_sec': 1, 'time_min': 60, 'time_hour': 3600, 'time_day': 86400,
-            'data_B': 1, 'data_KB': 1024, 'data_MB': 1048576, 'data_GB': 1073741824, 'data_TB': 1099511627776
+            'data_Byte': 1, 'data_KB': 1024, 'data_MB': 1048576, 'data_GB': 1073741824, 'data_TB': 1099511627776
         };
 
         const fromRate = rates[`${type}_${fromUnits}`];
@@ -4499,6 +4808,7 @@ const AppContent = () => {
                 <Route path="/tools/todo" element={<TodoListPage />} />
                 <Route path="/tools/words" element={<WordCounterPage />} />
                 <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
+                <Route path="/tools/translator" element={<TranslatorPage />} />
                 <Route path="/tools/attendance" element={<AttendanceTracker />} />
                 <Route path="/tools/flashcards" element={<FlashcardApp />} />
             </Routes>
