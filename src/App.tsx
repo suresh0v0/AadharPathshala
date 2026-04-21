@@ -866,10 +866,11 @@ FORMATTING RULES:
 $$
 E = mc^2
 $$
-2. IMAGES & VISUALS: Whenever a student asks for a diagram, figure, or illustration, or when a visual would help explain a concept (like Science or Geography), you MUST provide an image using an HTML <img> tag. 
-   - For AI-Generated Diagrams/Art (Pollinations): Use exactly: <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" /> (Replace DESCRIPTION with a detailed English prompt using underscores instead of spaces).
-   - For Real-Life Photos (Unsplash): Use exactly: <img src="https://email.api.unsplash.com/search/photos?query=TOPIC&per_page=1" alt="TOPIC" /> (Use underscores in TOPIC).
-   - Image Formatting: YOU MUST put the <img /> tag on its own separate line with empty lines before and after it. Do NOT use markdown ![alt](url) format. Use ONLY the <img /> tag.
+2. IMAGES & VISUALS (CRITICAL): You MUST provide a suitable figure/image related to the topic for ALMOST EVERY response where a visual helps (Science, Geography, History, objects). 
+   - ALWAYS use Pollinations AI for all images, diagrams, or photos.
+   - Format: Use exactly <img src="https://image.pollinations.ai/prompt/DESCRIPTION?width=600&height=400&nologo=true" alt="DESCRIPTION" />
+   - Replace DESCRIPTION with a highly detailed English prompt using underscores instead of spaces (e.g., human_heart_diagram_labeled).
+   - Placement: The <img /> tag MUST be on its own line surrounded by empty lines. NEVER use Markdown ![alt](url) format.
 3. HEADINGS & EMPHASIS: NEVER use HTML tags for text styling (like <h3> or <strong>). ALWAYS use standard Markdown headings (###) and bold text (**). The app will automatically color-code them. (You may only use HTML for the <img> tag).
 4. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 5. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
@@ -1885,6 +1886,7 @@ const MCQTestSelection = () => {
     const { name } = useParams();
     const navigate = useNavigate();
     const [useTimer, setUseTimer] = useState(true);
+    const [questionCount, setQuestionCount] = useState(30);
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
     
     const sets = STATIC_MCQS[name as string] || [];
@@ -1918,12 +1920,32 @@ const MCQTestSelection = () => {
                 </button>
             </div>
 
+            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
+                <label className="text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest text-center">Select Number of Questions</label>
+                <div className="flex gap-3 max-w-sm mx-auto">
+                    {[5, 10, 20, 30].map((c) => (
+                        <button
+                            key={c}
+                            onClick={() => setQuestionCount(c)}
+                            className={cn(
+                                "flex-1 py-3 rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
+                                questionCount === c 
+                                    ? `text-white border-transparent bg-linear-to-br ${config.gradient} shadow-lg shadow-${config.color}-500/20` 
+                                    : "bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-200"
+                            )}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {sets.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
                     {sets.map((set, idx) => (
                         <button 
                             key={idx}
-                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}?timer=${useTimer}`)}
+                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}?timer=${useTimer}&count=${questionCount}`)}
                             className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-center justify-between group hover:border-blue transition-all"
                         >
                             <div className="flex items-center gap-6">
@@ -1964,12 +1986,17 @@ const MCQTestPlayer = () => {
     const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
     const [currentIdx, setCurrentIdx] = useState(0);
     const [answers, setAnswers] = useState<Record<number, string>>({});
-    const [timer, setTimer] = useState(1800); // 30 minutes
+    
     const isTimerEnabled = searchParams.get('timer') !== 'false';
+    const countParam = parseInt(searchParams.get('count') || '30');
+    
+    // 1 minute per question for timer
+    const [timer, setTimer] = useState(countParam * 60); 
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     const setData = STATIC_MCQS[name as string]?.[parseInt(setIndex || '0')];
-    const questions = setData?.questions || [];
+    // Slice questions array up to the requested count
+    const questions = (setData?.questions || []).slice(0, countParam);
 
     useEffect(() => {
         if (status === 'quiz' && isTimerEnabled && timer > 0) {
