@@ -45,7 +45,7 @@ const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) =>
       "X-Title": "Aadhar Pathshala",
     },
     body: JSON.stringify({
-      "model": "google/gemma-2-9b-it:free",
+      "model": "meta-llama/llama-3.1-8b-instruct:free",
       "messages": messages.map(m => ({
         role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
         content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
