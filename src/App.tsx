@@ -20,7 +20,6 @@ import 'katex/dist/katex.min.css';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { GoogleGenAI } from "@google/genai";
 import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 import { supabase } from './supabaseClient.js';
@@ -33,62 +32,67 @@ function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * OpenRouter AI Fallback with Multi-Model Redundancy and Multi-Source Support
+ * Cerebras AI - Main Brain for MOMO
  */
-const callOpenRouterToMomo = async (messages: any[], isJson: boolean = false) => {
-    // Try to get key from Vite env or process.env
+const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => {
     // @ts-ignore
-    const viteKey = import.meta.env.VITE_OPENROUTER_API_KEY || "";
-    const processKey = typeof process !== 'undefined' && process.env ? process.env.OPENROUTER_API_KEY : "";
+    const viteKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
+    const processKey = typeof process !== 'undefined' && process.env ? process.env.CEREBRAS_API_KEY : "";
     const apiKey = processKey || viteKey;
 
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured. Please check your Secrets.");
+    if (!apiKey) throw new Error("CEREBRAS_API_KEY is not configured.");
 
-    const models = [
-        "google/gemini-2.0-flash-exp:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "mistralai/mistral-7b-instruct:free",
-        "qwen/qwen-2-5-7b-instruct:free",
-        "meta-llama/llama-3.1-8b-instruct:free",
-    ];
+    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "model": "llama3.1-70b",
+            "messages": messages.map(m => ({
+                role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+                content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+            })),
+            "response_format": isJson ? { "type": "json_object" } : undefined
+        })
+    });
 
-    let lastError = "";
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "Cerebras API Error");
+    return data.choices?.[0]?.message?.content || "";
+};
 
-    for (const model of models) {
-        try {
-            if (lastError) await new Promise(r => setTimeout(r, 400));
-            
-            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${apiKey}`,
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": window.location.origin,
-                    "X-Title": "Aadhar Pathshala",
-                },
-                body: JSON.stringify({
-                    "model": model,
-                    "messages": messages.map(m => ({
-                        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : 'user',
-                        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-                    })),
-                    "response_format": isJson ? { "type": "json_object" } : undefined
-                })
-            });
+/**
+ * SambaNova AI - Reliable Backup for MOMO
+ */
+const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) => {
+    // @ts-ignore
+    const viteKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
+    const processKey = typeof process !== 'undefined' && process.env ? process.env.SAMBANOVA_API_KEY : "";
+    const apiKey = processKey || viteKey;
 
-            const data = await response.json();
-            if (!response.ok) {
-                lastError = data.error?.message || `Model ${model} failed`;
-                continue;
-            }
-            return data.choices?.[0]?.message?.content || "";
-        } catch (err: any) {
-            lastError = err.message || "Network failed";
-            continue;
-        }
-    }
+    if (!apiKey) throw new Error("SAMBANOVA_API_KEY is not configured.");
 
-    throw new Error(`MOMO All-Source Failure. Last error: ${lastError}`);
+    const response = await fetch("https://api.sambanova.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "model": "Meta-Llama-3.1-70B-Instruct",
+            "messages": messages.map(m => ({
+                role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+                content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+            })),
+            "response_format": isJson ? { "type": "json_object" } : undefined
+        })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || "SambaNova API Error");
+    return data.choices?.[0]?.message?.content || "";
 };
 
 // ════════════════════════════════════════════
@@ -333,27 +337,20 @@ const MockTest = () => {
                 const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
                 quizData = data.quiz || [];
             } else {
-                // GEMINI (MOMO) for questions with Fallback
+                // MOMO (Cerebras with SambaNova Fallback) for questions
                 try {
-                    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-                    const res = await ai.models.generateContent({
-                        model: "gemini-1.5-flash",
-                        contents: prompt,
-                        config: { responseMimeType: "application/json" }
-                    });
-                    const data = JSON.parse(res.text || "{}");
+                    const responseText = await callCerebrasForMomo([{ role: 'user', content: prompt }], true);
+                    const data = JSON.parse(responseText || "{}");
                     quizData = data.quiz || [];
-                } catch (gemErr) {
-                    console.warn("Gemini Quiz generation failed, trying OpenRouter fallback", gemErr);
+                } catch (cerebrasErr) {
+                    console.warn("Cerebras Quiz generation failed, trying SambaNova fallback", cerebrasErr);
                     try {
-                        const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: prompt }], true);
+                        const fallbackJson = await callSambaNovaForMomo([{ role: 'user', content: prompt }], true);
                         const data = JSON.parse(fallbackJson || "{}");
                         quizData = data.quiz || [];
-                    } catch (fallbackErr: any) {
-                        if (fallbackErr.message?.includes("OPENROUTER_API_KEY")) {
-                            throw new Error("Gemini quota full and OpenRouter fallback is not configured. Please set OPENROUTER_API_KEY in Secrets.");
-                        }
-                        throw fallbackErr;
+                    } catch (sambaErr: any) {
+                        console.error("All Quiz generation backends failed", sambaErr);
+                        throw sambaErr;
                     }
                 }
             }
@@ -917,14 +914,7 @@ NEPALI MEDIUM: Use English by default. Use Nepali mix ONLY if the user asks in N
                     });
                 }
             } else {
-                // GEMINI Implementation (MOMO)
-                // @ts-ignore
-                const geminiVite = import.meta.env.VITE_GEMINI_API_KEY || "";
-                const geminiProcess = typeof process !== 'undefined' && process.env ? process.env.GEMINI_API_KEY : "";
-                const geminiKey = geminiProcess || geminiVite;
-                
-                const ai = new GoogleGenAI({ apiKey: geminiKey });
-                
+                // Cerebras & SambaNova Implementation (MOMO)
                 const systemInstruction = `You are MOMO, the Detailed Tutor for Grade 10 SEE Nepal Students.
 IDENTITY: Warm, patient, thorough (Dai/Didi tone).
 GOAL: Explain the "WHY" behind Science/Math concepts.
@@ -943,49 +933,45 @@ Current User: ${user?.name || 'Sathi'}. ALWAYS start your first response with yo
 
                 try {
                     const contents = [
-                        { role: 'user', parts: [{ text: systemInstruction }] },
+                        { role: 'system', content: systemInstruction },
                         ...updated.map(m => ({
-                            role: m.role === 'ai' ? 'model' : 'user',
-                            parts: [{ text: m.text }]
+                            role: m.role === 'ai' ? 'assistant' : 'user',
+                            content: m.text
                         }))
                     ];
 
-                    const response = await ai.models.generateContent({
-                        model: "gemini-1.5-flash",
-                        contents: contents,
-                    });
+                    const responseText = await callCerebrasForMomo(contents);
 
-                    const fullResponse = response.text || "I'm sorry, I couldn't process that. Try again!";
                     setMessages(prev => {
                         const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].text = fullResponse;
+                        newMessages[newMessages.length - 1].text = responseText || "I'm sorry, I couldn't process that. Try again!";
                         return newMessages;
                     });
-                } catch (geminiErr: any) {
-                    console.warn("Gemini failed, trying OpenRouter...", geminiErr);
+                } catch (cerebrasErr: any) {
+                    console.warn("Cerebras failed, trying SambaNova...", cerebrasErr);
                     try {
                         const contents = [
-                            { role: 'user', content: systemInstruction },
+                            { role: 'system', content: systemInstruction },
                             ...updated.map(m => ({
                                 role: m.role === 'ai' ? 'assistant' : 'user',
                                 content: m.text
                             }))
                         ];
-                        const fallbackResponse = await callOpenRouterToMomo(contents);
+                        const fallbackResponse = await callSambaNovaForMomo(contents);
                         setMessages(prev => {
                             const newMessages = [...prev];
                             newMessages[newMessages.length - 1].text = fallbackResponse;
                             return newMessages;
                         });
-                    } catch (orErr: any) {
-                        console.warn("OpenRouter also failed, trying Groq as last resort...", orErr);
-                        // Tertiary Fallback: Groq (using ACHAR logic)
+                    } catch (sambaErr: any) {
+                        console.warn("SambaNova failed, trying Groq as last resort...", sambaErr);
+                        // Tertiary Fallback: Groq 
                         // @ts-ignore
                         const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
                         const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
                         const groqKey = processGroqKey || viteGroqKey;
                         
-                        if (!groqKey) throw orErr; // Rethrow OR error if no Groq key
+                        if (!groqKey) throw sambaErr; 
 
                         const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
                         const groqRes = await groq.chat.completions.create({
@@ -2489,38 +2475,32 @@ const DictionaryPage = () => {
                 console.warn("Dictionary API failed, falling back to MOMO");
             }
 
-            // Priority 3: MOMO AI Fallback (Gemini with OpenRouter Fallback)
+            // Priority 3: MOMO AI Fallback (Cerebras with SambaNova Fallback)
             try {
-                const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
                 const persona = `You are MOMO, the Detailed Tutor for Grade 10 Nepal Students. Provide a simple, student-friendly definition for the word: "${search}". 
                 Explain it in MOMO's persona (warm, patient, like a big sibling). 
                 Include a relatable example if possible. Keep it concise but helpful. 
                 Format JSON: { "word": "${search}", "def": "definition here", "sub": "Subject category", "detail": "MOMO's special tip or insight" }`;
 
                 try {
-                    const response = await ai.models.generateContent({
-                        model: "gemini-1.5-flash",
-                        contents: persona,
-                        config: { responseMimeType: "application/json" }
-                    });
-
-                    const aiData = JSON.parse(response.text || "{}");
+                    const responseText = await callCerebrasForMomo([{ role: 'user', content: persona }], true);
+                    const aiData = JSON.parse(responseText || "{}");
                     setResult({ ...aiData, source: 'MOMO AI' });
-                } catch (geminiErr) {
-                    console.warn("Gemini Dictionary failed, trying OpenRouter...", geminiErr);
+                } catch (cerebrasErr) {
+                    console.warn("Cerebras Dictionary failed, trying SambaNova...", cerebrasErr);
                     try {
-                        const fallbackJson = await callOpenRouterToMomo([{ role: 'user', content: persona }], true);
+                        const fallbackJson = await callSambaNovaForMomo([{ role: 'user', content: persona }], true);
                         const aiData = JSON.parse(fallbackJson || "{}");
                         setResult({ ...aiData, source: 'MOMO AI (Fallback)' });
-                    } catch (orErr) {
-                        console.warn("OpenRouter also failed for Dictionary, trying Groq...", orErr);
+                    } catch (sambaErr) {
+                        console.warn("SambaNova also failed for Dictionary, trying Groq...", sambaErr);
                         // Tertiary Fallback: Groq for JSON definitions
                         // @ts-ignore
                         const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
                         const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
                         const groqKey = processGroqKey || viteGroqKey;
                         
-                        if (!groqKey) throw orErr;
+                        if (!groqKey) throw sambaErr;
 
                         const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
                         const groqRes = await groq.chat.completions.create({
@@ -2528,7 +2508,7 @@ const DictionaryPage = () => {
                                 { role: "system", content: "You are a Grade 10 Dictionary. Output ONLY valid JSON." },
                                 { role: "user", content: persona }
                             ],
-                            model: "llama-3.3-70b-versatile", // Use 70b if available for better JSON
+                            model: "llama-3.3-70b-versatile", 
                             response_format: { type: "json_object" }
                         });
 
