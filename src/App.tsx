@@ -40,29 +40,37 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
 
     if (!apiKey) throw new Error("API key is not configured. Please add VITE_CEREBRAS_API_KEY to your environment variables.");
 
-    const response = await fetch("https://api.cerebras.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "model": "llama3.1-70b",
-            "messages": messages.map(m => ({
-                role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-                content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-            })),
-            "response_format": isJson ? { "type": "json_object" } : undefined
-        })
-    });
+    const formattedMessages = messages.map(m => ({
+        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+    }));
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error?.message || "Cerebras API Error - It might be a CORS issue from browser fetch.");
-    return data.choices?.[0]?.message?.content || "";
+    try {
+        const client = new Groq({ apiKey, baseURL: "https://api.cerebras.ai/v1", dangerouslyAllowBrowser: true });
+        const response = await client.chat.completions.create({
+            model: "llama3.1-70b",
+            messages: formattedMessages as any,
+            response_format: isJson ? { type: "json_object" } : undefined
+        });
+        return response.choices[0]?.message?.content || "";
+    } catch (err: any) {
+        console.warn("Cerebras failed, falling back to reliable Groq LLaMA 70B", err);
+        // @ts-ignore
+        const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+        if (!groqKey) throw new Error(`Cerebras failed: ${err.message}. (No Groq fallback available)`);
+        
+        const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+        const response = await backupClient.chat.completions.create({
+            model: "llama-3.1-70b-versatile",
+            messages: formattedMessages as any,
+            response_format: isJson ? { type: "json_object" } : undefined
+        });
+        return response.choices[0]?.message?.content || "";
+    }
 };
 
 /**
- * SambaNova AI - Reliable Backup for MOMO
+ * SambaNova AI - Reliable Backup for MANGO
  */
 const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) => {
     // @ts-ignore
@@ -70,25 +78,33 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
 
     if (!apiKey) throw new Error("API key is not configured. Please add VITE_SAMBANOVA_API_KEY to your environment variables.");
 
-    const response = await fetch("https://api.sambanova.ai/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "model": "Meta-Llama-3.1-70B-Instruct",
-            "messages": messages.map(m => ({
-                role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-                content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-            })),
-            "response_format": isJson ? { "type": "json_object" } : undefined
-        })
-    });
+    const formattedMessages = messages.map(m => ({
+        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
+        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
+    }));
 
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error?.message || "SambaNova API Error - It might be a CORS issue from browser fetch.");
-    return data.choices?.[0]?.message?.content || "";
+    try {
+        const client = new Groq({ apiKey, baseURL: "https://api.sambanova.ai/v1", dangerouslyAllowBrowser: true });
+        const response = await client.chat.completions.create({
+            model: "Meta-Llama-3.1-70B-Instruct",
+            messages: formattedMessages as any,
+            response_format: isJson ? { type: "json_object" } : undefined
+        });
+        return response.choices[0]?.message?.content || "";
+    } catch (err: any) {
+        console.warn("SambaNova failed, falling back to reliable Groq LLaMA 70B", err);
+        // @ts-ignore
+        const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+        if (!groqKey) throw new Error(`SambaNova failed: ${err.message}. (No Groq fallback available)`);
+        
+        const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+        const response = await backupClient.chat.completions.create({
+            model: "llama-3.1-70b-versatile",
+            messages: formattedMessages as any,
+            response_format: isJson ? { type: "json_object" } : undefined
+        });
+        return response.choices[0]?.message?.content || "";
+    }
 };
 
 // ════════════════════════════════════════════
@@ -845,10 +861,15 @@ const AITutor = () => {
             // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
-1. MATH & LATEX: ALWAYS use standard LaTeX formatting. Wrap inline math with $ and block math with $$. e.g. $$ E = mc^2 $$. DO NOT write words inside math arrays or equations unless absolutely necessary.
-2. IMAGES: When explaining a concept, always include a relevant diagram using markdown in this EXACT format: 
-   ![Image](https://image.pollinations.ai/prompt/{DESCRIPTION}?width=800&height=450&nologo=true)
-   Replace {DESCRIPTION} with a highly detailed, URL-encoded English description (e.g. detailed%20diagram%20of%20a%20plant%20cell).
+1. MATH & LATEX: ALWAYS use standard LaTeX. Wrap inline math with $. CRITICAL: For block math, you MUST put double dollar signs $$ on their own separate lines. Example:
+$$
+E = mc^2
+$$
+2. IMAGES: When explaining a concept, always include a relevant diagram using markdown in this EXACT format ON A SEPARATE DOUBLE NEWLINE:
+
+![Image](https://image.pollinations.ai/prompt/{DESCRIPTION}?width=800&height=450&nologo=true)
+
+Replace {DESCRIPTION} with a highly detailed, URL-encoded English description (e.g. detailed%20diagram%20of%20a%20plant%20cell). DO NOT append this to the same line as math equations. Always put double newlines before the image.
 3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
 
