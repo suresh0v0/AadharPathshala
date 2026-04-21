@@ -309,53 +309,33 @@ const MockTest = () => {
         setLoading(true);
         try {
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
-            const prompt = `Generate ${settings.count} multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
-            ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use English Language.'}
-            Return JSON only: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }`;
+            
+            // GROQ (ACHAR) for questions - Force Groq as requested
+            // @ts-ignore
+            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const processGroqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
+            const groqKey = processGroqKey || viteGroqKey;
+            
+            if (!groqKey) throw new Error("GROQ_API_KEY is not configured. Please add it to Secrets.");
+            
+            const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+            
+            const completion = await groq.chat.completions.create({
+                messages: [
+                    { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings. IMPORTANT: Use LaTeX ($...$) for ALL mathematical symbols, numbers, and formulas. Avoid mistakes in correct answers." },
+                    { role: "user", content: `Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+                    IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer. NEVER include the question text in the options.
+                    Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
+                    ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
+                    Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
+                ],
+                model: "llama-3.1-8b-instant",
+                response_format: { type: "json_object" }
+            });
+            const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
+            const quizData = data.quiz || [];
 
-            let quizData = [];
-
-            if (settings.model === 'achar') {
-                // GROQ (ACHAR) for questions
-                // @ts-ignore
-                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                const groqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
-                const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-                
-                const completion = await groq.chat.completions.create({
-                    messages: [
-                        { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings or any conversational text in the JSON." },
-                        { role: "user", content: `Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
-                        IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer. NEVER include the question text in the options.
-                        Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
-                        ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
-                        Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
-                    ],
-                    model: "llama-3.1-8b-instant",
-                    response_format: { type: "json_object" }
-                });
-                const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
-                quizData = data.quiz || [];
-            } else {
-                // MOMO (Cerebras with SambaNova Fallback) for questions
-                try {
-                    const responseText = await callCerebrasForMomo([{ role: 'user', content: prompt }], true);
-                    const data = JSON.parse(responseText || "{}");
-                    quizData = data.quiz || [];
-                } catch (cerebrasErr) {
-                    console.warn("Cerebras Quiz generation failed, trying SambaNova fallback", cerebrasErr);
-                    try {
-                        const fallbackJson = await callSambaNovaForMomo([{ role: 'user', content: prompt }], true);
-                        const data = JSON.parse(fallbackJson || "{}");
-                        quizData = data.quiz || [];
-                    } catch (sambaErr: any) {
-                        console.error("All Quiz generation backends failed", sambaErr);
-                        throw sambaErr;
-                    }
-                }
-            }
-
-            if (quizData.length === 0) throw new Error("No questions generated");
+            if (quizData.length === 0) throw new Error("No questions generated. Check your Groq API Key.");
             
             setQuestions(quizData);
             setStatus('quiz');
@@ -827,7 +807,7 @@ const AITutor = () => {
     
     // Using simple view state instead of complex routing for better control
     const [view, setView] = useState<'selection' | 'chat'>('selection');
-    const [activeTutor, setActiveTutor] = useState<'momo' | 'achar'>('momo');
+    const [activeTutor, setActiveTutor] = useState<'momo' | 'mango' | 'achar'>('momo');
 
     const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
     
@@ -866,39 +846,38 @@ const AITutor = () => {
         setMessages(prev => [...prev, { role: 'ai', text: '' }]);
 
         try {
-            if (activeTutor === 'achar') {
-                // GROQ Implementation (ACHAR)
-                // @ts-ignore
-                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
-                const groqKey = processGroqKey || viteGroqKey;
-                
-                const groq = new Groq({ 
-                    apiKey: groqKey, 
-                    dangerouslyAllowBrowser: true 
-                });
-                
-                const systemPrompt = `You are ACHAR, an Instant Helper for Grade 10 Nepal Students. 
-IDENTITY: Fast and efficient. 
-PERSONALITY: No greetings, no slang, no unnecessary words. Direct tool-like responses.
-STYLE: Very short, bullet points, factual. 
-GOAL: Quick formulas and facts.
-
+            // SHARED FORMATTING RULES
+            const sharedFormatting = `
 FORMATTING RULES:
-1. IMAGES: Whenever relevant (diagrams, photos), include markdown: ![description](https://source.unsplash.com/featured/?keyword)
-2. MATH: ALWAYS use LaTeX ($...$).
-3. NO GREETINGS: Do not greet or say "Here is your answer". Just provide the content.`;
+1. LATEX: EVERYTHING mathematically related (numbers, variables, formulas, equations, symbols) MUST be wrapped in LaTeX: $...$ for inline or $$...$$ for blocks.
+   Example: The value of $x$ is $5$. The formula is $E=mc^2$. NEVER use plain text for math.
+2. IMAGES: Include a relevant diagram or photo using markdown ONLY in this format: 
+   ![description](https://picsum.photos/seed/{SEARCH_TERM}/800/450)
+   Replace {SEARCH_TERM} with a relevant keyword (e.g., science, history, diagram).
+3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
+4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
+
+            if (activeTutor === 'achar') {
+                // GROQ (ACHAR) Implementation
+                const systemPrompt = `You are ACHAR, the Instant Helper. 
+IDENTITY: Fast and efficient. 
+PERSONALITY: No greetings, no greetings, no unnecessary words.
+STYLE: Short bullet points.
+${sharedFormatting}`;
 
                 const chatHistory = updated.map(m => ({
                     role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
                     content: m.text
                 }));
 
+                // @ts-ignore
+                const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+                const processGroqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
+                const groqKey = processGroqKey || viteGroqKey;
+                const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
+
                 const stream = await groq.chat.completions.create({
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        ...chatHistory
-                    ],
+                    messages: [{ role: "system", content: systemPrompt }, ...chatHistory],
                     model: "llama-3.1-8b-instant",
                     stream: true,
                 });
@@ -912,101 +891,54 @@ FORMATTING RULES:
                         return newMessages;
                     });
                 }
+            } else if (activeTutor === 'momo') {
+                // CEREBRAS (MOMO) Implementation
+                const systemInstruction = `You are MOMO, the Concept Tutor.
+IDENTITY: Academic, specialized in Grade 10 concepts.
+${sharedFormatting}`;
+
+                const contents = [
+                    { role: 'system', content: systemInstruction },
+                    ...updated.map(m => ({
+                        role: m.role === 'ai' ? 'assistant' : 'user',
+                        content: m.text
+                    }))
+                ];
+
+                const responseText = await callCerebrasForMomo(contents);
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].text = responseText || "Brain freeze! MOMO rebooting...";
+                    return newMessages;
+                });
             } else {
-                // Cerebras & SambaNova Implementation (MOMO)
-                const systemInstruction = `You are MOMO, the Short & Precise Tutor for Grade 10 Nepal Students.
-IDENTITY: Academic, professional (Dai/Didi tone but strictly educational).
-GOAL: Efficient conceptual explanation.
-LENGTH: Keep total response under 150 words. Be very concise.
-NO GREETINGS: Do not use any catchphrase, greeting, or polite intro. Start immediately with the answer.
+                // SAMBANOVA (MANGO) Implementation
+                const systemInstruction = `You are MANGO, the Precise Assistant.
+IDENTITY: Reliable, steady, factual.
+${sharedFormatting}`;
 
-FORMATTING RULES:
-1. IMAGES: Include a relevant diagram or photo using markdown if requested or randomly: ![Scene](https://source.unsplash.com/featured/?keyword)
-2. MATHEMATICAL EQUATIONS: ALWAYS use LaTeX.
-3. STEP-BY-STEP: Use numbered lists but keep points short.
-4. PARAGRAPHS: Max 2 sentences each.
-5. NO SLANG: Use standard, clean Nepali/English mix.
+                const contents = [
+                    { role: 'system', content: systemInstruction },
+                    ...updated.map(m => ({
+                        role: m.role === 'ai' ? 'assistant' : 'user',
+                        content: m.text
+                    }))
+                ];
 
-Current User: ${user?.name || 'Sathi'}. Answer directly.`;
-
-                try {
-                    const contents = [
-                        { role: 'system', content: systemInstruction },
-                        ...updated.map(m => ({
-                            role: m.role === 'ai' ? 'assistant' : 'user',
-                            content: m.text
-                        }))
-                    ];
-
-                    const responseText = await callCerebrasForMomo(contents);
-
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].text = responseText || "I'm sorry, I couldn't process that. Try again!";
-                        return newMessages;
-                    });
-                } catch (cerebrasErr: any) {
-                    console.warn("Cerebras failed, trying SambaNova...", cerebrasErr);
-                    try {
-                        const contents = [
-                            { role: 'system', content: systemInstruction },
-                            ...updated.map(m => ({
-                                role: m.role === 'ai' ? 'assistant' : 'user',
-                                content: m.text
-                            }))
-                        ];
-                        const fallbackResponse = await callSambaNovaForMomo(contents);
-                        setMessages(prev => {
-                            const newMessages = [...prev];
-                            newMessages[newMessages.length - 1].text = fallbackResponse;
-                            return newMessages;
-                        });
-                    } catch (sambaErr: any) {
-                        console.warn("SambaNova failed, trying Groq as last resort...", sambaErr);
-                        // Tertiary Fallback: Groq 
-                        // @ts-ignore
-                        const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                        const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
-                        const groqKey = processGroqKey || viteGroqKey;
-                        
-                        if (!groqKey) throw sambaErr; 
-
-                        const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-                        const groqRes = await groq.chat.completions.create({
-                            messages: [
-                                { role: "system", content: systemInstruction },
-                                ...updated.map(m => ({
-                                    role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
-                                    content: m.text
-                                }))
-                            ],
-                            model: "llama-3.1-8b-instant",
-                        });
-
-                        const groqText = groqRes.choices[0]?.message?.content || "";
-                        setMessages(prev => {
-                            const newMessages = [...prev];
-                            newMessages[newMessages.length - 1].text = groqText;
-                            return newMessages;
-                        });
-                    }
-                }
+                const responseText = await callSambaNovaForMomo(contents);
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].text = responseText || "Brain freeze! MANGO rebooting...";
+                    return newMessages;
+                });
             }
         } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
                 const errMsg = e.message || "";
-                let displayMsg = "MOMO is taking a short rest. Please try again in 30 seconds, Sathi!";
-                
-                if (errMsg.includes("OPENROUTER_API_KEY")) {
-                    displayMsg = "MOMO fallback is not configured. Please add OPENROUTER_API_KEY to your Secrets to avoid quota errors, Sathi!";
-                } else if (errMsg.includes("429") || errMsg.includes("quota")) {
-                    displayMsg = "We've hit a small limit! MOMO is re-energizing. Please wait a bit before asking again, Sathi.";
-                } else if (!errMsg) {
-                    displayMsg = "Brain freeze! Please check your connection and try again.";
-                } else {
-                    // Try to avoid technical jargon
-                    displayMsg = "Oops! Something went wrong in the study center. Let's try another question!";
+                let displayMsg = "Opp! Something went wrong in the study center. Please try again later, Sathi!";
+                if (errMsg.includes("429") || errMsg.includes("quota")) {
+                    displayMsg = "We've hit a small limit! Please wait a bit before asking again, Sathi.";
                 }
                 newMessages[newMessages.length - 1].text = displayMsg;
                 return newMessages;
@@ -1040,29 +972,43 @@ Current User: ${user?.name || 'Sathi'}. Answer directly.`;
                         {/* MOMO Card */}
                         <button 
                             onClick={() => { setActiveTutor('momo'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-24 h-24 bg-linear-to-br from-pink-500 to-rose-600 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 text-white group-hover:scale-110 transition-transform">
-                                <Bot className="w-12 h-12" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Bot className="w-8 h-8" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-2">MOMO Tutor</h3>
-                            <p className="text-[0.65rem] font-black text-pink-500 uppercase tracking-widest mb-4">The Detailed Expert (Gemini)</p>
-                            <p className="text-xs font-bold text-slate-400 leading-relaxed italic">"Let's dive deep into this topic." Warm explaining in detail for deep understanding.</p>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MOMO Tutor</h3>
+                            <p className="text-[0.55rem] font-black text-pink-500 uppercase tracking-widest mb-3">Conceptual Guru (Cerebras)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
+                        </button>
+
+                        {/* MANGO Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('mango'); setView('chat'); }}
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-8 h-8 text-white" />
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Reliable Backup (SambaNova)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
                         </button>
 
                         {/* ACHAR Card */}
                         <button 
                             onClick={() => { setActiveTutor('achar'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-24 h-24 bg-linear-to-br from-slate-700 to-slate-900 rounded-[2rem] flex items-center justify-center shadow-xl mb-6 text-white group-hover:scale-110 transition-transform">
-                                <Zap className="w-12 h-12 text-emerald-400" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Zap className="w-8 h-8 text-emerald-400" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-2">ACHAR Assistant</h3>
-                            <p className="text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest mb-4">The Fast Assistant (Groq)</p>
-                            <p className="text-xs font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Lightning fast answers, formulas, and quick exam tips.</p>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
                         </button>
                     </div>
                 </div>
@@ -1081,16 +1027,20 @@ Current User: ${user?.name || 'Sathi'}. Answer directly.`;
                         </button>
                         <div className={cn(
                             "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg", 
-                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/20" : "bg-linear-to-r from-slate-700 to-slate-900 shadow-slate-900/20"
+                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/20" : 
+                            activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/20" :
+                            "bg-linear-to-r from-slate-700 to-slate-900 shadow-slate-900/20"
                         )}>
-                            {activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : <Zap className="text-emerald-400 w-5 h-5 md:w-6 md:h-6" />}
+                            {activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
+                             activeTutor === 'mango' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                             <Zap className="text-emerald-400 w-5 h-5 md:w-6 md:h-6" />}
                         </div>
                         <div>
                             <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
-                                {activeTutor === 'momo' ? 'MOMO' : 'ACHAR'}
+                                {activeTutor === 'momo' ? 'MOMO' : activeTutor === 'mango' ? 'MANGO' : 'ACHAR'}
                             </h1>
                             <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {activeTutor === 'momo' ? 'Conceptual Guru' : 'Instant Helper'}
+                                {activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'mango' ? 'Reliable Assistant' : 'Instant Helper'}
                             </p>
                         </div>
                     </div>
@@ -1110,19 +1060,35 @@ Current User: ${user?.name || 'Sathi'}. Answer directly.`;
                     {messages.length === 0 && (
                         <div className="text-center py-20 space-y-8">
                             <div className="relative w-24 h-24 mx-auto">
-                                <div className={cn("absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", activeTutor === 'momo' ? "bg-pink-500" : "bg-emerald-500")} />
-                                <div className={cn("w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-colors duration-700 text-white", activeTutor === 'momo' ? "bg-pink-500" : "bg-slate-900")}>
-                                    {activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : <Zap className="w-12 h-12 text-emerald-400" />}
+                                <div className={cn(
+                                    "absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", 
+                                    activeTutor === 'momo' ? "bg-pink-500" : 
+                                    activeTutor === 'mango' ? "bg-amber-500" :
+                                    "bg-emerald-500"
+                                )} />
+                                <div className={cn(
+                                    "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl", 
+                                    activeTutor === 'momo' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
+                                    activeTutor === 'mango' ? "bg-linear-to-br from-amber-400 to-orange-600" :
+                                    "bg-linear-to-br from-slate-700 to-slate-900"
+                                )}>
+                                    {activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : 
+                                     activeTutor === 'mango' ? <Sparkles className="w-12 h-12" /> :
+                                     <Zap className="w-12 h-12 text-emerald-400" />}
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
-                                    {activeTutor === 'momo' ? "Let's dive deep into this topic." : "Serving it hot!"}
+                                    {activeTutor === 'momo' ? "Let's dive deep into concepts." : 
+                                     activeTutor === 'mango' ? "Factual accuracy is my priority." :
+                                     "Serving facts at lightning speed!"}
                                 </h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
                                     {activeTutor === 'momo' 
-                                        ? "Focus on the 'WHY'. I'll use real Nepali examples to help you master Class 10 concepts."
-                                        : "Fast tips, facts, and shortcuts for SEE 2083. No long stories, just results!"}
+                                        ? "Master Grade 10 concepts with conceptual clarity and real Nepali examples."
+                                        : activeTutor === 'mango'
+                                        ? "Reliable and precise assistance for all your school projects and homework."
+                                        : "Fastest tips, formulas, and shortcut methods for your SEE 2083 prep."}
                                 </p>
                             </div>
                         </div>
@@ -1565,7 +1531,7 @@ const AadharToolkit = () => {
                             )}>
                                 <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
                             </div>
-                            <p className="font-black text-slate-800 text-[0.75rem] md:text-[1rem] tracking-tight leading-none w-full truncate px-1">{t.label}</p>
+                            <p className="font-extrabold text-[#020617] text-[0.85rem] md:text-[1.15rem] tracking-tight leading-none w-full truncate px-1 group-hover:scale-105 transition-transform">{t.label}</p>
                         </button>
                     );
                 })}
