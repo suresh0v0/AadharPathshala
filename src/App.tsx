@@ -1128,7 +1128,8 @@ ${sharedFormatting}`;
                                             h2: ({node, ...props}) => <h2 className="text-2xl font-black text-blue uppercase tracking-tighter mt-5 mb-2" {...props} />,
                                             h3: ({node, ...props}) => <h3 className="text-xl font-black text-emerald-500 uppercase tracking-tight mt-4 mb-2" {...props} />,
                                             h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
-                                            strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />
+                                            strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
+                                            img: ({node, ...props}) => <img className="rounded-[2rem] shadow-lg border border-slate-100 max-w-full mt-4 mb-6" referrerPolicy="no-referrer" {...props} />
                                         }}
                                     >
                                         {m.text}
