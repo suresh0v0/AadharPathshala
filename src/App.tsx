@@ -866,7 +866,7 @@ $$
 E = mc^2
 $$
 2. IMAGES: If the user asks for a figure or image, please provide a Markdown image link like this: 
-![Figure](https://pollinations.ai/p/DESCRIPTION_OF_IMAGE)
+![Figure](https://image.pollinations.ai/prompt/DESCRIPTION_OF_IMAGE)
 Replace DESCRIPTION_OF_IMAGE with a highly detailed, URL-encoded English description (e.g. diagram_of_two_planets_with_gravity_force_arrows). DO NOT append this to the same line as math equations. Always put double newlines before the image.
 3. NO GREETINGS: Answer the questions directly. No "Hello", "Sure", or "I can help".
 4. PARAGRAPHS: Max 2 sentences each. Keep it clean.`;
@@ -2755,46 +2755,91 @@ const ExamCalendar = () => {
     const events = [
         { id: '1', title: 'SEE Form Deadline', date: 'Chaitra 5', type: 'deadline' },
         { id: '2', title: 'Physics Mock Test', date: 'Baisakh 12', type: 'mock' },
-        { id: '3', title: 'District Level Exam', date: 'Jestha 20', type: 'exam' }
+        { id: '3', title: 'District Level Exam', date: 'Jestha 20', type: 'exam' },
+        { id: '4', title: 'Math Mock Test', date: 'Baisakh 18', type: 'mock' },
+        { id: '5', title: 'Revision Week Starts', date: 'Falgun 10', type: 'event' }
     ];
+
+    const months2083 = [
+        { name: 'Baisakh', days: 31 },
+        { name: 'Jestha', days: 31 },
+        { name: 'Ashadh', days: 32 },
+        { name: 'Shrawan', days: 32 },
+        { name: 'Bhadra', days: 31 },
+        { name: 'Ashwin', days: 30 },
+        { name: 'Kartik', days: 30 },
+        { name: 'Mangsir', days: 29 },
+        { name: 'Poush', days: 30 },
+        { name: 'Magh', days: 29 },
+        { name: 'Falgun', days: 30 },
+        { name: 'Chaitra', days: 30 }
+    ];
+
+    const [activeMonth, setActiveMonth] = useState('Baisakh');
+
+    const activeMonthData = months2083.find(m => m.name === activeMonth)!;
 
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Board Cal.</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Board Cal. 2083</h1>
             </div>
 
-            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-8">
-                {['Chaitra', 'Baisakh', 'Jestha'].map(month => (
-                    <div key={month} className="space-y-4">
-                        <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#020617] ml-2 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-blue rounded-full" />
-                            {month} 2083
-                        </h2>
-                        <div className="space-y-3">
-                            {events.filter(e => e.date.includes(month)).map(e => (
-                                <div key={e.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex items-center justify-between group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 flex flex-col items-center justify-center">
-                                            <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-tight">Day</span>
-                                            <span className="text-lg font-black text-slate-800 leading-none">{e.date.split(' ')[1]}</span>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-black text-slate-800 tracking-tight uppercase leading-none mb-1">{e.title}</h3>
-                                            <p className={cn(
-                                                "text-[0.6rem] font-black uppercase tracking-widest",
-                                                e.type === 'deadline' ? 'text-rose-500' : 
-                                                e.type === 'mock' ? 'text-blue' : 'text-indigo-600'
-                                            )}>{e.type}</p>
-                                        </div>
+            <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
+                <select 
+                    value={activeMonth}
+                    onChange={(e) => setActiveMonth(e.target.value)}
+                    className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl font-black text-lg outline-none text-slate-800"
+                >
+                    {months2083.map(m => (
+                        <option key={m.name} value={m.name}>{m.name} 2083</option>
+                    ))}
+                </select>
+
+                <div className="grid grid-cols-7 gap-2">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                        <div key={i} className="text-center font-black text-[0.6rem] text-slate-400 py-2">{d}</div>
+                    ))}
+                    {Array.from({ length: activeMonthData.days }).map((_, i) => {
+                        const dayNum = i + 1;
+                        const dateStr = `${activeMonth} ${dayNum}`;
+                        const event = events.find(e => e.date === dateStr);
+                        
+                        return (
+                            <div 
+                                key={i} 
+                                className={cn(
+                                    "aspect-square rounded-xl flex flex-col items-center justify-center text-sm font-bold relative transition-all",
+                                    event ? "bg-blue/10 text-blue border border-blue/20 shadow-sm" : "bg-slate-50 text-slate-700 hover:bg-slate-100"
+                                )}
+                            >
+                                {dayNum}
+                                {event && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-blue animate-pulse" />}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 space-y-3">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Events this month</h3>
+                    <div className="space-y-2">
+                        {events.filter(e => e.date.includes(activeMonth)).length > 0 ? (
+                            events.filter(e => e.date.includes(activeMonth)).map(e => (
+                                <div key={e.id} className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100">
+                                    <div>
+                                        <p className="font-black text-slate-800 text-sm leading-tight">{e.title}</p>
+                                        <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mt-1">{e.date} • {e.type}</p>
                                     </div>
-                                    <Bell className="w-5 h-5 text-slate-200 group-hover:text-blue transition-colors" />
+                                    <Bell className="w-4 h-4 text-slate-300" />
                                 </div>
-                            ))}
-                        </div>
+                            ))
+                        ) : (
+                            <p className="text-sm font-medium text-slate-400 italic bg-slate-50 p-4 rounded-2xl">No events scheduled.</p>
+                        )}
                     </div>
-                ))}
+                </div>
+
             </div>
         </div>
     );
@@ -2867,8 +2912,48 @@ const FormulaBankPage = () => {
     const navigate = useNavigate();
     const formulas = [
         { title: 'Ohm\'s Law', formula: 'V = I × R', sub: 'Physics' },
-        { title: 'Quadratic', formula: 'x = (-b ± √(b²-4ac)) / 2a', sub: 'Maths' },
-        { title: 'Photosynthesis', formula: '6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂', sub: 'Science' }
+        { title: 'Quadratic Equation', formula: 'x = (-b ± √(b²-4ac)) / 2a', sub: 'Maths' },
+        { title: 'Photosynthesis', formula: '6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂', sub: 'Science' },
+        { title: 'Simple Interest', formula: 'I = (P × T × R) / 100', sub: 'Maths' },
+        { title: 'Compound Interest (Yearly)', formula: 'CI = P[(1 + R/100)^T - 1]', sub: 'Maths' },
+        { title: 'Compound Amount', formula: 'CA = P(1 + R/100)^T', sub: 'Maths' },
+        { title: 'Population Growth', formula: 'Pt = P0(1 + R/100)^T', sub: 'Maths' },
+        { title: 'Depreciation', formula: 'Vt = V0(1 - R/100)^T', sub: 'Maths' },
+        { title: 'Area of Triangle (Base & Height)', formula: 'A = 1/2 × b × h', sub: 'Maths' },
+        { title: 'Area of Equilateral Triangle', formula: 'A = (√3 / 4) × a²', sub: 'Maths' },
+        { title: 'Area of Scalene Triangle (Heron)', formula: 'A = √[s(s-a)(s-b)(s-c)]', sub: 'Maths' },
+        { title: 'Area of Isosceles Triangle', formula: 'A = (b/4) × √(4a² - b²)', sub: 'Maths' },
+        { title: 'Curved Surface Area of Cylinder', formula: 'CSA = 2πrh', sub: 'Maths' },
+        { title: 'Total Surface Area of Cylinder', formula: 'TSA = 2πr(r + h)', sub: 'Maths' },
+        { title: 'Volume of Cylinder', formula: 'V = πr²h', sub: 'Maths' },
+        { title: 'Volume of Cone', formula: 'V = 1/3 πr²h', sub: 'Maths' },
+        { title: 'Curved Surface Area of Cone', formula: 'CSA = πrl', sub: 'Maths' },
+        { title: 'Total Surface Area of Cone', formula: 'TSA = πr(r + l)', sub: 'Maths' },
+        { title: 'Volume of Sphere', formula: 'V = 4/3 πr³', sub: 'Maths' },
+        { title: 'Surface Area of Sphere', formula: 'SA = 4πr²', sub: 'Maths' },
+        { title: 'Volume of Hemisphere', formula: 'V = 2/3 πr³', sub: 'Maths' },
+        { title: 'Total Surface Area of Hemisphere', formula: 'TSA = 3πr²', sub: 'Maths' },
+        { title: 'Median (Continuous Series)', formula: 'Md = L + [(N/2 - c.f.) / f] × i', sub: 'Maths' },
+        { title: 'Newton\'s Law of Gravitation', formula: 'F = G(m₁m₂) / d²', sub: 'Physics' },
+        { title: 'Acceleration Due to Gravity', formula: 'g = GM / R²', sub: 'Physics' },
+        { title: 'Weight', formula: 'W = mg', sub: 'Physics' },
+        { title: 'Liquid Pressure', formula: 'P = hdg', sub: 'Physics' },
+        { title: 'Archimedes\' Principle (Upthrust)', formula: 'U = Vρg', sub: 'Physics' },
+        { title: 'Specific Heat Capacity (Heat Equation)', formula: 'Q = msΔθ', sub: 'Physics' },
+        { title: 'Power of a Lens', formula: 'P = 1 / f (in meters)', sub: 'Physics' },
+        { title: 'Magnification', formula: 'M = v / u', sub: 'Physics' },
+        { title: 'Electric Power', formula: 'P = V × I', sub: 'Physics' },
+        { title: 'Electric Energy', formula: 'E = P × t', sub: 'Physics' },
+        { title: 'Work Done', formula: 'W = F × d', sub: 'Physics' },
+        { title: 'Kinetic Energy', formula: 'KE = 1/2 mv²', sub: 'Physics' },
+        { title: 'Potential Energy', formula: 'PE = mgh', sub: 'Physics' },
+        { title: 'Wave Velocity', formula: 'v = f × λ (lambda)', sub: 'Physics' },
+        { title: 'Distance between two points', formula: 'd = √[(x₂ - x₁)² + (y₂ - y₁)²]', sub: 'Opt. Maths' },
+        { title: 'Mid-point Formula', formula: 'M(x, y) = ((x₁ + x₂) / 2, (y₁ + y₂) / 2)', sub: 'Opt. Maths' },
+        { title: 'Section Formula (Internal)', formula: '(x, y) = ((m₁x₂ + m₂x₁)/(m₁ + m₂), (m₁y₂ + m₂y₁)/(m₁ + m₂))', sub: 'Opt. Maths' },
+        { title: 'Slope of a Line', formula: 'm = (y₂ - y₁) / (x₂ - x₁)', sub: 'Opt. Maths' },
+        { title: 'Sine Rule', formula: 'a/sinA = b/sinB = c/sinC', sub: 'Opt. Maths' },
+        { title: 'Cosine Rule', formula: 'c² = a² + b² - 2ab(cosC)', sub: 'Opt. Maths' }
     ];
 
     return (
@@ -2898,6 +2983,64 @@ const UnitConverterPage = () => {
     const [val, setVal] = useState('1');
     const [type, setType] = useState('length');
 
+    const unitsList = ['length', 'mass', 'temp', 'area', 'volume', 'speed', 'time', 'data'];
+
+    const unitMap: Record<string, string[]> = {
+        'length': ['m', 'cm', 'km', 'ft', 'inch', 'mile'],
+        'mass': ['kg', 'g', 'mg', 'lb', 'oz'],
+        'temp': ['C', 'F', 'K'],
+        'area': ['sq.m', 'sq.km', 'sq.ft', 'hectare', 'acre'],
+        'volume': ['L', 'mL', 'gal', 'cubic.m'],
+        'speed': ['m/s', 'km/h', 'mph'],
+        'time': ['sec', 'min', 'hour', 'day'],
+        'data': ['B', 'KB', 'MB', 'GB', 'TB']
+    };
+
+    const [fromUnits, setFromUnits] = useState('m');
+    const [toUnits, setToUnits] = useState('ft');
+
+    useEffect(() => {
+        setFromUnits(unitMap[type][0]);
+        setToUnits(unitMap[type][1]);
+    }, [type]);
+
+    const convert = () => {
+        const input = parseFloat(val) || 0;
+        if (type === 'temp') {
+            if (fromUnits === 'C' && toUnits === 'F') return (input * 9/5) + 32;
+            if (fromUnits === 'F' && toUnits === 'C') return (input - 32) * 5/9;
+            if (fromUnits === 'C' && toUnits === 'K') return input + 273.15;
+            if (fromUnits === 'K' && toUnits === 'C') return input - 273.15;
+            if (fromUnits === 'F' && toUnits === 'K') return (input - 32) * 5/9 + 273.15;
+            if (fromUnits === 'K' && toUnits === 'F') return (input - 273.15) * 9/5 + 32;
+            return input;
+        }
+
+        const rates: Record<string, number> = {
+            'length_m': 1, 'length_cm': 0.01, 'length_km': 1000, 'length_ft': 0.3048, 'length_inch': 0.0254, 'length_mile': 1609.34,
+            'mass_kg': 1, 'mass_g': 0.001, 'mass_mg': 0.000001, 'mass_lb': 0.453592, 'mass_oz': 0.0283495,
+            'area_sq.m': 1, 'area_sq.km': 1000000, 'area_sq.ft': 0.092903, 'area_hectare': 10000, 'area_acre': 4046.86,
+            'volume_L': 1, 'volume_mL': 0.001, 'volume_gal': 3.78541, 'volume_cubic.m': 1000,
+            'speed_m/s': 1, 'speed_km/h': 0.277778, 'speed_mph': 0.44704,
+            'time_sec': 1, 'time_min': 60, 'time_hour': 3600, 'time_day': 86400,
+            'data_B': 1, 'data_KB': 1024, 'data_MB': 1048576, 'data_GB': 1073741824, 'data_TB': 1099511627776
+        };
+
+        const fromRate = rates[`${type}_${fromUnits}`];
+        const toRate = rates[`${type}_${toUnits}`];
+
+        if (!fromRate || !toRate) return input;
+        return (input * fromRate) / toRate;
+    };
+
+    let result = '';
+    const numRes = convert();
+    if (type === 'data' || type === 'time') {
+        result = parseFloat(numRes.toFixed(4)).toString();
+    } else {
+        result = parseFloat(numRes.toFixed(4)).toString();
+    }
+
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <div className="flex items-center gap-3">
@@ -2905,24 +3048,31 @@ const UnitConverterPage = () => {
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Smart Converter</h1>
             </div>
 
-            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
-                <div className="grid grid-cols-3 gap-2">
-                    {['length', 'mass', 'temp'].map(t => (
-                        <button key={t} onClick={() => setType(t)} className={cn("py-4 rounded-xl font-black text-[0.6rem] uppercase tracking-widest border transition-all", type === t ? "bg-blue text-white border-blue" : "bg-slate-50 text-slate-400 border-slate-100")}>
+            <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
+                <div className="grid grid-cols-4 gap-2">
+                    {unitsList.map(t => (
+                        <button key={t} onClick={() => setType(t)} className={cn("py-3 rounded-[1rem] font-black text-[0.55rem] md:text-[0.65rem] uppercase tracking-widest border transition-all truncate px-1", type === t ? "bg-blue text-white border-blue shadow-md" : "bg-slate-50 text-slate-400 border-slate-100 overflow-hidden")}>
                             {t}
                         </button>
                     ))}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-4 pt-4 border-t border-slate-100">
                     <div className="space-y-1">
-                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4">Input Magnitude</label>
-                        <input 
-                            type="number"
-                            value={val}
-                            onChange={e => setVal(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-100 p-6 rounded-2xl font-black text-2xl text-slate-800 outline-none focus:ring-4 focus:ring-blue/10 transition-all"
-                        />
+                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4 flex justify-between px-2">
+                            <span>From: {fromUnits}</span>
+                        </label>
+                        <div className="flex bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden focus-within:ring-4 focus-within:ring-blue/10 transition-all">
+                            <input 
+                                type="number"
+                                value={val}
+                                onChange={e => setVal(e.target.value)}
+                                className="w-full bg-transparent p-6 font-black text-2xl text-slate-800 outline-none"
+                            />
+                            <select value={fromUnits} onChange={e => setFromUnits(e.target.value)} className="bg-slate-100 outline-none px-4 font-black uppercase text-slate-600">
+                                {unitMap[type].map(u => <option key={`f-${u}`} value={u}>{u}</option>)}
+                            </select>
+                        </div>
                     </div>
                     
                     <div className="flex items-center justify-center py-2">
@@ -2930,11 +3080,16 @@ const UnitConverterPage = () => {
                     </div>
 
                     <div className="space-y-1">
-                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4">Conversion Result</label>
-                        <div className="w-full bg-slate-900 border border-white/5 p-6 rounded-2xl font-black text-2xl text-white shadow-inner">
-                            {type === 'length' ? (parseFloat(val) * 3.28).toFixed(2) + ' Feet' : 
-                             type === 'mass' ? (parseFloat(val) * 2.20).toFixed(2) + ' Lbs' : 
-                             ((parseFloat(val) * 9/5) + 32).toFixed(2) + ' °F'}
+                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4 flex justify-between px-2">
+                            <span>To: {toUnits}</span>
+                        </label>
+                        <div className="flex bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-inner">
+                            <div className="w-full p-6 font-black text-2xl text-white truncate">
+                                {result}
+                            </div>
+                            <select value={toUnits} onChange={e => setToUnits(e.target.value)} className="bg-slate-800 text-white outline-none px-4 font-black uppercase border-l border-white/10">
+                                {unitMap[type].map(u => <option key={`t-${u}`} value={u}>{u}</option>)}
+                            </select>
                         </div>
                     </div>
                 </div>
