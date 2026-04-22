@@ -4,7 +4,7 @@ import {
   Home, BookOpen, MessageSquare, ListChecks, Newspaper, 
   ChevronRight, ArrowLeft, Send, Sparkles, Trophy, 
   History, Calculator, User as UserIcon,
-  PlayCircle, FileText, Trash2, Edit3,
+  PlayCircle, FileText,
   Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, Activity, Monitor,
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, Flame, Wind, Calendar,
@@ -70,6 +70,16 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
         });
         return response.choices[0]?.message?.content || "";
     }
+};
+
+/**
+ * YouTube Utility
+ */
+const extractYoutubeId = (url: string) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
 };
 
 /**
@@ -272,6 +282,17 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           })}
         </div>
       </nav>
+
+      {/* Floating Admin Button */}
+      {user?.email === 'subashgautam305@gmail.com' && (
+          <button 
+            onClick={() => navigate('/admin-portal')}
+            className="fixed bottom-24 right-4 z-[1001] bg-slate-900 text-white px-4 py-2 rounded-full font-black text-[0.6rem] uppercase tracking-widest shadow-2xl flex items-center gap-2 border border-white/10 active:scale-95 transition-all"
+          >
+              <LayoutDashboard className="w-3 h-3" />
+              Admin
+          </button>
+      )}
     </div>
   );
 };
@@ -1688,19 +1709,25 @@ const AadharToolkit = () => {
 };
 
 const NoticeBoard = () => {
+    const { liveNotices } = useApp();
     const [currentIndex, setCurrentIndex] = useState(0);
-    const notices = [
+    const staticNotices = [
         { id: '1', type: 'alert', text: 'SEE Exam Form deadline extended to Chaitra 5 for all districts.' },
         { id: '2', type: 'info', text: 'New Model Question Sets for Optional Maths 2083 uploaded to the Hub.' },
         { id: '3', type: 'update', text: 'Aadhar Pro AI now supports high-speed Nepali script interaction.' }
     ];
 
+    const displayNotices = (liveNotices && liveNotices.length > 0) ? liveNotices : staticNotices;
+
     useEffect(() => {
+        if (displayNotices.length === 0) return;
         const timer = setInterval(() => {
-            setCurrentIndex(prev => (prev + 1) % notices.length);
+            setCurrentIndex(prev => (prev + 1) % displayNotices.length);
         }, 5000);
         return () => clearInterval(timer);
-    }, [notices.length]);
+    }, [displayNotices.length]);
+
+    if (displayNotices.length === 0) return null;
 
     return (
         <div className="mb-10 animate-fade-up">
@@ -1725,19 +1752,20 @@ const NoticeBoard = () => {
                     >
                         <div className={cn(
                             "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[0.6rem] font-black uppercase tracking-widest mb-4",
-                            notices[currentIndex].type === 'alert' ? "bg-red text-white" : "bg-blue text-white"
+                            displayNotices[currentIndex].type === 'alert' ? "bg-red text-white" : 
+                            displayNotices[currentIndex].type === 'update' ? "bg-emerald-500 text-white" : "bg-blue text-white"
                         )}>
                             <Pin className="w-3 h-3" />
-                            {notices[currentIndex].type}
+                            {displayNotices[currentIndex].type}
                         </div>
                         <p className="text-xl font-bold text-white leading-tight tracking-tight">
-                            {notices[currentIndex].text}
+                            {displayNotices[currentIndex].text}
                         </p>
                     </motion.div>
                 </AnimatePresence>
 
                 <div className="mt-8 flex gap-2">
-                    {notices.map((_, i) => (
+                    {displayNotices.map((_, i) => (
                         <div key={i} className={cn("h-1 rounded-full transition-all duration-500", i === currentIndex ? "w-8 bg-blue" : "w-3 bg-white/10")} />
                     ))}
                 </div>
@@ -2559,16 +2587,7 @@ const SubjectDetail = () => {
     ];
 
     const handleSectionClick = (sectionId: string) => {
-        if (sectionId === 'book') {
-            const link = BOOK_LINKS[name as string];
-            if (link) {
-                window.open(link, '_blank');
-            } else {
-                alert("Note: This book section is currently being updated for the 2083 session. Please check back in a few hours!");
-            }
-        } else {
-            navigate(`/hub/${name}/${sectionId}`);
-        }
+        navigate(`/hub/${name}/${sectionId === 'book' ? 'textbooks' : sectionId}`);
     };
 
     return (
@@ -2649,12 +2668,26 @@ const SubjectDetail = () => {
 /* ── MCQ SET SELECTION ── */
 const MCQTestSelection = () => {
     const { name } = useParams();
+    const { liveMaterials } = useApp();
     const navigate = useNavigate();
     const [useTimer, setUseTimer] = useState(true);
     const [questionCount, setQuestionCount] = useState(30);
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
     
-    const sets = STATIC_MCQS[name as string] || [];
+    const staticSets = STATIC_MCQS[name as string] || [];
+    const dynamicSets = liveMaterials
+        .filter(m => m.subject === name && m.type === 'mcq')
+        .map(m => {
+            try {
+                return JSON.parse(m.text_content);
+            } catch (e) {
+                console.error("Failed to parse MCQ JSON:", e);
+                return null;
+            }
+        })
+        .filter(Boolean);
+
+    const sets = [...staticSets, ...dynamicSets];
 
     return (
         <div className="space-y-10 animate-fade-up pb-24">
@@ -3195,24 +3228,39 @@ const VideoList = () => {
 
             <div className="space-y-6">
                 {/* Dynamic Videos */}
-                {dynamicVideos.map((v: any) => (
-                    <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
-                        <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
-                             <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                                 <button onClick={() => window.open(v.file_url)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                     <PlayCircle className="w-10 h-10 fill-current" />
-                                 </button>
-                             </div>
+                {dynamicVideos.map((v: any) => {
+                    const yId = v.youtube_id || extractYoutubeId(v.file_url || v.link_url);
+                    
+                    return (
+                        <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
+                            <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
+                                {yId ? (
+                                    <iframe 
+                                        className="w-full h-full"
+                                        src={`https://www.youtube.com/embed/${yId}`}
+                                        title={v.title}
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+                                        <button onClick={() => window.open(v.file_url || v.link_url)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                            <PlayCircle className="w-10 h-10 fill-current" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-8">
+                                <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                    <TrendingUp className="w-3 h-3" /> New Upload
+                                </p>
+                                <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{v.title}</h3>
+                                <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Hub • {yId ? 'External Stream' : 'Official Asset'}</p>
+                            </div>
                         </div>
-                        <div className="p-8">
-                             <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                 <TrendingUp className="w-3 h-3" /> New Upload
-                             </p>
-                             <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{v.title}</h3>
-                             <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Hub • Official Asset</p>
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
 
                 {/* Initial Videos */}
                 {sub.videos.map((v: any) => (
@@ -3248,7 +3296,7 @@ const PdfList = () => {
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
 
-    const dynamicPdfs = liveMaterials.filter(m => m.subject === name && (m.type === 'chapter' || m.type === 'note'));
+    const dynamicPdfs = liveMaterials.filter(m => m.subject === name && (m.type === 'chapter' || m.type === 'note' || m.type === 'note_archive'));
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3303,17 +3351,45 @@ const NoteList = () => {
     const { liveMaterials } = useApp();
     const navigate = useNavigate();
 
-    const dynamicNotes = liveMaterials.filter(m => m.subject === name && m.type === 'note');
+    const sharedNotes = liveMaterials.filter(m => m.subject === name && m.type === 'shared_note');
+    const simpleNotes = liveMaterials.filter(m => m.subject === name && m.type === 'note');
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
+        <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Repository</h1>
             </div>
 
-            <div className="space-y-4">
-                {dynamicNotes.length > 0 ? dynamicNotes.map((n: any) => (
+            <div className="space-y-6">
+                {/* SHARED MARKDOWN NOTES */}
+                {sharedNotes.map((n: any) => (
+                    <div key={n.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group">
+                        <div className="bg-slate-900 p-6 flex justify-between items-center">
+                            <h3 className="text-white font-black uppercase text-sm tracking-widest truncate flex-1">{n.title}</h3>
+                            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                                <Sparkles className="w-4 h-4 text-amber-400" />
+                            </div>
+                        </div>
+                        <div className="p-8">
+                            <div className="prose prose-slate max-w-none text-sm font-bold leading-relaxed">
+                                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                                    {n.text_content}
+                                </Markdown>
+                            </div>
+                            <div className="mt-6 pt-6 border-t border-slate-50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[0.6rem] font-bold">A</div>
+                                    <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Official Tutor Share</span>
+                                </div>
+                                <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+
+                {/* SIMPLE FILE NOTES */}
+                {simpleNotes.map((n: any) => (
                     <div 
                         key={n.id} 
                         onClick={() => window.open(n.file_url)}
@@ -3330,7 +3406,9 @@ const NoteList = () => {
                             <ArrowLeft className="w-5 h-5 rotate-180" />
                         </button>
                     </div>
-                )) : (
+                ))}
+
+                {sharedNotes.length === 0 && simpleNotes.length === 0 && (
                     <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
                         <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
                         <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">No external notes yet</h2>
@@ -3392,6 +3470,79 @@ const ModelList = () => {
                         <Edit3 className="w-16 h-16 text-slate-200 mx-auto mb-4" />
                         <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Questions Incoming</h2>
                         <p className="text-[0.75rem] text-slate-400 font-bold max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest">Processing latest NEB specification grids for 2083.</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const DigitalTextbookList = () => {
+    const { name } = useParams();
+    const { liveMaterials } = useApp();
+    const navigate = useNavigate();
+
+    const staticLink = BOOK_LINKS[name as string];
+    const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'digital_textbook');
+
+    return (
+        <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
+            <div className="flex items-center gap-3">
+                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Digital Library</h1>
+            </div>
+
+            <div className="space-y-4">
+                {/* Dynamic Textbooks */}
+                {dynamicBooks.map((b: any) => (
+                    <div key={b.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-6 group hover:border-blue transition-all">
+                        <div className="w-20 h-20 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center shrink-0 border border-cyan-100">
+                             <Library className="w-10 h-10" />
+                        </div>
+                        <div className="flex-1">
+                             <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-tight mb-2">{b.title}</h3>
+                             <div className="flex items-center gap-4">
+                                <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black uppercase tracking-widest text-slate-400">PDF Document</span>
+                                <span className="text-[0.6rem] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                                    <Sparkles className="w-3 h-3" /> Latest Edition
+                                </span>
+                             </div>
+                        </div>
+                        <button 
+                            onClick={() => window.open(b.link_url || b.file_url, '_blank')}
+                            className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-900/10 active:scale-95 transition-all"
+                        >
+                            Open Textbook
+                        </button>
+                    </div>
+                ))}
+
+                {/* Main Static Textbook */}
+                {staticLink && (
+                    <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+                        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8">
+                            <div className="w-24 h-32 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-center rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                                 <Library className="w-12 h-12 text-white/40" />
+                            </div>
+                            <div className="text-center sm:text-left flex-1">
+                                <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-tight mb-2">Official {name} Textbook</h3>
+                                <p className="text-sm font-bold opacity-60 uppercase tracking-widest">CDC Approved Curriculum • SEE 2083</p>
+                            </div>
+                            <button 
+                                onClick={() => window.open(staticLink, '_blank')}
+                                className="w-full sm:w-auto px-10 py-5 bg-white text-slate-900 rounded-[1.5rem] font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl"
+                            >
+                                Get Official PDF
+                            </button>
+                        </div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-20 translate-x-32" />
+                    </div>
+                )}
+
+                {dynamicBooks.length === 0 && !staticLink && (
+                    <div className="text-center py-20 opacity-30">
+                        <Pin className="w-12 h-12 mx-auto mb-4" />
+                        <p className="font-black uppercase tracking-widest text-xs">No textbooks available yet</p>
                     </div>
                 )}
             </div>
@@ -4908,17 +5059,56 @@ const AuthPage = () => {
 // ADMIN PORTAL
 // ════════════════════════════════════════════
 
+/* ── CUSTOM TOAST SYSTEM ── */
+const useToast = () => {
+    const [toasts, setToasts] = useState<any[]>([]);
+    const addToast = (msg: string, type: 'success' | 'error' = 'success') => {
+        const id = Math.random().toString(36).substr(2, 9);
+        setToasts(prev => [...prev, { id, msg, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+    };
+    return { toasts, addToast };
+};
+
+const ToastContainer = ({ toasts }: { toasts: any[] }) => (
+    <div className="fixed top-8 right-8 z-[2000] flex flex-col gap-3 pointer-events-none">
+        <AnimatePresence>
+            {toasts.map(t => (
+                <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
+                    className={cn(
+                        "px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 border backdrop-blur-md pointer-events-auto",
+                        t.type === 'success' ? "bg-emerald-500/90 text-white border-emerald-400/30" : "bg-rose-500/90 text-white border-rose-400/30"
+                    )}
+                >
+                    {t.type === 'success' ? <CheckCircle className="w-5 h-5 shrink-0" /> : <XCircle className="w-5 h-5 shrink-0" />}
+                    <span className="font-black text-xs uppercase tracking-widest">{t.msg}</span>
+                </motion.div>
+            ))}
+        </AnimatePresence>
+    </div>
+);
+
 const AdminPortalPage = () => {
-    const { user, liveNews, liveMaterials, fetchLiveNews, fetchLiveMaterials } = useApp();
+    const { user, liveNews, liveMaterials, liveNotices, fetchLiveNews, fetchLiveMaterials, fetchLiveNotices } = useApp();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'study' | 'news'>('study');
+    const [activeTab, setActiveTab] = useState<'study' | 'news' | 'notices' | 'analytics'>('study');
     const [isUploading, setIsUploading] = useState(false);
+    const { toasts, addToast } = useToast();
+
+    // Content Type Selector
+    const [contentType, setContentType] = useState<string>('note');
     
     // Study Hub Form State
     const [studyForm, setStudyForm] = useState({
         title: '',
         subject: 'Science',
-        type: 'note',
+        description: '',
+        link_url: '',
+        text_content: '',
         file: null as File | null
     });
 
@@ -4927,25 +5117,32 @@ const AdminPortalPage = () => {
         title: '',
         content: '',
         category: 'general',
+        is_notice: false,
         image: null as File | null
+    });
+
+    // Simple Notice Table Form
+    const [noticeForm, setNoticeForm] = useState({
+        text: '',
+        type: 'info' as 'info' | 'alert' | 'update'
     });
 
     if (user?.email !== 'subashgautam305@gmail.com') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-10 h-10 text-rose-500" />
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center px-6">
+                <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+                    <AlertTriangle className="w-12 h-12 text-rose-500" />
                 </div>
-                <h1 className="text-xl font-black uppercase tracking-tighter text-slate-800">Access Denied</h1>
-                <p className="text-sm text-slate-500 font-bold">Only administrators can access this portal.</p>
-                <button onClick={() => navigate('/')} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">Back to Home</button>
+                <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800 italic">Access Denied</h1>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">Restricted to subashgautam305@gmail.com</p>
+                <button onClick={() => navigate('/')} className="mt-6 px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl">Return to Safety</button>
             </div>
         );
     }
 
     const handleFileUpload = async (file: File, bucket: string) => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const filePath = `${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -4963,28 +5160,37 @@ const AdminPortalPage = () => {
 
     const handleStudySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!studyForm.file || !studyForm.title) return alert("Please fill all fields and select a file.");
-
         setIsUploading(true);
         try {
-            const fileUrl = await handleFileUpload(studyForm.file, 'official-assets');
-            
+            let fileUrl = null;
+            if (studyForm.file) {
+                fileUrl = await handleFileUpload(studyForm.file, 'official-assets');
+            }
+
+            let youtubeId = null;
+            if (contentType === 'video' && studyForm.link_url) {
+                youtubeId = extractYoutubeId(studyForm.link_url);
+            }
+
             const { error } = await supabase
                 .from('study_hub')
                 .insert([{
                     title: studyForm.title,
                     subject: studyForm.subject,
-                    type: studyForm.type,
+                    type: contentType,
+                    description: studyForm.description,
+                    link_url: studyForm.link_url,
+                    text_content: studyForm.text_content,
+                    youtube_id: youtubeId,
                     file_url: fileUrl
                 }]);
 
             if (error) throw error;
-            alert("Study material uploaded successfully!");
-            setStudyForm({ title: '', subject: 'Science', type: 'note', file: null });
+            addToast("Material published successfully!");
+            setStudyForm({ title: '', subject: 'Science', description: '', link_url: '', text_content: '', file: null });
             fetchLiveMaterials();
         } catch (error: any) {
-            console.error(error);
-            alert("Error: " + error.message);
+            addToast(error.message, 'error');
         } finally {
             setIsUploading(false);
         }
@@ -4992,8 +5198,6 @@ const AdminPortalPage = () => {
 
     const handleNewsSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newsForm.title || !newsForm.content) return alert("Please fill title and content.");
-
         setIsUploading(true);
         try {
             let imageUrl = null;
@@ -5007,315 +5211,433 @@ const AdminPortalPage = () => {
                     title: newsForm.title,
                     content: newsForm.content,
                     category: newsForm.category,
-                    image_url: imageUrl
+                    image_url: imageUrl,
+                    is_notice: newsForm.is_notice
                 }]);
 
             if (error) throw error;
-            alert("News posted successfully!");
-            setNewsForm({ title: '', content: '', category: 'general', image: null });
+            addToast("Communication broadcasted!");
+            setNewsForm({ title: '', content: '', category: 'general', is_notice: false, image: null });
             fetchLiveNews();
         } catch (error: any) {
-            console.error(error);
-            alert("Error: " + error.message);
+            addToast(error.message, 'error');
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleDeleteMaterial = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this material?")) return;
+    const handleNoticeSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!noticeForm.text) return;
+        setIsUploading(true);
         try {
-            const { error } = await supabase.from('study_hub').delete().eq('id', id);
+            const { error } = await supabase
+                .from('notices')
+                .insert([{
+                    text: noticeForm.text,
+                    type: noticeForm.type,
+                    active: true
+                }]);
+
             if (error) throw error;
-            fetchLiveMaterials();
-        } catch (err: any) {
-            alert("Error deleting: " + err.message);
+            addToast("Board notice updated!");
+            setNoticeForm({ text: '', type: 'info' });
+            fetchLiveNotices();
+        } catch (error: any) {
+            addToast(error.message, 'error');
+        } finally {
+            setIsUploading(false);
         }
     };
 
-    const handleDeleteNews = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this news?")) return;
+    const handleDelete = async (table: string, id: string) => {
+        if (!confirm("Are you sure? This action is permanent and will remove content for all users.")) return;
         try {
-            const { error } = await supabase.from('news_notices').delete().eq('id', id);
+            const { error } = await supabase.from(table).delete().eq('id', id);
             if (error) throw error;
-            fetchLiveNews();
+            addToast("Content deleted.");
+            if (table === 'study_hub') fetchLiveMaterials();
+            if (table === 'news_notices') fetchLiveNews();
+            if (table === 'notices') fetchLiveNotices();
         } catch (err: any) {
-            alert("Error deleting: " + err.message);
+            addToast(err.message, 'error');
         }
     };
+
+    const studyTypes = [
+        { id: 'chapter', label: 'Chapter', icon: Book, color: 'bg-emerald-50 text-emerald-600' },
+        { id: 'digital_textbook', label: 'Textbook', icon: Library, color: 'bg-cyan-50 text-cyan-600' },
+        { id: 'video', label: 'Video', icon: Video, color: 'bg-rose-50 text-rose-600' },
+        { id: 'note_archive', label: 'Archive', icon: Archive, color: 'bg-blue-50 text-blue-600' },
+        { id: 'shared_note', label: 'Share', icon: Sparkles, color: 'bg-amber-50 text-amber-600' },
+        { id: 'mcq', label: 'MCQ', icon: FileJson, color: 'bg-indigo-50 text-indigo-600' },
+        { id: 'note', label: 'Note', icon: PenTool, color: 'bg-slate-50 text-slate-600' }
+    ];
 
     return (
-        <div className="space-y-8 pb-24">
-            <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft /></button>
-                <div>
-                    <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Admin Portal</h1>
-                    <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest mt-1">Full Content Governance</p>
+        <div className="space-y-8 pb-32 max-w-5xl mx-auto">
+            <ToastContainer toasts={toasts} />
+            
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-200 transition-all"><ArrowLeft className="w-6 h-6" /></button>
+                    <div>
+                        <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Aadhar Desk</h1>
+                        <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Unified Command Center</p>
+                    </div>
                 </div>
+                {isUploading && (
+                    <div className="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                        <Zap className="w-4 h-4 animate-pulse" />
+                        <span className="text-[0.6rem] font-black uppercase tracking-widest">Processing Node...</span>
+                    </div>
+                )}
             </header>
 
-            <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
-                <button 
-                    onClick={() => setActiveTab('study')}
-                    className={cn(
-                        "flex-1 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
-                        activeTab === 'study' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                    )}
-                >
-                    Study Hub
-                </button>
-                <button 
-                    onClick={() => setActiveTab('news')}
-                    className={cn(
-                        "flex-1 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
-                        activeTab === 'news' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
-                    )}
-                >
-                    News & Notices
-                </button>
-            </div>
+            <nav className="flex gap-2 p-1.5 bg-slate-100 rounded-[2rem] sticky top-20 z-[900] backdrop-blur-md border border-slate-200">
+                {[
+                    { id: 'study', label: 'Study Hub', icon: BookOpen },
+                    { id: 'news', label: 'Broadcasts', icon: Newspaper },
+                    { id: 'notices', label: 'Ticker Board', icon: Megaphone },
+                    { id: 'analytics', label: 'Metrics', icon: BarChart3 }
+                ].map(t => (
+                    <button 
+                        key={t.id}
+                        onClick={() => setActiveTab(t.id as any)}
+                        className={cn(
+                            "flex-1 flex items-center justify-center gap-2 py-4 rounded-[1.5rem] font-black text-[0.6rem] uppercase tracking-widest transition-all",
+                            activeTab === t.id ? "bg-white text-slate-900 shadow-xl scale-[1.02]" : "text-slate-400 hover:text-slate-600"
+                        )}
+                    >
+                        <t.icon className={cn("w-4 h-4", activeTab === t.id ? "text-blue-500" : "opacity-40")} />
+                        <span className="hidden md:inline">{t.label}</span>
+                    </button>
+                ))}
+            </nav>
 
             <AnimatePresence mode="wait">
-                {activeTab === 'study' ? (
-                    <motion.div 
-                        key="study"
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        className="space-y-8"
-                    >
-                        {/* FORM AREA */}
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-                                    <BookOpen className="w-6 h-6" />
+                {activeTab === 'study' && (
+                    <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Select Content Blueprint</h3>
+                            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                                {studyTypes.map(t => (
+                                    <button 
+                                        key={t.id}
+                                        onClick={() => setContentType(t.id)}
+                                        className={cn(
+                                            "p-5 rounded-[2rem] border-2 transition-all flex flex-col items-center justify-center text-center gap-3",
+                                            contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.1] z-10" : "bg-white/50 border-slate-50 hover:bg-white hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", t.color)}>
+                                            <t.icon className="w-6 h-6" />
+                                        </div>
+                                        <span className="text-[0.55rem] font-black uppercase tracking-tighter leading-tight italic">{t.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] space-y-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rotate-45 translate-x-16 -translate-y-16" />
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                                <div>
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Forge Resource</h2>
+                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Profile: {contentType.replace('_', ' ')}</p>
                                 </div>
-                                <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Add Study Material</h2>
+                                <select 
+                                    className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-blue-600 ring-4 ring-blue-500/5 focus:ring-blue-500/10"
+                                    value={studyForm.subject}
+                                    onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
+                                >
+                                    {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
                             </div>
 
-                            <form onSubmit={handleStudySubmit} className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
-                                    <input 
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                                        placeholder="Enter material title..."
-                                        value={studyForm.title}
-                                        onChange={e => setStudyForm({...studyForm, title: e.target.value})}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
+                            <form onSubmit={handleStudySubmit} className="space-y-8 relative z-10">
+                                <div className="space-y-6">
                                     <div className="space-y-2">
-                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Subject</label>
-                                        <select 
-                                            className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
-                                            value={studyForm.subject}
-                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
-                                        >
-                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Type</label>
-                                        <select 
-                                            className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
-                                            value={studyForm.type}
-                                            onChange={e => setStudyForm({...studyForm, type: e.target.value})}
-                                        >
-                                            <option value="chapter">Chapter</option>
-                                            <option value="note">Note</option>
-                                            <option value="video">Video</option>
-                                            <option value="model_question">Model Question</option>
-                                            <option value="Mcq test">MCQ Test</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">File</label>
-                                    <div className="relative">
+                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Resource Title</label>
                                         <input 
-                                            type="file"
-                                            className="hidden"
-                                            id="hubFile"
-                                            onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
+                                            required
+                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none focus:bg-white focus:ring-8 focus:ring-blue-500/5 transition-all shadow-inner"
+                                            placeholder="Enter descriptive title..."
+                                            value={studyForm.title}
+                                            onChange={e => setStudyForm({...studyForm, title: e.target.value})}
                                         />
-                                        <label 
-                                            htmlFor="hubFile"
-                                            className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-200 transition-all group"
-                                        >
-                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                                <Plus className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
-                                                    {studyForm.file ? studyForm.file.name : "Choose or drag file"}
-                                                </p>
-                                                <p className="text-[0.6rem] font-bold text-slate-400 uppercase">PDF, Video or Image (Max 50MB)</p>
-                                            </div>
-                                        </label>
                                     </div>
+
+                                    {(contentType === 'video' || contentType === 'digital_textbook') && (
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">{contentType === 'video' ? 'YouTube URL' : 'Cloud Resource Link (Google Drive/PDF)'}</label>
+                                            <input 
+                                                required
+                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none focus:bg-white focus:ring-8 focus:ring-rose-500/5 transition-all text-rose-600"
+                                                placeholder="https://..."
+                                                value={studyForm.link_url}
+                                                onChange={e => setStudyForm({...studyForm, link_url: e.target.value})}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {contentType === 'shared_note' && (
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Markdown Script (Rich Text)</label>
+                                            <textarea 
+                                                required
+                                                rows={10}
+                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-sm outline-none resize-none font-mono focus:bg-white focus:ring-8 focus:ring-amber-500/5 transition-all text-slate-700"
+                                                placeholder="### Unit Title\n- Key points...\n$$ E = mc^2 $$"
+                                                value={studyForm.text_content}
+                                                onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {contentType === 'mcq' && (
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">MCQ Payload (Strict JSON)</label>
+                                            <textarea 
+                                                required
+                                                rows={8}
+                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none focus:bg-white focus:ring-8 focus:ring-indigo-500/5 transition-all text-indigo-600 font-mono"
+                                                placeholder='{ "title": "Example", "questions": [ { "q": "...", "a": "..." } ] }'
+                                                value={studyForm.text_content}
+                                                onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {(['chapter', 'note', 'note_archive', 'mcq'].includes(contentType)) && (
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Attachment Core (Max 50MB)</label>
+                                            <input 
+                                                type="file"
+                                                className="hidden"
+                                                id="adminHubFile"
+                                                onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
+                                            />
+                                            <label 
+                                                htmlFor="adminHubFile"
+                                                className={cn(
+                                                    "w-full flex flex-col items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 hover:border-slate-200 transition-all",
+                                                    studyForm.file && "border-blue-500 border-solid bg-blue-50"
+                                                )}
+                                            >
+                                                <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-blue-500" : "text-slate-300")} />
+                                                <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
+                                                    {studyForm.file ? studyForm.file.name : "Select or Drop Resource Asset"}
+                                                </p>
+                                            </label>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button 
                                     disabled={isUploading}
-                                    className="w-full py-5 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                                    className="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                                 >
-                                    {isUploading ? "Uploading..." : "Save Material"}
+                                    {isUploading ? <Flame className="w-5 h-5 animate-pulse" /> : <Sparkles className="w-5 h-5" />}
+                                    <span>{isUploading ? "Syncing Logic..." : "Commit to Hub"}</span>
                                 </button>
                             </form>
                         </div>
 
-                        {/* LIST AREA */}
-                        <div className="space-y-4">
-                             <h3 className="text-lg font-black italic tracking-tighter uppercase text-slate-800 ml-4">Active Materials ({liveMaterials.length})</h3>
-                             <div className="space-y-3">
-                                 {liveMaterials.map(m => (
-                                     <div key={m.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group">
-                                         <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
-                                              {m.type === 'video' ? <PlayCircle className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
-                                         </div>
-                                         <div className="flex-1 min-w-0">
-                                              <p className="text-xs font-black text-blue uppercase tracking-widest">{m.subject} • {m.type}</p>
-                                              <h4 className="font-black text-slate-800 uppercase truncate text-sm">{m.title}</h4>
-                                         </div>
-                                         <button 
-                                            onClick={() => handleDeleteMaterial(m.id)}
-                                            className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-colors shrink-0"
-                                         >
-                                              <Trash2 className="w-4 h-4" />
-                                         </button>
-                                     </div>
-                                 ))}
-                                 {liveMaterials.length === 0 && (
-                                     <div className="text-center py-10 opacity-30">
-                                          <p className="font-black uppercase tracking-widest text-xs">No user-uploaded materials</p>
-                                     </div>
-                                 )}
-                             </div>
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between px-6">
+                                <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Resource Registry</h3>
+                                <div className="px-5 py-1.5 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    {liveMaterials.length} Active Nodes
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {liveMaterials.map(m => (
+                                    <div key={m.id} className="bg-white p-6 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                                        <div className="flex items-center gap-6 min-w-0">
+                                            <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all italic font-black text-[0.6rem] uppercase">
+                                                {m.type.slice(0, 3)}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-[0.55rem] font-black text-blue-600 uppercase tracking-widest">{m.subject} • {m.type.replace('_', ' ')}</p>
+                                                <h4 className="text-md font-black text-slate-900 uppercase truncate tracking-tight leading-tight">{m.title}</h4>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 shrink-0">
+                                             <button 
+                                                onClick={() => window.open(m.file_url || m.link_url, '_blank')}
+                                                className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-emerald-50 hover:text-emerald-500 transition-all border border-slate-100"
+                                             >
+                                                 <ExternalLink className="w-5 h-5" />
+                                             </button>
+                                             <button 
+                                                onClick={() => handleDelete('study_hub', m.id)}
+                                                className="w-12 h-12 bg-rose-50 text-rose-300 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 shadow-sm shadow-rose-500/10"
+                                             >
+                                                 <Trash2 className="w-5 h-5" />
+                                             </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </motion.div>
-                ) : (
-                    <motion.div 
-                        key="news"
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        className="space-y-8"
-                    >
-                        {/* FORM AREA */}
-                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
-                                    <Newspaper className="w-6 h-6" />
-                                </div>
-                                <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Post News/Notice</h2>
+                )}
+
+                {activeTab === 'news' && (
+                    <motion.div key="admin-news" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10">
+                         <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
+                             <div className="flex justify-between items-center">
+                                <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Broadcast Station</h2>
+                                <button 
+                                    type="button"
+                                    onClick={() => setNewsForm({...newsForm, is_notice: !newsForm.is_notice})}
+                                    className={cn(
+                                        "px-8 py-3 rounded-full font-black text-[0.65rem] uppercase tracking-widest transition-all shadow-xl",
+                                        newsForm.is_notice ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"
+                                    )}
+                                >
+                                    {newsForm.is_notice ? 'Notice Only' : 'Global News'}
+                                </button>
                             </div>
 
-                            <form onSubmit={handleNewsSubmit} className="space-y-4">
+                            <form onSubmit={handleNewsSubmit} className="space-y-6">
                                 <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Article Headline</label>
                                     <input 
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                        placeholder="Notice headline..."
+                                        required
+                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md outline-none"
+                                        placeholder="Headline here..."
                                         value={newsForm.title}
                                         onChange={e => setNewsForm({...newsForm, title: e.target.value})}
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Content</label>
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Content Body</label>
                                     <textarea 
-                                        rows={4}
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
-                                        placeholder="Enter full notice content..."
+                                        required
+                                        rows={6}
+                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-sm outline-none resize-none"
+                                        placeholder="Write details..."
                                         value={newsForm.content}
                                         onChange={e => setNewsForm({...newsForm, content: e.target.value})}
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Category</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <select 
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                        className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-xl font-bold"
                                         value={newsForm.category}
                                         onChange={e => setNewsForm({...newsForm, category: e.target.value})}
                                     >
                                         <option value="general">General</option>
-                                        <option value="exam">Exam</option>
-                                        <option value="result">Result</option>
+                                        <option value="exam">Exam Board</option>
+                                        <option value="result">Exam Result</option>
                                     </select>
+                                    <input 
+                                        type="file"
+                                        className="hidden"
+                                        id="adminNewsFile"
+                                        onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
+                                    />
+                                    <label 
+                                        htmlFor="adminNewsFile"
+                                        className="flex items-center justify-center p-4 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer hover:bg-slate-100 transition-all font-black text-[0.65rem] uppercase tracking-widest text-slate-500"
+                                    >
+                                        {newsForm.image ? newsForm.image.name : 'Upload Banner Asset'}
+                                    </label>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Banner Image (Optional)</label>
-                                    <div className="relative">
-                                        <input 
-                                            type="file"
-                                            className="hidden"
-                                            id="newsFile"
-                                            onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
-                                        />
-                                        <label 
-                                            htmlFor="newsFile"
-                                            className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition-all group"
-                                        >
-                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                                                <Plus className="w-6 h-6" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
-                                                    {newsForm.image ? newsForm.image.name : "Upload Cover Image"}
-                                                </p>
-                                            </div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <button 
-                                    disabled={isUploading}
-                                    className="w-full py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                                >
-                                    {isUploading ? "Uploading..." : "Publish Notice"}
-                                </button>
+                                <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Broadcast Entry</button>
                             </form>
                         </div>
-
-                        {/* LIST AREA */}
                         <div className="space-y-4">
-                             <h3 className="text-lg font-black italic tracking-tighter uppercase text-slate-800 ml-4">Published News ({liveNews.length})</h3>
-                             <div className="space-y-4">
-                                 {liveNews.map(n => (
-                                     <div key={n.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group">
+                             {liveNews.map(n => (
+                                 <div key={n.id} className="bg-white p-7 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group">
+                                     <div className="flex items-center gap-6">
                                          <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden shrink-0">
-                                              {n.image_url ? (
-                                                  <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                              ) : (
-                                                  <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                                       <Newspaper className="w-8 h-8" />
-                                                  </div>
-                                              )}
+                                              {n.image_url ? <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center"><Newspaper className="text-slate-300" /></div>}
                                          </div>
-                                         <div className="flex-1 min-w-0">
-                                              <p className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-1">{n.category} • {new Date(n.created_at).toLocaleDateString()}</p>
-                                              <h4 className="font-black text-slate-800 uppercase truncate text-sm mb-1">{n.title}</h4>
-                                              <p className="text-xs text-slate-400 font-bold line-clamp-1">{n.content}</p>
+                                         <div>
+                                              <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-widest mb-1 block">{n.category}</span>
+                                              <h4 className="font-black text-slate-800 uppercase truncate text-md leading-tight">{n.title}</h4>
                                          </div>
-                                         <button 
-                                            onClick={() => handleDeleteNews(n.id)}
-                                            className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-colors shrink-0"
-                                         >
-                                              <Trash2 className="w-4 h-4" />
-                                         </button>
                                      </div>
-                                 ))}
-                                 {liveNews.length === 0 && (
-                                     <div className="text-center py-10 opacity-30">
-                                          <p className="font-black uppercase tracking-widest text-xs">No live news posted</p>
-                                     </div>
-                                 )}
-                             </div>
+                                     <button onClick={() => handleDelete('news_notices', n.id)} className="w-12 h-12 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
+                                 </div>
+                             ))}
                         </div>
+                    </motion.div>
+                )}
+
+                {activeTab === 'notices' && (
+                    <motion.div key="admin-notices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
+                         <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
+                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Live Board Dispatch</h2>
+                            <form onSubmit={handleNoticeSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                     <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Ticker Message</label>
+                                     <input 
+                                        required
+                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md"
+                                        placeholder="e.g. Science Board Exam in 15 days..."
+                                        value={noticeForm.text}
+                                        onChange={e => setNoticeForm({...noticeForm, text: e.target.value})}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                     {['info', 'alert', 'update'].map(type => (
+                                         <button 
+                                            key={type}
+                                            type="button"
+                                            onClick={() => setNoticeForm({...noticeForm, type: type as any})}
+                                            className={cn(
+                                                "py-4 rounded-2xl font-black text-[0.6rem] uppercase tracking-widest border-2 transition-all shadow-sm",
+                                                noticeForm.type === type ? "bg-slate-900 text-white border-slate-900 scale-[1.05]" : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
+                                            )}
+                                         >
+                                             {type}
+                                         </button>
+                                     ))}
+                                </div>
+                                <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Deploy Ticker</button>
+                            </form>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {liveNotices.map(n => (
+                                <div key={n.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm group">
+                                     <div className="flex items-center gap-5">
+                                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", n.type === 'alert' ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white')}>
+                                             <Megaphone className="w-5 h-5" />
+                                         </div>
+                                         <p className="font-bold text-slate-800 text-sm italic">{n.text}</p>
+                                     </div>
+                                     <button onClick={() => handleDelete('notices', n.id)} className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+
+                {activeTab === 'analytics' && (
+                    <motion.div key="admin-metrics" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-20">
+                         {[
+                             { label: 'Active Materials', val: liveMaterials.length, icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                             { label: 'Broadcast Posts', val: liveNews.length, icon: Newspaper, color: 'text-blue-500', bg: 'bg-blue-50' },
+                             { label: 'Live Tickers', val: liveNotices.length, icon: Megaphone, color: 'text-rose-500', bg: 'bg-rose-50' },
+                             { label: 'System Health', val: 'Optimal', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-50' }
+                         ].map(stat => (
+                             <div key={stat.label} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-center text-center space-y-4">
+                                 <div className={cn("w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg", stat.bg, stat.color)}>
+                                     <stat.icon className="w-8 h-8" />
+                                 </div>
+                                 <div>
+                                     <p className="text-4xl font-black italic tracking-tighter text-slate-900">{stat.val}</p>
+                                     <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                                 </div>
+                             </div>
+                         ))}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -5339,6 +5661,7 @@ const AppContent = () => {
                 <Route path="/hub/:name/videos" element={<VideoList />} />
                 <Route path="/hub/:name/pdfs" element={<PdfList />} />
                 <Route path="/hub/:name/notes" element={<NoteList />} />
+                <Route path="/hub/:name/textbooks" element={<DigitalTextbookList />} />
                 <Route path="/hub/:name/model" element={<ModelList />} />
                 <Route path="/hub/:name/mcq-sets" element={<MCQTestSelection />} />
                 <Route path="/hub/:name/mcq-test/:setIndex" element={<MCQTestPlayer />} />
@@ -5441,6 +5764,7 @@ const AppProvider = ({ children }: any) => {
     const [data] = useState<AppData>(INITIAL_DATA);
     const [liveNews, setLiveNews] = useState<any[]>([]);
     const [liveMaterials, setLiveMaterials] = useState<any[]>([]);
+    const [liveNotices, setLiveNotices] = useState<any[]>([]);
     const [isInitializing, setIsInitializing] = useState(true);
 
     const fetchLiveNews = async () => {
@@ -5448,6 +5772,7 @@ const AppProvider = ({ children }: any) => {
             const { data: news, error } = await supabase
                 .from('news_notices')
                 .select('*')
+                .eq('is_notice', false)
                 .order('created_at', { ascending: false });
             if (error) throw error;
             setLiveNews(news || []);
@@ -5469,6 +5794,20 @@ const AppProvider = ({ children }: any) => {
         }
     };
 
+    const fetchLiveNotices = async () => {
+        try {
+            const { data: notices, error } = await supabase
+                .from('notices')
+                .select('*')
+                .eq('active', true)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setLiveNotices(notices || []);
+        } catch (err) {
+            console.error('Error fetching dynamic notices:', err);
+        }
+    };
+
     useEffect(() => {
         const initAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
@@ -5486,7 +5825,7 @@ const AppProvider = ({ children }: any) => {
                     completedChapters: []
                 });
             }
-            await Promise.all([fetchLiveNews(), fetchLiveMaterials()]);
+            await Promise.all([fetchLiveNews(), fetchLiveMaterials(), fetchLiveNotices()]);
             setIsInitializing(false);
         };
         initAuth();
@@ -5558,8 +5897,8 @@ const AppProvider = ({ children }: any) => {
 
     return (
         <AppContext.Provider value={{ 
-            user, setUser, data, liveNews, liveMaterials, 
-            fetchLiveNews, fetchLiveMaterials, addTestResult 
+            user, setUser, data, liveNews, liveMaterials, liveNotices,
+            fetchLiveNews, fetchLiveMaterials, fetchLiveNotices, addTestResult 
         }}>
             {children}
         </AppContext.Provider>
