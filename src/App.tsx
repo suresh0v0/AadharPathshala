@@ -12,7 +12,7 @@ import {
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter,
-  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical
+  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
