@@ -284,7 +284,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       </nav>
 
       {/* Floating Admin Button */}
-      {user?.email === 'subashgautam305@gmail.com' && (
+      {(user?.email === 'subashgautam305@gmail.com' || user?.email === 'gopanigautam96@gmail.com') && (
           <button 
             onClick={() => navigate('/admin-portal')}
             className="fixed bottom-24 right-4 z-[1001] bg-slate-900 text-white px-4 py-2 rounded-full font-black text-[0.6rem] uppercase tracking-widest shadow-2xl flex items-center gap-2 border border-white/10 active:scale-95 transition-all"
@@ -3046,7 +3046,7 @@ const ProfilePage = () => {
                 </div>
             </div>
 
-            {user?.email === 'subashgautam305@gmail.com' && (
+            {(user?.email === 'subashgautam305@gmail.com' || user?.email === 'gopanigautam96@gmail.com') && (
                 <button 
                     onClick={() => navigate('/admin-portal')}
                     className="w-full flex items-center justify-between p-6 bg-slate-900 text-white rounded-[2rem] shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all group"
@@ -5127,14 +5127,16 @@ const AdminPortalPage = () => {
         type: 'info' as 'info' | 'alert' | 'update'
     });
 
-    if (user?.email !== 'subashgautam305@gmail.com') {
+    const isAdminEmail = user?.email === 'subashgautam305@gmail.com' || user?.email === 'gopanigautam96@gmail.com';
+
+    if (!isAdminEmail) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center px-6">
                 <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
                     <AlertTriangle className="w-12 h-12 text-rose-500" />
                 </div>
                 <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800 italic">Access Denied</h1>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">Restricted to subashgautam305@gmail.com</p>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">Restricted to Authorized Admins</p>
                 <button onClick={() => navigate('/')} className="mt-6 px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl">Return to Safety</button>
             </div>
         );
