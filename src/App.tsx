@@ -3150,7 +3150,7 @@ const ChapterList = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-4">
-                            <span className="text-[0.6rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest">{ch.marks} Marks</span>
+                            <span className="text-[0.6rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest">{ch.marks || 0} Marks</span>
                             <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-blue group-hover:translate-x-1 transition-all" />
                         </div>
                     </button>
@@ -3162,12 +3162,14 @@ const ChapterList = () => {
 
 const ChapterDetail = () => {
     const { name, chapterId } = useParams();
-    const { data } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
-    const chapter = sub.chapters.find((c: any) => c.id === chapterId);
+    const chapter = sub.chapters.find((c: any) => c.id === chapterId) || liveMaterials.find(m => m.id === chapterId);
 
-    if (!chapter) return <div>Module not found</div>;
+    if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Module entry not found in active registry</div>;
+
+    const topicsList = (chapter.topics || '').split(',').filter(Boolean);
 
     return (
         <div className="space-y-8 animate-fade-up pb-24 text-slate-800">
@@ -3178,21 +3180,41 @@ const ChapterDetail = () => {
 
             <div className="bg-slate-900 p-10 rounded-[3.5rem] text-white overflow-hidden relative shadow-2xl">
                 <div className="relative z-10">
-                    <p className="text-[0.65rem] font-black uppercase text-blue border-l-2 border-blue pl-4 mb-4 tracking-[0.3em]">Knowledge Module {chapterId}</p>
-                    <h2 className="text-4xl font-black italic tracking-tighter leading-tight mb-6 uppercase">Key Performance Targets</h2>
+                    <p className="text-[0.65rem] font-black uppercase text-blue border-l-2 border-blue pl-4 mb-4 tracking-[0.3em]">Knowledge Module • {chapter.marks || 0} Weightage</p>
+                    <h2 className="text-4xl font-black italic tracking-tighter leading-tight mb-6 uppercase">Target Knowledge Nodes</h2>
                     <div className="flex flex-wrap gap-2">
-                        {chapter.topics?.split(',').map((t: string) => (
-                            <span key={t} className="px-3 py-1 bg-white/10 rounded-xl text-[0.6rem] font-black uppercase tracking-widest backdrop-blur-md border border-white/10">
+                        {topicsList.length > 0 ? topicsList.map((t: string) => (
+                            <span key={t} className="px-5 py-2 bg-white/10 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 italic">
                                 {t.trim()}
                             </span>
-                        ))}
+                        )) : (
+                            <span className="text-slate-500 font-black uppercase text-[0.6rem] tracking-widest">General Curriculum Mastery</span>
+                        )}
                     </div>
                 </div>
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue/20 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
             </div>
 
-            <div className="p-8 bg-white rounded-[3rem] border border-slate-100 shadow-xl prose prose-sm max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-headings:uppercase prose-p:font-bold prose-p:text-slate-500 leading-relaxed">
-                <Markdown>{chapter.contentHtml || '# Content Loading...\nDetailed study notes for this module are being processed by Aadhar Pro. Check back soon for the complete syllabus deep-dive.'}</Markdown>
+            <div className="p-8 sm:p-12 bg-white rounded-[3rem] border border-slate-100 shadow-xl prose prose-sm max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-headings:uppercase prose-p:font-bold prose-p:text-slate-500 leading-relaxed min-h-[300px]">
+                {chapter.file_url && chapter.file_url.toLowerCase().endsWith('.pdf') ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+                        <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center shadow-lg border border-rose-100">
+                             <FileText className="w-12 h-12" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase italic mb-2">Rich PDF Asset Ready</h3>
+                            <p className="text-[0.7rem] text-slate-400 font-black uppercase tracking-widest mb-6 max-w-xs mx-auto">This module contains a proprietary specification document.</p>
+                            <a href={chapter.file_url} target="_blank" className="inline-flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                                <Download className="w-4 h-4" />
+                                Initiate Transfer
+                            </a>
+                        </div>
+                    </div>
+                ) : (
+                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                        {chapter.text_content || chapter.description || chapter.contentHtml || '# Module Content Pending\nDeep-dive documentation for this unit is being synced. Please check back in a few moments for the complete curriculum roadmap.'}
+                    </Markdown>
+                )}
             </div>
             
             <button 
@@ -3230,19 +3252,20 @@ const VideoList = () => {
                 {/* Dynamic Videos */}
                 {dynamicVideos.map((v: any) => {
                     const yId = v.youtube_id || extractYoutubeId(v.file_url || v.link_url);
+                    const thumbUrl = yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : null;
                     
                     return (
                         <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
                             <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
                                 {yId ? (
-                                    <iframe 
-                                        className="w-full h-full"
-                                        src={`https://www.youtube.com/embed/${yId}`}
-                                        title={v.title}
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    />
+                                    <>
+                                        <img src={thumbUrl!} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <button onClick={() => window.open(`https://youtube.com/watch?v=${yId}`)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                                <PlayCircle className="w-10 h-10 fill-current" />
+                                            </button>
+                                        </div>
+                                    </>
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
                                         <button onClick={() => window.open(v.file_url || v.link_url)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
@@ -3255,7 +3278,7 @@ const VideoList = () => {
                                 <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
                                     <TrendingUp className="w-3 h-3" /> New Upload
                                 </p>
-                                <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{v.title}</h3>
+                                <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight italic">{v.title}</h3>
                                 <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Hub • {yId ? 'External Stream' : 'Official Asset'}</p>
                             </div>
                         </div>
@@ -3310,19 +3333,23 @@ const PdfList = () => {
                 {dynamicPdfs.map((p: any) => (
                     <div 
                         key={p.id} 
-                        onClick={() => window.open(p.file_url)}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all cursor-pointer"
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all"
                     >
                         <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-110 transition-transform">
-                            <BookOpen className="w-8 h-8" />
+                            <Archive className="w-8 h-8" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{p.title}</h3>
-                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">{p.type} • Recent Upload</p>
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1 italic">{p.title}</h3>
+                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">{p.type} • Data Node</p>
                         </div>
-                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
-                            <Download className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2">
+                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100">
+                                <Eye className="w-5 h-5" />
+                            </button>
+                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                                <Download className="w-5 h-5" />
+                            </a>
+                        </div>
                     </div>
                 ))}
 
@@ -3351,8 +3378,18 @@ const NoteList = () => {
     const { liveMaterials } = useApp();
     const navigate = useNavigate();
 
-    const sharedNotes = liveMaterials.filter(m => m.subject === name && m.type === 'shared_note');
-    const simpleNotes = liveMaterials.filter(m => m.subject === name && m.type === 'note');
+    const sharedNotes = [
+        { 
+            id: 'master-1', 
+            title: 'SEE Board Exam Blueprint', 
+            subject: name, 
+            type: 'shared_note', 
+            text_content: '### Exam Preparation Guide\n1. Focus on high weightage chapters\n2. Practice past year questions\n3. Review experimental diagrams', 
+            created_at: new Date().toISOString() 
+        },
+        ...liveMaterials.filter((m: any) => m.subject === name && m.type === 'shared_note')
+    ];
+    const simpleNotes = liveMaterials.filter((m: any) => m.subject === name && m.type === 'note');
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
@@ -3440,19 +3477,23 @@ const ModelList = () => {
                 {dynamicModels.map((m: any) => (
                     <div 
                         key={m.id} 
-                        onClick={() => window.open(m.file_url)}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer"
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all"
                     >
                         <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-110 transition-transform">
-                            <ClipboardCheck className="w-8 h-8" />
+                            {m.file_url?.toLowerCase().endsWith('.png') || m.file_url?.toLowerCase().endsWith('.jpg') ? <GalleryVertical className="w-8 h-8" /> : <ClipboardCheck className="w-8 h-8" />}
                         </div>
                         <div className="flex-1">
                             <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{m.title}</h3>
-                            <p className="text-[0.65rem] text-indigo-400 font-bold leading-relaxed uppercase tracking-widest">{m.type} • Board Prep</p>
+                            <p className="text-[0.65rem] text-indigo-400 font-bold leading-relaxed uppercase tracking-widest">{m.type} • Official Board Set</p>
                         </div>
-                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
-                            <Download className="w-5 h-5" />
-                        </button>
+                        <div className="flex gap-2">
+                             <button onClick={() => window.open(m.file_url || m.link_url)} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100">
+                                <Eye className="w-5 h-5" />
+                            </button>
+                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                                <Download className="w-5 h-5" />
+                            </a>
+                        </div>
                     </div>
                 ))}
 
@@ -5109,6 +5150,8 @@ const AdminPortalPage = () => {
         description: '',
         link_url: '',
         text_content: '',
+        marks: '0',
+        topics: '',
         file: null as File | null
     });
 
@@ -5184,12 +5227,14 @@ const AdminPortalPage = () => {
                     link_url: studyForm.link_url,
                     text_content: studyForm.text_content,
                     youtube_id: youtubeId,
-                    file_url: fileUrl
+                    file_url: fileUrl,
+                    marks: parseInt(studyForm.marks) || 0,
+                    topics: studyForm.topics
                 }]);
 
             if (error) throw error;
             addToast("Material published successfully!");
-            setStudyForm({ title: '', subject: 'Science', description: '', link_url: '', text_content: '', file: null });
+            setStudyForm({ title: '', subject: 'Science', description: '', link_url: '', text_content: '', marks: '0', topics: '', file: null });
             fetchLiveMaterials();
         } catch (error: any) {
             addToast(error.message, 'error');
@@ -5273,16 +5318,24 @@ const AdminPortalPage = () => {
         { id: 'note_archive', label: 'Archive', icon: Archive, color: 'bg-blue-50 text-blue-600' },
         { id: 'shared_note', label: 'Share', icon: Sparkles, color: 'bg-amber-50 text-amber-600' },
         { id: 'mcq', label: 'MCQ', icon: FileJson, color: 'bg-indigo-50 text-indigo-600' },
+        { id: 'model_question', label: 'Model Q', icon: ClipboardCheck, color: 'bg-violet-50 text-violet-600' },
         { id: 'note', label: 'Note', icon: PenTool, color: 'bg-slate-50 text-slate-600' }
     ];
 
+    const [adminSubView, setAdminSubView] = useState<'menu' | 'form'>('menu');
+
     return (
-        <div className="space-y-8 pb-32 max-w-5xl mx-auto">
+        <div className="space-y-8 pb-32 max-w-5xl mx-auto px-4">
             <ToastContainer toasts={toasts} />
             
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-200 transition-all"><ArrowLeft className="w-6 h-6" /></button>
+                    <button 
+                        onClick={() => adminSubView === 'form' ? setAdminSubView('menu') : navigate(-1)} 
+                        className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-200 transition-all shadow-sm"
+                    >
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
                     <div>
                         <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Aadhar Desk</h1>
                         <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Unified Command Center</p>
@@ -5296,353 +5349,334 @@ const AdminPortalPage = () => {
                 )}
             </header>
 
-            <nav className="flex gap-2 p-1.5 bg-slate-100 rounded-[2rem] sticky top-20 z-[900] backdrop-blur-md border border-slate-200">
-                {[
-                    { id: 'study', label: 'Study Hub', icon: BookOpen },
-                    { id: 'news', label: 'Broadcasts', icon: Newspaper },
-                    { id: 'notices', label: 'Ticker Board', icon: Megaphone },
-                    { id: 'analytics', label: 'Metrics', icon: BarChart3 }
-                ].map(t => (
-                    <button 
-                        key={t.id}
-                        onClick={() => setActiveTab(t.id as any)}
-                        className={cn(
-                            "flex-1 flex items-center justify-center gap-2 py-4 rounded-[1.5rem] font-black text-[0.6rem] uppercase tracking-widest transition-all",
-                            activeTab === t.id ? "bg-white text-slate-900 shadow-xl scale-[1.02]" : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        <t.icon className={cn("w-4 h-4", activeTab === t.id ? "text-blue-500" : "opacity-40")} />
-                        <span className="hidden md:inline">{t.label}</span>
-                    </button>
-                ))}
-            </nav>
-
-            <AnimatePresence mode="wait">
-                {activeTab === 'study' && (
-                    <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-                        <div className="space-y-4">
-                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Select Content Blueprint</h3>
-                            <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                                {studyTypes.map(t => (
-                                    <button 
-                                        key={t.id}
-                                        onClick={() => setContentType(t.id)}
-                                        className={cn(
-                                            "p-5 rounded-[2rem] border-2 transition-all flex flex-col items-center justify-center text-center gap-3",
-                                            contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.1] z-10" : "bg-white/50 border-slate-50 hover:bg-white hover:border-slate-200"
-                                        )}
-                                    >
-                                        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", t.color)}>
-                                            <t.icon className="w-6 h-6" />
-                                        </div>
-                                        <span className="text-[0.55rem] font-black uppercase tracking-tighter leading-tight italic">{t.label}</span>
-                                    </button>
-                                ))}
+            {adminSubView === 'menu' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-up">
+                    {[
+                        { id: 'study', title: 'Forge Material', desc: 'Syllabus, Videos, Notes', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                        { id: 'news', title: 'Broadcast Station', desc: 'Global News & Articles', icon: Newspaper, color: 'text-rose-500', bg: 'bg-rose-50' },
+                        { id: 'notices', title: 'Board Dispatch', desc: 'Live Ticker Updates', icon: Megaphone, color: 'text-blue-500', bg: 'bg-blue-50' },
+                        { id: 'analytics', title: 'Command Stats', desc: 'Platform Performance', icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' }
+                    ].map(item => (
+                        <button 
+                            key={item.id}
+                            onClick={() => { setActiveTab(item.id as any); setAdminSubView('form'); }}
+                            className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 text-left"
+                        >
+                            <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center shrink-0 border border-transparent group-hover:scale-110 transition-transform", item.bg, item.color)}>
+                                <item.icon className="w-10 h-10" />
                             </div>
-                        </div>
-
-                        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] space-y-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rotate-45 translate-x-16 -translate-y-16" />
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-                                <div>
-                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Forge Resource</h2>
-                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Profile: {contentType.replace('_', ' ')}</p>
-                                </div>
-                                <select 
-                                    className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-blue-600 ring-4 ring-blue-500/5 focus:ring-blue-500/10"
-                                    value={studyForm.subject}
-                                    onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
-                                >
-                                    {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
-                                </select>
+                            <div>
+                                <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{item.title}</h3>
+                                <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1">{item.desc}</p>
                             </div>
+                            <ChevronRight className="w-8 h-8 text-slate-200 ml-auto group-hover:text-slate-400 transition-colors" />
+                        </button>
+                    ))}
+                </div>
+            ) : (
+                <div className="space-y-10 animate-fade-up">
+                    <div className="flex items-center gap-4 px-6">
+                        <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
+                        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">
+                            {activeTab === 'study' && 'Study Hub Manager'}
+                            {activeTab === 'news' && 'News Broadcaster'}
+                            {activeTab === 'notices' && 'Ticker Board Editor'}
+                            {activeTab === 'analytics' && 'System Analytics'}
+                        </h2>
+                    </div>
 
-                            <form onSubmit={handleStudySubmit} className="space-y-8 relative z-10">
-                                <div className="space-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Resource Title</label>
-                                        <input 
-                                            required
-                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none focus:bg-white focus:ring-8 focus:ring-blue-500/5 transition-all shadow-inner"
-                                            placeholder="Enter descriptive title..."
-                                            value={studyForm.title}
-                                            onChange={e => setStudyForm({...studyForm, title: e.target.value})}
-                                        />
-                                    </div>
-
-                                    {(contentType === 'video' || contentType === 'digital_textbook') && (
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">{contentType === 'video' ? 'YouTube URL' : 'Cloud Resource Link (Google Drive/PDF)'}</label>
-                                            <input 
-                                                required
-                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none focus:bg-white focus:ring-8 focus:ring-rose-500/5 transition-all text-rose-600"
-                                                placeholder="https://..."
-                                                value={studyForm.link_url}
-                                                onChange={e => setStudyForm({...studyForm, link_url: e.target.value})}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {contentType === 'shared_note' && (
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Markdown Script (Rich Text)</label>
-                                            <textarea 
-                                                required
-                                                rows={10}
-                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-sm outline-none resize-none font-mono focus:bg-white focus:ring-8 focus:ring-amber-500/5 transition-all text-slate-700"
-                                                placeholder="### Unit Title\n- Key points...\n$$ E = mc^2 $$"
-                                                value={studyForm.text_content}
-                                                onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {contentType === 'mcq' && (
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">MCQ Payload (Strict JSON)</label>
-                                            <textarea 
-                                                required
-                                                rows={8}
-                                                className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none focus:bg-white focus:ring-8 focus:ring-indigo-500/5 transition-all text-indigo-600 font-mono"
-                                                placeholder='{ "title": "Example", "questions": [ { "q": "...", "a": "..." } ] }'
-                                                value={studyForm.text_content}
-                                                onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {(['chapter', 'note', 'note_archive', 'mcq'].includes(contentType)) && (
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Attachment Core (Max 50MB)</label>
-                                            <input 
-                                                type="file"
-                                                className="hidden"
-                                                id="adminHubFile"
-                                                onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
-                                            />
-                                            <label 
-                                                htmlFor="adminHubFile"
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'study' && (
+                            <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                                <section className="space-y-4">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Select Blueprint</h3>
+                                    <div className="flex gap-3 overflow-x-auto pb-4 px-2 no-scrollbar">
+                                        {studyTypes.map(t => (
+                                            <button 
+                                                key={t.id}
+                                                onClick={() => setContentType(t.id)}
                                                 className={cn(
-                                                    "w-full flex flex-col items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 hover:border-slate-200 transition-all",
-                                                    studyForm.file && "border-blue-500 border-solid bg-blue-50"
+                                                    "shrink-0 p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center text-center gap-3 min-w-[120px]",
+                                                    contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.05]" : "bg-white/50 border-slate-50 hover:bg-white hover:border-slate-200"
                                                 )}
                                             >
-                                                <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-blue-500" : "text-slate-300")} />
-                                                <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
-                                                    {studyForm.file ? studyForm.file.name : "Select or Drop Resource Asset"}
-                                                </p>
+                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", t.color)}>
+                                                    <t.icon className="w-6 h-6" />
+                                                </div>
+                                                <span className="text-[0.6rem] font-black uppercase tracking-tighter leading-tight italic">{t.label}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8 relative overflow-hidden">
+                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+                                        <div>
+                                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Forge Resource</h2>
+                                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Status: Ready for Sync • {contentType.replace('_', ' ')}</p>
+                                        </div>
+                                        <select 
+                                            className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-blue-600"
+                                            value={studyForm.subject}
+                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
+                                        >
+                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <form onSubmit={handleStudySubmit} className="space-y-8 relative z-10">
+                                        <div className="space-y-6">
+                                            <div className="space-y-2">
+                                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Resource Title</label>
+                                                <input 
+                                                    required
+                                                    className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
+                                                    placeholder="Enter descriptive title..."
+                                                    value={studyForm.title}
+                                                    onChange={e => setStudyForm({...studyForm, title: e.target.value})}
+                                                />
+                                            </div>
+
+                                            {contentType === 'chapter' && (
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                    <div className="space-y-2">
+                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Weight (Marks)</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
+                                                            placeholder="e.g. 10"
+                                                            value={studyForm.marks}
+                                                            onChange={e => setStudyForm({...studyForm, marks: e.target.value})}
+                                                        />
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Key Topics (Comma Separated)</label>
+                                                        <input 
+                                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
+                                                            placeholder="Force, Gravity, Pressure..."
+                                                            value={studyForm.topics}
+                                                            onChange={e => setStudyForm({...studyForm, topics: e.target.value})}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {(contentType === 'video' || contentType === 'digital_textbook' || contentType === 'model_question') && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">
+                                                        {contentType === 'video' ? 'YouTube URL' : 'Cloud Link (Optional if uploading file)'}
+                                                    </label>
+                                                    <input 
+                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none text-rose-600"
+                                                        placeholder="https://..."
+                                                        value={studyForm.link_url}
+                                                        onChange={e => setStudyForm({...studyForm, link_url: e.target.value})}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {contentType === 'shared_note' && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Markdown Script (Rich Text)</label>
+                                                    <textarea 
+                                                        required
+                                                        rows={10}
+                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-sm outline-none resize-none font-mono text-slate-700"
+                                                        placeholder="### Unit Title\n- Key points...\n"
+                                                        value={studyForm.text_content}
+                                                        onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {contentType === 'mcq' && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">MCQ Payload (Strict JSON)</label>
+                                                    <textarea 
+                                                        required
+                                                        rows={8}
+                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none text-indigo-600 font-mono"
+                                                        placeholder='{ "setName": "Example", "questions": [ { "q": "...", "a": "...", "correct": "a" } ] }'
+                                                        value={studyForm.text_content}
+                                                        onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            {(['chapter', 'note', 'note_archive', 'mcq', 'model_question'].includes(contentType)) && (
+                                                <div className="space-y-2">
+                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Attachment Core (Max 50MB)</label>
+                                                    <input type="file" className="hidden" id="adminHubFile" onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})} />
+                                                    <label 
+                                                        htmlFor="adminHubFile"
+                                                        className={cn(
+                                                            "w-full flex flex-col items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 transition-all",
+                                                            studyForm.file && "border-blue-500 border-solid bg-blue-50"
+                                                        )}
+                                                    >
+                                                        <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-blue-500" : "text-slate-300")} />
+                                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
+                                                            {studyForm.file ? studyForm.file.name : "Select or Drop Resource Asset"}
+                                                        </p>
+                                                    </label>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
+                                            {isUploading ? <Flame className="w-5 h-5 animate-pulse" /> : <Sparkles className="w-5 h-5" />}
+                                            <span>{isUploading ? "Syncing Logic..." : "Commit to Hub"}</span>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 ml-6">Resource Registry</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {liveMaterials.map(m => (
+                                            <div key={m.id} className="bg-white p-6 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                                                <div className="flex items-center gap-6 min-w-0">
+                                                    <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 uppercase italic font-black text-[0.6rem]">
+                                                        {m.type.slice(0, 3)}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[0.55rem] font-black text-blue-600 uppercase tracking-widest">{m.subject}</p>
+                                                        <h4 className="text-md font-black text-slate-900 uppercase truncate tracking-tight italic">{m.title}</h4>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => handleDelete('study_hub', m.id)} className="w-12 h-12 bg-rose-50 text-rose-300 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100">
+                                                    <Trash2 className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'news' && (
+                            <motion.div key="admin-news" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
+                                     <div className="flex justify-between items-center">
+                                        <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Broadcast Station</h2>
+                                        <button 
+                                            type="button"
+                                            onClick={() => setNewsForm({...newsForm, is_notice: !newsForm.is_notice})}
+                                            className={cn(
+                                                "px-8 py-3 rounded-full font-black text-[0.65rem] uppercase tracking-widest transition-all shadow-xl",
+                                                newsForm.is_notice ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"
+                                            )}
+                                        >
+                                            {newsForm.is_notice ? 'Notice Only' : 'Global News'}
+                                        </button>
+                                    </div>
+
+                                    <form onSubmit={handleNewsSubmit} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Article Headline</label>
+                                            <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={newsForm.title} onChange={e => setNewsForm({...newsForm, title: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Content Body</label>
+                                            <textarea required rows={6} className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-sm outline-none resize-none" value={newsForm.content} onChange={e => setNewsForm({...newsForm, content: e.target.value})} />
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <select className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-xl font-bold" value={newsForm.category} onChange={e => setNewsForm({...newsForm, category: e.target.value})}>
+                                                <option value="general">General</option>
+                                                <option value="exam">Exam Board</option>
+                                                <option value="result">Exam Result</option>
+                                            </select>
+                                            <input type="file" className="hidden" id="adminNewsFile" onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})} />
+                                            <label htmlFor="adminNewsFile" className="flex items-center justify-center p-4 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer font-black text-[0.65rem] uppercase tracking-widest text-slate-500">
+                                                {newsForm.image ? newsForm.image.name : 'Upload Banner Asset'}
                                             </label>
                                         </div>
-                                    )}
+                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Broadcast Entry</button>
+                                    </form>
                                 </div>
-
-                                <button 
-                                    disabled={isUploading}
-                                    className="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                                >
-                                    {isUploading ? <Flame className="w-5 h-5 animate-pulse" /> : <Sparkles className="w-5 h-5" />}
-                                    <span>{isUploading ? "Syncing Logic..." : "Commit to Hub"}</span>
-                                </button>
-                            </form>
-                        </div>
-
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between px-6">
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Resource Registry</h3>
-                                <div className="px-5 py-1.5 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em]">
-                                    {liveMaterials.length} Active Nodes
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {liveMaterials.map(m => (
-                                    <div key={m.id} className="bg-white p-6 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                                        <div className="flex items-center gap-6 min-w-0">
-                                            <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 group-hover:bg-blue-50 group-hover:text-blue-500 transition-all italic font-black text-[0.6rem] uppercase">
-                                                {m.type.slice(0, 3)}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <p className="text-[0.55rem] font-black text-blue-600 uppercase tracking-widest">{m.subject} • {m.type.replace('_', ' ')}</p>
-                                                <h4 className="text-md font-black text-slate-900 uppercase truncate tracking-tight leading-tight">{m.title}</h4>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-2 shrink-0">
-                                             <button 
-                                                onClick={() => window.open(m.file_url || m.link_url, '_blank')}
-                                                className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-emerald-50 hover:text-emerald-500 transition-all border border-slate-100"
-                                             >
-                                                 <ExternalLink className="w-5 h-5" />
-                                             </button>
-                                             <button 
-                                                onClick={() => handleDelete('study_hub', m.id)}
-                                                className="w-12 h-12 bg-rose-50 text-rose-300 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 shadow-sm shadow-rose-500/10"
-                                             >
-                                                 <Trash2 className="w-5 h-5" />
-                                             </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {activeTab === 'news' && (
-                    <motion.div key="admin-news" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-10">
-                         <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
-                             <div className="flex justify-between items-center">
-                                <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Broadcast Station</h2>
-                                <button 
-                                    type="button"
-                                    onClick={() => setNewsForm({...newsForm, is_notice: !newsForm.is_notice})}
-                                    className={cn(
-                                        "px-8 py-3 rounded-full font-black text-[0.65rem] uppercase tracking-widest transition-all shadow-xl",
-                                        newsForm.is_notice ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"
-                                    )}
-                                >
-                                    {newsForm.is_notice ? 'Notice Only' : 'Global News'}
-                                </button>
-                            </div>
-
-                            <form onSubmit={handleNewsSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Article Headline</label>
-                                    <input 
-                                        required
-                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md outline-none"
-                                        placeholder="Headline here..."
-                                        value={newsForm.title}
-                                        onChange={e => setNewsForm({...newsForm, title: e.target.value})}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Content Body</label>
-                                    <textarea 
-                                        required
-                                        rows={6}
-                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-sm outline-none resize-none"
-                                        placeholder="Write details..."
-                                        value={newsForm.content}
-                                        onChange={e => setNewsForm({...newsForm, content: e.target.value})}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <select 
-                                        className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-xl font-bold"
-                                        value={newsForm.category}
-                                        onChange={e => setNewsForm({...newsForm, category: e.target.value})}
-                                    >
-                                        <option value="general">General</option>
-                                        <option value="exam">Exam Board</option>
-                                        <option value="result">Exam Result</option>
-                                    </select>
-                                    <input 
-                                        type="file"
-                                        className="hidden"
-                                        id="adminNewsFile"
-                                        onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
-                                    />
-                                    <label 
-                                        htmlFor="adminNewsFile"
-                                        className="flex items-center justify-center p-4 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer hover:bg-slate-100 transition-all font-black text-[0.65rem] uppercase tracking-widest text-slate-500"
-                                    >
-                                        {newsForm.image ? newsForm.image.name : 'Upload Banner Asset'}
-                                    </label>
-                                </div>
-
-                                <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Broadcast Entry</button>
-                            </form>
-                        </div>
-                        <div className="space-y-4">
-                             {liveNews.map(n => (
-                                 <div key={n.id} className="bg-white p-7 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group">
-                                     <div className="flex items-center gap-6">
-                                         <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden shrink-0">
-                                              {n.image_url ? <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center"><Newspaper className="text-slate-300" /></div>}
+                                <div className="space-y-4">
+                                     {liveNews.map(n => (
+                                         <div key={n.id} className="bg-white p-7 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group">
+                                             <div className="flex items-center gap-6">
+                                                 <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden shrink-0">
+                                                      {n.image_url ? <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center"><Newspaper className="text-slate-300" /></div>}
+                                                 </div>
+                                                 <div>
+                                                      <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-widest mb-1 block">{n.category}</span>
+                                                      <h4 className="font-black text-slate-800 uppercase truncate text-md leading-tight">{n.title}</h4>
+                                                 </div>
+                                             </div>
+                                             <button onClick={() => handleDelete('news_notices', n.id)} className="w-12 h-12 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
                                          </div>
-                                         <div>
-                                              <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-widest mb-1 block">{n.category}</span>
-                                              <h4 className="font-black text-slate-800 uppercase truncate text-md leading-tight">{n.title}</h4>
-                                         </div>
-                                     </div>
-                                     <button onClick={() => handleDelete('news_notices', n.id)} className="w-12 h-12 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
-                                 </div>
-                             ))}
-                        </div>
-                    </motion.div>
-                )}
-
-                {activeTab === 'notices' && (
-                    <motion.div key="admin-notices" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-10">
-                         <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
-                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Live Board Dispatch</h2>
-                            <form onSubmit={handleNoticeSubmit} className="space-y-6">
-                                <div className="space-y-2">
-                                     <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Ticker Message</label>
-                                     <input 
-                                        required
-                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md"
-                                        placeholder="e.g. Science Board Exam in 15 days..."
-                                        value={noticeForm.text}
-                                        onChange={e => setNoticeForm({...noticeForm, text: e.target.value})}
-                                    />
-                                </div>
-                                <div className="grid grid-cols-3 gap-4">
-                                     {['info', 'alert', 'update'].map(type => (
-                                         <button 
-                                            key={type}
-                                            type="button"
-                                            onClick={() => setNoticeForm({...noticeForm, type: type as any})}
-                                            className={cn(
-                                                "py-4 rounded-2xl font-black text-[0.6rem] uppercase tracking-widest border-2 transition-all shadow-sm",
-                                                noticeForm.type === type ? "bg-slate-900 text-white border-slate-900 scale-[1.05]" : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
-                                            )}
-                                         >
-                                             {type}
-                                         </button>
                                      ))}
                                 </div>
-                                <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Deploy Ticker</button>
-                            </form>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {liveNotices.map(n => (
-                                <div key={n.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm group">
-                                     <div className="flex items-center gap-5">
-                                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shadow-md", n.type === 'alert' ? 'bg-rose-500 text-white' : 'bg-blue-500 text-white')}>
-                                             <Megaphone className="w-5 h-5" />
-                                         </div>
-                                         <p className="font-bold text-slate-800 text-sm italic">{n.text}</p>
-                                     </div>
-                                     <button onClick={() => handleDelete('notices', n.id)} className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
-                                </div>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
+                            </motion.div>
+                        )}
 
-                {activeTab === 'analytics' && (
-                    <motion.div key="admin-metrics" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-20">
-                         {[
-                             { label: 'Active Materials', val: liveMaterials.length, icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                             { label: 'Broadcast Posts', val: liveNews.length, icon: Newspaper, color: 'text-blue-500', bg: 'bg-blue-50' },
-                             { label: 'Live Tickers', val: liveNotices.length, icon: Megaphone, color: 'text-rose-500', bg: 'bg-rose-50' },
-                             { label: 'System Health', val: 'Optimal', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-50' }
-                         ].map(stat => (
-                             <div key={stat.label} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-center text-center space-y-4">
-                                 <div className={cn("w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-lg", stat.bg, stat.color)}>
-                                     <stat.icon className="w-8 h-8" />
+                        {activeTab === 'notices' && (
+                            <motion.div key="admin-notices" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
+                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Live Board Dispatch</h2>
+                                    <form onSubmit={handleNoticeSubmit} className="space-y-6">
+                                        <div className="space-y-2">
+                                             <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Ticker Message</label>
+                                             <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md" placeholder="e.g. Science Board Exam in 15 days..." value={noticeForm.text} onChange={e => setNoticeForm({...noticeForm, text: e.target.value})} />
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-4">
+                                             {['info', 'alert', 'update'].map(type => (
+                                                 <button key={type} type="button" onClick={() => setNoticeForm({...noticeForm, type: type as any})} className={cn("py-4 rounded-2xl font-black text-[0.6rem] uppercase tracking-widest border-2 transition-all shadow-sm", noticeForm.type === type ? "bg-slate-900 text-white border-slate-900 scale-[1.05]" : "bg-white text-slate-400 border-slate-50 hover:border-slate-200")}>{type}</button>
+                                             ))}
+                                        </div>
+                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Push to Board</button>
+                                    </form>
+                                </div>
+                                <div className="space-y-4">
+                                     {liveNotices.map(n => (
+                                         <div key={n.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
+                                             <div className="flex items-center gap-4">
+                                                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", n.type === 'alert' ? 'bg-rose-50 text-rose-500' : (n.type === 'update' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'))}>
+                                                      <Megaphone className="w-5 h-5" />
+                                                  </div>
+                                                  <p className="font-bold text-slate-700 uppercase tracking-tighter text-sm">{n.text}</p>
+                                             </div>
+                                             <button onClick={() => handleDelete('notices', n.id)} className="w-10 h-10 bg-rose-50 text-rose-300 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                                         </div>
+                                     ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'analytics' && (
+                             <motion.div key="admin-analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                     {[
+                                         { label: 'Total Nodes', val: liveMaterials.length, icon: BrainCircuit, color: 'text-blue-500' },
+                                         { label: 'Broadcasts', val: liveNews.length, icon: Newspaper, color: 'text-rose-500' },
+                                         { label: 'Active Ticks', val: liveNotices.length, icon: Megaphone, color: 'text-amber-500' }
+                                     ].map((s, i) => (
+                                         <div key={i} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl flex flex-col items-center">
+                                             <s.icon className={cn("w-10 h-10 mb-4", s.color)} />
+                                             <span className="text-4xl font-black italic tracking-tighter text-slate-900">{s.val}</span>
+                                             <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-2">{s.label}</span>
+                                         </div>
+                                     ))}
                                  </div>
-                                 <div>
-                                     <p className="text-4xl font-black italic tracking-tighter text-slate-900">{stat.val}</p>
-                                     <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</p>
+                                 <div className="bg-slate-900 p-12 rounded-[4rem] text-white text-center relative overflow-hidden">
+                                     <div className="relative z-10">
+                                         <h3 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Platform Integrity</h3>
+                                         <p className="text-slate-400 font-bold uppercase text-[0.65rem] tracking-[0.3em] mb-8">Node Synchronization Protocol: V4.2.0-Alpha</p>
+                                         <div className="inline-flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
+                                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                             All Systems Operational
+                                         </div>
+                                     </div>
+                                     <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-transparent pointer-events-none" />
                                  </div>
-                             </div>
-                         ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                             </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            )}
         </div>
     );
 };
