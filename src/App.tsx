@@ -1747,12 +1747,29 @@ const NoticeBoard = () => {
 };
 
 const NewsPage = () => {
-    const { data } = useApp();
+    const { data, liveNews } = useApp();
     const [activeTab, setActiveTab] = useState<'All' | 'Exams' | 'Results' | 'General'>('All');
 
-    const filteredNews = data.news.filter(n => {
+    // Combine static news and live news from Supabase
+    const combinedNews = [
+        ...liveNews.map(n => ({
+            id: n.id,
+            title: n.title,
+            body: n.content,
+            date: new Date(n.created_at).toLocaleDateString('ne-NP'),
+            tag: n.category?.toUpperCase() || 'GENERAL',
+            tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
+            tagColor: 'text-white',
+            imageUrl: n.image_url
+        })),
+        ...data.news
+    ];
+
+    const filteredNews = combinedNews.filter(n => {
         if (activeTab === 'All') return true;
-        return n.tag === activeTab;
+        const normalizedTag = n.tag.toLowerCase();
+        const normalizedActiveTab = activeTab.toLowerCase().slice(0, -1); // Remove 's' from Results/Exams
+        return normalizedTag.includes(normalizedActiveTab) || normalizedTag === activeTab.toLowerCase();
     });
 
     return (
@@ -3161,9 +3178,11 @@ const ChapterDetail = () => {
 
 const VideoList = () => {
     const { name } = useParams();
-    const { data } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+
+    const dynamicVideos = liveMaterials.filter(m => m.subject === name && m.type === 'video');
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3173,6 +3192,27 @@ const VideoList = () => {
             </div>
 
             <div className="space-y-6">
+                {/* Dynamic Videos */}
+                {dynamicVideos.map((v: any) => (
+                    <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
+                        <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
+                             <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
+                                 <button onClick={() => window.open(v.file_url)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
+                                     <PlayCircle className="w-10 h-10 fill-current" />
+                                 </button>
+                             </div>
+                        </div>
+                        <div className="p-8">
+                             <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                 <TrendingUp className="w-3 h-3" /> New Upload
+                             </p>
+                             <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{v.title}</h3>
+                             <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Hub • Official Asset</p>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Initial Videos */}
                 {sub.videos.map((v: any) => (
                     <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
                         <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700">
@@ -3202,9 +3242,11 @@ const VideoList = () => {
 
 const PdfList = () => {
     const { name } = useParams();
-    const { data } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+
+    const dynamicPdfs = liveMaterials.filter(m => m.subject === name && (m.type === 'chapter' || m.type === 'note'));
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3214,6 +3256,27 @@ const PdfList = () => {
             </div>
 
             <div className="space-y-4">
+                {/* Dynamic Content */}
+                {dynamicPdfs.map((p: any) => (
+                    <div 
+                        key={p.id} 
+                        onClick={() => window.open(p.file_url)}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all cursor-pointer"
+                    >
+                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-110 transition-transform">
+                            <BookOpen className="w-8 h-8" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{p.title}</h3>
+                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">{p.type} • Recent Upload</p>
+                        </div>
+                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                            <Download className="w-5 h-5" />
+                        </button>
+                    </div>
+                ))}
+
+                {/* Static Content */}
                 {sub.pdfs.map((p: any) => (
                     <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all">
                         <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shrink-0 border border-rose-100 group-hover:scale-110 transition-transform">
@@ -3235,7 +3298,10 @@ const PdfList = () => {
 
 const NoteList = () => {
     const { name } = useParams();
+    const { liveMaterials } = useApp();
     const navigate = useNavigate();
+
+    const dynamicNotes = liveMaterials.filter(m => m.subject === name && m.type === 'note');
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3243,10 +3309,32 @@ const NoteList = () => {
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Repository</h1>
             </div>
-            <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
-                <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">No external notes yet</h2>
-                <p className="text-[0.75rem] text-slate-400 font-bold max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest">Contribute your notes to earn XP for your district rank.</p>
+
+            <div className="space-y-4">
+                {dynamicNotes.length > 0 ? dynamicNotes.map((n: any) => (
+                    <div 
+                        key={n.id} 
+                        onClick={() => window.open(n.file_url)}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer"
+                    >
+                        <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-110 transition-transform">
+                            <PenTool className="w-8 h-8" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{n.title}</h3>
+                            <p className="text-[0.65rem] text-emerald-400 font-bold leading-relaxed uppercase tracking-widest">Handwritten Note • Shared Legacy</p>
+                        </div>
+                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                            <ArrowLeft className="w-5 h-5 rotate-180" />
+                        </button>
+                    </div>
+                )) : (
+                    <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
+                        <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">No external notes yet</h2>
+                        <p className="text-[0.75rem] text-slate-400 font-bold max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest">Contribute your notes to earn XP for your district rank.</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -3254,9 +3342,11 @@ const NoteList = () => {
 
 const ModelList = () => {
     const { name } = useParams();
-    const { data } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+
+    const dynamicModels = liveMaterials.filter(m => m.subject === name && (m.type === 'model_question' || m.type === 'Mcq test'));
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3266,6 +3356,27 @@ const ModelList = () => {
             </div>
 
             <div className="space-y-4">
+                {/* Dynamic Content */}
+                {dynamicModels.map((m: any) => (
+                    <div 
+                        key={m.id} 
+                        onClick={() => window.open(m.file_url)}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all cursor-pointer"
+                    >
+                        <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-110 transition-transform">
+                            <ClipboardCheck className="w-8 h-8" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{m.title}</h3>
+                            <p className="text-[0.65rem] text-indigo-400 font-bold leading-relaxed uppercase tracking-widest">{m.type} • Board Prep</p>
+                        </div>
+                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                            <Download className="w-5 h-5" />
+                        </button>
+                    </div>
+                ))}
+
+                {/* Static Content */}
                 {sub.modelQuestions?.length > 0 ? sub.modelQuestions.map((q: any) => (
                     <div key={q.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
                         <span className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-3 block">Board Perspective</span>
@@ -4796,7 +4907,7 @@ const AuthPage = () => {
 // ════════════════════════════════════════════
 
 const AdminPortalPage = () => {
-    const { user } = useApp();
+    const { user, liveNews, liveMaterials, fetchLiveNews, fetchLiveMaterials } = useApp();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'study' | 'news'>('study');
     const [isUploading, setIsUploading] = useState(false);
@@ -4835,7 +4946,7 @@ const AdminPortalPage = () => {
         const fileName = `${Math.random()}.${fileExt}`;
         const filePath = `${fileName}`;
 
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
             .from(bucket)
             .upload(filePath, file);
 
@@ -4868,6 +4979,7 @@ const AdminPortalPage = () => {
             if (error) throw error;
             alert("Study material uploaded successfully!");
             setStudyForm({ title: '', subject: 'Science', type: 'note', file: null });
+            fetchLiveMaterials();
         } catch (error: any) {
             console.error(error);
             alert("Error: " + error.message);
@@ -4899,6 +5011,7 @@ const AdminPortalPage = () => {
             if (error) throw error;
             alert("News posted successfully!");
             setNewsForm({ title: '', content: '', category: 'general', image: null });
+            fetchLiveNews();
         } catch (error: any) {
             console.error(error);
             alert("Error: " + error.message);
@@ -4907,13 +5020,35 @@ const AdminPortalPage = () => {
         }
     };
 
+    const handleDeleteMaterial = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this material?")) return;
+        try {
+            const { error } = await supabase.from('study_hub').delete().eq('id', id);
+            if (error) throw error;
+            fetchLiveMaterials();
+        } catch (err: any) {
+            alert("Error deleting: " + err.message);
+        }
+    };
+
+    const handleDeleteNews = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this news?")) return;
+        try {
+            const { error } = await supabase.from('news_notices').delete().eq('id', id);
+            if (error) throw error;
+            fetchLiveNews();
+        } catch (err: any) {
+            alert("Error deleting: " + err.message);
+        }
+    };
+
     return (
         <div className="space-y-8 pb-24">
             <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="p-2 text-slate-400"><ArrowLeft /></button>
+                <button onClick={() => navigate(-1)} className="p-2 text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft /></button>
                 <div>
                     <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Admin Portal</h1>
-                    <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest mt-1">Manage Pathshala Content</p>
+                    <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest mt-1">Full Content Governance</p>
                 </div>
             </header>
 
@@ -4942,172 +5077,243 @@ const AdminPortalPage = () => {
                 {activeTab === 'study' ? (
                     <motion.div 
                         key="study"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="space-y-8"
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-                                <BookOpen className="w-6 h-6" />
+                        {/* FORM AREA */}
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                                    <BookOpen className="w-6 h-6" />
+                                </div>
+                                <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Add Study Material</h2>
                             </div>
-                            <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Add Study Material</h2>
+
+                            <form onSubmit={handleStudySubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
+                                    <input 
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                                        placeholder="Enter material title..."
+                                        value={studyForm.title}
+                                        onChange={e => setStudyForm({...studyForm, title: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Subject</label>
+                                        <select 
+                                            className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                            value={studyForm.subject}
+                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
+                                        >
+                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Type</label>
+                                        <select 
+                                            className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                            value={studyForm.type}
+                                            onChange={e => setStudyForm({...studyForm, type: e.target.value})}
+                                        >
+                                            <option value="chapter">Chapter</option>
+                                            <option value="note">Note</option>
+                                            <option value="video">Video</option>
+                                            <option value="model_question">Model Question</option>
+                                            <option value="Mcq test">MCQ Test</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">File</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="file"
+                                            className="hidden"
+                                            id="hubFile"
+                                            onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
+                                        />
+                                        <label 
+                                            htmlFor="hubFile"
+                                            className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-200 transition-all group"
+                                        >
+                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
+                                                <Plus className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
+                                                    {studyForm.file ? studyForm.file.name : "Choose or drag file"}
+                                                </p>
+                                                <p className="text-[0.6rem] font-bold text-slate-400 uppercase">PDF, Video or Image (Max 50MB)</p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    disabled={isUploading}
+                                    className="w-full py-5 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                                >
+                                    {isUploading ? "Uploading..." : "Save Material"}
+                                </button>
+                            </form>
                         </div>
 
-                        <form onSubmit={handleStudySubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
-                                <input 
-                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
-                                    placeholder="Enter material title..."
-                                    value={studyForm.title}
-                                    onChange={e => setStudyForm({...studyForm, title: e.target.value})}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Subject</label>
-                                    <select 
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
-                                        value={studyForm.subject}
-                                        onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
-                                    >
-                                        {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Type</label>
-                                    <select 
-                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
-                                        value={studyForm.type}
-                                        onChange={e => setStudyForm({...studyForm, type: e.target.value})}
-                                    >
-                                        <option value="chapter">Chapter</option>
-                                        <option value="note">Note</option>
-                                        <option value="video">Video</option>
-                                        <option value="model_question">Model Question</option>
-                                        <option value="Mcq test">MCQ Test</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">File</label>
-                                <div className="relative">
-                                    <input 
-                                        type="file"
-                                        className="hidden"
-                                        id="hubFile"
-                                        onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
-                                    />
-                                    <label 
-                                        htmlFor="hubFile"
-                                        className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-200 transition-all group"
-                                    >
-                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
-                                            <Plus className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
-                                                {studyForm.file ? studyForm.file.name : "Choose or drag file"}
-                                            </p>
-                                            <p className="text-[0.6rem] font-bold text-slate-400 uppercase">PDF, Video or Image (Max 50MB)</p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button 
-                                disabled={isUploading}
-                                className="w-full py-5 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                            >
-                                {isUploading ? "Uploading..." : "Save Material"}
-                            </button>
-                        </form>
+                        {/* LIST AREA */}
+                        <div className="space-y-4">
+                             <h3 className="text-lg font-black italic tracking-tighter uppercase text-slate-800 ml-4">Active Materials ({liveMaterials.length})</h3>
+                             <div className="space-y-3">
+                                 {liveMaterials.map(m => (
+                                     <div key={m.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group">
+                                         <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 shrink-0">
+                                              {m.type === 'video' ? <PlayCircle className="w-6 h-6" /> : <FileText className="w-6 h-6" />}
+                                         </div>
+                                         <div className="flex-1 min-w-0">
+                                              <p className="text-xs font-black text-blue uppercase tracking-widest">{m.subject} • {m.type}</p>
+                                              <h4 className="font-black text-slate-800 uppercase truncate text-sm">{m.title}</h4>
+                                         </div>
+                                         <button 
+                                            onClick={() => handleDeleteMaterial(m.id)}
+                                            className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-colors shrink-0"
+                                         >
+                                              <Trash2 className="w-4 h-4" />
+                                         </button>
+                                     </div>
+                                 ))}
+                                 {liveMaterials.length === 0 && (
+                                     <div className="text-center py-10 opacity-30">
+                                          <p className="font-black uppercase tracking-widest text-xs">No user-uploaded materials</p>
+                                     </div>
+                                 )}
+                             </div>
+                        </div>
                     </motion.div>
                 ) : (
                     <motion.div 
                         key="news"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6"
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        className="space-y-8"
                     >
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
-                                <Newspaper className="w-6 h-6" />
+                        {/* FORM AREA */}
+                        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                                    <Newspaper className="w-6 h-6" />
+                                </div>
+                                <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Post News/Notice</h2>
                             </div>
-                            <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Post News/Notice</h2>
+
+                            <form onSubmit={handleNewsSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
+                                    <input 
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                        placeholder="Notice headline..."
+                                        value={newsForm.title}
+                                        onChange={e => setNewsForm({...newsForm, title: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Content</label>
+                                    <textarea 
+                                        rows={4}
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
+                                        placeholder="Enter full notice content..."
+                                        value={newsForm.content}
+                                        onChange={e => setNewsForm({...newsForm, content: e.target.value})}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Category</label>
+                                    <select 
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                        value={newsForm.category}
+                                        onChange={e => setNewsForm({...newsForm, category: e.target.value})}
+                                    >
+                                        <option value="general">General</option>
+                                        <option value="exam">Exam</option>
+                                        <option value="result">Result</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Banner Image (Optional)</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="file"
+                                            className="hidden"
+                                            id="newsFile"
+                                            onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
+                                        />
+                                        <label 
+                                            htmlFor="newsFile"
+                                            className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition-all group"
+                                        >
+                                            <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                <Plus className="w-6 h-6" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
+                                                    {newsForm.image ? newsForm.image.name : "Upload Cover Image"}
+                                                </p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    disabled={isUploading}
+                                    className="w-full py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                                >
+                                    {isUploading ? "Uploading..." : "Publish Notice"}
+                                </button>
+                            </form>
                         </div>
 
-                        <form onSubmit={handleNewsSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
-                                <input 
-                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                    placeholder="Notice headline..."
-                                    value={newsForm.title}
-                                    onChange={e => setNewsForm({...newsForm, title: e.target.value})}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Content</label>
-                                <textarea 
-                                    rows={4}
-                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
-                                    placeholder="Enter full notice content..."
-                                    value={newsForm.content}
-                                    onChange={e => setNewsForm({...newsForm, content: e.target.value})}
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Category</label>
-                                <select 
-                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
-                                    value={newsForm.category}
-                                    onChange={e => setNewsForm({...newsForm, category: e.target.value})}
-                                >
-                                    <option value="general">General</option>
-                                    <option value="exam">Exam</option>
-                                    <option value="result">Result</option>
-                                </select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Banner Image (Optional)</label>
-                                <div className="relative">
-                                    <input 
-                                        type="file"
-                                        className="hidden"
-                                        id="newsFile"
-                                        onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
-                                    />
-                                    <label 
-                                        htmlFor="newsFile"
-                                        className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition-all group"
-                                    >
-                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
-                                            <Plus className="w-6 h-6" />
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
-                                                {newsForm.image ? newsForm.image.name : "Upload Cover Image"}
-                                            </p>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button 
-                                disabled={isUploading}
-                                className="w-full py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
-                            >
-                                {isUploading ? "Uploading..." : "Publish Notice"}
-                            </button>
-                        </form>
+                        {/* LIST AREA */}
+                        <div className="space-y-4">
+                             <h3 className="text-lg font-black italic tracking-tighter uppercase text-slate-800 ml-4">Published News ({liveNews.length})</h3>
+                             <div className="space-y-4">
+                                 {liveNews.map(n => (
+                                     <div key={n.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group">
+                                         <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden shrink-0">
+                                              {n.image_url ? (
+                                                  <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                              ) : (
+                                                  <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                       <Newspaper className="w-8 h-8" />
+                                                  </div>
+                                              )}
+                                         </div>
+                                         <div className="flex-1 min-w-0">
+                                              <p className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-1">{n.category} • {new Date(n.created_at).toLocaleDateString()}</p>
+                                              <h4 className="font-black text-slate-800 uppercase truncate text-sm mb-1">{n.title}</h4>
+                                              <p className="text-xs text-slate-400 font-bold line-clamp-1">{n.content}</p>
+                                         </div>
+                                         <button 
+                                            onClick={() => handleDeleteNews(n.id)}
+                                            className="w-10 h-10 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-100 transition-colors shrink-0"
+                                         >
+                                              <Trash2 className="w-4 h-4" />
+                                         </button>
+                                     </div>
+                                 ))}
+                                 {liveNews.length === 0 && (
+                                     <div className="text-center py-10 opacity-30">
+                                          <p className="font-black uppercase tracking-widest text-xs">No live news posted</p>
+                                     </div>
+                                 )}
+                             </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -5231,7 +5437,35 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data] = useState<AppData>(INITIAL_DATA);
+    const [liveNews, setLiveNews] = useState<any[]>([]);
+    const [liveMaterials, setLiveMaterials] = useState<any[]>([]);
     const [isInitializing, setIsInitializing] = useState(true);
+
+    const fetchLiveNews = async () => {
+        try {
+            const { data: news, error } = await supabase
+                .from('news_notices')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setLiveNews(news || []);
+        } catch (err) {
+            console.error('Error fetching dynamic news:', err);
+        }
+    };
+
+    const fetchLiveMaterials = async () => {
+        try {
+            const { data: materials, error } = await supabase
+                .from('study_hub')
+                .select('*')
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setLiveMaterials(materials || []);
+        } catch (err) {
+            console.error('Error fetching dynamic materials:', err);
+        }
+    };
 
     useEffect(() => {
         const initAuth = async () => {
@@ -5250,6 +5484,7 @@ const AppProvider = ({ children }: any) => {
                     completedChapters: []
                 });
             }
+            await Promise.all([fetchLiveNews(), fetchLiveMaterials()]);
             setIsInitializing(false);
         };
         initAuth();
@@ -5320,7 +5555,10 @@ const AppProvider = ({ children }: any) => {
     }
 
     return (
-        <AppContext.Provider value={{ user, setUser, data, addTestResult }}>
+        <AppContext.Provider value={{ 
+            user, setUser, data, liveNews, liveMaterials, 
+            fetchLiveNews, fetchLiveMaterials, addTestResult 
+        }}>
             {children}
         </AppContext.Provider>
     );
