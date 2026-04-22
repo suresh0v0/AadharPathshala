@@ -2994,6 +2994,24 @@ const ProfilePage = () => {
                 </div>
             </div>
 
+            {user?.email === 'subashgautam305@gmail.com' && (
+                <button 
+                    onClick={() => navigate('/admin-portal')}
+                    className="w-full flex items-center justify-between p-6 bg-slate-900 text-white rounded-[2rem] shadow-xl shadow-slate-900/20 active:scale-[0.98] transition-all group"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
+                            <Zap className="w-6 h-6 fill-current" />
+                        </div>
+                        <div className="text-left">
+                            <p className="text-sm font-black uppercase tracking-widest italic group-hover:tracking-wider transition-all">Admin Actions</p>
+                            <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Manage Study Hub & News</p>
+                        </div>
+                    </div>
+                    <ChevronRight className="w-6 h-6 text-slate-500" />
+                </button>
+            )}
+
             <button 
                 onClick={handleLogout}
                 className="w-full py-5 border-2 border-rose-100 text-rose-500 rounded-[2rem] font-black uppercase tracking-widest text-xs hover:bg-rose-50 transition-colors"
@@ -4773,6 +4791,330 @@ const AuthPage = () => {
     );
 };
 
+// ════════════════════════════════════════════
+// ADMIN PORTAL
+// ════════════════════════════════════════════
+
+const AdminPortalPage = () => {
+    const { user } = useApp();
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState<'study' | 'news'>('study');
+    const [isUploading, setIsUploading] = useState(false);
+    
+    // Study Hub Form State
+    const [studyForm, setStudyForm] = useState({
+        title: '',
+        subject: 'Science',
+        type: 'note',
+        file: null as File | null
+    });
+
+    // News Form State
+    const [newsForm, setNewsForm] = useState({
+        title: '',
+        content: '',
+        category: 'general',
+        image: null as File | null
+    });
+
+    if (user?.email !== 'subashgautam305@gmail.com') {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="w-10 h-10 text-rose-500" />
+                </div>
+                <h1 className="text-xl font-black uppercase tracking-tighter text-slate-800">Access Denied</h1>
+                <p className="text-sm text-slate-500 font-bold">Only administrators can access this portal.</p>
+                <button onClick={() => navigate('/')} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold">Back to Home</button>
+            </div>
+        );
+    }
+
+    const handleFileUpload = async (file: File, bucket: string) => {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+            .from(bucket)
+            .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+
+        return publicUrl;
+    };
+
+    const handleStudySubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!studyForm.file || !studyForm.title) return alert("Please fill all fields and select a file.");
+
+        setIsUploading(true);
+        try {
+            const fileUrl = await handleFileUpload(studyForm.file, 'official-assets');
+            
+            const { error } = await supabase
+                .from('study_hub')
+                .insert([{
+                    title: studyForm.title,
+                    subject: studyForm.subject,
+                    type: studyForm.type,
+                    file_url: fileUrl
+                }]);
+
+            if (error) throw error;
+            alert("Study material uploaded successfully!");
+            setStudyForm({ title: '', subject: 'Science', type: 'note', file: null });
+        } catch (error: any) {
+            console.error(error);
+            alert("Error: " + error.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleNewsSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newsForm.title || !newsForm.content) return alert("Please fill title and content.");
+
+        setIsUploading(true);
+        try {
+            let imageUrl = null;
+            if (newsForm.image) {
+                imageUrl = await handleFileUpload(newsForm.image, 'official-assets');
+            }
+
+            const { error } = await supabase
+                .from('news_notices')
+                .insert([{
+                    title: newsForm.title,
+                    content: newsForm.content,
+                    category: newsForm.category,
+                    image_url: imageUrl
+                }]);
+
+            if (error) throw error;
+            alert("News posted successfully!");
+            setNewsForm({ title: '', content: '', category: 'general', image: null });
+        } catch (error: any) {
+            console.error(error);
+            alert("Error: " + error.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    return (
+        <div className="space-y-8 pb-24">
+            <header className="flex items-center gap-4">
+                <button onClick={() => navigate(-1)} className="p-2 text-slate-400"><ArrowLeft /></button>
+                <div>
+                    <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Admin Portal</h1>
+                    <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest mt-1">Manage Pathshala Content</p>
+                </div>
+            </header>
+
+            <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl">
+                <button 
+                    onClick={() => setActiveTab('study')}
+                    className={cn(
+                        "flex-1 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
+                        activeTab === 'study' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                    )}
+                >
+                    Study Hub
+                </button>
+                <button 
+                    onClick={() => setActiveTab('news')}
+                    className={cn(
+                        "flex-1 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
+                        activeTab === 'news' ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"
+                    )}
+                >
+                    News & Notices
+                </button>
+            </div>
+
+            <AnimatePresence mode="wait">
+                {activeTab === 'study' ? (
+                    <motion.div 
+                        key="study"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6"
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                                <BookOpen className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Add Study Material</h2>
+                        </div>
+
+                        <form onSubmit={handleStudySubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
+                                <input 
+                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-emerald-500/10 transition-all"
+                                    placeholder="Enter material title..."
+                                    value={studyForm.title}
+                                    onChange={e => setStudyForm({...studyForm, title: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Subject</label>
+                                    <select 
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                        value={studyForm.subject}
+                                        onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
+                                    >
+                                        {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Type</label>
+                                    <select 
+                                        className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                        value={studyForm.type}
+                                        onChange={e => setStudyForm({...studyForm, type: e.target.value})}
+                                    >
+                                        <option value="chapter">Chapter</option>
+                                        <option value="note">Note</option>
+                                        <option value="video">Video</option>
+                                        <option value="model_question">Model Question</option>
+                                        <option value="Mcq test">MCQ Test</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">File</label>
+                                <div className="relative">
+                                    <input 
+                                        type="file"
+                                        className="hidden"
+                                        id="hubFile"
+                                        onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})}
+                                    />
+                                    <label 
+                                        htmlFor="hubFile"
+                                        className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-emerald-50/50 hover:border-emerald-200 transition-all group"
+                                    >
+                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-emerald-500 transition-colors">
+                                            <Plus className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
+                                                {studyForm.file ? studyForm.file.name : "Choose or drag file"}
+                                            </p>
+                                            <p className="text-[0.6rem] font-bold text-slate-400 uppercase">PDF, Video or Image (Max 50MB)</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button 
+                                disabled={isUploading}
+                                className="w-full py-5 bg-linear-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-emerald-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {isUploading ? "Uploading..." : "Save Material"}
+                            </button>
+                        </form>
+                    </motion.div>
+                ) : (
+                    <motion.div 
+                        key="news"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-2xl space-y-6"
+                    >
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+                                <Newspaper className="w-6 h-6" />
+                            </div>
+                            <h2 className="text-xl font-black italic tracking-tighter uppercase text-slate-800">Post News/Notice</h2>
+                        </div>
+
+                        <form onSubmit={handleNewsSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Title</label>
+                                <input 
+                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    placeholder="Notice headline..."
+                                    value={newsForm.title}
+                                    onChange={e => setNewsForm({...newsForm, title: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Content</label>
+                                <textarea 
+                                    rows={4}
+                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none focus:ring-4 focus:ring-blue-500/10 transition-all resize-none"
+                                    placeholder="Enter full notice content..."
+                                    value={newsForm.content}
+                                    onChange={e => setNewsForm({...newsForm, content: e.target.value})}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Category</label>
+                                <select 
+                                    className="w-full bg-slate-50 border border-slate-100 px-6 py-4 rounded-2xl font-bold text-sm outline-none appearance-none"
+                                    value={newsForm.category}
+                                    onChange={e => setNewsForm({...newsForm, category: e.target.value})}
+                                >
+                                    <option value="general">General</option>
+                                    <option value="exam">Exam</option>
+                                    <option value="result">Result</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-4">Banner Image (Optional)</label>
+                                <div className="relative">
+                                    <input 
+                                        type="file"
+                                        className="hidden"
+                                        id="newsFile"
+                                        onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})}
+                                    />
+                                    <label 
+                                        htmlFor="newsFile"
+                                        className="w-full flex items-center gap-3 bg-slate-50 border-2 border-dashed border-slate-200 p-8 rounded-[2rem] cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition-all group"
+                                    >
+                                        <div className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                                            <Plus className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-slate-600 uppercase tracking-tighter">
+                                                {newsForm.image ? newsForm.image.name : "Upload Cover Image"}
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button 
+                                disabled={isUploading}
+                                className="w-full py-5 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest shadow-xl shadow-blue-600/20 active:scale-[0.98] transition-all disabled:opacity-50"
+                            >
+                                {isUploading ? "Uploading..." : "Publish Notice"}
+                            </button>
+                        </form>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const AppContent = () => {
     const { user } = useApp();
     if (!user) {
@@ -4797,6 +5139,7 @@ const AppContent = () => {
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/admin-portal" element={<AdminPortalPage />} />
                 <Route path="/tools" element={<AadharToolkit />} />
                 <Route path="/tools/calculator" element={<CalculatorSuite />} />
                 <Route path="/tools/notes" element={<NotePadPage />} />
