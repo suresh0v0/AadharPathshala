@@ -2824,7 +2824,7 @@ const MCQTestSelection = () => {
                     </div>
                     <div>
                         <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-800">Coming Soon</h3>
-                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1max-w-xs mx-auto">Admin is preparing verified MCQ sets for {name}. Please check back later!</p>
+                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1 max-w-xs mx-auto">Admin is preparing verified MCQ sets for {name}. Please check back later!</p>
                     </div>
                 </div>
             )}
@@ -2835,6 +2835,7 @@ const MCQTestSelection = () => {
 /* ── MCQ TEST PLAYER ── */
 const MCQTestPlayer = () => {
     const { name, setIndex } = useParams();
+    const { liveMaterials } = useApp();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
@@ -2844,11 +2845,22 @@ const MCQTestPlayer = () => {
     const isTimerEnabled = searchParams.get('timer') !== 'false';
     const countParam = parseInt(searchParams.get('count') || '30');
     
-    // 1 minute per question for timer
-    const [timer, setTimer] = useState(countParam * 60); 
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
-    const setData = STATIC_MCQS[name as string]?.[parseInt(setIndex || '0')];
+    const staticSets = STATIC_MCQS[name as string] || [];
+    const dynamicSets = liveMaterials
+        .filter(m => m.subject === name && m.type === 'mcq')
+        .map(m => {
+            try { return JSON.parse(m.text_content); } catch (e) { return null; }
+        })
+        .filter(Boolean);
+
+    const allSets = [...staticSets, ...dynamicSets];
+    const setData = allSets[parseInt(setIndex || '0')];
+
+    // 1 minute per question for timer
+    const [timer, setTimer] = useState(countParam * 60); 
+
     // Slice questions array up to the requested count
     const questions = (setData?.questions || []).slice(0, countParam);
 
@@ -2867,7 +2879,13 @@ const MCQTestPlayer = () => {
         return `${m}:${s.toString().padStart(2, '0')}`;
     };
 
-    if (!setData) return <div>Set not found.</div>;
+    if (!setData) return (
+        <div className="flex flex-col items-center justify-center p-20 text-center space-y-6">
+            <AlertTriangle className="w-16 h-16 text-rose-500" />
+            <h1 className="text-2xl font-black uppercase text-slate-800">Set not found</h1>
+            <button onClick={() => navigate(-1)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Go Back</button>
+        </div>
+    );
 
     const score = questions.reduce((acc: number, q: any, idx: number) => {
         return acc + (answers[idx] === q.correct ? 1 : 0);
