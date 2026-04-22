@@ -1779,6 +1779,7 @@ const NoticeBoard = () => {
 const NewsPage = () => {
     const { data, liveNews } = useApp();
     const [activeTab, setActiveTab] = useState<'All' | 'Exams' | 'Results' | 'General'>('All');
+    const [selectedNews, setSelectedNews] = useState<any>(null);
 
     // Combine static news and live news from Supabase
     const combinedNews = [
@@ -1798,7 +1799,7 @@ const NewsPage = () => {
     const filteredNews = combinedNews.filter(n => {
         if (activeTab === 'All') return true;
         const normalizedTag = n.tag.toLowerCase();
-        const normalizedActiveTab = activeTab.toLowerCase().slice(0, -1); // Remove 's' from Results/Exams
+        const normalizedActiveTab = activeTab.toLowerCase().slice(0, -1);
         return normalizedTag.includes(normalizedActiveTab) || normalizedTag === activeTab.toLowerCase();
     });
 
@@ -1808,8 +1809,6 @@ const NewsPage = () => {
                 <h1 className="text-5xl md:text-6xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Pulse</h1>
                 <p className="text-xs text-rose-500 font-bold uppercase tracking-[0.3em] ml-1">Official NEB & Board Updates</p>
             </header>
-
-            <NoticeBoard />
 
             <div className="flex bg-slate-100 p-2 rounded-[2rem] shadow-inner mt-8 overflow-x-auto custom-scrollbar">
                 {['All', 'Exams', 'Results', 'General'].map(tab => (
@@ -1826,7 +1825,7 @@ const NewsPage = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
                 <AnimatePresence mode="popLayout">
                     {filteredNews.length > 0 ? filteredNews.map((n, i) => (
                         <motion.div
@@ -1835,14 +1834,14 @@ const NewsPage = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -20 }}
                             transition={{ delay: i * 0.05 }}
-                            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden relative group flex flex-col h-full"
+                            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden relative group flex flex-col h-full hover:shadow-2xl transition-all"
                         >
                             {n.imageUrl && (
                                 <div className="w-full h-56 overflow-hidden relative shrink-0">
                                     <img 
                                         src={n.imageUrl} 
                                         alt={n.title} 
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                                         referrerPolicy="no-referrer"
                                     />
                                     <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
@@ -1860,24 +1859,81 @@ const NewsPage = () => {
                                     </div>
                                     <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{n.date}</span>
                                 </div>
-                                <h2 className="text-xl md:text-2xl font-black text-slate-900 mb-3 leading-tight tracking-tight uppercase group-hover:text-blue transition-colors">{n.title}</h2>
-                                <p className="text-[0.8rem] text-slate-500 leading-relaxed font-bold mb-6 flex-1 line-clamp-3">{n.body}</p>
+                                <h2 className="text-xl font-black text-slate-900 mb-3 leading-tight tracking-tight uppercase group-hover:text-blue transition-colors">{n.title}</h2>
+                                <p className="text-[0.8rem] text-slate-500 leading-relaxed font-bold mb-6 flex-1 line-clamp-2">{n.body}</p>
                                 
                                 <div className="flex items-center justify-between border-t border-slate-50 pt-5 mt-auto">
-                                    <div className="flex items-center gap-2 text-rose-500 text-[0.65rem] font-black uppercase tracking-widest group-hover:gap-3 transition-all cursor-pointer">
+                                    <button 
+                                        onClick={() => setSelectedNews(n)}
+                                        className="flex items-center gap-2 text-rose-500 text-[0.65rem] font-black uppercase tracking-widest group/btn hover:gap-3 transition-all cursor-pointer"
+                                    >
                                         <span>Read Full Report</span>
                                         <ArrowLeft className="w-4 h-4 rotate-180" />
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
                     )) : (
-                        <div className="col-span-full py-12 text-center text-slate-400 font-black italic uppercase tracking-widest">
-                            No news found in this category.
+                        <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-slate-100">
+                            <Archive className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                            <p className="text-slate-400 font-black italic uppercase tracking-widest">No news found in this category.</p>
                         </div>
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Read More Modal */}
+            <AnimatePresence>
+                {selectedNews && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
+                        onClick={() => setSelectedNews(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl relative"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <button onClick={() => setSelectedNews(null)} className="absolute top-6 right-6 z-10 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 hover:bg-white transition-all">
+                                <X className="w-5 h-5" />
+                            </button>
+                            
+                            {selectedNews.imageUrl && (
+                                <div className="w-full h-64 overflow-hidden relative">
+                                    <img src={selectedNews.imageUrl} alt={selectedNews.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+                                    <div className="absolute bottom-8 left-10">
+                                        <span className={cn("text-[0.6rem] font-black px-4 py-2 rounded-xl uppercase tracking-widest text-white backdrop-blur-md border border-white/20", selectedNews.tagBg)}>
+                                            {selectedNews.tag}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-10 md:p-14 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <Calendar className="w-5 h-5 text-rose-500" />
+                                    <span className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">{selectedNews.date}</span>
+                                </div>
+                                <h2 className="text-3xl font-black text-slate-900 mb-6 leading-tight tracking-tighter uppercase italic">{selectedNews.title}</h2>
+                                <div className="prose prose-slate max-w-none text-slate-600 font-bold leading-relaxed whitespace-pre-wrap">
+                                    {selectedNews.body}
+                                </div>
+                            </div>
+                            
+                            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
+                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Official Channel • Aadhar Pathshala</p>
+                                <button onClick={() => setSelectedNews(null)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Close</button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -3122,9 +3178,12 @@ const StudyHub = () => {
 
 const ChapterList = () => {
     const { name } = useParams();
-    const { data } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+
+    const dynamicChapters = liveMaterials.filter(m => m.subject === name && m.type === 'chapter');
+    const allChapters = [...(sub?.chapters || []), ...dynamicChapters];
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
@@ -3134,7 +3193,7 @@ const ChapterList = () => {
             </div>
 
             <div className="space-y-4">
-                {sub.chapters.map((ch: any, i: number) => (
+                {allChapters.map((ch: any, i: number) => (
                     <button
                         key={ch.id}
                         onClick={() => navigate(`/hub/${name}/chapters/${ch.id}`)}
@@ -3145,7 +3204,7 @@ const ChapterList = () => {
                                 {i + 1}
                             </div>
                             <div className="text-left">
-                                <h3 className="font-black text-slate-800 tracking-tight leading-none mb-1">{ch.title}</h3>
+                                <h2 className="font-black text-slate-800 tracking-tight leading-none mb-1 text-lg">{ch.title}</h2>
                                 <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest">{ch.topics?.split(',')[0] || 'Unit Context'}</p>
                             </div>
                         </div>
@@ -3319,18 +3378,18 @@ const PdfList = () => {
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
 
-    const dynamicPdfs = liveMaterials.filter(m => m.subject === name && (m.type === 'chapter' || m.type === 'note' || m.type === 'note_archive'));
+    const dynamicPdfs = liveMaterials.filter(m => m.subject === name && m.type === 'note_archive');
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
+        <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Knowledge Base</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Archives</h1>
             </div>
 
             <div className="space-y-4">
                 {/* Dynamic Content */}
-                {dynamicPdfs.map((p: any) => (
+                {dynamicPdfs.length > 0 ? dynamicPdfs.map((p: any) => (
                     <div 
                         key={p.id} 
                         className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all"
@@ -3340,34 +3399,24 @@ const PdfList = () => {
                         </div>
                         <div className="flex-1">
                             <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1 italic">{p.title}</h3>
-                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">{p.type} • Data Node</p>
+                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">Digital Archive • Vault Node</p>
                         </div>
-                        <div className="flex gap-2">
-                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100">
+                        <div className="flex items-center gap-3">
+                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
                     </div>
-                ))}
-
-                {/* Static Content */}
-                {sub.pdfs.map((p: any) => (
-                    <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all">
-                        <div className="w-16 h-16 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center shrink-0 border border-rose-100 group-hover:scale-110 transition-transform">
-                            <FileText className="w-8 h-8" />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{p.name}</h3>
-                            <p className="text-[0.75rem] text-slate-400 font-bold leading-relaxed">{p.desc}</p>
-                        </div>
-                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
-                            <ArrowLeft className="w-5 h-5 rotate-180" />
-                        </button>
+                )) : (
+                    <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100">
+                        <Archive className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                        <h2 className="text-xl font-black text-slate-800 uppercase">Archive Empty</h2>
+                        <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Resources will be added soon.</p>
                     </div>
-                ))}
+                )}
             </div>
         </div>
     );
@@ -3463,56 +3512,47 @@ const ModelList = () => {
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
 
-    const dynamicModels = liveMaterials.filter(m => m.subject === name && (m.type === 'model_question' || m.type === 'Mcq test'));
+    const dynamicModels = liveMaterials.filter(m => m.subject === name && m.type === 'model_question');
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
+        <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Question Bank</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Model Questions</h1>
             </div>
 
             <div className="space-y-4">
                 {/* Dynamic Content */}
-                {dynamicModels.map((m: any) => (
+                {dynamicModels.length > 0 ? dynamicModels.map((m: any) => (
                     <div 
                         key={m.id} 
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all"
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all font-sans"
                     >
                         <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-110 transition-transform">
                             {m.file_url?.toLowerCase().endsWith('.png') || m.file_url?.toLowerCase().endsWith('.jpg') ? <GalleryVertical className="w-8 h-8" /> : <ClipboardCheck className="w-8 h-8" />}
                         </div>
                         <div className="flex-1">
                             <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{m.title}</h3>
-                            <p className="text-[0.65rem] text-indigo-400 font-bold leading-relaxed uppercase tracking-widest">{m.type} • Official Board Set</p>
+                            <p className="text-[0.65rem] text-indigo-400 font-black leading-relaxed uppercase tracking-widest">Board Standard • 2083 Blueprint</p>
                         </div>
-                        <div className="flex gap-2">
-                             <button onClick={() => window.open(m.file_url || m.link_url)} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100">
+                        <div className="flex items-center gap-3">
+                             <button onClick={() => window.open(m.file_url || m.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
+                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
                     </div>
-                ))}
-
-                {/* Static Content */}
-                {sub.modelQuestions?.length > 0 ? sub.modelQuestions.map((q: any) => (
-                    <div key={q.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative group overflow-hidden">
-                        <span className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-3 block">Board Perspective</span>
-                        <h3 className="font-black text-slate-900 text-lg mb-4">{q.q}</h3>
-                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 italic font-bold text-slate-500 text-[0.85rem]">
-                            <Markdown>{q.answerHtml || '_Answer draft in progress..._'}</Markdown>
-                        </div>
-                    </div>
                 )) : (
-                    <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
+                     <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100">
                         <Edit3 className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">Questions Incoming</h2>
-                        <p className="text-[0.75rem] text-slate-400 font-bold max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest">Processing latest NEB specification grids for 2083.</p>
+                        <h2 className="text-xl font-black text-slate-800 uppercase">Bank Empty</h2>
+                        <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Model sets are being developed.</p>
                     </div>
                 )}
+
+                {/* Static Content removal check */}
             </div>
         </div>
     );
@@ -5745,44 +5785,11 @@ const AppContext = createContext<any>(null);
 const useApp = () => useContext(AppContext);
 
 const INITIAL_DATA: AppData = {
-    news: [
-        { id: '1', title: 'NEB Postpones SEE Practical Exams in 5 Districts', body: 'Due to local conditions, practical exams in Taplejung and Solukhumbu are rescheduled for Jestha 15. Check official NEB portal.', date: '2081/01/22', tag: 'URGENT', tagBg: 'bg-rose-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/nepalnews/800/400' },
-        { id: '2', title: 'HSEB Scholarships for Bagmati Province', body: 'Bagmati Province Education Directorate announces 150 more scholarship seats for Class 10 graduates.', date: '2081/01/18', tag: 'SCHOLARSHIP', tagBg: 'bg-indigo-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/k Kathmandu/800/400' },
-        { id: '3', title: 'Digital Literacy Campaign in Rural Schools', body: 'MoEST launches Tablet-based learning pilot program in 50 community schools across Gandaki.', date: '2081/01/12', tag: 'TECH', tagBg: 'bg-emerald-500', tagColor: 'text-white', imageUrl: 'https://picsum.photos/seed/laptop/800/400' }
-    ],
+    news: [],
     subjects: {
-        'Science': {
-            id: 'Science',
-            color: 'emerald',
-            icon: 'Microscope',
-            chapters: [
-                { id: '1', title: 'Force and Motion', topics: 'Gravity, Weight, Free-fall', marks: 5, contentHtml: '### 1. Gravitational Force\nGravity is the force that pulls objects toward the center of a planet or other body...\n\n#### Key Equations\nF = G(m1m2)/d²' },
-                { id: '2', title: 'Pressure', topics: 'Pascals Law, Archimedes Principle', marks: 4, contentHtml: '### Pressure Concepts\nPressure is defined as force per unit area...' }
-            ],
-            videos: [
-                { id: 'v1', title: 'Universal Law of Gravitation', channel: 'NEB Official', youtubeId: 'kx7896', duration: '12:45' }
-            ],
-            pdfs: [
-                { id: 'p1', name: 'Science Unit 1 Notes', desc: 'Comprehensive guide for Force', url: '#' }
-            ],
-            modelQuestions: [
-                { id: 'm1', q: 'State Newton\'s Universal Law of Gravitation.', answerHtml: 'Every particle of matter in the universe attracts every other particle with a force that is directly proportional to the product of their masses and inversely proportional to the square of the distance between them.' }
-            ]
-        },
-        'नेपाली': {
-            id: 'नेपाली', color: 'purple', icon: 'Edit3',
-            chapters: [
-                { id: '1', title: 'यस्तै रहेछ जनम', topics: 'कविता, व्याख्या', marks: 4, contentHtml: 'यस अध्यायमा कविले जनमको मर्म र यथार्थलाई प्रस्तुत गरेका छन् ।' }
-            ],
-            videos: [], pdfs: [], modelQuestions: []
-        },
-        'सामाजिक': {
-            id: 'सामाजिक', color: 'amber', icon: 'Globe',
-            chapters: [
-                { id: '1', title: 'हाम्रो प्रदेश', topics: 'भूगोल, जनजीवन', marks: 5, contentHtml: 'नेपालका सात प्रदेशहरूका विविधता र विशेषताहरू यहाँ व्याख्या गरिएको छ ।' }
-            ],
-            videos: [], pdfs: [], modelQuestions: []
-        },
+        'Science': { id: 'Science', color: 'emerald', icon: 'Microscope', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'नेपाली': { id: 'नेपाली', color: 'purple', icon: 'Edit3', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'सामाजिक': { id: 'सामाजिक', color: 'amber', icon: 'Globe', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Maths': { id: 'Maths', color: 'red', icon: 'Sigma', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'English': { id: 'English', color: 'blue', icon: 'Languages', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Optional Maths': { id: 'Optional Maths', color: 'indigo', icon: 'Binary', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
