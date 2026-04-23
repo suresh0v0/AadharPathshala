@@ -11,7 +11,7 @@ import {
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
-  Trash2, Edit3, Check, CheckCircle, X, Filter,
+  Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1240,16 +1240,64 @@ ${sharedFormatting}`;
                     ))}
                     
                     {loading && (
-                        <div className="flex flex-col gap-4 self-start">
-                            <div className="flex items-center gap-3 p-6 bg-white border border-slate-100 rounded-[2.5rem] rounded-tl-none shadow-sm animate-pulse">
-                                <div className="flex gap-1.5">
-                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce [animation-delay:-0.3s]" />
-                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce [animation-delay:-0.15s]" />
-                                    <div className="w-2 h-2 bg-blue rounded-full animate-bounce" />
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col gap-4 self-start max-w-[320px] w-full"
+                        >
+                            <div className="relative p-[2px] rounded-[2.5rem] bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 overflow-hidden shadow-2xl">
+                                <motion.div 
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 bg-conic/from-180 via-blue-500 via-transparent to-blue-500 opacity-20 scale-150"
+                                />
+                                <div className="relative bg-white p-6 rounded-[2.4rem] space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative shrink-0">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                                                <motion.div 
+                                                    animate={{ y: [0, -40, 0] }}
+                                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                    className="flex flex-col items-center gap-4"
+                                                >
+                                                    <BrainCircuit className="w-6 h-6 text-blue-400" />
+                                                    <Sparkles className="w-6 h-6 text-emerald-400" />
+                                                    <Bot className="w-6 h-6 text-pink-400" />
+                                                </motion.div>
+                                            </div>
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-pulse shadow-lg" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">Nexus Node Alpha</span>
+                                                <div className="flex gap-1">
+                                                    {[0, 1, 2].map(i => (
+                                                        <motion.div 
+                                                            key={i}
+                                                            animate={{ opacity: [0.2, 1, 0.2] }}
+                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                                            className="w-1 h-1 bg-blue-500 rounded-full"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                    initial={{ width: "0%" }}
+                                                    animate={{ width: ["10%", "90%", "30%", "100%"] }}
+                                                    transition={{ duration: 5, repeat: Infinity }}
+                                                    className="h-full bg-linear-to-r from-blue-500 to-indigo-600 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-slate-100 italic">
+                                        <p className="text-[0.6rem] font-black text-slate-800 uppercase tracking-tighter leading-none">Synthesizing Educational Matrix...</p>
+                                        <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest leading-none">Accessing Deep Knowledge Base</p>
+                                    </div>
                                 </div>
-                                <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-[0.2em]">{activeTutor === 'momo' ? 'Momo is thinking deep...' : 'Achar is serving fast...'}</span>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
                     <div ref={scrollRef} />
                 </div>
@@ -1286,6 +1334,7 @@ ${sharedFormatting}`;
 const StandardCalculator = () => {
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
+    const [history, setHistory] = useState<string[]>([]);
 
     const btns = [
         'sin', 'cos', 'tan', 'log',
@@ -1294,76 +1343,127 @@ const StandardCalculator = () => {
         '4', '5', '6', '-',
         '1', '2', '3', '+',
         '0', '.', '=', '√',
-        'π', 'e', '^', '('
+        'π', 'e', '^', '(',
+        ')', 'abs', 'fact', 'mod'
     ];
+
+    const factorial = (n: number): number => {
+        if (n < 0) return 0;
+        if (n === 0) return 1;
+        return n * factorial(n - 1);
+    };
 
     const handleClick = (val: string) => {
         if (val === 'C') { setDisplay('0'); setEquation(''); }
         else if (val === 'DEL') {
-            setDisplay(d => d.length > 1 ? d.slice(0, -1) : '0');
-            setEquation(e => e.slice(0, -1));
+            const newEq = equation.slice(0, -1);
+            setEquation(newEq);
+            setDisplay(newEq || '0');
         }
         else if (val === '=') {
             try { 
                 let expr = equation || display;
-                expr = expr.replace(/sin/g, 'Math.sin');
-                expr = expr.replace(/cos/g, 'Math.cos');
-                expr = expr.replace(/tan/g, 'Math.tan');
-                expr = expr.replace(/log/g, 'Math.log10');
+                // Pre-processing
+                expr = expr.replace(/sin\(/g, 'Math.sin(');
+                expr = expr.replace(/cos\(/g, 'Math.cos(');
+                expr = expr.replace(/tan\(/g, 'Math.tan(');
+                expr = expr.replace(/log\(/g, 'Math.log10(');
+                expr = expr.replace(/abs\(/g, 'Math.abs(');
                 expr = expr.replace(/π/g, 'Math.PI');
                 expr = expr.replace(/e/g, 'Math.E');
                 expr = expr.replace(/\^/g, '**');
+                expr = expr.replace(/mod/g, '%');
                 
+                // Handle Factorials (basic regex)
+                expr = expr.replace(/fact\((\d+)\)/g, (_, n) => factorial(parseInt(n)).toString());
+
                 const res = Function(`"use strict"; return (${expr})`)();
-                setDisplay(parseFloat(res.toFixed(8)).toString()); 
-                setEquation(''); 
-            } catch { setDisplay('Error'); }
+                const resultStr = parseFloat(res.toFixed(10)).toString();
+                setHistory(prev => [equation + ' = ' + resultStr, ...prev].slice(0, 5));
+                setDisplay(resultStr);
+                setEquation(resultStr);
+            } catch (err) { 
+                console.error(err);
+                setDisplay('Error'); 
+            }
         } else if (val === '√') {
-            try {
-                const res = Math.sqrt(eval(equation || display));
-                setDisplay(res.toString());
-                setEquation(`sqrt(${equation || display})`);
-            } catch { setDisplay('Error'); }
-        } else if (['sin', 'cos', 'tan', 'log'].includes(val)) {
+            setEquation(e => e + 'sqrt(');
+            setDisplay('√(');
+        } else if (['sin', 'cos', 'tan', 'log', 'abs', 'fact'].includes(val)) {
             setEquation(e => e + val + '(');
             setDisplay(val + '(');
-        } else if (val === 'π') {
-            setEquation(e => e + 'π');
-            setDisplay('π');
-        } else if (val === 'e') {
-            setEquation(e => e + 'e');
-            setDisplay('e');
         } else {
             (document.activeElement as HTMLElement)?.blur();
-            setDisplay(d => d === '0' && !isNaN(Number(val)) ? val : d + val);
             setEquation(e => e + val);
+            setDisplay(d => d === '0' || ['sin(', 'cos(', 'tan(', 'log(', 'abs(', 'fact(', '√('].some(p => d.endsWith(p)) ? val : d + val);
         }
     };
 
     return (
-        <div className="bg-slate-900 p-6 md:p-8 rounded-[3rem] shadow-2xl border border-white/5 max-w-[450px] mx-auto overflow-hidden relative">
-            <div className="text-right mb-6 h-32 flex flex-col justify-end px-4">
-                <p className="text-blue font-mono text-xs mb-2 opacity-60 tracking-widest uppercase truncate">{equation || 'Scientific Mode'}</p>
-                <p className="text-4xl md:text-5xl font-black text-white tracking-tighter truncate leading-none">{display}</p>
-            </div>
-            <div className="grid grid-cols-4 gap-2 md:gap-3 relative z-10">
-                {btns.map(b => (
-                    <button
-                        key={b}
-                        onClick={() => handleClick(b)}
-                        className={cn(
-                            "h-12 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center font-black text-[0.7rem] md:text-base transition-all active:scale-90",
-                            ['/', '*', '-', '+', '=', '√', '^'].includes(b) ? "bg-blue text-white shadow-lg shadow-blue/20" :
-                            ['C', 'DEL'].includes(b) ? "bg-rose-50 text-white" : 
-                            ['sin', 'cos', 'tan', 'log'].includes(b) ? "bg-white/10 text-blue font-mono text-[0.6rem] md:text-xs" :
-                            "bg-white/5 text-slate-300 hover:bg-white/10"
+        <div className="space-y-6">
+            <div className="bg-slate-900 p-6 md:p-10 rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(15,23,42,0.5)] border border-white/5 max-w-[500px] mx-auto overflow-hidden relative group">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+                
+                <div className="relative z-10">
+                    <div className="text-right mb-8 h-40 flex flex-col justify-end px-4">
+                        {history.length > 0 && (
+                            <p className="text-[0.6rem] font-black text-blue-400/40 uppercase tracking-widest mb-1 animate-fade-in truncate italic">
+                                Last: {history[0]}
+                            </p>
                         )}
-                    >
-                        {b}
-                    </button>
-                ))}
+                        <p className="text-blue-500 font-mono text-sm mb-3 opacity-60 tracking-widest uppercase truncate border-b border-white/5 pb-2">
+                            {equation || 'Scientific Protocol V2.1'}
+                        </p>
+                        <motion.p 
+                            key={display}
+                            initial={{ y: 10, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            className="text-5xl md:text-6xl font-black text-white tracking-tighter truncate leading-none"
+                        >
+                            {display}
+                        </motion.p>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3 md:gap-4">
+                        {btns.map(b => {
+                            const isOperator = ['/', '*', '-', '+', '=', '√', '^', 'mod'].includes(b);
+                            const isFunction = ['sin', 'cos', 'tan', 'log', 'abs', 'fact'].includes(b);
+                            const isClear = ['C', 'DEL'].includes(b);
+                            
+                            return (
+                                <button
+                                    key={b}
+                                    onClick={() => handleClick(b)}
+                                    className={cn(
+                                        "h-14 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center font-black transition-all active:scale-90 hover:scale-105 relative overflow-hidden group/btn",
+                                        isOperator ? "bg-blue-600 text-white shadow-xl shadow-blue-900/40" :
+                                        isClear ? "bg-rose-500 text-white shadow-xl shadow-rose-900/40" : 
+                                        isFunction ? "bg-white/10 text-blue-400 font-mono text-[0.6rem] md:text-xs border border-white/5" :
+                                        "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5"
+                                    )}
+                                >
+                                    <span className="relative z-10 uppercase tracking-wider text-xs md:text-sm">{b}</span>
+                                    {isOperator && <div className="absolute inset-0 bg-linear-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
             </div>
-            <div className="absolute -top-10 -left-10 w-40 h-40 bg-blue/10 rounded-full blur-3xl pointer-events-none" />
+
+            {history.length > 0 && (
+                <div className="max-w-[450px] mx-auto space-y-2 px-6">
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-2">Session History</p>
+                    {history.map((h, i) => (
+                        <div key={i} className="bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-100 flex items-center justify-between group shadow-sm">
+                            <span className="text-[0.7rem] font-bold text-slate-500 font-mono truncate">{h}</span>
+                            <div className="w-1.5 h-1.5 bg-blue rounded-full group-hover:scale-150 transition-transform" />
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
