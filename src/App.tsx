@@ -73,13 +73,14 @@ const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => 
 };
 
 /**
- * YouTube Utility
+ * YouTube Utility - Enhanced to handle shorts and various URL formats
  */
 const extractYoutubeId = (url: string) => {
     if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    // Enhanced regex to handle regular, embed, share, and shorts URLs
+    const regExp = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
     const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    return (match && match[1]) ? match[1] : null;
 };
 
 /**
@@ -149,45 +150,7 @@ const BOOK_LINKS: Record<string, string> = {
     'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
 };
 
-const STATIC_MCQS: Record<string, any[]> = {
-    'Science': [
-        {
-            setName: 'MCQ SET 1',
-            questions: [
-                { q: "What is the SI unit of force?", a: "Joule", b: "Newton", c: "Watt", d: "Pascal", correct: "b", explanation: "Newton is the SI unit of force, named after Sir Isaac Newton." },
-                { q: "What is the SI unit of power?", a: "Volt", b: "Ohm", c: "Watt", d: "Ampere", correct: "c", explanation: "Watt (W) is the unit of power, defined as one joule per second." },
-                { q: "Which gas is filled in electric bulbs?", a: "Oxygen", b: "Hydrogen", c: "Argon", d: "Carbon dioxide", correct: "c", explanation: "Argon is an inert gas used to prevent the filament from oxidizing." },
-                { q: "What is the chemical formula of common salt?", a: "KCl", b: "NaCl", c: "MgCl2", d: "NaOH", correct: "b", explanation: "Sodium Chloride (NaCl) is known as table salt." },
-                { q: "What is the acceleration due to gravity on Earth's surface?", a: "8.9 m/s²", b: "9.8 m/s²", c: "10.8 m/s²", d: "7.8 m/s²", correct: "b", explanation: "Standard gravity is approximately 9.80665 m/s²." },
-                { q: "Which lens is used to correct short-sightedness (Myopia)?", a: "Convex", b: "Concave", c: "Bifocal", d: "Cylindrical", correct: "b", explanation: "Concave lenses are used to diverge light rays before they enter the eye." },
-                { q: "What is the power of a lens with focal length 20 cm?", a: "2D", b: "4D", c: "5D", d: "10D", correct: "c", explanation: "Power = 1/f(m). 1/0.2 = 5D." },
-                { q: "Which part of the eye controls the amount of light entering?", a: "Retina", b: "Cornea", c: "Iris", d: "Lens", correct: "c", explanation: "The iris regulates the size of the pupil." },
-                { q: "What is the primary cause of global warming?", a: "Acid rain", b: "Greenhouse effect", c: "Ozone depletion", d: "Volcanic eruptions", correct: "b", explanation: "Increased concentration of greenhouse gases traps more heat." },
-                { q: "Which element has atomic number 10?", a: "Fluorine", b: "Neon", c: "Sodium", d: "Magnesium", correct: "b", explanation: "Neon is a noble gas with atomic number 10." },
-                { q: "What is the valency of Carbon?", a: "2", b: "3", c: "4", d: "1", correct: "c", explanation: "Carbon has 4 electrons in its outer shell." },
-                { q: "Which indicator turns red in an acidic solution?", a: "Red litmus", b: "Blue litmus", c: "Phenolphthalein", d: "Turmeric", correct: "b", explanation: "Acid turns blue litmus red." },
-                { q: "Which metal is liquid at room temperature?", a: "Sodium", b: "Mercury", c: "Lead", d: "Iron", correct: "b", explanation: "Mercury is the only common metal liquid at standard temperature." },
-                { q: "What is the electronic configuration of Sodium (Na)?", a: "2, 8", b: "2, 8, 1", c: "2, 7", d: "2, 8, 2", correct: "b", explanation: "Sodium has atomic number 11." },
-                { q: "Which device converts electrical energy into mechanical energy?", a: "Generator", b: "Transformer", c: "Electric Motor", d: "Battery", correct: "c", explanation: "Motors use electromagnetism to create motion." },
-                { q: "What is the chemical name of Vitamin C?", a: "Citric acid", b: "Ascorbic acid", c: "Folic acid", d: "Acetic acid", correct: "b", explanation: "Ascorbic acid is necessary for collagen synthesis." },
-                { q: "Which tissue transports water in plants?", a: "Phloem", b: "Xylem", c: "Parenchyma", d: "Cambium", correct: "b", explanation: "Xylem carries water/minerals; Phloem carries food." },
-                { q: "How many chromosomes are in a normal human cell?", a: "23", b: "44", c: "46", d: "48", correct: "c", explanation: "Humans have 23 pairs of chromosomes." },
-                { q: "Which hormone is known as the emergency hormone?", a: "Insulin", b: "Adrenaline", c: "Thyroxine", d: "Estrogen", correct: "b", explanation: "Adrenaline prepares the body for fight or flight." },
-                { q: "Which element is a semiconductor?", a: "Copper", b: "Silicon", c: "Aluminum", d: "Gold", correct: "b", explanation: "Silicon is widely used in electronics as a semiconductor." },
-                { q: "What is the focal length of a plane mirror?", a: "Zero", b: "10 cm", c: "Infinity", d: "20 cm", correct: "c", explanation: "The radius of curvature of a plane mirror is infinite." },
-                { q: "Which blood group is known as the universal donor?", a: "AB positive", b: "O negative", c: "A positive", d: "B negative", correct: "b", explanation: "O- can be given to patients of any blood type." },
-                { q: "What is the main component of natural gas?", a: "Ethane", b: "Propane", c: "Methane", d: "Butane", correct: "c", explanation: "Natural gas is mostly Methane (CH4)." },
-                { q: "What is the symbol of Silver?", a: "Si", b: "Ag", c: "Au", d: "Pb", correct: "b", explanation: "From Latin 'Argentum'." },
-                { q: "What is the unit of frequency?", a: "Hertz", b: "Joule", c: "Newton", d: "Watt", correct: "a", explanation: "One hertz (Hz) is one cycle per second." },
-                { q: "Which process occurs in the sun to produce energy?", a: "Nuclear fission", b: "Nuclear fusion", c: "Chemical burning", d: "Oxidation", correct: "b", explanation: "Hydrogen nuclei fuse to form Helium." },
-                { q: "What is the functional unit of the kidney?", a: "Neuron", b: "Nephron", c: "Alveoli", d: "Capillary", correct: "b", explanation: "Nephrons filter blood and produce urine." },
-                { q: "Which part of the brain controls body balance?", a: "Cerebrum", b: "Cerebellum", c: "Medulla", d: "Pons", correct: "b", explanation: "The cerebellum coordinates movement and balance." },
-                { q: "Which base is commonly used in antacids?", a: "Sodium hydroxide", b: "Magnesium hydroxide", c: "Calcium oxide", d: "Ammonium hydroxide", correct: "b", explanation: "It neutralizes excess stomach acid." },
-                { q: "Which acid is present in an ant's sting?", a: "Oxalic acid", b: "Methanoic acid", c: "Citric acid", d: "Lactic acid", correct: "b", explanation: "Also known as Formic acid." }
-            ]
-        }
-    ]
-};
+const STATIC_MCQS: Record<string, any[]> = {};
 
 // ════════════════════════════════════════════
 // COMPONENTS
@@ -1269,7 +1232,9 @@ ${sharedFormatting}`;
                                         </div>
                                         <div className="flex-1 space-y-2">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">Nexus Node Alpha</span>
+                                                <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">
+                                                    {activeTutor === 'momo' ? 'Synthesizing Wisdom' : activeTutor === 'mango' ? 'Extracting Data' : 'Speed Processing'}
+                                                </span>
                                                 <div className="flex gap-1">
                                                     {[0, 1, 2].map(i => (
                                                         <motion.div 
@@ -1335,22 +1300,24 @@ const StandardCalculator = () => {
     const [display, setDisplay] = useState('0');
     const [equation, setEquation] = useState('');
     const [history, setHistory] = useState<string[]>([]);
+    const [mode, setMode] = useState<'deg' | 'rad'>('deg');
 
     const btns = [
-        'sin', 'cos', 'tan', 'log',
-        'C', 'DEL', '%', '/',
-        '7', '8', '9', '*',
-        '4', '5', '6', '-',
-        '1', '2', '3', '+',
-        '0', '.', '=', '√',
-        'π', 'e', '^', '(',
-        ')', 'abs', 'fact', 'mod'
+        'sin', 'cos', 'tan', 'C', 'DEL',
+        'log', 'abs', 'fact', '%', '/',
+        '7', '8', '9', '*', '√',
+        '4', '5', '6', '-', '^',
+        '1', '2', '3', '+', 'mod',
+        '0', '.', '=', '(', ')',
+        'π', 'e'
     ];
 
     const factorial = (n: number): number => {
-        if (n < 0) return 0;
+        if (n < 0 || n > 170) return 0;
         if (n === 0) return 1;
-        return n * factorial(n - 1);
+        let res = 1;
+        for (let i = 2; i <= n; i++) res *= i;
+        return res;
     };
 
     const handleClick = (val: string) => {
@@ -1363,18 +1330,29 @@ const StandardCalculator = () => {
         else if (val === '=') {
             try { 
                 let expr = equation || display;
-                // Pre-processing
-                expr = expr.replace(/sin\(/g, 'Math.sin(');
-                expr = expr.replace(/cos\(/g, 'Math.cos(');
-                expr = expr.replace(/tan\(/g, 'Math.tan(');
-                expr = expr.replace(/log\(/g, 'Math.log10(');
-                expr = expr.replace(/abs\(/g, 'Math.abs(');
+                
+                // Degree vs Radian for Trig
+                const trigScale = mode === 'deg' ? ' * Math.PI / 180' : '';
+                expr = expr.replace(/sin\((.*?)\)/g, `Math.sin(($1)${trigScale})`);
+                expr = expr.replace(/cos\((.*?)\)/g, `Math.cos(($1)${trigScale})`);
+                expr = expr.replace(/tan\((.*?)\)/g, `Math.tan(($1)${trigScale})`);
+                
+                expr = expr.replace(/log\((.*?)\)/g, 'Math.log10($1)');
+                expr = expr.replace(/abs\((.*?)\)/g, 'Math.abs($1)');
+                expr = expr.replace(/sqrt\((.*?)\)/g, 'Math.sqrt($1)');
                 expr = expr.replace(/π/g, 'Math.PI');
                 expr = expr.replace(/e/g, 'Math.E');
                 expr = expr.replace(/\^/g, '**');
                 expr = expr.replace(/mod/g, '%');
                 
-                // Handle Factorials (basic regex)
+                // Handle remaining raw sin/cos/tan if user didn't close brackets
+                if (!expr.includes('Math.')) {
+                    expr = expr.replace(/sin\(/g, `Math.sin(`);
+                    expr = expr.replace(/cos\(/g, `Math.cos(`);
+                    expr = expr.replace(/tan\(/g, `Math.tan(`);
+                }
+
+                // Handle Factorials
                 expr = expr.replace(/fact\((\d+)\)/g, (_, n) => factorial(parseInt(n)).toString());
 
                 const res = Function(`"use strict"; return (${expr})`)();
@@ -1383,7 +1361,6 @@ const StandardCalculator = () => {
                 setDisplay(resultStr);
                 setEquation(resultStr);
             } catch (err) { 
-                console.error(err);
                 setDisplay('Error'); 
             }
         } else if (val === '√') {
@@ -1400,70 +1377,75 @@ const StandardCalculator = () => {
     };
 
     return (
-        <div className="space-y-6">
-            <div className="bg-slate-900 p-6 md:p-10 rounded-[3.5rem] shadow-[0_40px_100px_-20px_rgba(15,23,42,0.5)] border border-white/5 max-w-[500px] mx-auto overflow-hidden relative group">
-                {/* Decorative Elements */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
-                
-                <div className="relative z-10">
-                    <div className="text-right mb-8 h-40 flex flex-col justify-end px-4">
-                        {history.length > 0 && (
-                            <p className="text-[0.6rem] font-black text-blue-400/40 uppercase tracking-widest mb-1 animate-fade-in truncate italic">
-                                Last: {history[0]}
-                            </p>
-                        )}
-                        <p className="text-blue-500 font-mono text-sm mb-3 opacity-60 tracking-widest uppercase truncate border-b border-white/5 pb-2">
-                            {equation || 'Scientific Protocol V2.1'}
-                        </p>
-                        <motion.p 
-                            key={display}
-                            initial={{ y: 10, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            className="text-5xl md:text-6xl font-black text-white tracking-tighter truncate leading-none"
-                        >
-                            {display}
-                        </motion.p>
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-3 md:gap-4">
-                        {btns.map(b => {
-                            const isOperator = ['/', '*', '-', '+', '=', '√', '^', 'mod'].includes(b);
-                            const isFunction = ['sin', 'cos', 'tan', 'log', 'abs', 'fact'].includes(b);
-                            const isClear = ['C', 'DEL'].includes(b);
-                            
-                            return (
-                                <button
-                                    key={b}
-                                    onClick={() => handleClick(b)}
-                                    className={cn(
-                                        "h-14 md:h-16 rounded-2xl md:rounded-3xl flex items-center justify-center font-black transition-all active:scale-90 hover:scale-105 relative overflow-hidden group/btn",
-                                        isOperator ? "bg-blue-600 text-white shadow-xl shadow-blue-900/40" :
-                                        isClear ? "bg-rose-500 text-white shadow-xl shadow-rose-900/40" : 
-                                        isFunction ? "bg-white/10 text-blue-400 font-mono text-[0.6rem] md:text-xs border border-white/5" :
-                                        "bg-white/5 text-slate-300 hover:bg-white/10 border border-white/5"
-                                    )}
-                                >
-                                    <span className="relative z-10 uppercase tracking-wider text-xs md:text-sm">{b}</span>
-                                    {isOperator && <div className="absolute inset-0 bg-linear-to-tr from-white/20 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity" />}
-                                </button>
-                            );
-                        })}
+        <div className="bg-slate-900 p-6 md:p-10 rounded-[3rem] md:rounded-[4rem] shadow-2xl space-y-8 border-[6px] border-slate-800 max-w-[500px] mx-auto overflow-hidden relative group">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+            
+            <div className="relative z-10 space-y-6">
+                <div className="flex justify-between items-center px-4">
+                    <button 
+                        onClick={() => setMode(mode === 'deg' ? 'rad' : 'deg')}
+                        className="px-4 py-1.5 bg-slate-800 text-[0.6rem] font-black rounded-lg text-slate-400 uppercase tracking-widest border border-slate-700 hover:text-white transition-all shadow-sm"
+                    >
+                        {mode.toUpperCase()} Mode
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[0.55rem] font-black text-slate-500 uppercase tracking-widest">Scientific Protocol</span>
                     </div>
                 </div>
-            </div>
 
-            {history.length > 0 && (
-                <div className="max-w-[450px] mx-auto space-y-2 px-6">
-                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-2">Session History</p>
-                    {history.map((h, i) => (
-                        <div key={i} className="bg-white/50 backdrop-blur-md p-4 rounded-2xl border border-slate-100 flex items-center justify-between group shadow-sm">
-                            <span className="text-[0.7rem] font-bold text-slate-500 font-mono truncate">{h}</span>
-                            <div className="w-1.5 h-1.5 bg-blue rounded-full group-hover:scale-150 transition-transform" />
-                        </div>
+                <div className="bg-black/40 p-8 rounded-[2.5rem] text-right border border-white/5 shadow-inner min-h-[160px] flex flex-col justify-center">
+                    <div className="text-blue-400 text-xs font-mono mb-2 truncate italic opacity-60 tabular-nums uppercase tracking-widest">
+                        {equation || 'Ready'}
+                    </div>
+                    <motion.div 
+                        key={display}
+                        initial={{ y: 5, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        className="text-white text-5xl md:text-6xl font-black tabular-nums tracking-tighter truncate leading-none drop-shadow-lg"
+                    >
+                        {display}
+                    </motion.div>
+                </div>
+
+                <div className="grid grid-cols-5 gap-2 md:gap-3">
+                    {btns.map(b => (
+                        <button
+                            key={b}
+                            onClick={() => handleClick(b)}
+                            className={cn(
+                                "py-4 md:py-6 rounded-2xl md:rounded-3xl font-black text-[0.6rem] md:text-sm shadow-lg active:scale-95 transition-all uppercase tracking-widest border relative group/btn",
+                                b === '=' ? "bg-blue-600 text-white border-blue-700 col-span-1 shadow-blue-500/20" :
+                                b === 'C' ? "bg-rose-500 text-white border-rose-600 shadow-rose-500/10" :
+                                ['/', '*', '-', '+', '^', 'mod'].includes(b) ? "bg-white/10 text-white border-white/10" :
+                                ['sin', 'cos', 'tan', 'log', 'abs', 'fact', '√'].includes(b) ? "bg-slate-800 text-blue-400 border-slate-700 hover:text-blue-300" :
+                                "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700"
+                            )}
+                        >
+                            <span className="relative z-10">{b}</span>
+                            {b === '=' && <div className="absolute inset-0 bg-linear-to-tr from-white/20 to-transparent" />}
+                        </button>
                     ))}
                 </div>
-            )}
+
+                {history.length > 0 && (
+                    <div className="space-y-3 pt-6 border-t border-white/5">
+                        <div className="flex items-center gap-2 ml-4">
+                            <Activity className="w-3 h-3 text-slate-500" />
+                            <p className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Calculation History</p>
+                        </div>
+                        <div className="space-y-2">
+                            {history.map((h, i) => (
+                                <div key={i} className="flex justify-between px-6 py-3 bg-white/5 rounded-xl text-[0.65rem] font-bold text-slate-400 group border border-white/5 animate-fade-in">
+                                    <span className="opacity-40 tabular-nums truncate max-w-[60%]">{h.split('=')[0]}</span>
+                                    <span className="text-white font-black group-hover:text-emerald-400 transition-colors tabular-nums">={h.split('=')[1]}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
@@ -1892,8 +1874,7 @@ const NewsPage = () => {
             tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
             tagColor: 'text-white',
             imageUrl: n.image_url
-        })),
-        ...data.news
+        }))
     ];
 
     const filteredNews = combinedNews.filter(n => {
@@ -3321,10 +3302,14 @@ const ChapterList = () => {
                             <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-black text-xs border border-slate-100 group-hover:bg-blue group-hover:text-white transition-colors">
                                 {i + 1}
                             </div>
-                            <div className="text-left">
-                                <h2 className="font-black text-slate-800 tracking-tight leading-none mb-1 text-lg">{ch.title}</h2>
-                                <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest">{ch.topics?.split(',')[0] || 'Unit Context'}</p>
-                            </div>
+                    <div className="text-left">
+                        <h2 className="font-black text-slate-800 tracking-tight leading-none mb-2 text-lg">{ch.title}</h2>
+                        <div className="flex flex-wrap gap-2">
+                             {(ch.topics || '').split(',').slice(0, 2).map((t: string) => (
+                                 <span key={t} className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{t.trim()}</span>
+                             ))}
+                        </div>
+                    </div>
                         </div>
                         <div className="flex items-center gap-4">
                             <span className="text-[0.6rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest">{ch.marks || 0} Marks</span>
@@ -3551,7 +3536,7 @@ const NoteList = () => {
             title: 'SEE Board Exam Blueprint', 
             subject: name, 
             type: 'shared_note', 
-            text_content: '### Exam Preparation Guide\n1. Focus on high weightage chapters\n2. Practice past year questions\n3. Review experimental diagrams', 
+            text_content: '### Exam Preparation Guide\n1. Focus on high weightage chapters\n2. Practice past year questions\n3. Review experimental diagrams\n4. Manage time effectively during exams\n5. Master diagram-based questions in Science\n6. Focus on Grammar and Creative Writing for English', 
             created_at: new Date().toISOString() 
         },
         ...liveMaterials.filter((m: any) => m.subject === name && m.type === 'shared_note')
@@ -3586,7 +3571,14 @@ const NoteList = () => {
                                     <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-[0.6rem] font-bold">A</div>
                                     <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Official Tutor Share</span>
                                 </div>
-                                <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
+                                <div className="flex items-center gap-3">
+                                    {n.file_url && (
+                                        <a href={n.file_url} download target="_blank" className="text-blue-500 hover:text-blue-600 transition-colors">
+                                            <Download className="w-4 h-4" />
+                                        </a>
+                                    )}
+                                    <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">{new Date(n.created_at).toLocaleDateString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3596,8 +3588,7 @@ const NoteList = () => {
                 {simpleNotes.map((n: any) => (
                     <div 
                         key={n.id} 
-                        onClick={() => window.open(n.file_url)}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer"
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-emerald-500 transition-all"
                     >
                         <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-110 transition-transform">
                             <PenTool className="w-8 h-8" />
@@ -3606,9 +3597,14 @@ const NoteList = () => {
                             <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{n.title}</h3>
                             <p className="text-[0.65rem] text-emerald-400 font-bold leading-relaxed uppercase tracking-widest">Handwritten Note • Shared Legacy</p>
                         </div>
-                        <button className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10">
-                            <ArrowLeft className="w-5 h-5 rotate-180" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button onClick={() => window.open(n.file_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
+                                <Eye className="w-5 h-5" />
+                            </button>
+                            <a href={n.file_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
+                                <Download className="w-5 h-5" />
+                            </a>
+                        </div>
                     </div>
                 ))}
 
@@ -5294,7 +5290,7 @@ const ToastContainer = ({ toasts }: { toasts: any[] }) => (
 const AdminPortalPage = () => {
     const { user, liveNews, liveMaterials, liveNotices, fetchLiveNews, fetchLiveMaterials, fetchLiveNotices } = useApp();
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'study' | 'news' | 'notices' | 'analytics'>('study');
+    const [activeTab, setActiveTab] = useState<'study' | 'model_q' | 'news' | 'notices' | 'analytics'>('study');
     const [isUploading, setIsUploading] = useState(false);
     const { toasts, addToast } = useToast();
 
@@ -5361,9 +5357,10 @@ const AdminPortalPage = () => {
         return publicUrl;
     };
 
-    const handleStudySubmit = async (e: React.FormEvent) => {
+    const handleStudySubmit = async (e: React.FormEvent, typeOverride?: string) => {
         e.preventDefault();
         setIsUploading(true);
+        const finalType = typeOverride || contentType;
         try {
             let fileUrl = null;
             if (studyForm.file) {
@@ -5371,7 +5368,7 @@ const AdminPortalPage = () => {
             }
 
             let youtubeId = null;
-            if (contentType === 'video' && studyForm.link_url) {
+            if (finalType === 'video' && studyForm.link_url) {
                 youtubeId = extractYoutubeId(studyForm.link_url);
             }
 
@@ -5380,7 +5377,7 @@ const AdminPortalPage = () => {
                 .insert([{
                     title: studyForm.title,
                     subject: studyForm.subject,
-                    type: contentType,
+                    type: finalType,
                     description: studyForm.description,
                     link_url: studyForm.link_url,
                     text_content: studyForm.text_content,
@@ -5407,7 +5404,12 @@ const AdminPortalPage = () => {
         try {
             let imageUrl = null;
             if (newsForm.image) {
-                imageUrl = await handleFileUpload(newsForm.image, 'official-assets');
+                try {
+                    imageUrl = await handleFileUpload(newsForm.image, 'official-assets');
+                } catch (uploadError) {
+                    console.error("Image upload failed, proceeding without image", uploadError);
+                    // If image upload fails, we still want to save the news
+                }
             }
 
             const { error } = await supabase
@@ -5417,7 +5419,7 @@ const AdminPortalPage = () => {
                     content: newsForm.content,
                     category: newsForm.category,
                     image_url: imageUrl,
-                    is_notice: newsForm.is_notice
+                    is_notice: false // Force false for broadast station
                 }]);
 
             if (error) throw error;
@@ -5511,6 +5513,7 @@ const AdminPortalPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-up">
                     {[
                         { id: 'study', title: 'Forge Material', desc: 'Syllabus, Videos, Notes', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                        { id: 'model_q', title: 'Board Question Bank', desc: 'Model Sets & Past Papers', icon: ClipboardCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
                         { id: 'news', title: 'Broadcast Station', desc: 'Global News & Articles', icon: Newspaper, color: 'text-rose-500', bg: 'bg-rose-50' },
                         { id: 'notices', title: 'Board Dispatch', desc: 'Live Ticker Updates', icon: Megaphone, color: 'text-blue-500', bg: 'bg-blue-50' },
                         { id: 'analytics', title: 'Command Stats', desc: 'Platform Performance', icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' }
@@ -5537,6 +5540,7 @@ const AdminPortalPage = () => {
                         <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
                         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">
                             {activeTab === 'study' && 'Study Hub Manager'}
+                            {activeTab === 'model_q' && 'Board Question Bank'}
                             {activeTab === 'news' && 'News Broadcaster'}
                             {activeTab === 'notices' && 'Ticker Board Editor'}
                             {activeTab === 'analytics' && 'System Analytics'}
@@ -5547,21 +5551,21 @@ const AdminPortalPage = () => {
                         {activeTab === 'study' && (
                             <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
                                 <section className="space-y-4">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Select Blueprint</h3>
-                                    <div className="flex gap-3 overflow-x-auto pb-4 px-2 no-scrollbar">
+                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Forge Protocol</h3>
+                                    <div className="flex gap-4 overflow-x-auto pb-6 px-4 custom-scrollbar">
                                         {studyTypes.map(t => (
                                             <button 
                                                 key={t.id}
                                                 onClick={() => setContentType(t.id)}
                                                 className={cn(
-                                                    "shrink-0 p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-center justify-center text-center gap-3 min-w-[120px]",
-                                                    contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.05]" : "bg-white/50 border-slate-50 hover:bg-white hover:border-slate-200"
+                                                    "shrink-0 p-8 rounded-[3rem] border font-black transition-all flex flex-col items-center justify-center text-center gap-4 min-w-[140px] shadow-sm",
+                                                    contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.05] -translate-y-1" : "bg-white border-slate-50 hover:bg-white hover:border-slate-200"
                                                 )}
                                             >
-                                                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg", t.color)}>
-                                                    <t.icon className="w-6 h-6" />
+                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110", t.color)}>
+                                                    <t.icon className="w-7 h-7" />
                                                 </div>
-                                                <span className="text-[0.6rem] font-black uppercase tracking-tighter leading-tight italic">{t.label}</span>
+                                                <span className="text-[0.65rem] font-black uppercase tracking-widest leading-none italic">{t.label}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -5649,11 +5653,20 @@ const AdminPortalPage = () => {
 
                                             {contentType === 'mcq' && (
                                                 <div className="space-y-2">
-                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">MCQ Payload (Strict JSON)</label>
+                                                    <div className="flex justify-between items-center ml-6">
+                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">MCQ Payload (Strict JSON)</label>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setStudyForm({...studyForm, text_content: JSON.stringify({ setName: "Set 1", questions: [{ q: "Sample Question?", a: "Option A", b: "Option B", c: "Option C", d: "Option D", correct: "a" }] }, null, 2)})}
+                                                            className="text-[0.55rem] font-black text-blue-500 uppercase tracking-widest hover:underline"
+                                                        >
+                                                            Load Template
+                                                        </button>
+                                                    </div>
                                                     <textarea 
                                                         required
-                                                        rows={8}
-                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none text-indigo-600 font-mono"
+                                                        rows={12}
+                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none text-indigo-600 font-mono scrollbar-hide"
                                                         placeholder='{ "setName": "Example", "questions": [ { "q": "...", "a": "...", "correct": "a" } ] }'
                                                         value={studyForm.text_content}
                                                         onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
@@ -5708,6 +5721,48 @@ const AdminPortalPage = () => {
                                             </div>
                                         ))}
                                     </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'model_q' && (
+                            <motion.div key="admin-model" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Board Exam Bank</h2>
+                                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Archiving Board Standard Question Sets</p>
+                                        </div>
+                                        <select 
+                                            className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-indigo-600"
+                                            value={studyForm.subject}
+                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
+                                        >
+                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+
+                                    <form onSubmit={(e) => handleStudySubmit(e, 'model_question')} className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Document Title</label>
+                                            <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={studyForm.title} placeholder="e.g. Science Model Set 2083" onChange={e => setStudyForm({...studyForm, title: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Cloud Asset Link</label>
+                                            <input className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={studyForm.link_url} placeholder="https://drive.google.com/..." onChange={e => setStudyForm({...studyForm, link_url: e.target.value})} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">PDF / Document / Image Asset</label>
+                                            <input type="file" className="hidden" id="adminModelFile" onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})} />
+                                            <label htmlFor="adminModelFile" className="flex items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 transition-all">
+                                                <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-indigo-500" : "text-slate-300")} />
+                                                <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
+                                                    {studyForm.file ? studyForm.file.name : "Select Board Question File"}
+                                                </p>
+                                            </label>
+                                        </div>
+                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Archive to Bank</button>
+                                    </form>
                                 </div>
                             </motion.div>
                         )}
