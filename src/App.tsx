@@ -12,7 +12,8 @@ import {
   Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server,
-  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive
+  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
+  ShieldCheck, ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -23,6 +24,10 @@ import 'katex/dist/katex.min.css';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, PieChart, Pie, Cell, LineChart, Line
+} from 'recharts';
 import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 import { supabase } from './supabaseClient.js';
@@ -149,8 +154,6 @@ const BOOK_LINKS: Record<string, string> = {
     'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
     'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
 };
-
-const STATIC_MCQS: Record<string, any[]> = {};
 
 // ════════════════════════════════════════════
 // COMPONENTS
@@ -805,6 +808,71 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
     );
 };
 
+const AILoadingImage = ({ src, alt, i }: { src: string, alt: string, i: number }) => {
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    return (
+        <div className="my-10 relative group-visual">
+            <div className="absolute -inset-2 bg-linear-to-r from-blue-500 to-cyan-400 rounded-[3.5rem] blur-2xl opacity-10" />
+            <div className={cn(
+                "relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl min-h-[300px] flex items-center justify-center transition-all duration-500",
+                loading ? "bg-slate-100" : "bg-slate-50"
+            )}>
+                {loading && (
+                    <motion.div 
+                        animate={{ 
+                            scale: [1, 1.1, 1],
+                            opacity: [0.3, 0.7, 0.3],
+                            rotate: [0, 5, -5, 0]
+                        }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-4"
+                    >
+                        <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl">
+                            <Bot className="w-10 h-10" />
+                        </div>
+                        <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-[0.3em] animate-pulse">Rendering Insight...</p>
+                    </motion.div>
+                )}
+                <img 
+                    src={src}
+                    alt={alt}
+                    className={cn(
+                        "w-full h-auto object-cover transition-all duration-1000",
+                        loading ? "opacity-0 scale-95" : "opacity-100 scale-100 ring-2 ring-white/50"
+                    )}
+                    referrerPolicy="no-referrer"
+                    onLoad={() => setLoading(false)}
+                    onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes('retry=true')) {
+                            target.src = `https://pollinations.ai/p/${encodeURIComponent(alt + ' scientific_diagram')}?width=800&height=600&nologo=true&retry=true`;
+                        } else {
+                            setError(true);
+                            setLoading(false);
+                        }
+                    }}
+                />
+                {!loading && !error && (
+                    <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-5 py-2 rounded-2xl shadow-xl border border-blue/5">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue rounded-full animate-ping" />
+                            <span className="text-[0.65rem] font-black text-blue uppercase tracking-widest">Visual Core 3.0</span>
+                        </div>
+                    </div>
+                )}
+                {error && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center bg-slate-50">
+                        <AlertTriangle className="w-12 h-12 text-rose-500 mb-4" />
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Visual Link Interrupted</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const AITutor = () => {
     const { user } = useApp();
     const navigate = useNavigate();
@@ -1128,40 +1196,11 @@ ${sharedFormatting}`;
                                             strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
                                             p: ({node, children, ...props}) => {
                                                 const content = String(children);
-                                                // DETECT AND RENDER [VISUAL: ...] TOKENS
                                                 const visualMatch = content.match(/\[VISUAL:\s*(.*?)\]/i);
                                                 if (visualMatch) {
                                                     const prompt = visualMatch[1].trim();
-                                                    const cleanPrompt = prompt.replace(/\s+/g, '_').toLowerCase();
-                                                    // Track 1: Precision Educational Illustration
                                                     const primaryUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' highly detailed scientific labeled educational diagram white background')}?width=1024&height=768&nologo=true&seed=${i}`;
-                                                    
-                                                    return (
-                                                        <div className="my-10 relative group-visual">
-                                                            <div className="absolute -inset-2 bg-linear-to-r from-blue-500 to-cyan-400 rounded-[3.5rem] blur-2xl opacity-10" />
-                                                            <div className="relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl">
-                                                                <img 
-                                                                    src={primaryUrl}
-                                                                    alt={prompt}
-                                                                    className="w-full h-auto min-h-[300px] object-cover transition-all duration-700 hover:scale-[1.05]"
-                                                                    referrerPolicy="no-referrer"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLImageElement;
-                                                                        if (!target.src.includes('fallback=true')) {
-                                                                            // Track 2: Robust Realistic Schema fallback
-                                                                            target.src = `https://pollinations.ai/p/${encodeURIComponent(prompt + ' realistic science schema')}?width=800&height=600&nologo=true&fallback=true`;
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-5 py-2 rounded-2xl shadow-xl border border-blue/5">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-2 h-2 bg-blue rounded-full animate-ping" />
-                                                                        <span className="text-[0.65rem] font-black text-blue uppercase tracking-widest">Visual Core 3.0</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
+                                                    return <AILoadingImage src={primaryUrl} alt={prompt} i={i} />;
                                                 }
                                                 return <p className="mb-4" {...props}>{children}</p>;
                                             },
@@ -1169,29 +1208,7 @@ ${sharedFormatting}`;
                                                 const altText = props.alt || "educational_visual";
                                                 const prompt = altText.replace(/_/g, ' ');
                                                 const stableUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' educational scientific diagram')}?width=1024&height=768&nologo=true&seed=${i}`;
-                                                
-                                                return (
-                                                    <div className="my-10 relative group-visual">
-                                                        <div className="absolute -inset-2 bg-linear-to-r from-emerald-500 to-cyan-400 rounded-[3.5rem] blur-2xl opacity-10" />
-                                                        <div className="relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl">
-                                                            <img 
-                                                                src={stableUrl}
-                                                                alt={altText}
-                                                                className="w-full h-auto min-h-[300px] object-cover transition-all duration-700 hover:scale-[1.05]"
-                                                                referrerPolicy="no-referrer"
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLImageElement;
-                                                                    if (!target.src.includes('retry=true')) {
-                                                                        target.src = `https://pollinations.ai/p/${encodeURIComponent(prompt + ' schema')}?width=800&height=600&nologo=true&retry=true`;
-                                                                    }
-                                                                }}
-                                                            />
-                                                            <div className="absolute bottom-6 right-6 bg-black/30 backdrop-blur-md px-4 py-1.5 rounded-full text-[0.55rem] font-black text-white uppercase tracking-widest border border-white/20">
-                                                                Scientific Overlay
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
+                                                return <AILoadingImage src={stableUrl} alt={altText} i={i} />;
                                             }
                                         }}
                                     >
@@ -1593,124 +1610,232 @@ const CalculatorSuite = () => {
 
 /* ── TOOLKIT DASHBOARD ── */
 const HomePage = () => {
-    const { user } = useApp();
+    const { user, liveNotices } = useApp();
     const navigate = useNavigate();
 
-    const cycleColors = ['bg-rose-500', 'bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500', 'bg-indigo-500', 'bg-orange-500', 'bg-cyan-500', 'bg-purple-500'];
-    const [colorIndex, setColorIndex] = useState(0);
+    const stats = [
+        { label: 'Total Pages', value: '1,240+', icon: Database, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { label: 'Active Users', value: '45.2K', icon: Users, color: 'text-rose-500', bg: 'bg-rose-50' },
+        { label: 'AI Responses', value: '2.4M', icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    ];
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setColorIndex(prev => (prev + 1) % cycleColors.length);
-        }, 3000); // changes every 3 seconds
-        return () => clearInterval(interval);
-    }, [cycleColors.length]);
+    const quickLinks = [
+        { label: 'Q-Bank', icon: ClipboardCheck, path: '/hub/science' },
+        { label: 'Formulas', icon: Sigma, path: '/tools/formulas' },
+        { label: 'Syllabus', icon: BookOpen, path: '/hub' },
+        { label: 'Archive', icon: Archive, path: '/hub' },
+    ];
+
+    const subjects = [
+        { name: 'Science', progress: 75, color: 'bg-blue-500' },
+        { name: 'Maths', progress: 60, color: 'bg-rose-500' },
+        { name: 'English', progress: 90, color: 'bg-emerald-500' },
+    ];
 
     return (
-        <div className="space-y-6 pb-24">
-            {/* HERO SECTION - GRADIENT ANIMATED BOX */}
-            <div className="relative h-[180px] md:h-[220px]">
-                <div 
-                    className={cn(
-                        "absolute inset-0 rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white flex flex-col justify-center overflow-hidden transition-colors duration-1000 shadow-xl", 
-                        cycleColors[colorIndex]
-                    )}
-                >
-                    <div className="relative z-10 space-y-2">
-                        <p className="text-sm md:text-lg font-medium opacity-90">
-                            Namaste{user?.name ? `, ${user.name}` : ''}! 🙏
-                        </p>
-                        <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-none uppercase italic drop-shadow-lg">
-                            Ready to excel today?
-                        </h1>
-                        <p className="text-xs md:text-sm font-bold opacity-80 uppercase tracking-widest mt-2">
-                            Aadhar Pathshala SEE 2083
-                        </p>
-                    </div>
-                    
-                    {/* Grid overlay */}
-                    <div className="absolute inset-0 opacity-10 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:40px_40px]" />
-                </div>
-            </div>
-
-            {/* DASHBOARD WIDGETS */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
-                    <Trophy className="w-8 h-8 text-amber-500 mb-2" />
-                    <span className="text-2xl font-black text-slate-800 leading-none">{user?.xp || 0}</span>
-                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Total XP</span>
-                </div>
-                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
-                    <Flame className="w-8 h-8 text-rose-500 mb-2" />
-                    <span className="text-2xl font-black text-slate-800 leading-none">{user?.streakDays || 1}</span>
-                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Day Streak</span>
-                </div>
-            </div>
-
-            {/* PROGRESS SECTION */}
-            <div className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm border border-slate-50 space-y-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-black text-slate-800 tracking-tight">Syllabus Progress</h3>
-                    <span className="text-xl font-black text-rose-500">42%</span>
-                </div>
-                <div className="space-y-3">
-                    <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                        <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: '42%' }}
-                            className="h-full bg-blue rounded-full"
-                        />
-                    </div>
-                    <p className="text-sm font-bold text-slate-400">Next: Complete Science Chapter 4 - Light</p>
-                </div>
-            </div>
-
-            {/* TOOLKIT SECTION */}
-            <AadharToolkit />
-
-            {/* QUICK ACCESS SECTION */}
-            <div className="space-y-6 pt-4">
-                <div className="flex items-center gap-2 px-1">
-                    <span role="img" aria-label="horn" className="text-xl">📢</span>
-                    <h2 className="text-xl font-black text-[#1D4ED8] tracking-tight">Quick Access</h2>
-                    <div className="flex-1 h-[1px] bg-slate-100 ml-2" />
-                </div>
-
-                <div 
-                    onClick={() => navigate('/news')}
-                    className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-slate-50 flex items-center justify-between group cursor-pointer hover:shadow-md transition-all"
-                >
-                    <div className="flex items-center gap-3 md:gap-5">
-                        <div className="w-12 h-12 md:w-14 md:h-14 bg-rose-50 text-rose-500 rounded-xl md:rounded-2xl flex shrink-0 items-center justify-center border border-rose-100">
-                             <Megaphone className="w-5 h-5 md:w-7 md:h-7" />
+        <div className="space-y-6 md:space-y-10 pb-32 animate-fade-up px-3 md:px-8 max-w-7xl mx-auto">
+            {/* STICKY USER BAR */}
+            <div className="sticky top-0 z-50 pt-3 md:pt-4 pb-2 bg-[#F8FAFC]/80 backdrop-blur-md">
+                <div className="flex items-center justify-between bg-white px-4 md:px-6 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                            <UserIcon className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
                         <div>
-                            <p className="text-lg md:text-xl font-black text-slate-800 tracking-tight leading-none mb-1">CDC Board Updates</p>
-                            <p className="text-xs md:text-sm font-bold text-slate-400 font-sans tracking-normal">Latest SEE 2083 notices</p>
+                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Scholar Profile</p>
+                            <h4 className="text-sm md:text-md font-black text-slate-800 leading-none">{user?.name || "Guest Student"}</h4>
                         </div>
                     </div>
-                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-slate-300 group-hover:translate-x-1 transition-transform" />
-                </div>
-
-                <div className="mt-4">
-                    <NoticeBoard />
+                    <div className="flex items-center gap-2 md:gap-3">
+                        <div className="hidden xs:flex flex-col items-end">
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
+                                <Flame className="w-3 h-3 md:w-3.5 md:h-3.5 text-rose-500" />
+                                <span className="text-[0.55rem] md:text-[0.65rem] font-bold text-rose-600 uppercase tracking-widest">{user?.streakDays || 12}D</span>
+                            </div>
+                        </div>
+                        <button onClick={() => navigate('/profile')} className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200">
+                             <Bell className="w-4 h-4 md:w-5 md:h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* AI RECOMMENDATION / NEXT BEST STEP */}
-            <div className="bg-linear-to-br from-indigo-50 to-blue-50 p-6 md:p-8 rounded-[2rem] shadow-sm border border-indigo-100 flex flex-col md:flex-row items-center gap-5 md:gap-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-200/50 rounded-full blur-[40px] -translate-y-10 translate-x-10" />
-                <div className="w-16 h-16 shrink-0 bg-white shadow-md rounded-2xl flex items-center justify-center relative z-10 text-indigo-600">
-                    <Sparkles className="w-8 h-8" />
+            {/* NOTICE TROLL */}
+            {liveNotices && liveNotices.length > 0 && (
+                <div className="bg-slate-900 overflow-hidden py-3 rounded-[1.5rem] relative group border border-white/5">
+                    <motion.div 
+                        animate={{ x: [0, -2000] }}
+                        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+                        className="flex whitespace-nowrap gap-12 items-center"
+                    >
+                        {[...liveNotices, ...liveNotices].map((n, i) => (
+                            <div key={i} className="flex items-center gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                <span className="text-[0.6rem] font-black text-white uppercase tracking-[0.2em]">{n.text}</span>
+                            </div>
+                        ))}
+                    </motion.div>
                 </div>
-                <div className="flex-1 relative z-10 text-center md:text-left">
-                    <h3 className="text-sm font-black text-indigo-400 uppercase tracking-widest mb-1">Aadhar Pro Suggests</h3>
-                    <p className="text-slate-800 font-bold text-[0.95rem] md:text-lg leading-tight mb-4">
-                        Based on your low score in the last Science Mock Test, you should review the <span className="text-indigo-600">Light and Magnification</span> module.
-                    </p>
-                    <button onClick={() => navigate('/hub/science')} className="px-6 py-2 bg-indigo-600 text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 transition-colors">
-                        Review Module
+            )}
+
+            {/* HERO DYNAMIC */}
+            <section className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-slate-900 p-6 md:p-16 text-white border-[4px] md:border-[8px] border-white shadow-2xl group">
+                <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-600/20 rounded-full blur-[80px] md:blur-[100px] -mr-32 -mt-32" />
+                <div className="absolute bottom-0 left-0 w-64 md:w-96 h-64 md:h-96 bg-purple-600/20 rounded-full blur-[80px] md:blur-[100px] -ml-32 -mb-32" />
+                
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
+                    <div className="space-y-6 md:space-y-8 text-center lg:text-left">
+                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mx-auto lg:mx-0">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em]">Prep Protocol 2083</span>
+                        </div>
+                        <div className="space-y-3 md:space-y-4">
+                            <h1 className="text-4xl md:text-8xl font-black italic tracking-tighter uppercase leading-[0.9] text-white">
+                                Master Your <br />
+                                <span className="text-blue-400">Curriculum</span>
+                            </h1>
+                            <p className="text-[0.65rem] md:text-lg font-bold text-slate-400/80 uppercase tracking-widest max-w-lg leading-relaxed mx-auto lg:mx-0">
+                                Global insights for SEE 2083 scholars.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 md:gap-4">
+                            <button onClick={() => navigate('/chat')} className="px-6 md:px-10 py-4 md:py-5 bg-white text-slate-900 rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2 md:gap-3">
+                                Launch AI <ChevronRight className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => navigate('/hub')} className="px-6 md:px-10 py-4 md:py-5 bg-white/5 border-2 border-white/10 backdrop-blur-md text-white rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest hover:bg-white/10 transition-all">
+                                Library
+                            </button>
+                        </div>
+
+                        {/* MOBILE ONLY STATS ROW */}
+                        <div className="lg:hidden grid grid-cols-3 gap-2 pt-4">
+                            {stats.map((s, i) => (
+                                <div key={i} className="bg-white/5 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 text-center">
+                                    <p className="text-[0.7rem] font-black text-white leading-none whitespace-nowrap">{s.value}</p>
+                                    <p className="text-[0.45rem] font-black text-slate-400 uppercase tracking-tighter mt-1">{s.label.split(' ')[0]}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="hidden lg:grid grid-cols-2 gap-6">
+                        {stats.map((s, i) => (
+                            <div key={i} className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 shadow-2xl hover:bg-white/10 transition-all text-center">
+                                <div className={cn("w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-xl", s.bg)}>
+                                    <s.icon className={cn("w-7 h-7", s.color)} />
+                                </div>
+                                <h3 className="text-3xl font-black italic tracking-tighter text-white leading-none mb-2">{s.value}</h3>
+                                <p className="text-[0.55rem] font-black text-slate-500 uppercase tracking-widest">{s.label}</p>
+                            </div>
+                        ))}
+                         <div className="bg-linear-to-br from-indigo-500/20 to-purple-600/20 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center text-center">
+                            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
+                                <Pin className="w-7 h-7 text-white" />
+                            </div>
+                            <span className="text-3xl font-black text-white italic tracking-tighter">#1</span>
+                            <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mt-2">Platform Choice</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* QUICK LINK BAR */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                {quickLinks.map(link => (
+                    <button 
+                        key={link.label}
+                        onClick={() => navigate(link.path)}
+                        className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-3 md:gap-4 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 text-left"
+                    >
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 shrink-0">
+                            <link.icon className="w-5 h-5 md:w-6 md:h-6" />
+                        </div>
+                        <div>
+                            <h4 className="text-[0.7rem] md:text-sm font-black text-slate-800 uppercase tracking-tighter leading-none">{link.label}</h4>
+                            <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Direct</p>
+                        </div>
                     </button>
+                ))}
+            </div>
+
+            {/* CENTRAL DASHBOARD GRID */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                {/* TOOLKIT MATRIX (LEFT) */}
+                <div className="lg:col-span-8 space-y-8">
+                    <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                            <div className="w-1 h-6 bg-blue-500 rounded-full" />
+                            <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900">Toolkit Matrix</h3>
+                        </div>
+                        <button onClick={() => navigate('/tools')} className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest hover:underline">View All Tools</button>
+                    </div>
+                    <AadharToolkit />
+                </div>
+
+                {/* SIDEBAR WIDGETS (RIGHT) */}
+                <div className="lg:col-span-4 space-y-8">
+                    {/* STUDY TARGET */}
+                    <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h4 className="text-md md:text-lg font-black italic tracking-tighter uppercase text-slate-800">Mastery Track</h4>
+                            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
+                        </div>
+                        <div className="space-y-4">
+                            {subjects.map(sub => (
+                                <div key={sub.name} className="space-y-1.5">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{sub.name}</span>
+                                        <span className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-800">{sub.progress}%</span>
+                                    </div>
+                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div initial={{ width: 0 }} animate={{ width: `${sub.progress}%` }} className={cn("h-full rounded-full", sub.color)} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* AI COMPANION WIDGET */}
+                    <div className="bg-linear-to-br from-indigo-600 to-purple-700 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border-4 border-white/20">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
+                        <div className="relative z-10 space-y-4 md:space-y-6">
+                             <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-xl">
+                                <Bot className="w-5 h-5 md:w-6 md:h-6" />
+                            </div>
+                            <div className="space-y-1 md:space-y-2">
+                                <h3 className="text-lg font-black italic leading-none uppercase">Aadhar AI</h3>
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold opacity-70 uppercase tracking-widest">Active & Ready</p>
+                            </div>
+                            <button onClick={() => navigate('/chat')} className="w-full py-3 md:py-4 bg-white text-indigo-600 rounded-xl md:rounded-2xl font-black text-[0.6rem] uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                                Consultation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* SYLLABUS FEATURE (FOOTER) */}
+            <div className="bg-slate-100 p-8 md:p-14 rounded-[3rem] md:rounded-[4rem] text-slate-900 border border-slate-200 relative overflow-hidden group">
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10 md:gap-12 text-center md:text-left">
+                    <div className="space-y-4 md:space-y-6">
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl md:rounded-3xl flex items-center justify-center shadow-xl border border-slate-100 mx-auto md:mx-0">
+                            <Lightbulb className="w-6 h-6 md:w-8 md:h-8 text-amber-500" />
+                        </div>
+                        <div className="space-y-1 md:space-y-2">
+                            <h2 className="text-2xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-slate-900">Map Your <br className="hidden md:block"/> Peak</h2>
+                            <p className="text-[0.65rem] md:text-md text-slate-500 font-bold uppercase tracking-widest">Syllabus Breakdown • Archives</p>
+                        </div>
+                        <button onClick={() => navigate('/hub')} className="px-8 md:px-10 py-4 md:py-5 bg-slate-900 text-white rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest shadow-2xl active:scale-95 transition-all">
+                            Unlock Library
+                        </button>
+                    </div>
+                    <div className="shrink-0 w-48 h-48 md:w-64 md:h-64 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl flex items-center justify-center border-4 border-slate-50 p-6 md:p-8">
+                         <div className="text-center space-y-2">
+                            <BookOpen className="w-10 h-10 md:w-12 md:h-12 text-blue-500 mx-auto" />
+                            <p className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Aadhar Pathshala</p>
+                            <p className="text-[0.5rem] md:text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-none">Established v2.0</p>
+                         </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1766,10 +1891,10 @@ const AadharToolkit = () => {
                         <button
                             key={t.id}
                             onClick={() => navigate(t.path)}
-                            className="bg-white p-4 md:p-6 rounded-[1.2rem] md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-3 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-center min-h-[100px] md:min-h-[140px]"
+                            className="bg-white p-3 md:p-6 rounded-xl md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex items-center md:flex-col md:items-center justify-start md:justify-center gap-3 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-left md:text-center min-h-[0] md:min-h-[140px]"
                         >
                             <div className={cn(
-                                "w-10 h-10 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
+                                "w-9 h-9 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
                                 t.color === 'blue' ? "bg-blue-50 text-blue" :
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
@@ -1859,105 +1984,125 @@ const NoticeBoard = () => {
 };
 
 const NewsPage = () => {
-    const { data, liveNews } = useApp();
-    const [activeTab, setActiveTab] = useState<'All' | 'Exams' | 'Results' | 'General'>('All');
-    const [selectedNews, setSelectedNews] = useState<any>(null);
+    const { liveNews, fetchLiveNews } = useApp();
+    const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
+    const [activeTab, setActiveTab] = useState('All');
 
-    // Combine static news and live news from Supabase
-    const combinedNews = [
-        ...liveNews.map(n => ({
-            id: n.id,
-            title: n.title,
-            body: n.content,
-            date: new Date(n.created_at).toLocaleDateString('ne-NP'),
-            tag: n.category?.toUpperCase() || 'GENERAL',
-            tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
-            tagColor: 'text-white',
-            imageUrl: n.image_url
-        }))
+    useEffect(() => { fetchLiveNews(); }, []);
+
+    const categories = [
+        { id: 'All', icon: Globe, color: 'bg-slate-100 text-slate-600', active: 'bg-linear-to-r from-slate-800 to-slate-900 text-white' },
+        { id: 'Exams', icon: GraduationCap, color: 'bg-rose-100 text-rose-600', active: 'bg-linear-to-r from-rose-500 to-rose-600 text-white' },
+        { id: 'Results', icon: Trophy, color: 'bg-amber-100 text-amber-600', active: 'bg-linear-to-r from-amber-500 to-amber-600 text-white' },
+        { id: 'General', icon: Zap, color: 'bg-emerald-100 text-emerald-600', active: 'bg-linear-to-r from-emerald-500 to-emerald-600 text-white' }
     ];
 
-    const filteredNews = combinedNews.filter(n => {
-        if (activeTab === 'All') return true;
-        const normalizedTag = n.tag.toLowerCase();
+    const filteredNews = activeTab === 'All' ? liveNews.map(n => ({
+        id: n.id,
+        title: n.title,
+        body: n.content,
+        date: new Date(n.created_at).toLocaleDateString('ne-NP'),
+        tag: n.category?.toUpperCase() || 'GENERAL',
+        tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
+        imageUrl: n.image_url
+    })) : liveNews.filter(n => {
+        const normalizedTag = n.category?.toLowerCase() || '';
         const normalizedActiveTab = activeTab.toLowerCase().slice(0, -1);
         return normalizedTag.includes(normalizedActiveTab) || normalizedTag === activeTab.toLowerCase();
-    });
+    }).map(n => ({
+        id: n.id,
+        title: n.title,
+        body: n.content,
+        date: new Date(n.created_at).toLocaleDateString('ne-NP'),
+        tag: n.category?.toUpperCase() || 'GENERAL',
+        tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
+        imageUrl: n.image_url
+    }));
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <header className="space-y-2 mb-10">
-                <h1 className="text-5xl md:text-6xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Pulse</h1>
-                <p className="text-xs text-rose-500 font-bold uppercase tracking-[0.3em] ml-1">Official NEB & Board Updates</p>
+        <div className="space-y-12 animate-fade-up pb-32">
+            <header className="relative py-16 md:py-24 overflow-hidden rounded-[4rem] bg-slate-900 text-white border-[10px] border-slate-800 shadow-2xl">
+                <div className="absolute inset-0 bg-linear-to-br from-blue-600/30 via-transparent to-rose-600/30 blur-[80px]" />
+                <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none" />
+                
+                <div className="relative z-10 text-center px-6">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="inline-flex items-center gap-3 px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-8"
+                    >
+                        <Radio className="w-4 h-4 text-rose-500 animate-pulse" />
+                        <span className="text-[0.6rem] font-black uppercase tracking-[0.4em]">Official Broadcast Channel</span>
+                    </motion.div>
+                    <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-[0.8] mb-6 drop-shadow-2xl">
+                        Universal <br/> <span className="text-rose-500">Pulse</span>
+                    </h1>
+                    <p className="text-[0.7rem] md:text-lg font-bold text-slate-300 max-w-2xl mx-auto tracking-wide leading-relaxed italic opacity-80 uppercase">
+                        Global SEE 2083 Intelligence • Real-time curriculum updates • National Board Alerts
+                    </p>
+                </div>
             </header>
 
-            <div className="flex bg-slate-100 p-2 rounded-[2rem] shadow-inner mt-8 overflow-x-auto custom-scrollbar">
-                {['All', 'Exams', 'Results', 'General'].map(tab => (
+            <div className="flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar scroll-smooth">
+                {categories.map(cat => (
                     <button 
-                        key={tab}
-                        onClick={() => setActiveTab(tab as any)}
+                        key={cat.id}
+                        onClick={() => setActiveTab(cat.id)}
                         className={cn(
-                            "flex-1 min-w-[80px] py-3 px-4 rounded-[1.5rem] font-black text-[0.65rem] md:text-sm uppercase tracking-widest transition-all",
-                            activeTab === tab ? "bg-white text-blue shadow-lg" : "text-slate-400 hover:text-slate-600"
+                            "flex items-center gap-4 px-10 py-5 rounded-[2.5rem] font-black text-[0.7rem] uppercase tracking-widest transition-all shrink-0 border-4",
+                            activeTab === cat.id 
+                                ? cat.active + " border-transparent shadow-2xl scale-105" 
+                                : "bg-white text-slate-400 border-white hover:border-slate-100 shadow-sm"
                         )}
                     >
-                        {tab}
+                        <cat.icon className={cn("w-5 h-5", activeTab === cat.id ? "text-white" : "text-slate-300")} />
+                        {cat.id}
                     </button>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <AnimatePresence mode="popLayout">
                     {filteredNews.length > 0 ? filteredNews.map((n, i) => (
                         <motion.div
                             key={n.id}
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                            initial={{ opacity: 0, scale: 0.9, rotate: -1 }}
+                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
                             transition={{ delay: i * 0.05 }}
-                            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden relative group flex flex-col h-full hover:shadow-2xl transition-all"
+                            className="bg-white rounded-[3.5rem] border-4 border-slate-50 shadow-2xl overflow-hidden group flex flex-col hover:border-rose-500/20 hover:shadow-rose-500/10 transition-all duration-500"
                         >
-                            {n.imageUrl && (
-                                <div className="w-full h-56 overflow-hidden relative shrink-0">
-                                    <img 
-                                        src={n.imageUrl} 
-                                        alt={n.title} 
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                                        referrerPolicy="no-referrer"
-                                    />
-                                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent" />
-                                    <div className="absolute bottom-5 left-6 flex gap-2">
-                                        <span className={cn("text-[0.55rem] font-black px-3 py-1.5 rounded-xl uppercase tracking-widest text-white border border-white/20 backdrop-blur-md", n.tagBg || 'bg-blue/80')}>
-                                            {n.tag}
-                                        </span>
-                                    </div>
+                            <div className="relative h-64 overflow-hidden shrink-0">
+                                <img src={n.imageUrl || 'https://images.unsplash.com/photo-1588702547324-f176aa5130b0?auto=format&fit=crop&q=80'} alt={n.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                                <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-transparent to-transparent" />
+                                <div className="absolute top-6 left-6">
+                                    <span className={cn("text-[0.55rem] font-black px-5 py-2 rounded-2xl uppercase tracking-widest shadow-xl border border-white/20", n.tagBg)}>{n.tag}</span>
                                 </div>
-                            )}
-                            <div className="p-6 md:p-8 flex flex-col flex-1">
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100">
-                                        <Calendar className="w-4 h-4 text-slate-400" />
-                                    </div>
+                            </div>
+                            <div className="p-10 flex flex-col flex-1">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <Calendar className="w-5 h-5 text-slate-300" />
                                     <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{n.date}</span>
                                 </div>
-                                <h2 className="text-xl font-black text-slate-900 mb-3 leading-tight tracking-tight uppercase group-hover:text-blue transition-colors">{n.title}</h2>
-                                <p className="text-[0.8rem] text-slate-500 leading-relaxed font-bold mb-6 flex-1 line-clamp-2">{n.body}</p>
-                                
-                                <div className="flex items-center justify-between border-t border-slate-50 pt-5 mt-auto">
-                                    <button 
-                                        onClick={() => setSelectedNews(n)}
-                                        className="flex items-center gap-2 text-rose-500 text-[0.65rem] font-black uppercase tracking-widest group/btn hover:gap-3 transition-all cursor-pointer"
-                                    >
-                                        <span>Read Full Report</span>
-                                        <ArrowLeft className="w-4 h-4 rotate-180" />
-                                    </button>
-                                </div>
+                                <h3 className="text-2xl font-black text-slate-900 mb-4 leading-tight tracking-tighter uppercase italic group-hover:text-rose-500 transition-colors">
+                                    {n.title}
+                                </h3>
+                                <p className="text-sm text-slate-500 leading-relaxed font-bold mb-10 flex-1 line-clamp-3">
+                                    {n.body}
+                                </p>
+                                <button 
+                                    onClick={() => setSelectedNews(n)}
+                                    className="w-full py-4 bg-slate-50 text-slate-900 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
+                                >
+                                    Access Data Stream
+                                    <ArrowLeft className="w-4 h-4 rotate-180" />
+                                </button>
                             </div>
                         </motion.div>
                     )) : (
-                        <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border border-slate-100">
-                            <Archive className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                            <p className="text-slate-400 font-black italic uppercase tracking-widest">No news found in this category.</p>
+                        <div className="col-span-full py-32 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-100">
+                            <Megaphone className="w-20 h-20 text-slate-200 mx-auto mb-6" />
+                            <h3 className="text-2xl font-black text-slate-300 uppercase tracking-tighter">Quiet Frequency</h3>
+                            <p className="text-[0.65rem] font-black text-slate-400/60 uppercase tracking-widest mt-2 italic">Broadcast node offline or no data detected.</p>
                         </div>
                     )}
                 </AnimatePresence>
@@ -2811,7 +2956,7 @@ const MCQTestSelection = () => {
     const [questionCount, setQuestionCount] = useState(30);
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
     
-    const staticSets = STATIC_MCQS[name as string] || [];
+    const staticSets: any[] = [];
     const dynamicSets = liveMaterials
         .filter(m => m.subject === name && m.type === 'mcq')
         .map(m => {
@@ -2928,7 +3073,7 @@ const MCQTestPlayer = () => {
     
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
-    const staticSets = STATIC_MCQS[name as string] || [];
+    const staticSets: any[] = [];
     const dynamicSets = liveMaterials
         .filter(m => m.subject === name && m.type === 'mcq')
         .map(m => {
@@ -2962,8 +3107,9 @@ const MCQTestPlayer = () => {
 
     if (!setData) return (
         <div className="flex flex-col items-center justify-center p-20 text-center space-y-6">
-            <AlertTriangle className="w-16 h-16 text-rose-500" />
-            <h1 className="text-2xl font-black uppercase text-slate-800">Set not found</h1>
+            <Bot className="w-16 h-16 text-blue pb-4 animate-bounce" />
+            <h1 className="text-2xl font-black uppercase text-slate-800">Initializing Intelligence Test</h1>
+            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Constructing Query Node...</p>
             <button onClick={() => navigate(-1)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Go Back</button>
         </div>
     );
@@ -5287,6 +5433,158 @@ const ToastContainer = ({ toasts }: { toasts: any[] }) => (
     </div>
 );
 
+/* ── ADMIN ANALYTICS ── */
+const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
+    const data = [
+        { name: 'Study Hub', value: liveMaterials.length },
+        { name: 'Broadcasts', value: liveNews.length },
+        { name: 'Live Notices', value: liveNotices.length }
+    ];
+
+    const chartData = [
+        { day: 'Mon', active: 120, syncs: 45 },
+        { day: 'Tue', active: 150, syncs: 70 },
+        { day: 'Wed', active: 200, syncs: 60 },
+        { day: 'Thu', active: 180, syncs: 90 },
+        { day: 'Fri', active: 250, syncs: 110 },
+        { day: 'Sat', active: 300, syncs: 130 },
+        { day: 'Sun', active: 280, syncs: 100 }
+    ];
+
+    const COLORS = ['#3b82f6', '#f43f5e', '#10b981', '#f59e0b'];
+
+    return (
+        <div className="space-y-10 animate-fade-up">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                    <Users className="w-10 h-10 text-blue-500 mb-4 relative z-10" />
+                    <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Active Nodes</h4>
+                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">1,248</p>
+                    <div className="mt-4 flex items-center gap-2 text-emerald-500 font-bold text-xs relative z-10 uppercase tracking-widest">
+                        <TrendingUp className="w-4 h-4" />
+                        <span>+12% this week</span>
+                    </div>
+                </div>
+                
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                    <Zap className="w-10 h-10 text-rose-500 mb-4 relative z-10" />
+                    <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Sync Operations</h4>
+                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">8,902</p>
+                    <div className="mt-4 flex items-center gap-2 text-rose-500 font-bold text-xs relative z-10 uppercase tracking-widest">
+                        <Activity className="w-4 h-4" />
+                        <span>Real-time Stream OK</span>
+                    </div>
+                </div>
+
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                    <Database className="w-10 h-10 text-emerald-500 mb-4 relative z-10" />
+                    <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Vault Storage</h4>
+                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">1.2 GB</p>
+                    <div className="mt-4 flex items-center gap-2 text-blue-500 font-bold text-xs relative z-10 uppercase tracking-widest">
+                        <Monitor className="w-4 h-4" />
+                        <span>42% utilized</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-2xl space-y-6">
+                    <div className="flex items-center justify-between px-2">
+                        <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900">Network Traffic</h3>
+                        <div className="flex items-center gap-4">
+                             <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                                <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Active</span>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-rose-500 rounded-full" />
+                                <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Syncs</span>
+                             </div>
+                        </div>
+                    </div>
+                    <div className="h-[300px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorSyncs" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.8}/>
+                                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} dy={10} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#64748b' }} />
+                                <Tooltip 
+                                    contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', padding: '15px' }}
+                                    itemStyle={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}
+                                />
+                                <Area type="monotone" dataKey="active" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorActive)" />
+                                <Area type="monotone" dataKey="syncs" stroke="#f43f5e" strokeWidth={4} fillOpacity={1} fill="url(#colorSyncs)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                <div className="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-center space-y-6">
+                    <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 w-full text-left px-2">Knowledge Matrix</h3>
+                    <div className="h-[300px] w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={data}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={80}
+                                    outerRadius={120}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {data.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Total Nodes</span>
+                            <span className="text-3xl font-black text-slate-900">{liveMaterials.length + liveNews.length + liveNotices.length}</span>
+                        </div>
+                    </div>
+                    <div className="flex gap-6 pt-4">
+                        {data.map((entry, index) => (
+                           <div key={entry.name} className="flex items-center gap-2">
+                               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                               <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">{entry.name}</span>
+                           </div> 
+                        ))}
+                    </div>
+                </div>
+            </div>
+            
+            <div className="bg-linear-to-br from-slate-900 to-indigo-950 p-12 rounded-[4rem] shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-1000" />
+                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+                    <div className="space-y-2">
+                        <h3 className="text-2xl font-black italic tracking-tighter uppercase text-white leading-none">Intelligence Protocol Active</h3>
+                        <p className="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.4em]">Node ID: AP-SYNC-80321 • Status: Operational</p>
+                    </div>
+                    <button className="px-12 py-5 bg-white text-slate-900 rounded-3xl font-black uppercase text-xs tracking-widest shadow-2xl shadow-white/10 hover:bg-slate-100 transition-all active:scale-95">
+                        Download Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AdminPortalPage = () => {
     const { user, liveNews, liveMaterials, liveNotices, fetchLiveNews, fetchLiveMaterials, fetchLiveNotices } = useApp();
     const navigate = useNavigate();
@@ -5510,29 +5808,51 @@ const AdminPortalPage = () => {
             </header>
 
             {adminSubView === 'menu' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-up">
-                    {[
-                        { id: 'study', title: 'Forge Material', desc: 'Syllabus, Videos, Notes', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                        { id: 'model_q', title: 'Board Question Bank', desc: 'Model Sets & Past Papers', icon: ClipboardCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-                        { id: 'news', title: 'Broadcast Station', desc: 'Global News & Articles', icon: Newspaper, color: 'text-rose-500', bg: 'bg-rose-50' },
-                        { id: 'notices', title: 'Board Dispatch', desc: 'Live Ticker Updates', icon: Megaphone, color: 'text-blue-500', bg: 'bg-blue-50' },
-                        { id: 'analytics', title: 'Command Stats', desc: 'Platform Performance', icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' }
-                    ].map(item => (
-                        <button 
-                            key={item.id}
-                            onClick={() => { setActiveTab(item.id as any); setAdminSubView('form'); }}
-                            className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 text-left"
-                        >
-                            <div className={cn("w-20 h-20 rounded-[2rem] flex items-center justify-center shrink-0 border border-transparent group-hover:scale-110 transition-transform", item.bg, item.color)}>
-                                <item.icon className="w-10 h-10" />
+                <div className="space-y-10 animate-fade-up">
+                    {/* ADMIN QUICK STATS */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Active Sessions', value: '1,240', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
+                            { label: 'Uptime', value: '99.9%', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+                            { label: 'Cloud Buffer', value: '42%', icon: Database, color: 'text-amber-500', bg: 'bg-amber-50' },
+                            { label: 'Security', value: 'Level 4', icon: ShieldCheck, color: 'text-rose-500', bg: 'bg-rose-50' }
+                        ].map((stat, i) => (
+                            <div key={i} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
+                                <stat.icon className={cn("w-6 h-6 mb-2", stat.color)} />
+                                <span className="text-xl font-black text-slate-800 leading-none">{stat.value}</span>
+                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</span>
                             </div>
-                            <div>
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{item.title}</h3>
-                                <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1">{item.desc}</p>
-                            </div>
-                            <ChevronRight className="w-8 h-8 text-slate-200 ml-auto group-hover:text-slate-400 transition-colors" />
-                        </button>
-                    ))}
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[
+                            { id: 'study', title: 'Forge Material', desc: 'Syllabus, Videos, Notes', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50', gradient: 'from-emerald-500/10 to-transparent' },
+                            { id: 'model_q', title: 'Board Question Bank', desc: 'Model Sets & Past Papers', icon: ClipboardCheck, color: 'text-indigo-500', bg: 'bg-indigo-50', gradient: 'from-indigo-500/10 to-transparent' },
+                            { id: 'news', title: 'Broadcast Station', desc: 'Global News & Articles', icon: Newspaper, color: 'text-rose-500', bg: 'bg-rose-50', gradient: 'from-rose-500/10 to-transparent' },
+                            { id: 'notices', title: 'Board Dispatch', desc: 'Live Ticker Updates', icon: Megaphone, color: 'text-blue-500', bg: 'bg-blue-50', gradient: 'from-blue-500/10 to-transparent' },
+                            { id: 'analytics', title: 'Command Stats', desc: 'Platform Performance', icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50', gradient: 'from-amber-500/10 to-transparent' },
+                            { id: 'users', title: 'User Nexus', desc: 'Student Registry', icon: Users, color: 'text-violet-500', bg: 'bg-violet-50', gradient: 'from-violet-500/10 to-transparent' }
+                        ].map(item => (
+                            <button 
+                                key={item.id}
+                                onClick={() => { setActiveTab(item.id as any); setAdminSubView('form'); }}
+                                className="bg-white p-8 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 text-left relative overflow-hidden"
+                            >
+                                <div className={cn("absolute inset-0 bg-linear-to-br opacity-0 group-hover:opacity-100 transition-opacity", item.gradient)} />
+                                <div className={cn("w-20 h-20 md:w-24 md:h-24 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center shrink-0 border border-transparent group-hover:rotate-6 transition-all duration-500 shadow-xl", item.bg, item.color)}>
+                                    <item.icon className="w-10 h-10 md:w-12 md:h-12" />
+                                </div>
+                                <div className="relative z-10">
+                                    <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{item.title}</h3>
+                                    <p className="text-[0.7rem] md:text-[0.8rem] font-black text-slate-400 uppercase tracking-widest mt-1">{item.desc}</p>
+                                </div>
+                                <div className="ml-auto relative z-10 w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                    <ArrowRight className="w-5 h-5" />
+                                </div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-10 animate-fade-up">
@@ -5548,6 +5868,9 @@ const AdminPortalPage = () => {
                     </div>
 
                     <AnimatePresence mode="wait">
+                        {activeTab === 'analytics' && (
+                            <AdminAnalytics liveMaterials={liveMaterials} liveNews={liveNews} liveNotices={liveNotices} />
+                        )}
                         {activeTab === 'study' && (
                             <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
                                 <section className="space-y-4">
