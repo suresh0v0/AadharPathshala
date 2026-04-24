@@ -181,7 +181,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-[#F8FAFC]">
       <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
         <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
-          <div className={cn("logo cursor-pointer flex items-center gap-2 group transition-all duration-500", location.pathname === '/' && "opacity-0 pointer-events-none scale-90 translate-x-[-20px]")} onClick={() => navigate('/')}>
+          <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
             <div className="flex flex-col leading-none">
               <span className="text-[#E11D48] font-black text-xl tracking-tighter uppercase italic">Aadhar</span>
               <span className="text-[#1D4ED8] font-black text-xl tracking-tighter uppercase italic">Pathshala</span>
@@ -189,7 +189,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <div className="flex items-center gap-4">
              {user && (
-               <button onClick={() => navigate('/profile')} className={cn("w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all", location.pathname === '/' && "opacity-0 pointer-events-none scale-90 translate-x-[20px]")}>
+               <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
                   <UserIcon className="w-5 h-5 fill-current" />
                   <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
                </button>
@@ -1629,7 +1629,7 @@ const HomePage = () => {
     }, []);
 
     return (
-        <div className="space-y-6 pb-20 px-4">
+        <div className="space-y-3 pb-20 px-1">
             {/* Welcome Banner - Rectangular and Large like Subject Hub */}
             <AnimatePresence mode="wait">
                 <motion.div 
@@ -1637,14 +1637,14 @@ const HomePage = () => {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.98 }}
-                    className={cn("text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden transition-colors duration-700 min-h-[180px] flex flex-col justify-center border border-white/10", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
+                    className={cn("text-white p-7 rounded-[2rem] shadow-2xl relative overflow-hidden transition-colors duration-700 min-h-[150px] flex flex-col justify-center border border-white/10", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
                 >
                     <div className="absolute top-4 right-6 opacity-20 transition-transform duration-700">
-                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-32 h-32" })}
+                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-24 h-24" })}
                     </div>
-                    <div className="relative z-10 space-y-2">
-                        <p className="text-[0.65rem] font-black uppercase tracking-[0.4em] opacity-80">Sync Status: Peak Performance</p>
-                        <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight italic leading-tight max-w-[80%]">
+                    <div className="relative z-10 space-y-1">
+                        <p className="text-[0.55rem] font-black uppercase tracking-[0.4em] opacity-80">Sync Status: Peak Performance</p>
+                        <h1 className="text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-tight italic leading-tight max-w-[90%]">
                             {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE", "ECONOMIZE YOUR KNOWLEDGE", "A HEALTHY MIND AT WORK"][bannerColorIndex]}
                         </h1>
                     </div>
@@ -1652,36 +1652,36 @@ const HomePage = () => {
             </AnimatePresence>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                    <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-3 shadow-inner">
-                        <Trophy className="w-6 h-6" />
+            <div className="grid grid-cols-2 gap-3">
+                <div className="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
+                    <div className="w-9 h-9 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500 mb-1.5 shadow-inner">
+                        <Trophy className="w-4 h-4" />
                     </div>
-                    <div className="text-2xl font-black text-slate-800 leading-none">{user?.xp || 0}</div>
-                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Total XP</div>
+                    <div className="text-lg font-black text-slate-800 leading-none">{user?.xp || 0}</div>
+                    <div className="text-[0.5rem] text-slate-400 font-black uppercase tracking-widest mt-1">Total XP</div>
                 </div>
-                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                    <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 mb-3 shadow-inner">
-                        <Flame className="w-6 h-6" />
+                <div className="bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
+                    <div className="w-9 h-9 bg-rose-50 rounded-lg flex items-center justify-center text-rose-500 mb-1.5 shadow-inner">
+                        <Flame className="w-4 h-4" />
                     </div>
-                    <div className="text-2xl font-black text-slate-800 leading-none">{user?.streak || 0}</div>
-                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Day Streak</div>
+                    <div className="text-lg font-black text-slate-800 leading-none">{user?.streak || 0}</div>
+                    <div className="text-[0.5rem] text-slate-400 font-black uppercase tracking-widest mt-1">Day Streak</div>
                 </div>
             </div>
             
             {/* Syllabus Progess */}
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-black text-lg text-slate-800">Syllabus Progress</h3>
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-black text-base text-slate-800">Syllabus Progress</h3>
                     <motion.span 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="text-xl font-black text-[#E11D48]"
+                        className="text-lg font-black text-[#E11D48]"
                     >
                         42%
                     </motion.span>
                 </div>
-                <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden mb-2 relative">
+                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden mb-1 relative">
                     <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: "42%" }}
@@ -1689,19 +1689,19 @@ const HomePage = () => {
                         className="h-full bg-gradient-to-r from-[#1D4ED8] to-[#60A5FA] rounded-full"
                     />
                 </div>
-                <p className="text-slate-500 text-sm font-medium">Next: Complete Science Chapter 4 - Light</p>
+                <p className="text-slate-500 text-xs font-medium">Next: Science Ch. 4 - Light</p>
             </div>
 
             {/* Aadhar Toolkit - 4 Buttons with Tools Page Design */}
-            <div className="space-y-4">
+            <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-2">
-                        <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><ToolLayout className="w-5 h-5" /></div>
-                        <h2 className="text-xl font-black text-slate-800">Aadhar Toolkit</h2>
+                        <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><ToolLayout className="w-4 h-4" /></div>
+                        <h2 className="text-lg font-black text-slate-800 tracking-tight">Aadhar Toolkit</h2>
                     </div>
-                    <Link to="/tools" className="text-blue-600 font-black text-[0.65rem] uppercase tracking-widest hover:underline">View All</Link>
+                    <Link to="/tools" className="text-blue-600 font-black text-[0.6rem] uppercase tracking-widest hover:underline">View All</Link>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                     {[
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
                         { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
@@ -1711,39 +1711,39 @@ const HomePage = () => {
                         <Link 
                             key={t.id} 
                             to={t.path} 
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:border-blue/20 transition-all active:scale-95 text-center min-h-[140px]"
+                            className="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-3 hover:shadow-xl hover:border-blue/20 transition-all active:scale-95 text-center min-h-[120px]"
                         >
                             <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform shrink-0",
+                                "w-12 h-12 rounded-xl flex items-center justify-center transition-transform shrink-0",
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
-                                t.color === 'orange' ? "bg-orange-50 text-orange-600" :
+                                t.color === 'orange' ? "bg-orange-50 text-orange-100" :
                                 t.color === 'purple' ? "bg-purple-50 text-purple-600" :
                                 "bg-rose-50 text-rose-600"
                             )}>
-                                <t.icon className="w-7 h-7" />
+                                <t.icon className="w-6 h-6" />
                             </div>
-                            <h3 className="font-black text-slate-800 text-sm tracking-tighter uppercase italic">{t.label}</h3>
+                            <h3 className="font-bold text-slate-800 text-xs tracking-tighter uppercase italic">{t.label}</h3>
                         </Link>
                     ))}
                 </div>
             </div>
             
             {/* Quick Access */}
-            <div className="space-y-4">
-                 <div className="flex items-center gap-2">
-                    <div className="bg-rose-100 text-rose-700 p-2 rounded-lg"><Megaphone className="w-5 h-5" /></div>
-                    <h2 className="text-lg font-black text-slate-800">Quick Access</h2>
+            <div className="space-y-3">
+                 <div className="flex items-center gap-2 px-2">
+                    <div className="bg-rose-100 text-rose-700 p-2 rounded-lg"><Megaphone className="w-4 h-4" /></div>
+                    <h2 className="text-lg font-black text-slate-800 tracking-tight">Quick Access</h2>
                 </div>
-                 <Link to="/news" className="bg-white p-5 rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+                 <Link to="/news" className="bg-white p-4 rounded-[2rem] border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
                     <div className="flex items-center gap-4">
-                         <div className="bg-rose-50 text-rose-500 p-3 rounded-2xl"><Megaphone /></div>
+                         <div className="bg-rose-50 text-rose-500 p-3 rounded-2xl"><Megaphone className="w-5 h-5" /></div>
                          <div>
-                            <h3 className="font-black text-slate-800">CDC Board Updates</h3>
-                            <p className="text-xs text-slate-500">Latest SEE 2083 notices</p>
+                            <h3 className="font-black text-slate-800 text-sm">CDC Board Updates</h3>
+                            <p className="text-[0.65rem] text-slate-500">Latest SEE 2083 notices</p>
                          </div>
                     </div>
-                    <ChevronRight className="text-slate-400" />
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                  </Link>
             </div>
 
@@ -1751,19 +1751,17 @@ const HomePage = () => {
             <NoticeBoard />
 
             {/* About Aadhar Pathshala */}
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mt-6">
-                <h3 className="text-lg font-black text-slate-800 mb-3">About Aadhar Pathshala</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">
+            <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 mt-2">
+                <h3 className="text-lg font-black text-slate-800 mb-2 tracking-tight">About Aadhar Pathshala</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
                     Aadhar Pathshala is your ultimate companion for academic excellence! 
-                    <span className="block mt-2 font-bold text-[#1D4ED8]">Features:</span>
+                    <span className="block mt-1.5 font-bold text-[#1D4ED8] uppercase text-[0.6rem] tracking-widest">Features</span>
                     • Personalized AI Tutors for instant doubt clearing.
                     • Interactive mock tests for board-level preparation.
                     • Comprehensive study materials and quick-access tools.
-                    • Track your daily progress and streak.
-                    <span className="block mt-2 font-bold text-[#E11D48]">Benefits:</span>
+                    <span className="block mt-1.5 font-bold text-[#E11D48] uppercase text-[0.6rem] tracking-widest">Growth</span>
                     • Boost your confidence with tailored study plans.
                     • Stay updated with official CDC board notices.
-                    • Learn anywhere, anytime with our vibrant interface.
                 </p>
             </div>
         </div>
@@ -1865,16 +1863,16 @@ const NoticeBoard = () => {
     if (displayNotices.length === 0) return null;
 
     return (
-        <div className="mb-10 animate-fade-up">
-            <div className="flex items-center gap-2 mb-4 px-1">
-                <Megaphone className="w-5 h-5 text-rose-500" />
-                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-[#020617]">Live Notice Board</h2>
-                <div className="flex-1 h-[2px] bg-linear-to-r from-slate-100 to-transparent ml-2" />
+        <div className="mb-4 animate-fade-up">
+            <div className="flex items-center gap-2 mb-2 px-1">
+                <Megaphone className="w-4 h-4 text-rose-500" />
+                <h2 className="text-[0.65rem] font-black uppercase tracking-[0.2em] text-[#020617]">Live Notice Board</h2>
+                <div className="flex-1 h-[1.5px] bg-linear-to-r from-slate-100 to-transparent ml-2" />
             </div>
             
-            <div className="relative overflow-hidden bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl border border-white/5 group">
-                <div className="absolute top-0 right-0 p-4">
-                    <Bell className="w-6 h-6 text-white/20 animate-swing origin-top" />
+            <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-6 shadow-xl border border-white/5 group">
+                <div className="absolute top-0 right-0 p-3">
+                    <Bell className="w-5 h-5 text-white/20 animate-swing origin-top" />
                 </div>
                 
                 <AnimatePresence mode="wait">
@@ -1883,10 +1881,10 @@ const NoticeBoard = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="relative z-10 min-h-[80px] flex flex-col justify-center"
+                        className="relative z-10 min-h-[60px] flex flex-col justify-center"
                     >
                         <div className={cn(
-                            "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[0.6rem] font-black uppercase tracking-widest mb-4",
+                            "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[0.55rem] font-black uppercase tracking-widest mb-3 w-fit",
                             displayNotices[currentIndex].type === 'alert' ? "bg-red text-white" : 
                             displayNotices[currentIndex].type === 'update' ? "bg-emerald-500 text-white" : "bg-blue text-white"
                         )}>
@@ -6337,25 +6335,49 @@ const AppProvider = ({ children }: any) => {
 
     useEffect(() => {
         const initAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session?.user) {
-                const initialUser: User = {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.name || 'Adhyeta Nepal',
-                    email: session.user.email || '',
-                    grade: '10',
-                    xp: 0, 
-                    streak: 0, 
-                    badges: ['Early Bird', 'Quiz Master'],
-                    testsCompleted: 0, 
-                    avgScore: 0, 
-                    completedChapters: []
-                };
-                setUser(initialUser);
-                await fetchUserStats(session.user.id);
+            // Safety timeout: If initialization takes more than 5 seconds, force proceed
+            const safetyTimer = setTimeout(() => {
+                console.warn("Auth initialization timed out. Forcing proceed.");
+                setIsInitializing(false);
+            }, 5000);
+
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error("Session fetch error:", sessionError);
+                }
+
+                if (session?.user) {
+                    const initialUser: User = {
+                        id: session.user.id,
+                        name: session.user.user_metadata?.name || 'Adhyeta Nepal',
+                        email: session.user.email || '',
+                        grade: '10',
+                        xp: 0, 
+                        streak: 0, 
+                        badges: ['Early Bird', 'Quiz Master'],
+                        testsCompleted: 0, 
+                        avgScore: 0, 
+                        completedChapters: []
+                    };
+                    setUser(initialUser);
+                    // Fetch stats in background, don't necessarily block if it's slow
+                    fetchUserStats(session.user.id).catch(err => console.error("Error in background stats fetch:", err));
+                }
+                
+                // Fetch live content
+                await Promise.allSettled([
+                    fetchLiveNews(), 
+                    fetchLiveMaterials(), 
+                    fetchLiveNotices()
+                ]);
+            } catch (err) {
+                console.error('Critical error during auth initialization:', err);
+            } finally {
+                clearTimeout(safetyTimer);
+                setIsInitializing(false);
             }
-            await Promise.all([fetchLiveNews(), fetchLiveMaterials(), fetchLiveNotices()]);
-            setIsInitializing(false);
         };
         initAuth();
 
