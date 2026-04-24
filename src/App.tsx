@@ -181,7 +181,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     <div className="min-h-screen bg-[#F8FAFC]">
       <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
         <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
-          <div className="logo cursor-pointer flex items-center gap-2 group" onClick={() => navigate('/')}>
+          <div className={cn("logo cursor-pointer flex items-center gap-2 group transition-all duration-500", location.pathname === '/' && "opacity-0 pointer-events-none scale-90 translate-x-[-20px]")} onClick={() => navigate('/')}>
             <div className="flex flex-col leading-none">
               <span className="text-[#E11D48] font-black text-xl tracking-tighter uppercase italic">Aadhar</span>
               <span className="text-[#1D4ED8] font-black text-xl tracking-tighter uppercase italic">Pathshala</span>
@@ -189,7 +189,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           </div>
           <div className="flex items-center gap-4">
              {user && (
-               <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
+               <button onClick={() => navigate('/profile')} className={cn("w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all", location.pathname === '/' && "opacity-0 pointer-events-none scale-90 translate-x-[20px]")}>
                   <UserIcon className="w-5 h-5 fill-current" />
                   <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
                </button>
@@ -922,16 +922,21 @@ const AITutor = () => {
             const sharedFormatting = `
 FORMATTING RULES:
 1. MATH: Use $ for inline and $$ for block math.
-2. VISUALS (MANDATORY): You MUST include a visual for Science, History, or Geography.
+2. VISUALS (SITUATIONAL): You MAY include a visual for Science, History, or Geography if it helps explain a complex topic, or if explicitly asked.
+   - DO NOT provide visuals for simple text-based questions unless necessary.
    - USE THE TAG: [VISUAL: DESCRIPTION]
    - DESCRIPTION: 5 specific keywords for a scientific diagram (e.g., [VISUAL: human heart internal anatomy labeled]).
    - Put this on its own line with empty lines around it.
-3. VIBRANCY: Use ### for section headers to ensure colourful output.
+3. SUBJECT EXPERTISE:
+   - NEPALI & SOCIAL STUDIES (Nepali: नेपाली, Social: सामाजिक): Answer in a mix of clear English and proper Nepali script (Unicode) where appropriate. 
+   - Use real-world examples from Nepal (e.g., specific rivers like Koshi, historical figures like Prithvi Narayan Shah, or social issues in rural Nepal).
+   - Ensure historical dates are accurate to the Nepali calendar (B.S.) where applicable.
+4. VIBRANCY: Use ### for section headers to ensure colourful output.
    - MOMO: Use "### 🧬 Concept Core" and "### 💡 Expert Insight".
    - MANGO: Use "### 📊 Case Data" and "### 🔍 Reliable Check".
    - ACHAR: Use "### ⚡ Quick Facts".
-4. NO GREETINGS: Start answering immediately.
-5. PARAGRAPHS: Max 2 sentences each. Use **bold** for key concepts.`;
+5. NO GREETINGS: Start answering immediately.
+6. PARAGRAPHS: Max 2 sentences each. Use **bold** for key concepts.`;
 
             if (activeTutor === 'achar') {
                 // GROQ (ACHAR) Implementation
@@ -1625,39 +1630,42 @@ const HomePage = () => {
 
     return (
         <div className="space-y-6 pb-20 px-4">
-            {/* Welcome Banner - Subject-inspired Vibrant Gradient */}
+            {/* Welcome Banner - Rectangular and Large like Subject Hub */}
             <AnimatePresence mode="wait">
                 <motion.div 
                     key={bannerColorIndex}
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className={cn("text-white p-8 rounded-3xl shadow-lg relative overflow-hidden transition-colors duration-700 h-40 flex flex-col justify-center", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    className={cn("text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden transition-colors duration-700 min-h-[180px] flex flex-col justify-center border border-white/10", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
                 >
-                    <div className="absolute top-2 right-2 opacity-20">
-                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-24 h-24" })}
+                    <div className="absolute top-4 right-6 opacity-20 transition-transform duration-700">
+                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-32 h-32" })}
                     </div>
-                    <h1 className="text-2xl font-black uppercase tracking-tight italic">
-                        {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE", "ECONOMIZE YOUR KNOWLEDGE", "A HEALTHY MIND AT WORK"][bannerColorIndex]}
-                    </h1>
+                    <div className="relative z-10 space-y-2">
+                        <p className="text-[0.65rem] font-black uppercase tracking-[0.4em] opacity-80">Sync Status: Peak Performance</p>
+                        <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tight italic leading-tight max-w-[80%]">
+                            {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE", "ECONOMIZE YOUR KNOWLEDGE", "A HEALTHY MIND AT WORK"][bannerColorIndex]}
+                        </h1>
+                    </div>
                 </motion.div>
             </AnimatePresence>
 
-            {/* Summary Stats - Reduced width */}
+            {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-5 rounded-3xl shadow-sm text-center border border-slate-100 flex flex-col items-center">
-                    <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-2">
-                        <Trophy className="w-5 h-5" />
+                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
+                    <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mb-3 shadow-inner">
+                        <Trophy className="w-6 h-6" />
                     </div>
-                    <div className="text-xl font-black">{user?.xp || 0}</div>
-                    <div className="text-[10px] text-slate-500 font-bold uppercase">Total XP</div>
+                    <div className="text-2xl font-black text-slate-800 leading-none">{user?.xp || 0}</div>
+                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Total XP</div>
                 </div>
-                <div className="bg-white p-5 rounded-3xl shadow-sm text-center border border-slate-100 flex flex-col items-center">
-                     <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mb-2">
-                        <Flame className="w-5 h-5" />
+                <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col items-center">
+                    <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 mb-3 shadow-inner">
+                        <Flame className="w-6 h-6" />
                     </div>
-                    <div className="text-xl font-black">{user?.streak || 0}</div>
-                    <div className="text-[10px] text-slate-500 font-bold uppercase">Day Streak</div>
+                    <div className="text-2xl font-black text-slate-800 leading-none">{user?.streak || 0}</div>
+                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Day Streak</div>
                 </div>
             </div>
             
@@ -1684,34 +1692,38 @@ const HomePage = () => {
                 <p className="text-slate-500 text-sm font-medium">Next: Complete Science Chapter 4 - Light</p>
             </div>
 
-            {/* Aadhar Toolkit */}
+            {/* Aadhar Toolkit - 4 Buttons with Tools Page Design */}
             <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                    <div className="bg-amber-100 text-amber-700 p-2 rounded-lg"><ToolLayout className="w-5 h-5" /></div>
-                    <h2 className="text-lg font-black text-slate-800">Aadhar Toolkit</h2>
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                        <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><ToolLayout className="w-5 h-5" /></div>
+                        <h2 className="text-xl font-black text-slate-800">Aadhar Toolkit</h2>
+                    </div>
+                    <Link to="/tools" className="text-blue-600 font-black text-[0.65rem] uppercase tracking-widest hover:underline">View All</Link>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     {[
-                        { id: 'hub', label: 'Study Hub', icon: BookOpen, path: '/hub', color: 'indigo' },
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
                         { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
                         { id: 'timer', label: 'Focus', icon: Timer, path: '/tools/timer', color: 'rose' },
+                        { id: 'formulas', label: 'Formulas', icon: Sigma, path: '/tools/formulas', color: 'purple' },
                     ].map((t) => (
                         <Link 
                             key={t.id} 
                             to={t.path} 
-                            className="bg-white p-6 rounded-3xl border border-slate-50 shadow-sm flex flex-col gap-3 hover:shadow-md hover:border-blue/20 transition-all active:scale-95"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:border-blue/20 transition-all active:scale-95 text-center min-h-[140px]"
                         >
                             <div className={cn(
-                                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform shrink-0",
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
                                 t.color === 'orange' ? "bg-orange-50 text-orange-600" :
+                                t.color === 'purple' ? "bg-purple-50 text-purple-600" :
                                 "bg-rose-50 text-rose-600"
                             )}>
-                                <t.icon className="w-6 h-6" />
+                                <t.icon className="w-7 h-7" />
                             </div>
-                            <h3 className="font-bold text-sm tracking-tight">{t.label}</h3>
+                            <h3 className="font-black text-slate-800 text-sm tracking-tighter uppercase italic">{t.label}</h3>
                         </Link>
                     ))}
                 </div>
