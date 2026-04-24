@@ -1610,237 +1610,153 @@ const CalculatorSuite = () => {
 
 /* ── TOOLKIT DASHBOARD ── */
 const HomePage = () => {
-    const { user, liveNotices } = useApp();
     const navigate = useNavigate();
+    const { user } = useApp();
 
-    const stats = [
-        { label: 'Total Pages', value: '1,240+', icon: Database, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Active Users', value: '45.2K', icon: Users, color: 'text-rose-500', bg: 'bg-rose-50' },
-        { label: 'AI Responses', value: '2.4M', icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    ];
+    const bannerColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500", "bg-violet-500", "bg-blue-500", "bg-pink-500", "bg-teal-500", "bg-cyan-500", "bg-purple-500"];
+    const [bannerColorIndex, setBannerColorIndex] = useState(0);
 
-    const quickLinks = [
-        { label: 'Q-Bank', icon: ClipboardCheck, path: '/hub/science' },
-        { label: 'Formulas', icon: Sigma, path: '/tools/formulas' },
-        { label: 'Syllabus', icon: BookOpen, path: '/hub' },
-        { label: 'Archive', icon: Archive, path: '/hub' },
-    ];
-
-    const subjects = [
-        { name: 'Science', progress: 75, color: 'bg-blue-500' },
-        { name: 'Maths', progress: 60, color: 'bg-rose-500' },
-        { name: 'English', progress: 90, color: 'bg-emerald-500' },
-    ];
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setBannerColorIndex(prev => (prev + 1) % bannerColors.length);
+        }, 3000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
-        <div className="space-y-6 md:space-y-10 pb-32 animate-fade-up px-3 md:px-8 max-w-7xl mx-auto">
-            {/* STICKY USER BAR */}
-            <div className="sticky top-0 z-50 pt-3 md:pt-4 pb-2 bg-[#F8FAFC]/80 backdrop-blur-md">
-                <div className="flex items-center justify-between bg-white px-4 md:px-6 py-3 md:py-4 rounded-2xl md:rounded-[2.5rem] border border-slate-100 shadow-sm">
-                    <div className="flex items-center gap-3 md:gap-4">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg overflow-hidden">
-                            <UserIcon className="w-5 h-5 md:w-6 md:h-6" />
-                        </div>
-                        <div>
-                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Scholar Profile</p>
-                            <h4 className="text-sm md:text-md font-black text-slate-800 leading-none">{user?.name || "Guest Student"}</h4>
-                        </div>
+        <div className="space-y-6 pb-20 px-4">
+            {/* Welcome Banner - Subject-inspired Vibrant Gradient */}
+            <AnimatePresence mode="wait">
+                <motion.div 
+                    key={bannerColorIndex}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className={cn("text-white p-8 rounded-3xl shadow-lg relative overflow-hidden transition-colors duration-700 h-40 flex flex-col justify-center", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
+                >
+                    <div className="absolute top-2 right-2 opacity-20">
+                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-24 h-24" })}
                     </div>
-                    <div className="flex items-center gap-2 md:gap-3">
-                        <div className="hidden xs:flex flex-col items-end">
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 border border-rose-100 rounded-full">
-                                <Flame className="w-3 h-3 md:w-3.5 md:h-3.5 text-rose-500" />
-                                <span className="text-[0.55rem] md:text-[0.65rem] font-bold text-rose-600 uppercase tracking-widest">{user?.streakDays || 12}D</span>
-                            </div>
-                        </div>
-                        <button onClick={() => navigate('/profile')} className="w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200">
-                             <Bell className="w-4 h-4 md:w-5 md:h-5" />
-                        </button>
+                    <h1 className="text-2xl font-black uppercase tracking-tight italic">
+                        {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE", "ECONOMIZE YOUR KNOWLEDGE", "A HEALTHY MIND AT WORK"][bannerColorIndex]}
+                    </h1>
+                </motion.div>
+            </AnimatePresence>
+
+            {/* Summary Stats - Reduced width */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white p-5 rounded-3xl shadow-sm text-center border border-slate-100 flex flex-col items-center">
+                    <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mb-2">
+                        <Trophy className="w-5 h-5" />
                     </div>
+                    <div className="text-xl font-black">{user?.xp || 0}</div>
+                    <div className="text-[10px] text-slate-500 font-bold uppercase">Total XP</div>
+                </div>
+                <div className="bg-white p-5 rounded-3xl shadow-sm text-center border border-slate-100 flex flex-col items-center">
+                     <div className="w-10 h-10 bg-rose-50 rounded-full flex items-center justify-center text-rose-500 mb-2">
+                        <Flame className="w-5 h-5" />
+                    </div>
+                    <div className="text-xl font-black">{user?.streak || 0}</div>
+                    <div className="text-[10px] text-slate-500 font-bold uppercase">Day Streak</div>
                 </div>
             </div>
-
-            {/* NOTICE TROLL */}
-            {liveNotices && liveNotices.length > 0 && (
-                <div className="bg-slate-900 overflow-hidden py-3 rounded-[1.5rem] relative group border border-white/5">
+            
+            {/* Syllabus Progess */}
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-black text-lg text-slate-800">Syllabus Progress</h3>
+                    <motion.span 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-xl font-black text-[#E11D48]"
+                    >
+                        42%
+                    </motion.span>
+                </div>
+                <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden mb-2 relative">
                     <motion.div 
-                        animate={{ x: [0, -2000] }}
-                        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-                        className="flex whitespace-nowrap gap-12 items-center"
-                    >
-                        {[...liveNotices, ...liveNotices].map((n, i) => (
-                            <div key={i} className="flex items-center gap-3">
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-                                <span className="text-[0.6rem] font-black text-white uppercase tracking-[0.2em]">{n.text}</span>
-                            </div>
-                        ))}
-                    </motion.div>
+                        initial={{ width: 0 }}
+                        animate={{ width: "42%" }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-[#1D4ED8] to-[#60A5FA] rounded-full"
+                    />
                 </div>
-            )}
-
-            {/* HERO DYNAMIC */}
-            <section className="relative overflow-hidden rounded-[2.5rem] md:rounded-[4rem] bg-slate-900 p-6 md:p-16 text-white border-[4px] md:border-[8px] border-white shadow-2xl group">
-                <div className="absolute top-0 right-0 w-64 md:w-96 h-64 md:h-96 bg-blue-600/20 rounded-full blur-[80px] md:blur-[100px] -mr-32 -mt-32" />
-                <div className="absolute bottom-0 left-0 w-64 md:w-96 h-64 md:h-96 bg-purple-600/20 rounded-full blur-[80px] md:blur-[100px] -ml-32 -mb-32" />
-                
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                    <div className="space-y-6 md:space-y-8 text-center lg:text-left">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full border border-white/20 mx-auto lg:mx-0">
-                            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="text-[0.55rem] font-black uppercase tracking-[0.2em]">Prep Protocol 2083</span>
-                        </div>
-                        <div className="space-y-3 md:space-y-4">
-                            <h1 className="text-4xl md:text-8xl font-black italic tracking-tighter uppercase leading-[0.9] text-white">
-                                Master Your <br />
-                                <span className="text-blue-400">Curriculum</span>
-                            </h1>
-                            <p className="text-[0.65rem] md:text-lg font-bold text-slate-400/80 uppercase tracking-widest max-w-lg leading-relaxed mx-auto lg:mx-0">
-                                Global insights for SEE 2083 scholars.
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap justify-center lg:justify-start gap-3 md:gap-4">
-                            <button onClick={() => navigate('/chat')} className="px-6 md:px-10 py-4 md:py-5 bg-white text-slate-900 rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest shadow-xl active:scale-95 transition-all flex items-center gap-2 md:gap-3">
-                                Launch AI <ChevronRight className="w-4 h-4" />
-                            </button>
-                            <button onClick={() => navigate('/hub')} className="px-6 md:px-10 py-4 md:py-5 bg-white/5 border-2 border-white/10 backdrop-blur-md text-white rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest hover:bg-white/10 transition-all">
-                                Library
-                            </button>
-                        </div>
-
-                        {/* MOBILE ONLY STATS ROW */}
-                        <div className="lg:hidden grid grid-cols-3 gap-2 pt-4">
-                            {stats.map((s, i) => (
-                                <div key={i} className="bg-white/5 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10 text-center">
-                                    <p className="text-[0.7rem] font-black text-white leading-none whitespace-nowrap">{s.value}</p>
-                                    <p className="text-[0.45rem] font-black text-slate-400 uppercase tracking-tighter mt-1">{s.label.split(' ')[0]}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="hidden lg:grid grid-cols-2 gap-6">
-                        {stats.map((s, i) => (
-                            <div key={i} className="bg-white/5 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 shadow-2xl hover:bg-white/10 transition-all text-center">
-                                <div className={cn("w-14 h-14 mx-auto rounded-2xl flex items-center justify-center mb-4 shadow-xl", s.bg)}>
-                                    <s.icon className={cn("w-7 h-7", s.color)} />
-                                </div>
-                                <h3 className="text-3xl font-black italic tracking-tighter text-white leading-none mb-2">{s.value}</h3>
-                                <p className="text-[0.55rem] font-black text-slate-500 uppercase tracking-widest">{s.label}</p>
-                            </div>
-                        ))}
-                         <div className="bg-linear-to-br from-indigo-500/20 to-purple-600/20 backdrop-blur-xl p-8 rounded-[3rem] border border-white/10 flex flex-col items-center justify-center text-center">
-                            <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
-                                <Pin className="w-7 h-7 text-white" />
-                            </div>
-                            <span className="text-3xl font-black text-white italic tracking-tighter">#1</span>
-                            <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mt-2">Platform Choice</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* QUICK LINK BAR */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {quickLinks.map(link => (
-                    <button 
-                        key={link.label}
-                        onClick={() => navigate(link.path)}
-                        className="bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-3 md:gap-4 hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 text-left"
-                    >
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 shrink-0">
-                            <link.icon className="w-5 h-5 md:w-6 md:h-6" />
-                        </div>
-                        <div>
-                            <h4 className="text-[0.7rem] md:text-sm font-black text-slate-800 uppercase tracking-tighter leading-none">{link.label}</h4>
-                            <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Direct</p>
-                        </div>
-                    </button>
-                ))}
+                <p className="text-slate-500 text-sm font-medium">Next: Complete Science Chapter 4 - Light</p>
             </div>
 
-            {/* CENTRAL DASHBOARD GRID */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* TOOLKIT MATRIX (LEFT) */}
-                <div className="lg:col-span-8 space-y-8">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-3">
-                            <div className="w-1 h-6 bg-blue-500 rounded-full" />
-                            <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900">Toolkit Matrix</h3>
-                        </div>
-                        <button onClick={() => navigate('/tools')} className="text-[0.6rem] font-black text-blue-500 uppercase tracking-widest hover:underline">View All Tools</button>
-                    </div>
-                    <AadharToolkit />
+            {/* Aadhar Toolkit */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <div className="bg-amber-100 text-amber-700 p-2 rounded-lg"><ToolLayout className="w-5 h-5" /></div>
+                    <h2 className="text-lg font-black text-slate-800">Aadhar Toolkit</h2>
                 </div>
-
-                {/* SIDEBAR WIDGETS (RIGHT) */}
-                <div className="lg:col-span-4 space-y-8">
-                    {/* STUDY TARGET */}
-                    <div className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h4 className="text-md md:text-lg font-black italic tracking-tighter uppercase text-slate-800">Mastery Track</h4>
-                            <Trophy className="w-4 h-4 md:w-5 md:h-5 text-amber-500" />
-                        </div>
-                        <div className="space-y-4">
-                            {subjects.map(sub => (
-                                <div key={sub.name} className="space-y-1.5">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{sub.name}</span>
-                                        <span className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-800">{sub.progress}%</span>
-                                    </div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <motion.div initial={{ width: 0 }} animate={{ width: `${sub.progress}%` }} className={cn("h-full rounded-full", sub.color)} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* AI COMPANION WIDGET */}
-                    <div className="bg-linear-to-br from-indigo-600 to-purple-700 p-6 md:p-8 rounded-[2rem] md:rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border-4 border-white/20">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16" />
-                        <div className="relative z-10 space-y-4 md:space-y-6">
-                             <div className="w-10 h-10 md:w-12 md:h-12 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-xl">
-                                <Bot className="w-5 h-5 md:w-6 md:h-6" />
+                <div className="grid grid-cols-2 gap-4">
+                    {[
+                        { id: 'hub', label: 'Study Hub', icon: BookOpen, path: '/hub', color: 'indigo' },
+                        { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
+                        { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
+                        { id: 'timer', label: 'Focus', icon: Timer, path: '/tools/timer', color: 'rose' },
+                    ].map((t) => (
+                        <Link 
+                            key={t.id} 
+                            to={t.path} 
+                            className="bg-white p-6 rounded-3xl border border-slate-50 shadow-sm flex flex-col gap-3 hover:shadow-md hover:border-blue/20 transition-all active:scale-95"
+                        >
+                            <div className={cn(
+                                "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0",
+                                t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
+                                t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
+                                t.color === 'orange' ? "bg-orange-50 text-orange-600" :
+                                "bg-rose-50 text-rose-600"
+                            )}>
+                                <t.icon className="w-6 h-6" />
                             </div>
-                            <div className="space-y-1 md:space-y-2">
-                                <h3 className="text-lg font-black italic leading-none uppercase">Aadhar AI</h3>
-                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold opacity-70 uppercase tracking-widest">Active & Ready</p>
-                            </div>
-                            <button onClick={() => navigate('/chat')} className="w-full py-3 md:py-4 bg-white text-indigo-600 rounded-xl md:rounded-2xl font-black text-[0.6rem] uppercase tracking-widest shadow-xl active:scale-95 transition-all">
-                                Consultation
-                            </button>
-                        </div>
-                    </div>
+                            <h3 className="font-bold text-sm tracking-tight">{t.label}</h3>
+                        </Link>
+                    ))}
                 </div>
             </div>
-
-            {/* SYLLABUS FEATURE (FOOTER) */}
-            <div className="bg-slate-100 p-8 md:p-14 rounded-[3rem] md:rounded-[4rem] text-slate-900 border border-slate-200 relative overflow-hidden group">
-                <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10 md:gap-12 text-center md:text-left">
-                    <div className="space-y-4 md:space-y-6">
-                        <div className="w-12 h-12 md:w-16 md:h-16 bg-white rounded-2xl md:rounded-3xl flex items-center justify-center shadow-xl border border-slate-100 mx-auto md:mx-0">
-                            <Lightbulb className="w-6 h-6 md:w-8 md:h-8 text-amber-500" />
-                        </div>
-                        <div className="space-y-1 md:space-y-2">
-                            <h2 className="text-2xl md:text-5xl font-black italic tracking-tighter uppercase leading-none text-slate-900">Map Your <br className="hidden md:block"/> Peak</h2>
-                            <p className="text-[0.65rem] md:text-md text-slate-500 font-bold uppercase tracking-widest">Syllabus Breakdown • Archives</p>
-                        </div>
-                        <button onClick={() => navigate('/hub')} className="px-8 md:px-10 py-4 md:py-5 bg-slate-900 text-white rounded-full md:rounded-[2rem] font-black uppercase text-[0.6rem] md:text-[0.65rem] tracking-widest shadow-2xl active:scale-95 transition-all">
-                            Unlock Library
-                        </button>
-                    </div>
-                    <div className="shrink-0 w-48 h-48 md:w-64 md:h-64 bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-2xl flex items-center justify-center border-4 border-slate-50 p-6 md:p-8">
-                         <div className="text-center space-y-2">
-                            <BookOpen className="w-10 h-10 md:w-12 md:h-12 text-blue-500 mx-auto" />
-                            <p className="text-xl md:text-2xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Aadhar Pathshala</p>
-                            <p className="text-[0.5rem] md:text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-none">Established v2.0</p>
+            
+            {/* Quick Access */}
+            <div className="space-y-4">
+                 <div className="flex items-center gap-2">
+                    <div className="bg-rose-100 text-rose-700 p-2 rounded-lg"><Megaphone className="w-5 h-5" /></div>
+                    <h2 className="text-lg font-black text-slate-800">Quick Access</h2>
+                </div>
+                 <Link to="/news" className="bg-white p-5 rounded-3xl border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+                    <div className="flex items-center gap-4">
+                         <div className="bg-rose-50 text-rose-500 p-3 rounded-2xl"><Megaphone /></div>
+                         <div>
+                            <h3 className="font-black text-slate-800">CDC Board Updates</h3>
+                            <p className="text-xs text-slate-500">Latest SEE 2083 notices</p>
                          </div>
                     </div>
-                </div>
+                    <ChevronRight className="text-slate-400" />
+                 </Link>
+            </div>
+
+            {/* Notice Board */}
+            <NoticeBoard />
+
+            {/* About Aadhar Pathshala */}
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 mt-6">
+                <h3 className="text-lg font-black text-slate-800 mb-3">About Aadhar Pathshala</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                    Aadhar Pathshala is your ultimate companion for academic excellence! 
+                    <span className="block mt-2 font-bold text-[#1D4ED8]">Features:</span>
+                    • Personalized AI Tutors for instant doubt clearing.
+                    • Interactive mock tests for board-level preparation.
+                    • Comprehensive study materials and quick-access tools.
+                    • Track your daily progress and streak.
+                    <span className="block mt-2 font-bold text-[#E11D48]">Benefits:</span>
+                    • Boost your confidence with tailored study plans.
+                    • Stay updated with official CDC board notices.
+                    • Learn anywhere, anytime with our vibrant interface.
+                </p>
             </div>
         </div>
-    );
-};
+    )
+}
 
 /* ── TOOLKIT DASHBOARD ── */
 const AadharToolkit = () => {
@@ -3316,7 +3232,7 @@ const ProfilePage = () => {
 
             <div className="grid grid-cols-3 gap-3">
                 {[
-                    { val: user?.xp.toLocaleString(), label: 'Total XP', icon: Zap, color: 'text-amber-500' },
+                    { val: (user?.xp || 0).toLocaleString(), label: 'Total XP', icon: Zap, color: 'text-amber-500' },
                     { val: user?.streak + ' Days', label: 'Streak', icon: Flame, color: 'text-rose-500' },
                     { val: 'Rank #12', label: 'Global', icon: Trophy, color: 'text-indigo-500' }
                 ].map(s => (
@@ -4773,6 +4689,7 @@ const UnitConverterPage = () => {
     );
 };
 const NotePadPage = () => {
+    const { addToast } = useToast();
     const navigate = useNavigate();
     const { user } = useApp();
     const [notes, setNotes] = useState<any[]>([]);
@@ -4781,6 +4698,8 @@ const NotePadPage = () => {
     const [content, setContent] = useState('');
     const [mode, setMode] = useState<'write' | 'upload' | 'files'>('write');
     const [uploadedFile, setUploadedFile] = useState<any>(null); // { name, type, data }
+
+    const MAX_NOTES = 50;
 
     useEffect(() => {
         if (user) {
@@ -4808,8 +4727,18 @@ const NotePadPage = () => {
         if (mode === 'write' && !title.trim() && !content.trim()) return;
         if (mode === 'upload' && !uploadedFile) return;
 
+        if (notes.length >= MAX_NOTES) {
+            addToast("Storage full! Please delete some notes to make room.", "error");
+            return;
+        }
+
         let finalContent = content;
         if (mode === 'upload') {
+            // Check for large files (estimated 2MB limit for row size)
+            if (uploadedFile.data.length > 2 * 1024 * 1024) {
+                addToast("File too large! Max 2MB allowed.", "error");
+                return;
+            }
             finalContent = JSON.stringify({
                 isFile: true,
                 fileName: uploadedFile.name,
@@ -6026,9 +5955,9 @@ const AdminPortalPage = () => {
 
                                 <div className="space-y-6">
                                     <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 ml-6">Resource Registry</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-4">
                                         {liveMaterials.map(m => (
-                                            <div key={m.id} className="bg-white p-6 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
+                                            <div key={m.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
                                                 <div className="flex items-center gap-6 min-w-0">
                                                     <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 uppercase italic font-black text-[0.6rem]">
                                                         {m.type.slice(0, 3)}
@@ -6347,49 +6276,117 @@ const AppProvider = ({ children }: any) => {
         }
     };
 
+    const fetchUserStats = async (userId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('notes')
+                .select('created_at')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false });
+            
+            if (error) throw error;
+            
+            const noteCount = data?.length || 0;
+            
+            // Calculate streak (consecutive days of activity)
+            let streak = 0;
+            if (data && data.length > 0) {
+                // Get unique dates in local time
+                const dates = [...new Set(data.map(n => new Date(n.created_at).toLocaleDateString()))];
+                const today = new Date().toLocaleDateString();
+                const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+                
+                // If most recent note is today or yesterday, start counting streak
+                if (dates[0] === today || dates[0] === yesterday) {
+                    streak = 1;
+                    for (let i = 0; i < dates.length - 1; i++) {
+                        const d1 = new Date(dates[i]);
+                        const d2 = new Date(dates[i+1]);
+                        // Difference in days
+                        const diff = (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24);
+                        if (Math.round(diff) === 1) {
+                            streak++;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            setUser(prev => prev ? {
+                ...prev,
+                xp: noteCount * 125, // 125 XP per note
+                streak: streak
+            } : null);
+        } catch (err) {
+            console.error('Error fetching user stats:', err);
+        }
+    };
+
     useEffect(() => {
         const initAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (session?.user) {
-                setUser({
+                const initialUser: User = {
                     id: session.user.id,
                     name: session.user.user_metadata?.name || 'Adhyeta Nepal',
                     email: session.user.email || '',
                     grade: '10',
-                    xp: 1250, 
-                    streak: 5, 
+                    xp: 0, 
+                    streak: 0, 
                     badges: ['Early Bird', 'Quiz Master'],
                     testsCompleted: 0, 
                     avgScore: 0, 
                     completedChapters: []
-                });
+                };
+                setUser(initialUser);
+                await fetchUserStats(session.user.id);
             }
             await Promise.all([fetchLiveNews(), fetchLiveMaterials(), fetchLiveNotices()]);
             setIsInitializing(false);
         };
         initAuth();
 
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
-                setUser({
+                const updatedUser: User = {
                     id: session.user.id,
                     name: session.user.user_metadata?.name || 'Adhyeta Nepal',
                     email: session.user.email || '',
                     grade: '10',
-                    xp: 1250, 
-                    streak: 5, 
+                    xp: 0, 
+                    streak: 0, 
                     badges: ['Early Bird', 'Quiz Master'],
                     testsCompleted: 0, 
                     avgScore: 0, 
                     completedChapters: []
-                });
+                };
+                setUser(updatedUser);
+                await fetchUserStats(session.user.id);
             } else {
                 setUser(null);
             }
         });
 
+        // Real-time subscription to notes for automatic updates
+        const notesSubscription = supabase
+            .channel('any-note-change')
+            .on('postgres_changes', { 
+                event: '*', 
+                schema: 'public', 
+                table: 'notes' 
+            }, async (payload: any) => {
+                // If it's the current user's note, re-fetch stats
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user) {
+                    await fetchUserStats(session.user.id);
+                }
+            })
+            .subscribe();
+
         return () => {
             authListener.subscription.unsubscribe();
+            supabase.removeChannel(notesSubscription);
         };
     }, []);
 
