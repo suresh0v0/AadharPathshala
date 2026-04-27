@@ -66,3 +66,30 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own tasks"
 ON tasks FOR DELETE
 USING (auth.uid() = user_id);
+
+-- ==========================================
+-- 3. Create the `user_profiles` table
+-- ==========================================
+CREATE TABLE user_profiles (
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    xp INTEGER DEFAULT 0,
+    streak INTEGER DEFAULT 0,
+    tests_completed INTEGER DEFAULT 0,
+    avg_score FLOAT DEFAULT 0,
+    badges TEXT[] DEFAULT '{}',
+    completed_chapters TEXT[] DEFAULT '{}',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable RLS for user_profiles
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Policies for user_profiles
+CREATE POLICY "Users can view their own profile"
+ON user_profiles FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can upsert their own profile"
+ON user_profiles FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);

@@ -6297,29 +6297,58 @@ const AppProvider = ({ children }: any) => {
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
-                const { data: savedStats } = await supabase
-                    .from('user_profiles')
-                    .select('*')
-                    .eq('user_id', session.user.id)
-                    .single();
+                try {
+                    // Start with basic user info immediately to allow UI transition
+                    const initialUser: User = {
+                        id: session.user.id,
+                        name: session.user.user_metadata?.name || 'Adhyeta Nepal',
+                        email: session.user.email || '',
+                        grade: '10',
+                        xp: 0,
+                        streak: 0,
+                        badges: ['Early Bird', 'Quiz Master'],
+                        testsCompleted: 0,
+                        avgScore: 0,
+                        completedChapters: []
+                    };
+                    setUser(initialUser);
 
-                const localStatsStr = localStorage.getItem(`user_stats_${session.user.id}`);
-                const localStats = localStatsStr ? JSON.parse(localStatsStr) : null;
+                    // Fetch profile stats in background
+                    const { data: savedStats } = await supabase
+                        .from('user_profiles')
+                        .select('*')
+                        .eq('user_id', session.user.id)
+                        .maybeSingle(); // maybeSingle() is safer than single() as it doesn't throw if missing
 
-                const updatedUser: User = {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.name || 'Adhyeta Nepal',
-                    email: session.user.email || '',
-                    grade: '10',
-                    xp: savedStats?.xp || localStats?.xp || 0, 
-                    streak: savedStats?.streak || localStats?.streak || 0, 
-                    badges: savedStats?.badges || localStats?.badges || ['Early Bird', 'Quiz Master'],
-                    testsCompleted: savedStats?.testsCompleted || localStats?.testsCompleted || 0, 
-                    avgScore: savedStats?.avgScore || localStats?.avgScore || 0, 
-                    completedChapters: savedStats?.completedChapters || localStats?.completedChapters || []
-                };
-                setUser(updatedUser);
-                await fetchUserStats(session.user.id);
+                    const localStatsStr = localStorage.getItem(`user_stats_${session.user.id}`);
+                    const localStats = localStatsStr ? JSON.parse(localStatsStr) : null;
+
+                    const updatedUser: User = {
+                        ...initialUser,
+                        xp: savedStats?.xp || localStats?.xp || 0, 
+                        streak: savedStats?.streak || localStats?.streak || 0, 
+                        badges: savedStats?.badges || localStats?.badges || initialUser.badges,
+                        testsCompleted: savedStats?.testsCompleted || localStats?.testsCompleted || 0, 
+                        avgScore: savedStats?.avgScore || localStats?.avgScore || 0, 
+                        completedChapters: savedStats?.completedChapters || localStats?.completedChapters || []
+                    };
+                    setUser(updatedUser);
+                    
+                    // Trigger background stats re-calculation from activity
+                    fetchUserStats(session.user.id);
+                } catch (err) {
+                    console.error("Auth state change processing error:", err);
+                    // Ensure we at least have basic user info if the profiles fetch crashes
+                    if (session?.user) {
+                        setUser({
+                            id: session.user.id,
+                            name: session.user.user_metadata?.name || 'Adhyeta Nepal',
+                            email: session.user.email || '',
+                            grade: '10',
+                            xp: 0, streak: 0, badges: ['Early Bird'], testsCompleted: 0, avgScore: 0, completedChapters: []
+                        });
+                    }
+                }
             } else {
                 setUser(null);
             }
