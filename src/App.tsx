@@ -12,7 +12,7 @@ import {
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, RotateCw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
-  Pin, Info, AlertTriangle, ChevronDown, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
+  Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
@@ -24,6 +24,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -157,6 +158,8 @@ const BOOK_LINKS: Record<string, string> = {
     'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
     'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
 };
+
+const STATIC_MCQS: Record<string, any[]> = {};
 
 // ════════════════════════════════════════════
 // COMPONENTS
@@ -1313,37 +1316,63 @@ ${sharedFormatting}`;
 
 /* ── CALCULATOR SUITE ── */
 const StandardCalculator = () => {
-    const [display, setDisplay] = useState('0');
-    const [equation, setEquation] = useState('');
-    const [history, setHistory] = useState<string[]>([]);
-    const [mode, setMode] = useState<'deg' | 'rad'>('deg');
+    const [equation, setEquation] = useState('0');
+    const [answer, setAnswer] = useState('');
+    const [angleMode, setAngleMode] = useState<'deg' | 'rad'>('deg');
     const [shift, setShift] = useState(false);
     const [alpha, setAlpha] = useState(false);
     const [ans, setAns] = useState('0');
     const [outputMode, setOutputMode] = useState<'decimal' | 'fraction'>('fraction');
+    const [history, setHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState(-1);
+    
+    const [uiMode, setUiMode] = useState<'NORMAL' | 'MODE_SEL' | 'CONST_SEL'>('NORMAL');
 
-    const formatEquation = (eq: string) => {
-        return eq.replace(/sqrt/g, '√')
-                 .replace(/pi/g, 'π')
-                 .replace(/e/g, 'e')
-                 .replace(/\*\*/g, '^')
-                 .replace(/\*/g, '×')
-                 .replace(/\//g, '÷')
-                 .replace(/asin/g, 'sin⁻¹')
-                 .replace(/acos/g, 'cos⁻¹')
-                 .replace(/atan/g, 'tan⁻¹')
-                 .replace(/log10/g, 'log')
-                 .replace(/log/g, 'ln');
+    const SCI_CONSTANTS = [
+        { sym: 'mp', val: '1.67262192e-27', name: 'Proton mass' },
+        { sym: 'mn', val: '1.6749275e-27', name: 'Neutron mass' },
+        { sym: 'me', val: '9.1093837e-31', name: 'Electron mass' },
+        { sym: 'h', val: '6.62607015e-34', name: 'Planck' },
+        { sym: 'a0', val: '5.291772109e-11', name: 'Bohr radius' },
+        { sym: 'g', val: '9.80665', name: 'Standard grav' },
+        { sym: 'G', val: '6.6743e-11', name: 'Newtonian G' },
+        { sym: 'c', val: '299792458', name: 'Speed of light' },
+        { sym: 'e', val: '1.602176634e-19', name: 'Elem charge' },
+        { sym: 'k', val: '1.380649e-23', name: 'Boltzmann k' }
+    ];
+
+    const getTexEquation = (eq: string) => {
+        if (!eq) return "\\text{ }";
+        try {
+            let processedEq = eq.replace(/sqrt\(/g, 'sqrt(')
+                                .replace(/pi/g, 'pi')
+                                .replace(/ans/i, 'Ans')
+                                .replace(/log10\(/g, 'log10(')
+                                .replace(/log\(/g, 'log(')
+                                .replace(/det\(/g, 'det(')
+                                .replace(/solveQuad\(/g, '\\text{solveQuad}(')
+                                .replace(/solveLin\(/g, '\\text{solveLin}(');
+            return math.parse(processedEq).toTex({ parenthesis: 'auto', implicit: 'hide' });
+        } catch {
+            return eq.replace(/([{}_\\])/g, "\\$1")
+                     .replace(/\//g, '\\div ')
+                     .replace(/\*/g, '\\times ');
+        }
     };
 
     const calculate = () => {
         try {
             let expr = equation;
-            if (!expr) return;
+            if (!expr || expr === '0') return;
 
             expr = expr.replace(/ans/g, ans);
 
-            if (mode === 'deg') {
+            SCI_CONSTANTS.forEach(c => {
+                const regex = new RegExp(c.sym, 'g');
+                expr = expr.replace(regex, `(${c.val})`);
+            });
+
+            if (angleMode === 'deg') {
                 expr = expr.replace(/sin\((.*?)\)/g, 'sin(($1) deg)');
                 expr = expr.replace(/cos\((.*?)\)/g, 'cos(($1) deg)');
                 expr = expr.replace(/tan\((.*?)\)/g, 'tan(($1) deg)');
@@ -1352,7 +1381,19 @@ const StandardCalculator = () => {
                 expr = expr.replace(/atan\((.*?)\)/g, 'atan($1) to deg');
             }
 
-            const result = math.evaluate(expr);
+            const customScope = {
+                solveQuad: (a: any, b: any, c: any) => {
+                    const discriminant = math.subtract(math.pow(b, 2), math.multiply(4, math.multiply(a, c)));
+                    const x1 = math.divide(math.add(math.unaryMinus(b), math.sqrt(discriminant as any)), math.multiply(2, a));
+                    const x2 = math.divide(math.subtract(math.unaryMinus(b), math.sqrt(discriminant as any)), math.multiply(2, a));
+                    return [x1, x2];
+                },
+                solveLin: (a: any, b: any) => {
+                    return math.divide(math.unaryMinus(b), a);
+                }
+            };
+
+            const result = math.evaluate(expr, customScope);
             let resultStr = '';
             
             if (outputMode === 'fraction') {
@@ -1360,7 +1401,7 @@ const StandardCalculator = () => {
                     const frac = math.fraction(result);
                     resultStr = Number(frac.d) === 1 ? frac.n.toString() : `${frac.n}/${frac.d}`;
                 } catch (e) {
-                    resultStr = result.toString();
+                    resultStr = typeof result === 'number' ? result.toFixed(8).replace(/\.?0+$/, '') : math.format(result, { precision: 8 });
                 }
             } else {
                 if (typeof result === 'number') {
@@ -1368,30 +1409,37 @@ const StandardCalculator = () => {
                 } else if (result && result.value !== undefined) {
                     resultStr = result.value.toFixed(8).replace(/\.?0+$/, '');
                 } else {
-                    resultStr = result.toString();
+                    resultStr = math.format(result, { precision: 8 });
                 }
             }
 
-            setHistory(prev => [equation + ' = ' + resultStr, ...prev].slice(0, 5));
-            setDisplay(resultStr);
+            setAnswer(resultStr);
             setAns(resultStr);
-            setEquation(resultStr);
+            
+            if (!history.includes(equation)) {
+                setHistory(prev => [...prev, equation]);
+            }
+            setHistoryIndex(-1);
         } catch (err) {
             console.error(err);
-            setDisplay('Syntax ERROR');
+            setAnswer('Math ERROR');
         }
     };
 
     const toggleSD = () => {
-        if (!display || display === 'Syntax ERROR') return;
+        if (!answer || answer === 'Math ERROR' || answer === 'Syntax ERROR') return;
         try {
-            if (display.includes('/')) {
-                const parts = display.split('/');
-                const dec = (parseInt(parts[0]) / parseInt(parts[1])).toFixed(6).replace(/\.?0+$/, '');
-                setDisplay(dec);
+            if (answer.includes('/')) {
+                const parts = answer.split('/');
+                const dec = (parseFloat(parts[0]) / parseFloat(parts[1])).toFixed(8).replace(/\.?0+$/, '');
+                setAnswer(dec);
+                setOutputMode('decimal');
             } else {
-                const frac = math.fraction(parseFloat(display));
-                setDisplay(`${frac.n}/${frac.d}`);
+                const frac: any = math.fraction(parseFloat(answer));
+                if (Number(frac.d) !== 1) {
+                    setAnswer(`${frac.n}/${frac.d}`);
+                }
+                setOutputMode('fraction');
             }
         } catch (e) {
             console.error("S=D conversion failed", e);
@@ -1399,45 +1447,72 @@ const StandardCalculator = () => {
     };
 
     const addToken = (token: string) => {
-        if (display === 'Syntax ERROR' || display === '0') {
-            if (!['+', '*', '/', '^', '!', ')'].includes(token)) {
-                setDisplay(token);
-                setEquation(token);
-                return;
-            }
-        }
+        if (uiMode !== 'NORMAL') return;
+        const operators = ['+', '-', '*', '/', '^'];
         
-        setEquation(prev => prev + token);
-        setDisplay(prev => (prev === '0' || prev === 'Syntax ERROR') ? token : prev + token);
+        if (answer !== '') {
+            if (operators.includes(token)) {
+                setEquation('ans' + token);
+            } else {
+                setEquation(token);
+            }
+            setAnswer('');
+            return;
+        }
+
+        setEquation(prev => prev === '0' ? token : prev + token);
     };
 
-    const functionBtns = [
-        { label: shift ? 'sin⁻¹' : 'sin', val: shift ? 'asin(' : 'sin(', color: 'slate' },
-        { label: shift ? 'cos⁻¹' : 'cos', val: shift ? 'acos(' : 'cos(', color: 'slate' },
-        { label: shift ? 'tan⁻¹' : 'tan', val: shift ? 'atan(' : 'tan(', color: 'slate' },
-        { label: 'hyp', val: 'hypot(', color: 'slate' },
-        { label: shift ? '√' : 'x²', val: shift ? 'sqrt(' : '^2', color: 'slate' },
-        { label: shift ? '³√' : 'x³', val: shift ? 'cbrt(' : '^3', color: 'slate' },
-        { label: 'log', val: 'log10(', color: 'slate' },
-        { label: 'ln', val: 'log(', color: 'slate' },
-        { label: '(', val: '(', color: 'slate' },
-        { label: ')', val: ')', color: 'slate' },
-        { label: shift ? 'e' : 'xⁿ', val: shift ? 'e' : '^', color: 'slate' },
-        { label: shift ? 'π' : 'n!', val: shift ? 'pi' : '!', color: 'slate' },
-    ];
-
-    const mainBtns = [
-        { label: '7', val: '7' }, { label: '8', val: '8' }, { label: '9', val: '9' }, { label: 'DEL', val: 'DEL', color: 'rose' }, { label: 'AC', val: 'AC', color: 'rose' },
-        { label: '4', val: '4' }, { label: '5', val: '5' }, { label: '6', val: '6' }, { label: '×', val: '*' }, { label: '÷', val: '/' },
-        { label: '1', val: '1' }, { label: '2', val: '2' }, { label: '3', val: '3' }, { label: '+', val: '+' }, { label: '-', val: '-' },
-        { label: '0', val: '0' }, { label: '.', val: '.' }, { label: 'EXP', val: 'e' }, { label: 'Ans', val: 'ans' }, { label: '=', val: '=' },
-    ];
-
     const handleAction = (btn: any) => {
-        if (btn.val === 'AC') { setDisplay('0'); setEquation(''); setShift(false); setAlpha(false); }
-        else if (btn.val === 'DEL') {
-            setEquation(prev => prev.slice(0, -1) || '');
-            setDisplay(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+        if (btn.val === 'AC') { 
+            setEquation('0'); 
+            setAnswer(''); 
+            setShift(false); 
+            setAlpha(false); 
+            setUiMode('NORMAL');
+            return;
+        }
+
+        if (shift && btn.val === '7') {
+            setUiMode('CONST_SEL');
+            setShift(false);
+            return;
+        }
+
+        if (shift && btn.val === '(') { addToken('['); setShift(false); return; }
+        if (shift && btn.val === ')') { addToken(']'); setShift(false); return; }
+        if (shift && btn.val === 'sd') { addToken(','); setShift(false); return; }
+        
+        if (btn.val === 'MODE') {
+            setUiMode('MODE_SEL');
+            return;
+        }
+        
+        if (uiMode === 'MODE_SEL') {
+            if (btn.val === '1') { setAngleMode('deg'); setUiMode('NORMAL'); }
+            if (btn.val === '2') { setAngleMode('rad'); setUiMode('NORMAL'); }
+            if (btn.val === '3') { addToken('solveQuad('); setUiMode('NORMAL'); }
+            if (btn.val === '4') { addToken('det('); setUiMode('NORMAL'); }
+            if (btn.val === '5') { addToken('solveLin('); setUiMode('NORMAL'); }
+            if (btn.val === '6') { setUiMode('CONST_SEL'); }
+            return;
+        }
+
+        if (uiMode === 'CONST_SEL') {
+            const num = parseInt(btn.val, 10);
+            if (!isNaN(num) && num >= 0 && num < SCI_CONSTANTS.length) {
+                addToken(SCI_CONSTANTS[num].sym);
+                setUiMode('NORMAL');
+            }
+            return;
+        }
+
+        if (btn.val === 'DEL') {
+            if (answer !== '') {
+                setAnswer('');
+            } else {
+                setEquation(prev => prev.length > 1 ? prev.slice(0, -1) : '0');
+            }
         }
         else if (btn.val === '=') calculate();
         else addToken(btn.val);
@@ -1448,91 +1523,213 @@ const StandardCalculator = () => {
         }
     };
 
+    const handleDpad = (dir: 'up' | 'down' | 'left' | 'right') => {
+        if (uiMode !== 'NORMAL') return;
+        if (dir === 'up') {
+            if (history.length > 0) {
+                const newIdx = Math.min(historyIndex + 1, history.length - 1);
+                setHistoryIndex(newIdx);
+                setEquation(history[history.length - 1 - newIdx]);
+                setAnswer('');
+            }
+        } else if (dir === 'down') {
+            if (historyIndex > 0) {
+                const newIdx = historyIndex - 1;
+                setHistoryIndex(newIdx);
+                setEquation(history[history.length - 1 - newIdx]);
+                setAnswer('');
+            } else if (historyIndex === 0) {
+                setHistoryIndex(-1);
+                setEquation('0');
+                setAnswer('');
+            }
+        } else if (dir === 'left') {
+            handleAction({ val: 'DEL' });
+        }
+    };
+
+    const functionKeys = [
+        { label: shift ? 'CALC' : 'SOLVE', val: '' },
+        { label: '∫dx', val: 'integral(' },
+        { label: 'x⁻¹', val: '^-1' },
+        { label: 'log▢', val: 'log(' },
+        { label: '▢/▢', val: '/' },
+        { label: '√', val: 'sqrt(' },
+        { label: 'x²', val: '^2' },
+        { label: 'x▢', val: '^' },
+        { label: 'log', val: 'log10(' },
+        { label: 'ln', val: 'log(' },
+        { label: '(-)', val: '-' },
+        { label: '°\'"', val: '' },
+        { label: 'hyp', val: 'hypot(' },
+        { label: 'sin', val: shift ? 'asin(' : 'sin(' },
+        { label: 'cos', val: shift ? 'acos(' : 'cos(' },
+        { label: 'tan', val: shift ? 'atan(' : 'tan(' },
+        { label: 'RCL', val: '' },
+        { label: 'ENG', val: 'i' },
+        { label: shift ? '[' : '(', val: '(' },
+        { label: shift ? ']' : ')', val: ')' },
+        { label: shift ? ',' : 'S⇔D', val: 'sd' },
+        { label: 'M+', val: 'm+' },
+    ];
+
+    const mainKeys = [
+        { label: '7', val: '7', type: 'num' }, { label: '8', val: '8', type: 'num' }, { label: '9', val: '9', type: 'num' }, { label: 'DEL', val: 'DEL', type: 'del' }, { label: 'AC', val: 'AC', type: 'del' },
+        { label: '4', val: '4', type: 'num' }, { label: '5', val: '5', type: 'num' }, { label: '6', val: '6', type: 'num' }, { label: '×', val: '*', type: 'op' }, { label: '÷', val: '/', type: 'op' },
+        { label: '1', val: '1', type: 'num' }, { label: '2', val: '2', type: 'num' }, { label: '3', val: '3', type: 'num' }, { label: '+', val: '+', type: 'op' }, { label: '-', val: '-', type: 'op' },
+        { label: '0', val: '0', type: 'num' }, { label: '.', val: '.', type: 'num' }, { label: '×10ˣ', val: 'e', type: 'op' }, { label: 'Ans', val: 'ans', type: 'op' }, { label: '=', val: '=', type: 'op' },
+    ];
+
     return (
-        <div className="bg-[#1e293b] p-4 md:p-8 rounded-[2.5rem] shadow-2xl border-[8px] border-[#334155] max-w-[480px] mx-auto overflow-hidden font-mono">
-            {/* Header Controls */}
-            <div className="flex justify-between items-center mb-4 px-2">
-                <div className="flex gap-2">
-                    <button 
-                        onClick={() => setShift(!shift)}
-                        className={cn("px-3 py-1 rounded text-[0.6rem] font-bold uppercase transition-all border", shift ? "bg-amber-400 text-black border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.3)]" : "bg-slate-700 text-amber-400 border-slate-600")}
-                    >SHIFT</button>
-                    <button 
-                        onClick={() => setAlpha(!alpha)}
-                        className={cn("px-3 py-1 rounded text-[0.6rem] font-bold uppercase transition-all border", alpha ? "bg-rose-400 text-black border-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]" : "bg-slate-700 text-rose-400 border-slate-600")}
-                    >ALPHA</button>
-                    <div className="text-[0.5rem] font-bold text-white/40 flex flex-col justify-center gap-0.5 ml-2 border-l border-white/10 pl-2">
-                        <span>Natural-V.P.A.M.</span>
-                        <span>fx-991ES Emulator</span>
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+            <div className="bg-[#3b3b5c] p-4 sm:p-8 rounded-[3rem] shadow-[0_40px_100px_-15px_rgba(0,0,0,0.6)] border-[8px] border-[#2d2d4a] max-w-[420px] w-full mx-auto relative font-mono overflow-hidden">
+                {/* Branding Top */}
+                <div className="flex justify-between items-start mb-6">
+                    <div>
+                        <div className="text-white font-black text-xl italic tracking-tighter opacity-90">CASIO</div>
+                        <div className="text-[0.45rem] text-white/40 font-bold tracking-widest mt-0.5">fx-991ES PLUS</div>
+                    </div>
+                    <div className="w-24 h-10 bg-[#222] border-2 border-white/5 rounded flex flex-col items-center justify-center relative shadow-inner">
+                        <div className="w-16 h-4 bg-[#442] opacity-30 blur-[1px]"></div>
+                        <div className="flex gap-1 absolute top-1 right-1">
+                            <div className="w-1 h-1 bg-white/10 rounded-full"></div>
+                            <div className="w-1 h-1 bg-white/10 rounded-full"></div>
+                        </div>
+                        <span className="text-[0.35rem] text-white/30 font-black absolute bottom-0.5 uppercase tracking-tighter">Two Way Power</span>
                     </div>
                 </div>
-                <button 
-                    onClick={() => setMode(mode === 'deg' ? 'rad' : 'deg')}
-                    className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest bg-slate-800 px-3 py-1 rounded border border-slate-700"
-                >{mode}</button>
-            </div>
 
-            {/* Display Area */}
-            <div className="bg-[#a8ba9a] p-4 rounded-lg mb-6 shadow-inner border-2 border-[#8c9f7a] flex flex-col justify-end text-right min-h-[140px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-8 bg-black/5 flex items-center justify-center -mr-4 -mt-2 rotate-45" />
-                <div className="absolute top-2 left-2 text-[0.5rem] text-black/40 font-bold flex gap-2">
-                    <span>{mode.toUpperCase()}</span>
-                    {shift && <span>S</span>}
-                    {alpha && <span>A</span>}
-                    {outputMode === 'decimal' && <span>D</span>}
-                </div>
-                <div className="text-black/60 text-sm overflow-hidden whitespace-nowrap mb-2 font-bold">
-                    {formatEquation(equation) || ''}
-                </div>
-                <div className="text-black text-4xl font-extrabold truncate tracking-tighter tabular-nums flex flex-col items-end">
-                    {display.includes('/') ? (
-                        <div className="flex flex-col items-center">
-                            <span className="text-2xl border-b border-black leading-none">{display.split('/')[0]}</span>
-                            <span className="text-2xl leading-none">{display.split('/')[1]}</span>
+                {/* Display Area */}
+                <div className="bg-[#9da98e] p-4 rounded-2xl mb-8 shadow-inner border-4 border-[#828f73] min-h-[160px] flex flex-col justify-between relative overflow-hidden">
+                    <div className="flex justify-between items-start z-10 opacity-70">
+                        <div className="flex gap-2">
+                             <span className={cn("text-[0.6rem] font-black px-1 rounded", angleMode === 'deg' ? "bg-black text-[#9da98e]" : "text-black/50")}>D</span>
+                             <span className={cn("text-[0.6rem] font-black px-1 rounded", angleMode === 'rad' ? "bg-black text-[#9da98e]" : "text-black/50")}>R</span>
                         </div>
-                    ) : display}
+                        <div className="flex gap-3">
+                            {shift && <span className="text-[0.6rem] font-black text-black">S</span>}
+                            {alpha && <span className="text-[0.6rem] font-black text-black">A</span>}
+                            <span className="text-[0.6rem] font-black text-black/40">MATH</span>
+                        </div>
+                    </div>
+
+                    <div className="z-10 flex flex-col items-end w-full mt-2 h-full">
+                        {uiMode === 'NORMAL' ? (
+                            <>
+                                <div className="text-black/80 font-serif font-bold w-full text-left truncate mb-4 opacity-80 min-h-[32px] text-xl flex items-start break-all">
+                                    <span className="inline-block mt-1">
+                                        <InlineMath math={getTexEquation(equation) + (answer ? '' : '\\_')} />
+                                    </span>
+                                </div>
+                                <div className="text-black text-4xl sm:text-5xl font-black tabular-nums tracking-tighter leading-none min-h-[56px] flex flex-1 items-end justify-end overflow-hidden max-w-full">
+                                    {answer === 'Math ERROR' || answer === 'Syntax ERROR' ? (
+                                        <span className="text-2xl">{answer}</span>
+                                    ) : answer.includes('/') ? (
+                                        <div className="scale-100 flex pb-2"><InlineMath math={`\\frac{${answer.split('/')[0]}}{${answer.split('/')[1]}}`} /></div>
+                                    ) : (
+                                        <span>{answer}</span>
+                                    )}
+                                </div>
+                            </>
+                        ) : uiMode === 'MODE_SEL' ? (
+                            <div className="w-full h-full text-black/80 font-mono text-sm leading-relaxed grid grid-cols-2 gap-x-4 px-2">
+                                <div>1:COMP</div><div>2:CMPLX</div>
+                                <div>3:EQN</div><div>4:MAT</div>
+                                <div>5:VCT</div><div>6:CONST</div>
+                            </div>
+                        ) : uiMode === 'CONST_SEL' ? (
+                            <div className="w-full h-full text-black/80 font-mono text-sm px-2">
+                                <div className="font-bold border-b border-black/20 mb-1">Select Constant (0-9)</div>
+                                <div className="grid grid-cols-2 gap-x-2 text-xs">
+                                    {SCI_CONSTANTS.map((c, i) => (
+                                        <div key={i} className="truncate">{i}: {c.sym}</div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
                 </div>
-            </div>
 
-            {/* Function Keys Grid */}
-            <div className="grid grid-cols-6 gap-2 mb-4">
-                {functionBtns.map((btn, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleAction(btn)}
-                        className="bg-slate-700 hover:bg-slate-600 text-white/80 py-2 rounded-md text-[0.6rem] font-bold shadow-sm active:scale-95 transition-all uppercase"
-                    >
-                        {btn.label}
-                    </button>
-                ))}
-                <button onClick={() => toggleSD()} className="bg-slate-900 border border-white/5 text-emerald-400 py-2 rounded-md text-[0.7rem] font-bold shadow-lg hover:bg-black active:scale-95 transition-all">S⇔D</button>
-                <button onClick={() => setOutputMode(outputMode === 'decimal' ? 'fraction' : 'decimal')} className="bg-slate-900 border border-white/5 text-amber-400 py-2 rounded-md text-[0.6rem] font-bold shadow-lg uppercase leading-none px-0.5">Converter</button>
-                <button onClick={() => addToken('pi')} className="bg-slate-700 text-white/50 py-2 rounded-md text-xs font-bold">π</button>
-                <button onClick={() => addToken('e')} className="bg-slate-700 text-white/50 py-2 rounded-md text-xs font-bold">e</button>
-                <button onClick={() => addToken(',')} className="bg-slate-700 text-white/50 py-2 rounded-md text-xs font-bold">,</button>
-                <button onClick={() => setShift(true)} className="bg-amber-900/20 text-amber-500 py-2 rounded-md text-[0.6rem] font-bold uppercase">Mode</button>
-            </div>
+                {/* Top Control Bar with REPLAY */}
+                <div className="flex justify-between items-center mb-6 px-1">
+                    <div className="flex gap-2 sm:gap-4 h-24">
+                        <div className="flex flex-col justify-between h-full py-2">
+                            <button onClick={() => setShift(!shift)} className={cn("py-1.5 px-3 rounded-[10px] text-[0.6rem] font-black transition-all border-b-4", shift ? "bg-amber-400 border-amber-600 text-black shadow-lg" : "bg-[#444] border-black text-amber-500")}>SHIFT</button>
+                            <button className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.55rem] font-black uppercase">CALC</button>
+                        </div>
+                        <div className="flex flex-col justify-between h-full py-2">
+                            <button onClick={() => setAlpha(!alpha)} className={cn("py-1.5 px-3 rounded-[10px] text-[0.6rem] font-black transition-all border-b-4", alpha ? "bg-rose-500 border-rose-700 text-white shadow-lg" : "bg-[#444] border-black text-rose-500")}>ALPHA</button>
+                            <button className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.55rem] font-black uppercase">∫dx</button>
+                        </div>
+                    </div>
 
-            {/* Main Keypad Grid */}
-            <div className="grid grid-cols-5 gap-3">
-                {mainBtns.map((btn, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleAction(btn)}
-                        className={cn(
-                            "py-4 rounded-xl text-lg font-bold shadow-md active:scale-95 transition-all border-b-4",
-                            btn.color === 'rose' ? "bg-rose-500 hover:bg-rose-400 text-white border-rose-700" :
-                            ['×', '÷', '+', '-', '='].includes(btn.label) ? "bg-slate-600 hover:bg-slate-500 text-white border-slate-800" :
-                            "bg-slate-300 hover:bg-slate-200 text-slate-900 border-slate-400"
-                        )}
-                    >
-                        {btn.label}
-                    </button>
-                ))}
+                    {/* REPLAY D-PAD */}
+                    <div className="relative w-24 h-24 mx-auto shrink-0 z-20">
+                        <div className="absolute inset-0 bg-[#2d2d4a] rounded-full shadow-2xl border-2 border-white/5"></div>
+                        <div className="absolute inset-1 bg-[#555] rounded-full border-b-[6px] border-black flex items-center justify-center text-white/20 select-none group">
+                           <span className="absolute top-1.5 text-[0.35rem] font-black uppercase group-active:text-white transition-colors tracking-widest z-10 pointer-events-none">Replay</span>
+                           <div onClick={() => handleDpad('up')} className="absolute top-2 w-4 h-4 text-white/40 active:text-white active:scale-110 cursor-pointer"><ChevronUp className="w-full h-full" /></div>
+                           <div onClick={() => handleDpad('down')} className="absolute bottom-2 w-4 h-4 text-white/40 active:text-white active:scale-110 cursor-pointer"><ChevronDown className="w-full h-full" /></div>
+                           <div onClick={() => handleDpad('left')} className="absolute left-2 w-4 h-4 text-white/40 active:text-white active:scale-110 cursor-pointer"><ChevronLeft className="w-full h-full" /></div>
+                           <div onClick={() => handleDpad('right')} className="absolute right-2 w-4 h-4 text-white/40 active:text-white active:scale-110 cursor-pointer"><ChevronRight className="w-full h-full" /></div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-2 sm:gap-4 h-24">
+                        <div className="flex flex-col justify-between h-full py-2">
+                            <button onClick={() => setUiMode(uiMode === 'NORMAL' ? 'MODE_SEL' : 'NORMAL')} className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.45rem] sm:text-[0.55rem] font-black uppercase">MODE</button>
+                            <button className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.55rem] font-black uppercase">x⁻¹</button>
+                        </div>
+                        <div className="flex flex-col justify-between h-full py-2">
+                            <button onClick={() => {setEquation('0'); setAnswer('');}} className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.55rem] font-black uppercase">ON</button>
+                            <button className="bg-[#444] border-b-4 border-black text-slate-300 py-1.5 px-3 rounded-[10px] text-[0.55rem] font-black uppercase">log▢</button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Scientific Function Grid */}
+                <div className="grid grid-cols-6 gap-2 mb-6 px-1">
+                    {functionKeys.slice(4).map((btn, i) => (
+                        <button
+                            key={i}
+                            onClick={() => {
+                                if (btn.label === 'S⇔D') toggleSD();
+                                else handleAction(btn);
+                            }}
+                            className="bg-[#cbd5e1] border-b-4 border-[#94a3b8] hover:bg-[#e2e8f0] text-slate-900 py-2.5 rounded-[0.75rem] text-[0.55rem] font-black active:translate-y-[2px] active:border-b-2 transition-all uppercase tracking-tighter"
+                        >
+                            {btn.label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Main Number Pads */}
+                <div className="grid grid-cols-5 gap-y-3 gap-x-2 px-1">
+                    {mainKeys.map((btn, i) => (
+                        <button
+                            key={i}
+                            onClick={() => handleAction(btn)}
+                            className={cn(
+                                "py-4 rounded-2xl text-xl font-black shadow-lg border-b-[6px] active:translate-y-[4px] active:border-b-0 transition-all font-mono",
+                                btn.type === 'del' ? "bg-orange-500 border-orange-700 text-white" :
+                                btn.type === 'num' ? "bg-[#334155] border-[#1e293b] text-white" :
+                                "bg-[#cbd5e1] border-[#94a3b8] text-slate-900" 
+                            )}
+                        >
+                            <span className={cn(btn.label === '×10ˣ' ? "text-sm" : "")}>{btn.label}</span>
+                        </button>
+                    ))}
+                </div>
+
+                <div className="mt-8 flex flex-col items-center gap-2">
+                    <div className="w-16 h-1.5 bg-black/40 rounded-full"></div>
+                    <div className="text-[0.45rem] font-black text-white/20 uppercase tracking-[0.4em]">Natural-V.P.A.M.</div>
+                </div>
             </div>
         </div>
     );
 };
+
 
 const GPACalculator = () => {
     const compulsory = [
@@ -3205,7 +3402,7 @@ const MCQTestSelection = () => {
 /* ── MCQ TEST PLAYER ── */
 const MCQTestPlayer = () => {
     const { name, setIndex } = useParams();
-    const { liveMaterials } = useApp();
+    const { data, liveMaterials } = useApp();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
@@ -3217,7 +3414,7 @@ const MCQTestPlayer = () => {
     
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
-    const staticSets: any[] = [];
+    const staticSets: any[] = STATIC_MCQS[name as string] || [];
     const dynamicSets = liveMaterials
         .filter(m => m.subject === name && m.type === 'mcq')
         .map(m => {
@@ -3230,6 +3427,7 @@ const MCQTestPlayer = () => {
 
     // 1 minute per question for timer
     const [timer, setTimer] = useState(countParam * 60); 
+    const { addTestResult } = useApp();
 
     // Slice questions array up to the requested count
     const questions = (setData?.questions || []).slice(0, countParam);
@@ -3261,6 +3459,14 @@ const MCQTestPlayer = () => {
     const score = questions.reduce((acc: number, q: any, idx: number) => {
         return acc + (answers[idx] === q.correct ? 1 : 0);
     }, 0);
+
+    const timeTaken = (countParam * 60) - timer;
+
+    useEffect(() => {
+        if (status === 'result') {
+            addTestResult(score, questions.length, timeTaken);
+        }
+    }, [status]);
 
     return (
         <div className="animate-fade-up pb-24">
@@ -3429,7 +3635,8 @@ const ProfilePage = () => {
     };
 
     // Admin logic
-    const isAdmin = user?.email === 'admin@aadhar.edu.np' || user?.email?.includes('ashish') || false;
+    const adminEmails = ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'];
+    const isAdmin = user?.email && (adminEmails.includes(user.email) || user.email.includes('ashish'));
 
     const stats = [
         { val: (user?.xp || 0).toLocaleString(), label: 'Total XP', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -3680,12 +3887,14 @@ const ChapterList = () => {
 
 const ChapterDetail = () => {
     const { name, chapterId } = useParams();
-    const { data, liveMaterials } = useApp();
+    const { data, liveMaterials, user, toggleChapterComplete } = useApp();
     const navigate = useNavigate();
-    const sub = data.subjects[name as string];
-    const chapter = sub.chapters.find((c: any) => c.id === chapterId) || liveMaterials.find(m => m.id === chapterId);
+    const sub = data.subjects[name as string] || Object.values(data.subjects)[0];
+    const chapter = sub?.chapters?.find((c: any) => c.id === chapterId) || liveMaterials?.find(m => m.id === chapterId);
 
     if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Module entry not found in active registry</div>;
+
+    const isCompleted = user?.completedChapters?.includes(chapterId || '');
 
     const topicsList = (chapter.topics || '').split(',').filter(Boolean);
 
@@ -3735,18 +3944,41 @@ const ChapterDetail = () => {
                 )}
             </div>
             
-            <button 
-                onClick={() => navigate('/ai')}
-                className="w-full bg-blue text-white p-8 rounded-[3rem] shadow-2xl shadow-blue/20 flex items-center justify-between group active:scale-95 transition-all"
-            >
-                <div className="text-left">
-                    <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] opacity-60 mb-1">Stuck on this module?</p>
-                    <p className="text-xl font-black uppercase italic tracking-tighter">Ask Aadhar Pro</p>
-                </div>
-                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-                    <Zap className="w-6 h-6" />
-                </div>
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4">
+                <button 
+                    onClick={() => navigate('/ai')}
+                    className="flex-1 bg-blue text-white p-6 rounded-[2.5rem] shadow-2xl shadow-blue/20 flex items-center justify-between group active:scale-95 transition-all"
+                >
+                    <div className="text-left">
+                        <p className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Stuck on this module?</p>
+                        <p className="text-lg font-black uppercase italic tracking-tighter">Ask Aadhar Pro</p>
+                    </div>
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+                        <Zap className="w-5 h-5" />
+                    </div>
+                </button>
+                
+                <button 
+                    onClick={() => toggleChapterComplete(chapterId || '')}
+                    className={cn(
+                        "flex-1 p-6 rounded-[2.5rem] flex items-center justify-between group active:scale-95 transition-all border-2",
+                        isCompleted ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-slate-100 text-slate-400"
+                    )}
+                >
+                    <div className="text-left">
+                        <p className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Status</p>
+                        <p className="text-lg font-black uppercase italic tracking-tighter">
+                            {isCompleted ? 'Module Sync OK' : 'Mark Complete'}
+                        </p>
+                    </div>
+                    <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center transition-transform",
+                        isCompleted ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300 group-hover:scale-110"
+                    )}>
+                        {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
+                    </div>
+                </button>
+            </div>
         </div>
     );
 };
@@ -4251,10 +4483,11 @@ const DictionaryPage = () => {
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+
     const recentTerms = [
-        { term: 'education', color: 'bg-rose-50 text-rose-600 border-rose-100' },
         { term: 'physics', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-        { term: 'algorithm', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        { term: 'mathematics', color: 'bg-rose-50 text-rose-600 border-rose-100' },
+        { term: 'science', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
         { term: 'biology', color: 'bg-amber-50 text-amber-600 border-amber-100' }
     ];
 
@@ -4263,9 +4496,12 @@ const DictionaryPage = () => {
         setLoading(true);
         setError("");
         setResult(null);
+
+        const cleanWord = word.trim().toLowerCase();
+
         try {
-            const resp = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-            if (!resp.ok) throw new Error("Word not found in the database.");
+            const resp = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
+            if (!resp.ok) throw new Error("Word not found in the database. Please check spelling.");
             const data = await resp.json();
             setResult(data[0]);
         } catch (err: any) {
@@ -4944,6 +5180,7 @@ const NotePadPage = () => {
     const [content, setContent] = useState('');
     const [mode, setMode] = useState<'editor' | 'library'>('library');
     const [tag, setTag] = useState('General');
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const MAX_NOTES = 50;
 
@@ -4972,12 +5209,12 @@ const NotePadPage = () => {
     const saveNote = async () => {
         if (!title.trim() && !content.trim()) return;
 
-        if (notes.length >= MAX_NOTES) {
+        if (!editingId && notes.length >= MAX_NOTES) {
             addToast("Aadhar Cloud storage full! Clean up your logs.", "error");
             return;
         }
 
-        const newNoteData = { 
+        const noteData = { 
             user_id: user.id, 
             title: title || 'Brain Dump', 
             content: content, 
@@ -4986,26 +5223,52 @@ const NotePadPage = () => {
         };
 
         try {
-            const { data, error } = await supabase
-                .from('notes')
-                .insert([newNoteData])
-                .select()
-                .single();
+            if (editingId) {
+                const { data, error } = await supabase
+                    .from('notes')
+                    .update(noteData)
+                    .eq('id', editingId)
+                    .select()
+                    .single();
 
-            if (error) throw error;
-            if (data) {
-                setNotes([data, ...notes]);
-                setTitle('');
-                setContent('');
-                setMode('library');
-                addToast("Sync complete. Log secured.", "success");
+                if (error) throw error;
+                setNotes(notes.map(n => n.id === editingId ? data : n));
+                addToast("Note updated successfully.", "success");
+            } else {
+                const { data, error } = await supabase
+                    .from('notes')
+                    .insert([noteData])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                if (data) {
+                    setNotes([data, ...notes]);
+                    addToast("Sync complete. Log secured.", "success");
+                }
             }
+            
+            setTitle('');
+            setContent('');
+            setEditingId(null);
+            setMode('library');
         } catch (error) {
             console.error('Error saving note:', error);
+            addToast("Operation failed.", "error");
         }
     };
 
-    const deleteNote = async (id: string) => {
+    const startEdit = (note: any) => {
+        setTitle(note.title);
+        setContent(note.content);
+        setTag(note.category || 'General');
+        setEditingId(note.id);
+        setMode('editor');
+    };
+
+    const deleteNote = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this log?")) return;
         try {
             const { error } = await supabase
                 .from('notes')
@@ -5014,6 +5277,7 @@ const NotePadPage = () => {
 
             if (error) throw error;
             setNotes(notes.filter(n => n.id !== id));
+            addToast("Log deleted.", "success");
         } catch (error) {
             console.error('Error deleting note:', error);
         }
@@ -5127,20 +5391,31 @@ const NotePadPage = () => {
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.05 }}
-                                    className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl group hover:border-amber-300 transition-all relative overflow-hidden"
+                                    onClick={() => startEdit(n)}
+                                    className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl group hover:border-amber-300 transition-all relative overflow-hidden cursor-pointer active:scale-95"
                                 >
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-all duration-500" />
                                     <div className="relative z-10 flex flex-col h-full">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex flex-col">
                                                 <span className="px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[0.5rem] font-black uppercase tracking-widest w-fit mb-2">{n.category}</span>
-                                                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-tight group-hover:text-amber-600 transition-colors">{n.title}</h3>
+                                                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-tight group-hover:text-amber-600 transition-colors line-clamp-1">{n.title}</h3>
                                             </div>
-                                            <button onClick={() => deleteNote(n.id)} className="p-3 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
+                                            <button 
+                                                onClick={(e) => deleteNote(n.id, e)} 
+                                                className="p-3 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                         <p className="text-sm text-slate-600 font-bold leading-relaxed line-clamp-3 mb-6 bg-slate-50/50 p-4 rounded-2xl flex-1">{n.content}</p>
-                                        <div className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                                            <Calendar className="w-3 h-3" /> {new Date(n.created_at).toLocaleDateString()}
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                                                <Calendar className="w-3 h-3" /> {new Date(n.created_at || Date.now()).toLocaleDateString()}
+                                            </div>
+                                            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Edit3 className="w-4 h-4" />
+                                            </div>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -5353,10 +5628,43 @@ const AuthPage = () => {
         try {
             setLoading(true);
             setError('');
-            const { error } = await supabase.auth.signInWithOAuth({
+            const isIframe = window.self !== window.top;
+            
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
+                options: {
+                    skipBrowserRedirect: isIframe,
+                }
             });
             if (error) throw error;
+            
+            if (isIframe && data?.url) {
+                const popup = window.open(data.url, 'google-oauth', 'width=500,height=600');
+                if (!popup) {
+                    setError('Please allow popups to sign in with Google');
+                    setLoading(false);
+                    return;
+                }
+                
+                const handleMessage = async (e: MessageEvent) => {
+                    if (e.data?.type === 'SUPABASE_AUTH_SUCCESS' && e.data.session) {
+                        window.removeEventListener('message', handleMessage);
+                        await supabase.auth.setSession({
+                            access_token: e.data.session.access_token,
+                            refresh_token: e.data.session.refresh_token
+                        });
+                        popup.close();
+                    }
+                };
+                window.addEventListener('message', handleMessage);
+                
+                const checkClosed = setInterval(() => {
+                    if (popup.closed) {
+                        clearInterval(checkClosed);
+                        setLoading(false);
+                    }
+                }, 1000);
+            }
         } catch (err: any) {
             setError(err.message || 'An error occurred during Google Sign In.');
             setLoading(false);
@@ -5460,6 +5768,22 @@ const AuthPage = () => {
                         Continue with Google
                     </button>
                 </form>
+
+                {window.self !== window.top && (
+                    <div className="mt-8 bg-amber-50 border border-amber-200 p-5 rounded-2xl text-center">
+                        <p className="font-bold text-amber-700 text-sm mb-2">Preview Environment Detected</p>
+                        <p className="text-xs text-amber-600/80 mb-4 font-medium px-4">
+                            Login might not work correctly inside this window. For the best experience, open the app in a new tab.
+                        </p>
+                        <button 
+                            type="button"
+                            onClick={() => window.open(window.location.href, '_blank')}
+                            className="bg-amber-100 text-amber-700 py-2.5 px-6 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-amber-200 transition-colors"
+                        >
+                            Open in New Tab
+                        </button>
+                    </div>
+                )}
 
                 <div className="mt-8 text-center">
                     <button 
@@ -5701,7 +6025,7 @@ const AdminPortalPage = () => {
         type: 'info' as 'info' | 'alert' | 'update'
     });
 
-    const isAdminEmail = user?.email === 'subashgautam305@gmail.com' || user?.email === 'gopanigautam96@gmail.com';
+    const isAdminEmail = user?.email && ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email);
 
     if (!isAdminEmail) {
         return (
@@ -6525,6 +6849,9 @@ const AppProvider = ({ children }: any) => {
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
             if (session?.user) {
+                if (window.opener) {
+                    window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS', session }, '*');
+                }
                 try {
                     // Start with basic user info immediately to allow UI transition
                     const initialUser: User = {
@@ -6651,6 +6978,28 @@ const AppProvider = ({ children }: any) => {
         });
     };
 
+    const toggleChapterComplete = (chapterId: string) => {
+        if (!user || !chapterId) return;
+        const isComplete = user.completedChapters?.includes(chapterId) || false;
+        const newList = isComplete 
+            ? user.completedChapters.filter(id => id !== chapterId)
+            : [...(user.completedChapters || []), chapterId];
+        
+        const updatedUser = { ...user, completedChapters: newList };
+        setUser(updatedUser);
+        localStorage.setItem(`user_stats_${user.id}`, JSON.stringify(updatedUser));
+        
+        supabase.from('user_profiles').upsert({
+            user_id: user.id,
+            completed_chapters: newList,
+            updated_at: new Date().toISOString()
+        }).then(({ error }) => {
+            if (error && error.code !== 'PGRST116') {
+                 console.warn("DB Chapter Sync failed", error);
+            }
+        });
+    };
+
     if (isInitializing) {
         return (
             <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center space-y-4">
@@ -6666,8 +7015,11 @@ const AppProvider = ({ children }: any) => {
 
     return (
         <AppContext.Provider value={{ 
-            user, setUser, data, liveNews, liveMaterials, liveNotices,
-            fetchLiveNews, fetchLiveMaterials, fetchLiveNotices, addTestResult 
+            user, setUser, data, 
+            liveNews, liveMaterials, liveNotices, 
+            fetchLiveNews, fetchLiveMaterials, fetchLiveNotices, 
+            addTestResult, toggleChapterComplete,
+            isInitializing
         }}>
             {children}
         </AppContext.Provider>

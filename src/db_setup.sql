@@ -93,3 +93,63 @@ CREATE POLICY "Users can upsert their own profile"
 ON user_profiles FOR ALL
 USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
+
+-- ==========================================
+-- 4. Create the `study_hub` table
+-- ==========================================
+CREATE TABLE study_hub (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'note', 'video', 'pdf', 'mcq'
+    description TEXT,
+    link_url TEXT,
+    text_content TEXT,
+    youtube_id TEXT,
+    file_url TEXT,
+    marks INTEGER DEFAULT 0,
+    topics TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE study_hub ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read Access" ON study_hub FOR SELECT USING (true);
+CREATE POLICY "Admin All Access" ON study_hub FOR ALL USING (true); -- Securing this normally requires checking auth.email or a role
+
+-- ==========================================
+-- 5. Create the `news_notices` table
+-- ==========================================
+CREATE TABLE news_notices (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    category TEXT DEFAULT 'general',
+    image_url TEXT,
+    is_notice BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE news_notices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read Access" ON news_notices FOR SELECT USING (true);
+CREATE POLICY "Admin All Access" ON news_notices FOR ALL USING (true);
+
+-- ==========================================
+-- 6. Create the `notices` table
+-- ==========================================
+CREATE TABLE notices (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    text TEXT NOT NULL,
+    type TEXT DEFAULT 'info', -- 'info', 'alert', 'update'
+    active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE notices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Read Access" ON notices FOR SELECT USING (true);
+CREATE POLICY "Admin All Access" ON notices FOR ALL USING (true);
+
+-- ==========================================
+-- 7. Storage Bucket Setup
+-- ==========================================
+-- Manually create a bucket named 'official-assets' in the Supabase Dashboard
+-- Set it to "Public" so urls are accessible.
