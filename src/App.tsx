@@ -6462,7 +6462,7 @@ const AdminPortalPage = () => {
             setStudyForm({ title: '', subject: 'Science', description: '', link_url: '', text_content: '', marks: '0', topics: '', file: null });
             fetchLiveMaterials();
         } catch (error: any) {
-            addToast(error.message, 'error');
+            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
         } finally {
             setIsUploading(false);
         }
@@ -6497,7 +6497,7 @@ const AdminPortalPage = () => {
             setNewsForm({ title: '', content: '', category: 'general', is_notice: false, image: null });
             fetchLiveNews();
         } catch (error: any) {
-            addToast(error.message, 'error');
+            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
         } finally {
             setIsUploading(false);
         }
@@ -6521,7 +6521,7 @@ const AdminPortalPage = () => {
             setNoticeForm({ text: '', type: 'info' });
             fetchLiveNotices();
         } catch (error: any) {
-            addToast(error.message, 'error');
+            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
         } finally {
             setIsUploading(false);
         }
@@ -6537,7 +6537,7 @@ const AdminPortalPage = () => {
             if (table === 'news_notices') fetchLiveNews();
             if (table === 'notices') fetchLiveNotices();
         } catch (err: any) {
-            addToast(err.message, 'error');
+            addToast(err?.message || typeof err === 'string' ? err : 'Error deleting', 'error');
         }
     };
 
