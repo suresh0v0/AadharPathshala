@@ -16,7 +16,7 @@ import {
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
-  ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2
+  ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Markdown from 'react-markdown';
@@ -150,11 +150,11 @@ const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient:
 const BOOK_LINKS: Record<string, string> = {
     'Maths': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
     'Optional Maths': 'https://drive.google.com/file/d/1vJS4bY7fkLs5QbrLXFNKmvFFhrznzGrg/view?usp=drivesdk',
-    'Science': 'https://drive.google.com/file/d/1lwcVyKC2tZyzScya7Qfw1p-9CWdVfkKm/view?usp=drivesdk',
+    'Science': 'https://drive.google.com/file/d/1IwcVyKC2tZyzScya7Qfw1p-9CWdVfkKm/view?usp=drivesdk',
     'सामाजिक': 'https://drive.google.com/file/d/1t3hbvuPC2CgPGvdwmKRbrCVOHPiKSAhl/view?usp=drivesdk',
     'English': 'https://drive.google.com/file/d/1kmRslmTG3vzXFGwjE5xsdE0SzAPi75bt/view?usp=drivesdk',
     'नेपाली': 'https://drive.google.com/file/d/1aaVFJKXRRIrW4UriLQaaopVpkaA9AQZY/view?usp=drivesdk',
-    'Computer': 'https://drive.google.com/file/d/1XL9dSK7Vjvxo888E4Thlxbb5yQSIjUdb/view?usp=drivesdk',
+    'Computer': 'https://drive.google.com/file/d/1XL9dSK7Vjvxo888E4ThIxbb5yQSljUdb/view?usp=drivesdk',
     'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
     'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
 };
@@ -272,7 +272,7 @@ const MockTest = () => {
     });
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem(`${storageKey}_settings`);
-        return saved ? { ...JSON.parse(saved), model: JSON.parse(saved).model || 'momo' } : { subject: 'Science' as SubjectType, count: 5, model: 'momo' as 'momo' | 'achar' };
+        return saved ? { ...JSON.parse(saved), model: JSON.parse(saved).model || 'momo' } : { subject: 'Science' as SubjectType, count: 5, model: 'momo' as 'momo' | 'mango' };
     });
     const [questions, setQuestions] = useState<any[]>(() => {
         const saved = localStorage.getItem(`${storageKey}_questions`);
@@ -322,14 +322,14 @@ const MockTest = () => {
             
             const completion = await groq.chat.completions.create({
                 messages: [
-                    { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings. IMPORTANT: Use LaTeX ($...$) for ALL mathematical symbols, numbers, and formulas. Avoid mistakes in correct answers." },
+                    { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings. IMPORTANT: Use LaTeX ($...$) for ALL mathematical symbols, numbers, and formulas. Ensure questions and correct answers are 100% factually accurate without mistakes." },
                     { role: "user", content: `Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
                     IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer. NEVER include the question text in the options.
                     Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
                     ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
                     Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
                 ],
-                model: "llama-3.1-8b-instant",
+                model: "llama-3.3-70b-versatile",
                 response_format: { type: "json_object" }
             });
             const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
@@ -521,24 +521,53 @@ const MockTest = () => {
                         className="bg-white p-6 md:p-12 rounded-[3rem] md:rounded-[4rem] border border-slate-100 shadow-[0_50px_100px_rgba(0,0,0,0.05)] relative overflow-hidden"
                     >
                         <div className={cn("absolute top-0 left-0 w-2 h-full bg-linear-to-b", currentSubjectConfig.gradient)} />
-                        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-6 md:mb-12 leading-[1.15] tracking-tighter uppercase italic">{questions[currentIdx].q}</h2>
+                        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-6 md:mb-12 leading-[1.15] tracking-tighter uppercase italic">
+                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{questions[currentIdx].q}</Markdown>
+                        </h2>
                         <div className="grid grid-cols-1 gap-2 md:gap-4">
                             {['a', 'b', 'c', 'd'].map((c, i) => (
                                 <button
                                     key={c}
-                                    onClick={() => handleAnswer(c)}
-                                    className="w-full text-left p-4 md:p-8 border-2 border-slate-50 rounded-[1.5rem] md:rounded-[2.5rem] font-bold text-[0.85rem] md:text-lg hover:border-blue hover:bg-blue/5 active:scale-[0.97] transition-all flex items-center gap-4 md:gap-6 group relative"
+                                    onClick={() => {
+                                        const updated = [...questions];
+                                        updated[currentIdx].selectedOption = c;
+                                        setQuestions(updated);
+                                    }}
+                                    className={cn(
+                                        "w-full text-left p-4 md:p-8 border-2 rounded-[1.5rem] md:rounded-[2.5rem] font-bold text-[0.85rem] md:text-lg active:scale-[0.97] transition-all flex items-center gap-4 md:gap-6 group relative",
+                                        questions[currentIdx].selectedOption === c 
+                                            ? "border-blue-500 bg-blue-50/50" 
+                                            : "border-slate-50 hover:border-blue-200 hover:bg-blue-50/20"
+                                    )}
                                 >
                                     <span className={cn(
                                         "w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-2xl flex items-center justify-center text-sm font-black transition-all uppercase border-2",
-                                        "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-blue group-hover:text-blue"
+                                        questions[currentIdx].selectedOption === c
+                                            ? "bg-blue-500 text-white border-blue-500"
+                                            : "bg-slate-50 text-slate-400 border-slate-100 group-hover:border-blue-300 group-hover:text-blue-500"
                                     )}>
                                         {c}
                                     </span>
-                                    <span className="text-slate-700 leading-tight">{questions[currentIdx][c]}</span>
+                                    <span className="text-slate-700 leading-tight">
+                                        <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{questions[currentIdx][c]}</Markdown>
+                                    </span>
                                 </button>
                             ))}
                         </div>
+                        
+                        {questions[currentIdx].selectedOption && (
+                            <motion.button
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                onClick={() => handleAnswer(questions[currentIdx].selectedOption)}
+                                className={cn(
+                                    "w-full mt-6 py-5 md:py-6 rounded-[2rem] font-black text-sm uppercase tracking-widest text-white shadow-xl bg-linear-to-r",
+                                    currentSubjectConfig.gradient
+                                )}
+                            >
+                                Confirm Answer
+                            </motion.button>
+                        )}
                     </motion.div>
                 </div>
             )}
@@ -571,34 +600,6 @@ const MockTest = () => {
                         </div>
                     </div>
 
-                    <div className="mb-10 text-left bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 relative z-10">
-                         <div className="flex justify-between items-center mb-6">
-                              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-                                  <Users className="w-5 h-5 text-blue" />
-                                  Global Rank (Mock Tests)
-                              </h3>
-                              <span className="text-[0.6rem] bg-blue text-white px-3 py-1 rounded-full font-black uppercase tracking-widest">Live</span>
-                         </div>
-                         <div className="space-y-3">
-                              {[
-                                  { name: "Prashant K.", score: score >= questions.length ? score - 1 : Math.min(questions.length, score + 2), xp: 1450 },
-                                  { name: user?.name || "You", score: score, xp: (user?.xp || 0) + (score * 25), isUser: true },
-                                  { name: "Sita R.", score: Math.max(0, score - 1), xp: 1120 }
-                              ].sort((a,b) => b.score - a.score || b.xp - a.xp).map((entry, idx) => (
-                                  <div key={idx} className={cn("flex items-center justify-between p-4 rounded-2xl border", entry.isUser ? "bg-white border-emerald-500 shadow-md shadow-emerald-500/10" : "bg-white border-slate-100")}>
-                                       <div className="flex items-center gap-4">
-                                            <span className={cn("w-6 font-black text-sm", idx === 0 ? "text-amber-500" : idx === 1 ? "text-slate-400" : "text-amber-700")}>#{idx + 1}</span>
-                                            <span className={cn("font-black text-sm uppercase tracking-tight", entry.isUser ? "text-emerald-600" : "text-slate-700")}>{entry.name}</span>
-                                       </div>
-                                       <div className="flex gap-4">
-                                            <span className="text-xs font-bold text-slate-400">{entry.xp} XP</span>
-                                            <span className="text-xs font-black text-slate-800">{entry.score}/{questions.length}</span>
-                                       </div>
-                                  </div>
-                              ))}
-                         </div>
-                    </div>
-
                     {(score === questions.length || timeTaken < (questions.length * 60) / 2) && (
                         <div className="mb-10 p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] text-white shadow-xl shadow-orange-500/20 relative z-10 animate-fade-up">
                             <div className="flex items-center gap-4">
@@ -616,10 +617,10 @@ const MockTest = () => {
                         </div>
                     )}
 
-                    <div className="space-y-3 relative z-10">
-                        <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest">Review Protocol</button>
-                        <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
-                        <button onClick={() => navigate(`/hub/${settings.subject}`)} className="w-full py-6 bg-linear-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-emerald-500/20 group flex items-center justify-center gap-3">
+                    <div className="space-y-3 md:space-y-4 relative z-10">
+                        <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest hover:bg-slate-900 border border-slate-800">Review Protocol</button>
+                        <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl shadow-fuchsia-500/20 active:scale-95 transition-all uppercase tracking-widest bg-[linear-gradient(45deg,#ff2a85,#ff7a00,#ff004d,#8a2be2)] bg-[length:300%_300%] animate-[flow_4s_ease-in-out_infinite]")}>Initiate New Battle</button>
+                        <button onClick={() => navigate(`/hub/${settings.subject}`)} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3", currentSubjectConfig.gradient)}>
                             <Home className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
                             Return to Hub
                         </button>
@@ -639,7 +640,7 @@ const MockTest = () => {
                                 <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Analyzing Performance Metadata</p>
                             </div>
                         </div>
-                        <button onClick={() => setStatus('result')} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs uppercase tracking-widest">Back</button>
+                        <button onClick={() => setStatus('result')} className={cn("px-6 py-3 text-white rounded-[1.5rem] font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-500/20 bg-linear-to-r from-rose-500 to-orange-500 active:scale-95 transition-transform")}>Back</button>
                     </div>
 
                     <div className="space-y-4">
@@ -648,7 +649,7 @@ const MockTest = () => {
                         ))}
                     </div>
 
-                    <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest", currentSubjectConfig.gradient)}>Initiate New Trial</button>
+                    <button onClick={clearMockTest} className={cn("w-full py-6 text-white rounded-[2rem] font-black text-sm shadow-xl shadow-fuchsia-500/20 active:scale-95 transition-all uppercase tracking-widest bg-[linear-gradient(45deg,#00d2ff,#3a7bd5,#00d2ff,#3a7bd5)] bg-[length:300%_300%] animate-[flow_4s_ease-in-out_infinite]")}>Initiate New Battle</button>
                 </div>
             )}
         </div>
@@ -662,30 +663,23 @@ const ReviewCard = ({ question, index, subject }: { question: any, index: number
     const getAIReview = async () => {
         setLoading(true);
         try {
-            // @ts-ignore
-            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-            const processGroqKey = typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "";
-            const groqKey = processGroqKey || viteGroqKey;
-            
-            const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
             const prompt = `Student performed a Grade 10 Nepal SEE ${subject} Exam.
 Question: ${question.q}
 Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
 Correct: ${question.correct}
 Student Answered: ${question.userChoice}
 
-Explain WHY the correct answer is ${question.correct} and why student's choice was wrong.
-Be extremely direct and brief. Use bullet points if needed. No greetings, no catchphrases.
+Your task: Provide a hint or conceptual explanation as to why the student's choice was wrong and guide them toward the right logic.
+CRITICAL INSTRUCTION: DO NOT explicitly state the correct answer (e.g. do not say "The correct answer is X" or give away the option). Guide the student conceptually so they realize it themselves.
+Be extremely direct and brief. Use bullet points if needed. No greetings.
 Use simple "Neplish" (English + Nepali mix). Focus on logic. 
+IMPORTANT: Use LaTeX ($...$) for mathematical symbols.
 Keep it under 50 words.`;
 
-            const completion = await groq.chat.completions.create({
-                messages: [{ role: "user", content: prompt }],
-                model: "llama-3.1-8b-instant",
-            });
-            setExplanation(completion.choices[0]?.message?.content || "Could not generate review.");
+            const res = await callCerebrasForMomo([{ role: "user", content: prompt }]);
+            setExplanation(res || "Could not generate review.");
         } catch (e) {
-            setExplanation("Brain freeze! Groq API is acting up.");
+            setExplanation("Analysis Failed. Please try again later.");
         } finally {
             setLoading(false);
         }
@@ -697,8 +691,10 @@ Keep it under 50 words.`;
         <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-xl space-y-6 relative overflow-hidden">
             <div className="flex justify-between items-start gap-4">
                 <div className="flex gap-4">
-                    <span className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center font-black text-slate-400 text-sm">{index + 1}</span>
-                    <h3 className="text-lg font-black text-slate-800 leading-tight uppercase italic">{question.q}</h3>
+                    <span className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center font-black text-slate-400 text-sm shrink-0 mt-1">{index + 1}</span>
+                    <h3 className="text-lg font-black text-slate-800 leading-tight uppercase italic mt-1">
+                        <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{question.q}</Markdown>
+                    </h3>
                 </div>
                 {isCorrect ? <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" /> : <XCircle className="w-6 h-6 text-rose-500 shrink-0" />}
             </div>
@@ -706,35 +702,37 @@ Keep it under 50 words.`;
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {['a', 'b', 'c', 'd'].map(key => (
                     <div key={key} className={cn(
-                        "p-4 rounded-2xl border-2 text-sm font-bold flex items-center gap-3",
+                        "p-4 rounded-[1.5rem] border-2 text-sm font-bold flex items-center gap-3",
                         key === question.correct ? "bg-emerald-50 border-emerald-500 text-emerald-700" : 
                         (key === question.userChoice && !isCorrect) ? "bg-rose-50 border-rose-500 text-rose-700" :
-                        "bg-slate-50 border-transparent text-slate-400"
+                        "bg-slate-50 border-slate-100/50 text-slate-600"
                     )}>
                         <span className="w-6 h-6 rounded-lg bg-white/50 flex items-center justify-center text-[0.65rem] shrink-0 uppercase">{key}</span>
-                        {question[key]}
+                        <div className="leading-tight pt-1">
+                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{question[key]}</Markdown>
+                        </div>
                     </div>
                 ))}
             </div>
 
             {explanation ? (
-                <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 animate-fade-up">
+                <div className="p-6 bg-blue-50/50 rounded-[2rem] border border-blue-100/50 animate-fade-up">
                     <div className="flex items-center gap-2 mb-3 text-blue">
                         <Zap className="w-4 h-4 fill-current" />
-                        <span className="text-[0.6rem] font-black uppercase tracking-widest">ACHAR AI ANALYSIS</span>
+                        <span className="text-[0.6rem] font-black uppercase tracking-widest text-blue-800">Expert System Analysis</span>
                     </div>
-                    <div className="prose prose-sm max-w-none text-slate-600 font-medium">
-                        <Markdown>{explanation}</Markdown>
+                    <div className="prose prose-sm max-w-none text-slate-700 font-medium">
+                        <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{explanation}</Markdown>
                     </div>
                 </div>
             ) : (
                 <button 
                     onClick={getAIReview}
                     disabled={loading}
-                    className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-black transition-all active:scale-95 disabled:opacity-50"
+                    className="w-full py-4 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2 hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
                 >
                     {loading ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Bot className="w-4 h-4" />}
-                    {loading ? 'Analyzing...' : 'AI Deep Insight'}
+                    {loading ? 'Analyzing...' : 'Request Expert Analysis'}
                 </button>
             )}
         </div>
@@ -1743,21 +1741,22 @@ const GPACalculator = () => {
         return initial;
     });
 
+    const getGradeInfo = (percentage: number) => {
+        if (percentage >= 90) return { gp: 4.0, grade: 'A+', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+        if (percentage >= 80) return { gp: 3.6, grade: 'A', color: 'text-green-600 bg-green-50 border-green-200' };
+        if (percentage >= 70) return { gp: 3.2, grade: 'B+', color: 'text-blue-600 bg-blue-50 border-blue-200' };
+        if (percentage >= 60) return { gp: 2.8, grade: 'B', color: 'text-indigo-600 bg-indigo-50 border-indigo-200' };
+        if (percentage >= 50) return { gp: 2.4, grade: 'C+', color: 'text-amber-600 bg-amber-50 border-amber-200' };
+        if (percentage >= 40) return { gp: 2.0, grade: 'C', color: 'text-orange-600 bg-orange-50 border-orange-200' };
+        if (percentage >= 35) return { gp: 1.6, grade: 'D', color: 'text-rose-600 bg-rose-50 border-rose-200' };
+        return { gp: 0, grade: 'NG', color: 'text-slate-600 bg-slate-50 border-slate-200' };
+    };
+
     const calculateGPA = () => {
         const totalPoints = [...compulsory, ...optional].reduce((acc, s) => {
             const { theory, practical } = marks[s.name];
-            const total = (theory / 75 * 75) + (practical / 25 * 25);
-            const percentage = (theory + practical); // Max 100
-            let gp = 0;
-            if (percentage >= 90) gp = 4.0;
-            else if (percentage >= 80) gp = 3.6;
-            else if (percentage >= 70) gp = 3.2;
-            else if (percentage >= 60) gp = 2.8;
-            else if (percentage >= 50) gp = 2.4;
-            else if (percentage >= 40) gp = 2.0;
-            else if (percentage >= 35) gp = 1.6;
-            else gp = 0;
-            return acc + (gp * s.credit);
+            const percentage = (theory + practical);
+            return acc + (getGradeInfo(percentage).gp * s.credit);
         }, 0);
         return totalPoints / 28; // Total credits
     };
@@ -1765,71 +1764,112 @@ const GPACalculator = () => {
     const gpa = calculateGPA();
     
     const getGpaColor = (gpaVal: number) => {
-        if (gpaVal >= 3.6) return 'from-emerald-400 to-emerald-600'; // A+
-        if (gpaVal >= 3.2) return 'from-green-400 to-green-600'; // A
-        if (gpaVal >= 2.8) return 'from-blue-400 to-blue-600'; // B+
-        if (gpaVal >= 2.4) return 'from-indigo-400 to-indigo-600'; // B
-        if (gpaVal >= 2.0) return 'from-amber-400 to-amber-600'; // C+
-        if (gpaVal >= 1.6) return 'from-orange-400 to-orange-600'; // C
-        if (gpaVal > 0) return 'from-rose-400 to-rose-600'; // D
-        return 'from-slate-400 to-slate-600'; // NG or 0
+        if (gpaVal >= 3.6) return 'from-emerald-400 to-emerald-600 shadow-emerald-500/30';
+        if (gpaVal >= 3.2) return 'from-green-400 to-green-600 shadow-green-500/30';
+        if (gpaVal >= 2.8) return 'from-blue-400 to-blue-600 shadow-blue-500/30';
+        if (gpaVal >= 2.4) return 'from-indigo-400 to-indigo-600 shadow-indigo-500/30';
+        if (gpaVal >= 2.0) return 'from-amber-400 to-amber-600 shadow-amber-500/30';
+        if (gpaVal >= 1.6) return 'from-orange-400 to-orange-600 shadow-orange-500/30';
+        if (gpaVal > 0) return 'from-rose-400 to-rose-600 shadow-rose-500/30';
+        return 'from-slate-400 to-slate-600 shadow-slate-500/30';
     };
 
     return (
-        <div className="space-y-6">
-            <div className={cn("p-10 rounded-[3.5rem] text-white text-center shadow-2xl relative overflow-hidden transition-colors duration-500 bg-linear-to-br", getGpaColor(gpa))}>
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent)]" />
-                <p className="text-[0.6rem] font-black uppercase tracking-[0.4em] mb-2 opacity-70 relative z-10">Composite GPA Estimate</p>
-                <h1 className="text-8xl font-black italic tracking-tighter mb-4 relative z-10">{gpa.toFixed(2)}</h1>
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest backdrop-blur-md border border-white/20 relative z-10">
-                    <Trophy className="w-3 h-3 text-amber-300" /> SEE 2083 Standard
+        <div className="space-y-6 animate-fade-up">
+            <div className={cn("p-10 md:p-14 rounded-[3.5rem] md:rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 bg-linear-to-br", getGpaColor(gpa))}>
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-overlay pointer-events-none" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -ml-10 -mb-10 mix-blend-overlay pointer-events-none" />
+                <p className="text-[0.6rem] md:text-[0.7rem] font-black uppercase tracking-[0.4em] mb-3 opacity-80 relative z-10 flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Final Grade Point Average
+                </p>
+                <h1 className="text-8xl md:text-9xl font-black italic tracking-tighter mb-6 relative z-10 drop-shadow-lg">{gpa.toFixed(2)}</h1>
+                <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/20 rounded-full text-[0.65rem] md:text-xs font-black uppercase tracking-widest backdrop-blur-md border border-white/20 relative z-10 shadow-inner">
+                    <Trophy className="w-3.5 h-3.5 text-amber-300" /> SEE {new Date().getFullYear() + 57} Standard
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
-                <div className="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
-                    <h3 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Subject Grading Grid</h3>
-                    <span className="text-[0.6rem] font-bold text-blue uppercase">Theory / Prac</span>
+            <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden shadow-slate-200/50">
+                <div className="bg-[#020617] px-8 py-5 flex justify-between items-center">
+                    <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-emerald-400" /> Subject Grading Grid
+                    </h3>
+                    <div className="flex gap-4">
+                        <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Theory</span>
+                        <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Practical</span>
+                    </div>
                 </div>
-                <div className="p-2 space-y-1">
-                    {[...compulsory, ...optional].map((s, i) => (
-                        <div key={s.name} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-                            <div className="flex items-center gap-3">
-                                <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-black text-[0.65rem] shrink-0", i < compulsory.length ? "bg-blue-100 text-blue" : "bg-purple-100 text-purple-600")}>
-                                    {s.name.charAt(0)}
+                <div className="p-4 space-y-2 relative">
+                    <div className="absolute inset-0 bg-slate-50/50 pointer-events-none" />
+                    {[...compulsory, ...optional].map((s, i) => {
+                        const { theory, practical } = marks[s.name];
+                        const percentage = theory + practical;
+                        const { grade, color } = getGradeInfo(percentage);
+                        return (
+                            <div key={s.name} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all relative z-10 gap-4">
+                                <div className="flex items-center gap-4">
+                                    <div className={cn(
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2",
+                                        i < compulsory.length 
+                                            ? "bg-blue-50 text-blue border-blue-100" 
+                                            : "bg-purple-50 text-purple-600 border-purple-100"
+                                    )}>
+                                        {s.name.charAt(0)}
+                                    </div>
+                                    <div className="text-left">
+                                        <h4 className="font-bold text-slate-900 text-sm md:text-base leading-none mb-1">{s.name}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-tight">
+                                                {i < compulsory.length ? 'Compulsory' : 'Optional'}
+                                            </p>
+                                            <span className="w-1 h-1 bg-slate-200 rounded-full" />
+                                            <p className={cn("text-[0.55rem] font-black uppercase tracking-widest", percentage > 0 ? "text-emerald-500" : "text-slate-400")}>{percentage}%</p>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-left">
-                                    <h4 className="font-bold text-slate-800 text-[0.75rem] leading-none mb-0.5">{s.name}</h4>
-                                    <p className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest leading-tight">
-                                        {i < compulsory.length ? 'Anibarya / Compulsory Subjects' : 'Aichhik / Optional Subjects'}
-                                    </p>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center gap-2">
-                                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm focus-within:ring-2 focus-within:ring-blue/20">
-                                    <span className="text-[0.5rem] font-black text-slate-300">TH</span>
-                                    <input 
-                                        type="number" 
-                                        max="75"
-                                        value={marks[s.name].theory}
-                                        onChange={e => setMarks({...marks, [s.name]: { ...marks[s.name], theory: Math.min(75, parseInt(e.target.value) || 0) }})}
-                                        className="w-8 text-center font-black text-slate-800 outline-none text-xs bg-transparent"
-                                    />
-                                </div>
-                                <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm focus-within:ring-2 focus-within:ring-blue/20">
-                                    <span className="text-[0.5rem] font-black text-slate-300">PR</span>
-                                    <input 
-                                        type="number" 
-                                        max="25"
-                                        value={marks[s.name].practical}
-                                        onChange={e => setMarks({...marks, [s.name]: { ...marks[s.name], practical: Math.min(25, parseInt(e.target.value) || 0) }})}
-                                        className="w-8 text-center font-black text-slate-800 outline-none text-xs bg-transparent"
-                                    />
+                                <div className="flex items-center gap-4 sm:ml-auto">
+                                    {percentage > 0 && (
+                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border-2 shadow-sm", color)}>
+                                            {grade}
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20 transition-all relative group">
+                                            <span className="text-[0.5rem] font-black text-slate-300 absolute -top-2 left-2 bg-white px-1">TH</span>
+                                            <input 
+                                                type="number" 
+                                                max="75"
+                                                min="0"
+                                                value={marks[s.name].theory || ""}
+                                                placeholder="0"
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setMarks({...marks, [s.name]: { ...marks[s.name], theory: isNaN(val) ? 0 : Math.min(75, Math.max(0, val)) }});
+                                                }}
+                                                className="w-10 text-center font-black text-slate-800 outline-none text-sm md:text-base bg-transparent p-0 placeholder:text-slate-200"
+                                            />
+                                        </div>
+                                        <span className="text-slate-300 font-bold px-1">+</span>
+                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20 transition-all relative group">
+                                            <span className="text-[0.5rem] font-black text-slate-300 absolute -top-2 left-2 bg-white px-1">PR</span>
+                                            <input 
+                                                type="number" 
+                                                max="25"
+                                                min="0"
+                                                value={marks[s.name].practical || ""}
+                                                placeholder="0"
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    setMarks({...marks, [s.name]: { ...marks[s.name], practical: isNaN(val) ? 0 : Math.min(25, Math.max(0, val)) }});
+                                                }}
+                                                className="w-10 text-center font-black text-slate-800 outline-none text-sm md:text-base bg-transparent p-0 placeholder:text-slate-200"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>
@@ -2073,7 +2113,6 @@ const AadharToolkit = () => {
                 <header className="mb-8 pt-4 flex items-center justify-between">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Toolkit</h1>
-                        <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-[0.3em] ml-1">Universal Core Curriculum V.22</p>
                     </div>
                     <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 active:scale-90 transition-all">
                         <ArrowLeft className="w-5 h-5" />
@@ -3794,33 +3833,34 @@ const StudyHub = () => {
         return (
             <motion.button
                 key={name}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => navigate(`/hub/${name}`)}
-                className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group active:scale-95 transition-all text-left relative overflow-hidden"
+                className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all text-left relative overflow-hidden"
             >
-                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-lg group-hover:rotate-6 transition-transform bg-linear-to-br text-white", config.gradient)}>
-                    <Icon className="w-8 h-8" />
+                <div className={cn("absolute -right-8 -top-8 w-32 h-32 bg-linear-to-br opacity-5 rounded-full blur-2xl pointer-events-none group-hover:opacity-10 group-hover:scale-150 transition-all duration-700", config.gradient)} />
+                <div className={cn("w-20 h-20 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-xl group-hover:rotate-6 group-active:scale-95 transition-all duration-500 bg-linear-to-br text-white", config.gradient)}>
+                    <Icon className="w-10 h-10 drop-shadow-md" />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-black text-slate-900 leading-none mb-2 tracking-tighter uppercase italic">{name}</h3>
-                    <div className="flex items-center gap-2 truncate">
-                        <span className="text-[0.55rem] font-black uppercase tracking-widest text-slate-400">{sub.chapters.length} Units</span>
-                        <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                        <span className="text-[0.55rem] font-black uppercase tracking-widest text-blue italic">SEE 2083 Ready</span>
+                <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase italic mb-2 group-hover:text-slate-900 transition-colors truncate">{name}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[0.6rem] font-black uppercase tracking-widest text-slate-500 group-hover:bg-white group-hover:border-slate-200 transition-colors shrink-0">{sub.chapters.length} Units</span>
+                        <span className="px-3 py-1 rounded-lg bg-blue-50/50 border border-blue-100/50 text-[0.6rem] font-black uppercase tracking-widest text-blue-600 shrink-0">Updated</span>
                     </div>
                 </div>
-                <ChevronRight className="w-6 h-6 text-slate-100 group-hover:text-slate-300 transition-colors shrink-0" />
+                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-slate-900 group-hover:border-slate-800 group-hover:shadow-lg group-hover:-rotate-45 transition-all duration-500 shrink-0">
+                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                </div>
             </motion.button>
         );
     };
 
     return (
         <div className="space-y-12 animate-fade-up pb-32">
-            <header className="space-y-1 px-2">
-                <h1 className="text-6xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">Study Hub</h1>
-                <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-[0.4em] ml-1">Universal Core Curriculum V.22</p>
+            <header className="space-y-1 px-4 md:px-2">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl max-w-full font-black text-[#020617] italic tracking-tighter uppercase leading-none break-keep whitespace-nowrap">Study Hub</h1>
             </header>
 
             <div className="space-y-10">
@@ -4420,6 +4460,23 @@ const TranslatorPage = () => {
         setTranslated(oldText);
     };
 
+    const copyToClipboard = (content: string) => {
+        if (!content) return;
+        navigator.clipboard.writeText(content);
+    };
+
+    const clearAll = () => {
+        setText('');
+        setTranslated('');
+    };
+
+    const speakText = (content: string, lang: string) => {
+        if (!content) return;
+        const utterance = new SpeechSynthesisUtterance(content);
+        utterance.lang = lang === 'Nepali' ? 'ne-NP' : 'en-US';
+        window.speechSynthesis.speak(utterance);
+    };
+
     return (
         <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
             <ToolHeader 
@@ -4429,60 +4486,86 @@ const TranslatorPage = () => {
                 onBack={() => navigate(-1)} 
             />
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-20 space-y-6">
-                <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-6 border border-white">
-                    <div className="flex items-center justify-between px-2">
-                        <div className="flex flex-col">
-                            <span className="text-[0.55rem] font-black text-slate-300 uppercase tracking-widest">Source</span>
-                            <span className="text-lg font-black text-blue italic uppercase tracking-tighter">{sourceLang}</span>
+            <div className="w-full max-w-[800px] relative z-20 px-6 mt-[-60px] space-y-6">
+                <div className="bg-white p-6 md:p-8 rounded-[3rem] shadow-2xl space-y-6 border border-white relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-2 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                        <div className="flex-1 text-center bg-white py-3 px-6 rounded-2xl shadow-sm text-lg font-black text-slate-800 uppercase tracking-tighter w-full">
+                            {sourceLang}
                         </div>
-                        <button onClick={swapLangs} className="w-10 h-10 bg-blue-50 text-blue rounded-full flex items-center justify-center hover:bg-blue-100 transition-all active:rotate-180 duration-500">
-                            <RotateCw className="w-4 h-4" />
+                        <button onClick={swapLangs} className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 hover:rotate-180 transition-all duration-500 shadow-md shrink-0">
+                            <ArrowRightLeft className="w-6 h-6" />
                         </button>
-                        <div className="flex flex-col text-right">
-                            <span className="text-[0.55rem] font-black text-slate-300 uppercase tracking-widest">Target</span>
-                            <span className="text-lg font-black text-blue italic uppercase tracking-tighter">{targetLang}</span>
+                        <div className="flex-1 text-center bg-slate-900 py-3 px-6 rounded-2xl text-lg font-black text-white uppercase tracking-tighter w-full">
+                            {targetLang}
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        <textarea 
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            placeholder="Input text segment..."
-                            className="w-full h-32 bg-slate-50 p-6 rounded-2xl text-lg font-bold text-slate-800 placeholder:text-slate-300 outline-none focus:ring-4 focus:ring-blue/10 border border-slate-100 resize-none transition-all"
-                        />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div className="space-y-4 flex flex-col">
+                            <div className="flex justify-between items-center px-2">
+                                <span className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">Source Text</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => speakText(text, sourceLang)} className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 transition-colors" title="Listen">
+                                        <Volume2 className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => copyToClipboard(text)} className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 transition-colors" title="Copy">
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                            <textarea 
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                placeholder="Input text segment..."
+                                className="w-full min-h-[160px] flex-1 bg-slate-50 p-6 rounded-[2rem] text-lg font-bold text-slate-800 placeholder:text-slate-300 outline-none focus:ring-4 focus:ring-blue-500/10 border border-slate-100 resize-none transition-all shadow-inner"
+                            />
+                        </div>
 
-                        <div className="relative">
-                            <div className="min-h-[120px] w-full bg-blue-50/50 p-6 rounded-2xl text-lg font-bold text-slate-700 leading-relaxed italic border border-blue-100">
-                                {loading ? (
-                                    <div className="flex items-center gap-3 text-blue-400 animate-pulse">
-                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" />
-                                        <span className="text-xs uppercase tracking-widest font-black">Synthesizing...</span>
-                                    </div>
-                                ) : translated || (
-                                    <span className="opacity-20 select-none">Output results will materialize here...</span>
-                                )}
+                        <div className="space-y-4 flex flex-col">
+                            <div className="flex justify-between items-center px-2">
+                                <span className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">Translation</span>
+                                <div className="flex gap-2">
+                                    <button onClick={() => speakText(translated, targetLang)} className="p-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors" title="Listen">
+                                        <Volume2 className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => copyToClipboard(translated)} className="p-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors" title="Copy">
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="flex-1 w-full bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-lg font-bold text-white leading-relaxed italic relative overflow-hidden group shadow-lg shadow-slate-900/10">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:scale-150 transition-transform duration-700" />
+                                <div className="relative z-10 w-full h-full overflow-y-auto custom-scrollbar flex flex-col">
+                                    {loading ? (
+                                        <div className="flex flex-col items-center justify-center h-full flex-1">
+                                            <RotateCcw className="w-6 h-6 text-blue-400 animate-spin mb-3" />
+                                            <span className="text-xs uppercase tracking-widest font-black text-blue-400">Synthesizing...</span>
+                                        </div>
+                                    ) : translated ? (
+                                        <p className="whitespace-pre-wrap flex-1">{translated}</p>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full flex-1 opacity-30 select-none">
+                                            <Globe className="w-10 h-10 mb-3" />
+                                            <span className="text-xs uppercase tracking-widest">Output will materialize here</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <button 
-                        onClick={handleTranslate}
-                        disabled={loading || !text.trim()}
-                        className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:grayscale"
-                    >
-                        Execute Translation
-                    </button>
-                </div>
-
-                <div className="flex items-center gap-4 bg-white/50 p-4 rounded-2xl border border-blue-100 backdrop-blur-sm">
-                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue shrink-0">
-                        <Sparkles className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="text-[0.65rem] font-black text-slate-500 uppercase leading-tight">Neural Translation Engine</p>
-                        <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Optimized for board curriculum technicalities</p>
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 relative z-10">
+                        <button onClick={clearAll} className="flex-1 py-4 bg-rose-50 text-rose-500 rounded-2xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2 active:scale-95">
+                            <Trash2 className="w-4 h-4" /> Clear All
+                        </button>
+                        <button 
+                            onClick={handleTranslate}
+                            disabled={loading || !text.trim()}
+                            className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-blue-700 hover:shadow-blue-500/20 shadow-blue-500/10"
+                        >
+                            {loading ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            Execute Translation
+                        </button>
                     </div>
                 </div>
             </div>
@@ -5188,6 +5271,152 @@ const UnitConverterPage = () => {
         </div>
     );
 };
+const PRESET_COLORS = ['#0f172a', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff'];
+const PRESET_BRUSHES = [2, 5, 10, 20];
+
+const DrawingPad = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [color, setColor] = useState('#0f172a');
+    const [brushSize, setBrushSize] = useState(3);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        
+        if (value && value.startsWith('data:image')) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = value;
+        } else if (value === '' || !value) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    }, [value]);
+
+    const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        setIsDrawing(true);
+        draw(e);
+        if (canvasRef.current) {
+            canvasRef.current.setPointerCapture(e.pointerId);
+        }
+    };
+
+    const stopDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        setIsDrawing(false);
+        if (canvasRef.current) {
+            canvasRef.current.releasePointerCapture(e.pointerId);
+            canvasRef.current.getContext('2d')?.beginPath();
+            onChange(canvasRef.current.toDataURL('image/png'));
+        }
+    };
+
+    const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!isDrawing || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
+
+        ctx.lineWidth = brushSize;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = color;
+
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
+
+    const clearCanvas = () => {
+        if (!canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        onChange(canvas.toDataURL('image/png'));
+    };
+
+    const downloadImage = () => {
+        if (!canvasRef.current) return;
+        const dataUrl = canvasRef.current.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `Aadhar_Drawing_${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+    };
+
+    return (
+        <div className="space-y-4">
+            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                    {PRESET_COLORS.map(c => (
+                        <button 
+                            key={c}
+                            onClick={() => setColor(c)}
+                            style={{ backgroundColor: c }}
+                            className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c ? 'scale-125 border-slate-300 shadow-md' : 'border-transparent hover:scale-110'} ${c === '#ffffff' ? 'border-slate-200' : ''}`}
+                            title={c === '#ffffff' ? 'Eraser' : c}
+                        />
+                    ))}
+                    <div className="w-px h-8 bg-slate-200 mx-1" />
+                    <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-none overflow-hidden" title="Custom Color" />
+                </div>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-inner border border-slate-100">
+                        {PRESET_BRUSHES.map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setBrushSize(s)}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${brushSize === s ? 'bg-amber-100 text-amber-600' : 'text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                <div className="bg-current rounded-full" style={{ width: Math.max(s/2, 2), height: Math.max(s/2, 2) }} />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
+                    <button onClick={downloadImage} className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95" title="Save Image">
+                        <Save className="w-4 h-4" /> Save
+                    </button>
+                    <button onClick={clearCanvas} className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95" title="Clear Canvas">
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+            <div className="w-full aspect-[4/3] sm:aspect-video rounded-[2.5rem] overflow-hidden border-2 border-amber-200 shadow-inner bg-white relative group">
+                <div className="absolute top-4 right-4 bg-slate-900/50 text-white px-3 py-1 rounded-full text-[0.6rem] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    {color === '#ffffff' ? 'Eraser Mode' : 'Drawing Mode'}
+                </div>
+                <canvas
+                    ref={canvasRef}
+                    width={800}
+                    height={600}
+                    className="w-full h-full object-contain cursor-crosshair touch-none"
+                    onPointerDown={startDrawing}
+                    onPointerMove={draw}
+                    onPointerUp={stopDrawing}
+                    onPointerOut={stopDrawing}
+                />
+            </div>
+        </div>
+    );
+};
+
 const NotePadPage = () => {
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -5199,6 +5428,7 @@ const NotePadPage = () => {
     const [mode, setMode] = useState<'editor' | 'library'>('library');
     const [tag, setTag] = useState('General');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [composeType, setComposeType] = useState<'text' | 'draw'>('text'); // New state for draw/text
 
     const MAX_NOTES = 50;
 
@@ -5209,6 +5439,7 @@ const NotePadPage = () => {
     }, [user]);
 
     const fetchNotes = async () => {
+        setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .from('notes')
@@ -5216,9 +5447,19 @@ const NotePadPage = () => {
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
-            if (data) setNotes(data);
+            if (data && data.length > 0) {
+                setNotes(data);
+                localStorage.setItem(`notes_${user?.id}`, JSON.stringify(data));
+            } else {
+                // If empty or user has nothing in DB, try local storage
+                const local = localStorage.getItem(`notes_${user?.id}`);
+                if (local) setNotes(JSON.parse(local));
+            }
         } catch (error) {
             console.error('Error fetching notes:', error);
+            // Fallback to local storage
+            const local = localStorage.getItem(`notes_${user?.id}`);
+            if (local) setNotes(JSON.parse(local));
         } finally {
             setIsLoading(false);
         }
@@ -5232,7 +5473,7 @@ const NotePadPage = () => {
             return;
         }
 
-        const noteData = { 
+        const noteData: any = { 
             user_id: user.id, 
             title: title || 'Brain Dump', 
             content: content, 
@@ -5250,7 +5491,9 @@ const NotePadPage = () => {
                     .single();
 
                 if (error) throw error;
-                setNotes(notes.map(n => n.id === editingId ? data : n));
+                const updatedList = notes.map(n => n.id === editingId ? data : n);
+                setNotes(updatedList);
+                localStorage.setItem(`notes_${user?.id}`, JSON.stringify(updatedList));
                 addToast("Note updated successfully.", "success");
             } else {
                 const { data, error } = await supabase
@@ -5261,7 +5504,9 @@ const NotePadPage = () => {
 
                 if (error) throw error;
                 if (data) {
-                    setNotes([data, ...notes]);
+                    const newList = [data, ...notes];
+                    setNotes(newList);
+                    localStorage.setItem(`notes_${user?.id}`, JSON.stringify(newList));
                     addToast("Sync complete. Log secured.", "success");
                 }
             }
@@ -5272,7 +5517,25 @@ const NotePadPage = () => {
             setMode('library');
         } catch (error) {
             console.error('Error saving note:', error);
-            addToast("Operation failed.", "error");
+            // Fallback saving directly to local storage!
+            const newId = editingId || 'local_' + Date.now();
+            const fallbackNote = { ...noteData, id: newId, created_at: new Date().toISOString() };
+            
+            let updatedList;
+            if (editingId) {
+                updatedList = notes.map(n => n.id === editingId ? fallbackNote : n);
+            } else {
+                updatedList = [fallbackNote, ...notes];
+            }
+            
+            setNotes(updatedList);
+            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(updatedList));
+            
+            setTitle('');
+            setContent('');
+            setEditingId(null);
+            setMode('library');
+            addToast("Saved locally (offline mode).", "success");
         }
     };
 
@@ -5281,6 +5544,8 @@ const NotePadPage = () => {
         setContent(note.content);
         setTag(note.category || 'General');
         setEditingId(note.id);
+        const isDrawing = note.content && typeof note.content === 'string' && note.content.startsWith('data:image');
+        setComposeType(isDrawing ? 'draw' : 'text');
         setMode('editor');
     };
 
@@ -5294,18 +5559,31 @@ const NotePadPage = () => {
                 .eq('id', id);
 
             if (error) throw error;
-            setNotes(notes.filter(n => n.id !== id));
+            const remaining = notes.filter(n => n.id !== id);
+            setNotes(remaining);
+            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(remaining));
             addToast("Log deleted.", "success");
         } catch (error) {
             console.error('Error deleting note:', error);
+            const remaining = notes.filter(n => n.id !== id);
+            setNotes(remaining);
+            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(remaining));
+            addToast("Log deleted locally.", "success");
         }
+    };
+
+    const newNote = () => {
+        setTitle('');
+        setContent('');
+        setEditingId(null);
+        setMode('editor');
     };
 
     const tags = ['Science', 'Maths', 'English', 'Nepali', 'Social', 'Personal'];
 
     return (
-        <div className="space-y-10 animate-fade-up pb-32 max-w-4xl mx-auto">
-            <header className="flex items-center justify-between">
+        <div className="space-y-10 animate-fade-up pb-32 max-w-4xl mx-auto px-4 md:px-0">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-4">
                     <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-95 transition-all">
                         <ArrowLeft className="w-6 h-6" />
@@ -5315,16 +5593,16 @@ const NotePadPage = () => {
                         <p className="text-[0.6rem] font-black text-amber-500 uppercase tracking-widest mt-1">Thought Capture Engine</p>
                     </div>
                 </div>
-                <div className="flex bg-slate-100 p-1 rounded-2xl">
+                <div className="flex bg-slate-100 p-1 rounded-2xl w-full md:w-auto overflow-x-auto custom-scrollbar shadow-inner hidden md:flex">
                     <button 
                         onClick={() => setMode('library')}
-                        className={cn("px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all", mode === 'library' ? "bg-amber-500 text-white shadow-lg" : "text-slate-400")}
+                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap", mode === 'library' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
                     >
                         Archives
                     </button>
                     <button 
-                        onClick={() => setMode('editor')}
-                        className={cn("px-6 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all", mode === 'editor' ? "bg-amber-500 text-white shadow-lg" : "text-slate-400")}
+                        onClick={newNote}
+                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap", mode === 'editor' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
                     >
                         Compose
                     </button>
@@ -5339,20 +5617,33 @@ const NotePadPage = () => {
                         exit={{ opacity: 0, scale: 0.95 }}
                         className="space-y-6"
                     >
-                        <div className="bg-white p-10 rounded-[3.5rem] border border-amber-50 shadow-2xl space-y-8 relative overflow-hidden ring-4 ring-amber-50/50">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50" />
+                        <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-amber-100 shadow-2xl space-y-8 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50 pointer-events-none group-hover:scale-110 transition-transform duration-700" />
                             
                             <div className="relative z-10 space-y-6">
-                                <div className="space-y-4">
-                                    <label className="text-[0.65rem] font-black uppercase tracking-[0.3em] text-slate-400 ml-6">Log Classification</label>
-                                    <div className="flex flex-wrap gap-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                                     <div className="flex bg-slate-100 p-1 rounded-2xl w-max shadow-inner">
+                                        <button 
+                                            onClick={() => setComposeType('text')}
+                                            className={cn("px-6 py-2.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all flex items-center gap-2", composeType === 'text' ? "bg-white text-blue-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
+                                        >
+                                            <FileText className="w-4 h-4" /> Write
+                                        </button>
+                                        <button 
+                                            onClick={() => setComposeType('draw')}
+                                            className={cn("px-6 py-2.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all flex items-center gap-2", composeType === 'draw' ? "bg-white text-purple-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
+                                        >
+                                            <Edit3 className="w-4 h-4" /> Draw
+                                        </button>
+                                    </div>
+                                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar border border-slate-100 shadow-inner">
                                         {tags.map(t => (
                                             <button 
                                                 key={t} 
                                                 onClick={() => setTag(t)}
                                                 className={cn(
-                                                    "px-5 py-2.5 rounded-xl text-[0.65rem] font-black uppercase tracking-widest border transition-all",
-                                                    tag === t ? "bg-amber-500 text-white border-amber-600 shadow-lg shadow-amber-200" : "bg-white text-slate-400 border-slate-100 hover:border-amber-200"
+                                                    "px-4 py-2 rounded-xl text-[0.55rem] font-black uppercase tracking-widest transition-all shrink-0 border",
+                                                    tag === t ? "bg-slate-900 text-white border-slate-800 shadow-md" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
                                                 )}
                                             >
                                                 {t}
@@ -5361,32 +5652,36 @@ const NotePadPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="p-1 border-b-2 border-slate-50 focus-within:border-amber-400 transition-all">
+                                <div className="p-1 focus-within:border-amber-400 transition-all rounded-2xl border-2 border-transparent hover:border-slate-50 focus-within:bg-slate-50/30">
                                     <input 
                                         value={title}
                                         onChange={e => setTitle(e.target.value)}
                                         placeholder="Entry Headline..." 
-                                        className="w-full bg-transparent p-4 text-3xl font-black italic uppercase tracking-tighter text-slate-900 placeholder:text-slate-100 outline-none"
+                                        className="w-full bg-transparent p-4 text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-900 placeholder:text-slate-300 outline-none"
                                     />
                                 </div>
 
-                                <textarea 
-                                    value={content}
-                                    onChange={e => setContent(e.target.value)}
-                                    placeholder="Unload your knowledge matrix here..."
-                                    rows={10}
-                                    className="w-full bg-amber-50/20 p-8 rounded-[2.5rem] border-2 border-slate-50 text-slate-700 font-bold leading-relaxed resize-none outline-none focus:bg-white focus:border-amber-200 transition-all"
-                                />
+                                {composeType === 'text' ? (
+                                    <textarea 
+                                        value={content}
+                                        onChange={e => setContent(e.target.value)}
+                                        placeholder="Unload your knowledge matrix here..."
+                                        rows={12}
+                                        className="w-full bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 text-slate-700 font-bold leading-relaxed resize-none outline-none focus:bg-white focus:border-amber-200 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner"
+                                    />
+                                ) : (
+                                    <DrawingPad value={content} onChange={setContent} />
+                                )}
                             </div>
                         </div>
 
                         <button 
                             onClick={saveNote}
                             disabled={!title.trim() && !content.trim()}
-                            className="w-full bg-slate-900 text-white p-8 rounded-[2.5rem] shadow-2xl flex items-center justify-center gap-4 group active:scale-95 transition-all disabled:opacity-50"
+                            className="w-full bg-linear-to-r from-amber-500 to-orange-600 text-white p-6 md:p-8 rounded-[2.5rem] shadow-xl shadow-amber-500/20 flex items-center justify-center gap-4 group active:scale-95 transition-all disabled:opacity-50 hover:shadow-2xl hover:shadow-amber-500/30"
                         >
-                            <span className="text-xl font-black italic uppercase tracking-tighter">Synchronize Mind Log</span>
-                            <Server className="w-6 h-6 group-hover:rotate-12 transition-transform text-amber-400" />
+                            <span className="text-xl font-black italic uppercase tracking-tighter">Commit to Memory</span>
+                            <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
                         </button>
                     </motion.div>
                 ) : (
@@ -5395,49 +5690,66 @@ const NotePadPage = () => {
                         animate={{ opacity: 1 }}
                         className="space-y-8"
                     >
+                         <button 
+                            onClick={newNote}
+                            className="w-full md:hidden bg-linear-to-r from-amber-500 to-orange-600 text-white p-5 rounded-[2rem] shadow-xl flex items-center justify-center gap-3 font-black text-sm uppercase tracking-widest active:scale-95 transition-all mb-4"
+                        >
+                            <Plus className="w-5 h-5" /> Initiate New Entry
+                        </button>
+
                         {notes.length === 0 && !isLoading && (
-                            <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
-                                <Search className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                            <div className="text-center py-24 bg-white rounded-[4rem] border border-dashed border-slate-200">
+                                <Search className="w-16 h-16 text-slate-200 mx-auto mb-6" />
                                 <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs">No active logs found in memory.</p>
-                                <button onClick={() => setMode('editor')} className="mt-4 text-amber-500 font-black text-xs uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Initiate New Entry</button>
+                                <button onClick={newNote} className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-colors active:scale-95">Start Writing</button>
                             </div>
                         )}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {notes.map((n, i) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {notes.map((n, i) => {
+                                const isDrawing = n.content?.startsWith('data:image');
+                                return (
                                 <motion.div 
                                     key={n.id} 
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
+                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
                                     transition={{ delay: i * 0.05 }}
                                     onClick={() => startEdit(n)}
-                                    className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl group hover:border-amber-300 transition-all relative overflow-hidden cursor-pointer active:scale-95"
+                                    className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-xl group hover:border-amber-300 transition-all relative overflow-hidden cursor-pointer active:scale-95 flex flex-col h-full"
                                 >
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50 rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-all duration-500" />
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-all duration-700 pointer-events-none" />
                                     <div className="relative z-10 flex flex-col h-full">
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex flex-col">
-                                                <span className="px-3 py-1 bg-amber-100 text-amber-600 rounded-full text-[0.5rem] font-black uppercase tracking-widest w-fit mb-2">{n.category}</span>
-                                                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-tight group-hover:text-amber-600 transition-colors line-clamp-1">{n.title}</h3>
+                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[0.55rem] font-black uppercase tracking-widest w-fit mb-3">{n.category}</span>
+                                                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight group-hover:text-amber-600 transition-colors line-clamp-2">{n.title}</h3>
                                             </div>
                                             <button 
                                                 onClick={(e) => deleteNote(n.id, e)} 
-                                                className="p-3 bg-rose-50 text-rose-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90"
+                                                className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 className="w-5 h-5" />
                                             </button>
                                         </div>
-                                        <p className="text-sm text-slate-600 font-bold leading-relaxed line-clamp-3 mb-6 bg-slate-50/50 p-4 rounded-2xl flex-1">{n.content}</p>
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                                                <Calendar className="w-3 h-3" /> {new Date(n.created_at || Date.now()).toLocaleDateString()}
+
+                                        {isDrawing ? (
+                                            <div className="flex-1 w-full bg-slate-50 rounded-2xl mb-6 flex items-center justify-center p-2 border border-slate-100 min-h-[150px]">
+                                                <img src={n.content} alt={n.title} className="w-full h-full object-contain filter saturate-[0.8] group-hover:saturate-100 transition-all" />
                                             </div>
-                                            <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Edit3 className="w-4 h-4" />
+                                        ) : (
+                                            <p className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-4 mb-6 bg-slate-50 p-5 rounded-2xl flex-1 border border-slate-100 shadow-inner group-hover:bg-white transition-colors">{n.content}</p>
+                                        )}
+                                        
+                                        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
+                                            <div className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Calendar className="w-3.5 h-3.5 text-amber-500" /> {new Date(n.created_at || Date.now()).toLocaleDateString()}
+                                            </div>
+                                            <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-amber-500 group-hover:text-white group-hover:-rotate-12 transition-all">
+                                                <Edit3 className="w-5 h-5" />
                                             </div>
                                         </div>
                                     </div>
                                 </motion.div>
-                            ))}
+                            )})}
                         </div>
                     </motion.div>
                 )}
@@ -5460,6 +5772,7 @@ const TodoListPage = () => {
     }, [user]);
 
     const fetchTasks = async () => {
+        setIsLoading(true);
         try {
             const { data, error } = await supabase
                 .from('tasks')
@@ -5467,9 +5780,17 @@ const TodoListPage = () => {
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
-            if (data) setTasks(data);
+            if (data && data.length > 0) {
+                setTasks(data);
+                localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(data));
+            } else {
+                const local = localStorage.getItem(`tasks_${user?.id}`);
+                if (local) setTasks(JSON.parse(local));
+            }
         } catch (error) {
             console.error('Error fetching tasks:', error);
+            const local = localStorage.getItem(`tasks_${user?.id}`);
+            if (local) setTasks(JSON.parse(local));
         } finally {
             setIsLoading(false);
         }
@@ -5488,11 +5809,18 @@ const TodoListPage = () => {
 
             if (error) throw error;
             if (data) {
-                setTasks([data, ...tasks]);
+                const newList = [data, ...tasks];
+                setTasks(newList);
+                localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(newList));
                 setNewTask("");
             }
         } catch (error) {
             console.error('Error saving task:', error);
+            const fallbackTask = { id: 'local_' + Date.now(), ...newTaskData, created_at: new Date().toISOString() };
+            const newList = [fallbackTask, ...tasks];
+            setTasks(newList);
+            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(newList));
+            setNewTask("");
         }
     };
 
@@ -5507,9 +5835,14 @@ const TodoListPage = () => {
                 .eq('id', id);
 
             if (error) throw error;
-            setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+            const updated = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+            setTasks(updated);
+            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updated));
         } catch (error) {
             console.error('Error updating task:', error);
+            const updated = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+            setTasks(updated);
+            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updated));
         }
     };
 
@@ -5521,9 +5854,14 @@ const TodoListPage = () => {
                 .eq('id', id);
 
             if (error) throw error;
-            setTasks(tasks.filter(t => t.id !== id));
+            const remaining = tasks.filter(t => t.id !== id);
+            setTasks(remaining);
+            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(remaining));
         } catch (error) {
             console.error('Error deleting task:', error);
+            const remaining = tasks.filter(t => t.id !== id);
+            setTasks(remaining);
+            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(remaining));
         }
     };
 
@@ -6785,42 +7123,75 @@ const AppProvider = ({ children }: any) => {
             
             if (error) throw error;
             
-            const noteCount = data?.length || 0;
+            calculateAndSetStats(data, userId);
+        } catch (err) {
+            console.error('Error fetching user stats:', err);
+            // Fallback to localStorage
+            try {
+                const localStr = localStorage.getItem(`notes_${userId}`);
+                if (localStr) {
+                    const localNotes = JSON.parse(localStr);
+                    calculateAndSetStats(localNotes, userId);
+                } else {
+                    // Try getting raw user stats if no notes exist
+                    const localUserStatsStr = localStorage.getItem(`user_stats_${userId}`);
+                    if (localUserStatsStr) {
+                        const localUserStats = JSON.parse(localUserStatsStr);
+                        setUser(prev => prev ? {
+                            ...prev,
+                            xp: localUserStats.xp || 0,
+                            streak: localUserStats.streak || 0
+                        } : null);
+                    }
+                }
+            } catch (e) {
+                console.error("Local stats calculation failed", e);
+            }
+        }
+    };
+
+    const calculateAndSetStats = (data: any[], userId: string) => {
+        const noteCount = data?.length || 0;
             
-            // Calculate streak (consecutive days of activity)
-            let streak = 0;
-            if (data && data.length > 0) {
-                // Get unique dates in local time
-                const dates = [...new Set(data.map(n => new Date(n.created_at).toLocaleDateString()))];
-                const today = new Date().toLocaleDateString();
-                const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
-                
-                // If most recent note is today or yesterday, start counting streak
-                if (dates[0] === today || dates[0] === yesterday) {
-                    streak = 1;
-                    // Ensure it starts from at least 1 if they have ANY activity in last 2 days
-                    for (let i = 0; i < dates.length - 1; i++) {
-                        const d1 = new Date(dates[i]);
-                        const d2 = new Date(dates[i+1]);
-                        // Difference in days
-                        const diff = (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24);
-                        if (Math.round(diff) === 1) {
-                            streak++;
-                        } else {
-                            break;
-                        }
+        // Calculate streak (consecutive days of activity)
+        let streak = 0;
+        if (data && data.length > 0) {
+            // Get unique dates in local time
+            const dates = [...new Set(data.map(n => new Date(n.created_at || new Date()).toLocaleDateString()))];
+            // Sort dates descending
+            dates.sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
+            
+            const today = new Date().toLocaleDateString();
+            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
+            
+            // If most recent note is today or yesterday, start counting streak
+            if (dates[0] === today || dates[0] === yesterday) {
+                streak = 1;
+                // Ensure it starts from at least 1 if they have ANY activity in last 2 days
+                for (let i = 0; i < dates.length - 1; i++) {
+                    const d1 = new Date(dates[i]);
+                    const d2 = new Date(dates[i+1]);
+                    // Math.round handles daylight saving boundaries
+                    const diff = (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24);
+                    if (Math.round(diff) === 1) {
+                        streak++;
+                    } else {
+                        break;
                     }
                 }
             }
+        }
 
-            setUser(prev => prev ? {
+        setUser(prev => {
+            if (!prev) return null;
+            const updated = {
                 ...prev,
                 xp: noteCount * 125, // 125 XP per note
                 streak: streak
-            } : null);
-        } catch (err) {
-            console.error('Error fetching user stats:', err);
-        }
+            };
+            localStorage.setItem(`user_stats_${userId}`, JSON.stringify(updated));
+            return updated;
+        });
     };
 
     useEffect(() => {
