@@ -3683,8 +3683,15 @@ const ProfilePage = () => {
     const navigate = useNavigate();
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        navigate('/');
+        try {
+            await supabase.auth.signOut();
+        } catch (e) {
+            console.error("Logout error", e);
+        } finally {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = '/';
+        }
     };
 
     // Admin logic
@@ -6711,7 +6718,7 @@ const AdminPortalPage = () => {
                                                 </div>
                                             )}
 
-                                            {(contentType === 'video' || contentType === 'digital_textbook' || contentType === 'model_question') && (
+                                            {(contentType === 'video' || contentType === 'digital_textbook' || contentType === 'model_question' || contentType === 'shared_note' || contentType === 'note_archive') && (
                                                 <div className="space-y-2">
                                                     <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">
                                                         {contentType === 'video' ? 'YouTube URL' : 'Cloud Link (Optional if uploading file)'}
@@ -6762,7 +6769,7 @@ const AdminPortalPage = () => {
                                                 </div>
                                             )}
 
-                                            {(['chapter', 'note', 'note_archive', 'mcq', 'model_question'].includes(contentType)) && (
+                                            {(['chapter', 'note', 'note_archive', 'mcq', 'model_question', 'shared_note'].includes(contentType)) && (
                                                 <div className="space-y-2">
                                                     <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Attachment Core (Max 50MB)</label>
                                                     <input type="file" className="hidden" id="adminHubFile" onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})} />
