@@ -4379,19 +4379,11 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isOpen) return;
-            if (e.key === 'ArrowRight' || e.key === ' ') {
-                e.preventDefault();
-                paginate(1);
-            }
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                paginate(-1);
-            }
             if (e.key === 'Escape') onClose();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, numPages, pageNumber, onClose]);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
@@ -4401,104 +4393,124 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[2001] flex flex-col bg-slate-50 select-none"
+                className="fixed inset-0 z-[2001] flex flex-col bg-slate-50 select-none overflow-hidden"
             >
                 {/* Immersive Header */}
                 <div 
-                    className="flex items-center justify-between px-6 py-5 md:px-10 md:py-8 bg-white border-b border-slate-100 z-[120] shadow-sm shrink-0"
+                    className="flex items-center justify-between px-6 py-4 md:px-10 md:py-6 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[120] shrink-0"
                 >
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 md:w-14 md:h-14 bg-indigo-600 text-white rounded-[1rem] md:rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
-                            <Book className="w-6 h-6 md:w-8 md:h-8" />
+                        <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                            <Book className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
                         <div className="min-w-0">
-                            <h3 className="text-[0.85rem] md:text-xl font-black text-slate-900 uppercase tracking-tighter truncate max-w-[150px] md:max-w-2xl italic leading-tight">{title}</h3>
-                            <p className="text-[0.55rem] md:text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
-                                {numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating Optical Feed'}
-                            </p>
+                            <h3 className="text-[0.8rem] md:text-lg font-black text-slate-900 uppercase tracking-tighter truncate max-w-[150px] md:max-w-2xl italic leading-tight">{title}</h3>
+                            <div className="flex items-center gap-2 mt-0.5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">
+                                    {numPages ? `${numPages} Digital Frames Synchronized` : 'Initiating Optical Stream'}
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-3">
                         <button 
                             onClick={() => window.open(url, '_blank')}
-                            className="w-10 h-10 md:w-14 md:h-14 bg-slate-50 text-slate-400 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100 shadow-sm active:scale-95"
-                            title="External Direct Stream"
+                            className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100 active:scale-95 shadow-sm"
                         >
                             <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
                         </button>
                         <button 
                             onClick={onClose}
-                            className="w-10 h-10 md:w-14 md:h-14 bg-rose-50 text-rose-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 active:scale-95 group shadow-sm"
-                            title="Terminate Connection"
+                            className="w-10 h-10 md:w-12 md:h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 active:scale-95 group shadow-sm"
                         >
-                            <X className="w-6 h-6 md:w-7 md:h-7 group-hover:rotate-90 transition-transform" />
+                            <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
                         </button>
                     </div>
                 </div>
 
-                {/* Viewer Shell */}
-                <div className="flex-1 relative overflow-hidden flex flex-col items-center bg-slate-100/30">
+                {/* Progress Bar for Loading Entire Document */}
+                {!numPages && !loadError && (
+                    <div className="w-full h-1 bg-slate-100 overflow-hidden shrink-0">
+                        <motion.div 
+                            className="h-full bg-indigo-500"
+                            initial={{ x: '-100%' }}
+                            animate={{ x: '100%' }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                        />
+                    </div>
+                )}
+
+                {/* Vertical Scroll Viewer Shell */}
+                <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-100/50 flex flex-col items-center py-8 md:py-12 scroll-smooth custom-scrollbar">
                     {loadError ? (
-                        <div className="w-full h-full p-6 md:p-14 relative z-10">
+                        <div className="w-full h-full max-w-5xl px-6 relative z-10">
                             <iframe 
                                 src={previewUrl} 
-                                className="w-full h-full rounded-[2.5rem] shadow-2xl border-none bg-white"
+                                className="w-full h-[85vh] rounded-[2rem] shadow-2xl border-none bg-white"
                                 title="Cloud Relay Viewer"
                             />
                         </div>
                     ) : (
-                        <div className="relative w-full h-full flex flex-col items-center overflow-y-auto custom-scrollbar pt-6 pb-32 px-4">
-                            <Document
-                                file={directUrl}
-                                onLoadSuccess={onDocumentLoadSuccess}
-                                onLoadError={() => setLoadError(true)}
-                                loading={
-                                    <div className="flex flex-col items-center justify-center p-12 md:p-24 bg-white rounded-[3rem] shadow-2xl border border-blue-50/50 mt-20">
-                                        <div className="relative w-16 h-16 mb-8">
-                                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full" />
-                                            <div className="absolute inset-0 border-4 border-t-blue-500 rounded-full animate-spin" />
+                        <Document
+                            file={directUrl}
+                            onLoadSuccess={onDocumentLoadSuccess}
+                            onLoadError={() => setLoadError(true)}
+                            loading={
+                                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-10">
+                                    <div className="relative">
+                                        {/* Aesthetic Loader */}
+                                        <div className="w-24 h-24 rounded-full border-2 border-indigo-50 animate-pulse flex items-center justify-center">
+                                            <div className="w-16 h-16 rounded-full border-t-2 border-indigo-500 animate-spin" />
                                         </div>
-                                        <div className="text-center">
-                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.4em] mb-2">Establishing Stream</p>
-                                            <p className="text-[0.55rem] font-bold text-blue-500 uppercase tracking-widest animate-pulse">Syncing Digital Asset...</p>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <BookOpen className="w-7 h-7 text-indigo-200 animate-bounce" />
                                         </div>
                                     </div>
-                                }
-                            >
-                                <Page 
-                                    pageNumber={pageNumber} 
-                                    width={Math.min(window.innerWidth - 32, 900)}
-                                    renderAnnotationLayer={false}
-                                    renderTextLayer={false}
-                                    className="shadow-[0_30px_70px_rgba(0,0,0,0.08)] rounded-xl md:rounded-2xl overflow-hidden border border-slate-200"
-                                />
-                            </Document>
-
-                            {/* Floating Navigation Controls */}
-                            {numPages && (
-                                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-xl px-6 py-4 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] z-[150] border border-slate-100">
-                                    <button 
-                                        onClick={() => paginate(-1)}
-                                        disabled={pageNumber <= 1}
-                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all hover:bg-slate-50"
-                                    >
-                                        <ChevronLeft className="w-6 h-6" />
-                                    </button>
-                                    <div className="flex flex-col items-center min-w-[70px]">
-                                        <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-[0.2em] leading-none mb-1">Optical Frame</span>
-                                        <span className="text-slate-900 font-black text-sm">{pageNumber} / {numPages}</span>
+                                    <div className="text-center space-y-3">
+                                        <h4 className="text-[0.7rem] font-bold text-slate-800 uppercase tracking-[0.5em] animate-pulse">Syncing Archive</h4>
+                                        <div className="flex items-center gap-2 justify-center">
+                                            <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Optimizing high-def frames</span>
+                                        </div>
                                     </div>
-                                    <button 
-                                        onClick={() => paginate(1)}
-                                        disabled={pageNumber >= numPages}
-                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all hover:bg-slate-50"
-                                    >
-                                        <ChevronRight className="w-6 h-6" />
-                                    </button>
                                 </div>
-                            )}
-                        </div>
+                            }
+                            className="flex flex-col items-center gap-8 md:gap-16 w-full"
+                        >
+                            {numPages && Array.from(new Array(numPages), (_, index) => (
+                                <motion.div
+                                    key={`page_${index + 1}`}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    whileInView={{ opacity: 1, y: 0 }}
+                                    viewport={{ margin: "100px 0px" }}
+                                    className="relative px-4"
+                                >
+                                    <div className="relative group">
+                                        <Page 
+                                            pageNumber={index + 1} 
+                                            width={Math.min(window.innerWidth * 0.92, 850)}
+                                            renderAnnotationLayer={false}
+                                            renderTextLayer={true}
+                                            className="shadow-[0_10px_40px_rgba(30,41,59,0.05)] md:shadow-[0_40px_100px_rgba(30,41,59,0.08)] rounded-xl md:rounded-3xl overflow-hidden border border-white/50 transition-transform duration-700 bg-white"
+                                            loading={
+                                                <div className="bg-white/50 animate-pulse rounded-xl md:rounded-3xl h-[400px] md:h-[1100px] flex items-center justify-center">
+                                                    <div className="w-8 h-8 rounded-full border-b-2 border-indigo-200 animate-spin" />
+                                                </div>
+                                            }
+                                        />
+                                        <div className="absolute -left-12 top-0 bottom-0 flex flex-col justify-center opacity-0 group-hover:opacity-100 transition-all pointer-events-none hidden md:flex">
+                                            <span className="text-[0.6rem] font-black text-slate-300 vertical-text uppercase tracking-[0.4em] rotate-180">Node Frame {index + 1}</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 md:mt-8 flex justify-center">
+                                        <div className="px-5 py-1.5 bg-white/20 backdrop-blur-md rounded-full border border-white/40 shadow-sm">
+                                            <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">{index + 1} / {numPages}</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </Document>
                     )}
                 </div>
             </motion.div>
