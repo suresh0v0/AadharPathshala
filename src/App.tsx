@@ -401,8 +401,10 @@ const MockTest = () => {
                     <div className="space-y-3 md:space-y-4">
                         <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
-                            {(Object.keys(SUBJECTS_CONFIG) as SubjectType[]).map((sub) => {
-                                const cfg = SUBJECTS_CONFIG[sub];
+                            {(Object.keys(SUBJECTS_CONFIG) as SubjectType[])
+                                .filter(sub => sub !== 'Economics' && sub !== 'Health')
+                                .map((sub) => {
+                                    const cfg = SUBJECTS_CONFIG[sub];
                                 return (
                                     <button
                                         key={sub}
@@ -604,23 +606,6 @@ const MockTest = () => {
                              <p className="text-3xl font-black text-purple-700">{Math.floor(timeTaken / 60)}m {timeTaken % 60}s</p>
                         </div>
                     </div>
-
-                    {(score === questions.length || timeTaken < (questions.length * 60) / 2) && (
-                        <div className="mb-10 p-6 bg-gradient-to-r from-amber-500 to-orange-500 rounded-[2rem] text-white shadow-xl shadow-orange-500/20 relative z-10 animate-fade-up">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                                    <Trophy className="w-6 h-6 text-white" />
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="text-sm font-black uppercase tracking-widest leading-none mb-1">Badges Unlocked!</h3>
-                                    <p className="text-[0.65rem] font-bold text-white/80 uppercase tracking-widest flex gap-2 mt-2">
-                                        {score === questions.length && <span className="bg-white/20 px-2 py-1 rounded-md">Perfect Score</span>}
-                                        {(timeTaken < (questions.length * 60) / 2 && score >= questions.length * 0.8) && <span className="bg-white/20 px-2 py-1 rounded-md">Speed Demon</span>}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     <div className="space-y-3 md:space-y-4 relative z-10">
                         <button onClick={() => setStatus('review')} className="w-full py-6 bg-[#020617] text-white rounded-[2rem] font-black text-sm shadow-xl active:scale-95 transition-all uppercase tracking-widest hover:bg-slate-900 border border-slate-800">Review Protocol</button>
@@ -1401,9 +1386,9 @@ const StandardCalculator = () => {
             
             if (outputMode === 'fraction') {
                 try {
-                    const frac: any = math.fraction(result);
-                    const sign = frac.s === -1 ? '-' : '';
-                    resultStr = Number(frac.d) === 1 ? `${sign}${frac.n}` : `${sign}${frac.n}/${frac.d}`;
+                    // Use math.format with ratio for better fraction handling including signs
+                    resultStr = math.format(result, { fraction: 'ratio' });
+                    // mathjs format for ratio returns e.g. "1/2" or "-1/2"
                 } catch (e) {
                     resultStr = typeof result === 'number' ? result.toFixed(8).replace(/\.?0+$/, '') : math.format(result, { precision: 8 });
                 }
@@ -1433,16 +1418,13 @@ const StandardCalculator = () => {
     const toggleSD = () => {
         if (!answer || answer === 'Math ERROR' || answer === 'Syntax ERROR') return;
         try {
-            if (answer.includes('/')) {
-                const parts = answer.split('/');
-                const dec = (parseFloat(parts[0]) / parseFloat(parts[1])).toFixed(8).replace(/\.?0+$/, '');
+            if (outputMode === 'fraction' && answer.includes('/')) {
+                const dec = math.evaluate(answer).toFixed(8).replace(/\.?0+$/, '');
                 setAnswer(dec);
                 setOutputMode('decimal');
             } else {
-                const frac: any = math.fraction(parseFloat(answer));
-                if (Number(frac.d) !== 1) {
-                    setAnswer(`${frac.n}/${frac.d}`);
-                }
+                const fracStr = math.format(math.fraction(parseFloat(answer)), { fraction: 'ratio' });
+                setAnswer(fracStr);
                 setOutputMode('fraction');
             }
         } catch (e) {
@@ -1926,6 +1908,12 @@ const CalculatorSuite = () => {
 const HomePage = () => {
     const navigate = useNavigate();
     const { user } = useApp();
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const bannerColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500", "bg-violet-500", "bg-blue-500", "bg-pink-500", "bg-teal-500", "bg-cyan-500", "bg-purple-500"];
     const [bannerColorIndex, setBannerColorIndex] = useState(0);
@@ -1967,7 +1955,7 @@ const HomePage = () => {
                         <Trophy className="w-5 h-5" />
                     </div>
                     <div className="text-xl font-black text-slate-800 leading-none tabular-nums">{user?.xp || 0}</div>
-                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Universe Rank Points</div>
+                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">{user?.email ? 'Academic Mastery' : 'Academic Standing'}</div>
                 </div>
                 <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center">
                     <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2 shadow-inner">
@@ -1978,48 +1966,6 @@ const HomePage = () => {
                 </div>
             </div>
             
-            {/* Syllabus Countdown Card */}
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-6 opacity-5">
-                    <Target className="w-32 h-32 text-blue group-hover:scale-110 transition-transform duration-700" />
-                </div>
-                <div className="relative z-10 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue shadow-inner">
-                                <Clock className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-[0.7rem] text-slate-800 uppercase tracking-widest leading-none">Exam Countdown</h3>
-                                <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1">SEE 2083 Board Ready</p>
-                            </div>
-                        </div>
-                        <span className="text-[0.6rem] font-black text-blue bg-blue-50 px-3 py-1 rounded-full uppercase tracking-tighter italic">Batch 2083</span>
-                    </div>
-                    
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end px-1">
-                            <span className="text-4xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">64 Days Remaining</span>
-                            <span className="text-xs font-black text-blue uppercase tracking-widest">82% Mastery</span>
-                        </div>
-                        <div className="h-4 bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: "82%" }}
-                                transition={{ duration: 1.5, ease: "easeOut" }}
-                                className="h-full bg-linear-to-r from-blue-400 to-indigo-600 rounded-full shadow-[0_0_15px_rgba(37,99,235,0.3)] relative"
-                            >
-                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                            </motion.div>
-                        </div>
-                    </div>
-
-                    <p className="text-[0.6rem] text-slate-400 font-bold leading-relaxed uppercase tracking-[0.2em] px-1">
-                        Syllabus saturation detected. Precision review suggested for final 18%.
-                    </p>
-                </div>
-            </div>
-
             {/* Aadhar Toolkit - 4 Buttons with Tools Page Design */}
             <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between px-2">
@@ -2034,7 +1980,7 @@ const HomePage = () => {
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
                         { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
                         { id: 'timer', label: 'Focus', icon: Timer, path: '/tools/timer', color: 'rose' },
-                        { id: 'formulas', label: 'Formulas', icon: Sigma, path: '/tools/formulas', color: 'purple' },
+                        { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'purple' },
                     ].map((t) => (
                         <Link 
                             key={t.id} 
@@ -2056,6 +2002,65 @@ const HomePage = () => {
                     ))}
                 </div>
             </div>
+
+            {/* Syllabus Countdown Card */}
+            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-5">
+                    <Target className="w-32 h-32 text-blue group-hover:scale-110 transition-transform duration-700" />
+                </div>
+                <div className="relative z-10 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-inner animate-pulse">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-[0.7rem] text-slate-800 uppercase tracking-widest leading-none">Global Timer</h3>
+                                <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Live Board Tracking</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-end">
+                            <span className="text-[0.6rem] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full uppercase tracking-tighter italic">SEE 2083 Mode</span>
+                            <div className="text-[0.6rem] font-bold text-slate-400 mt-1 tabular-nums">
+                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-end px-1">
+                            <span className="text-4xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">245 Days Left</span>
+                            <span className="text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-lg">High Prep Zone</span>
+                        </div>
+                        <div className="h-4 bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100">
+                            <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: "32%" }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                                className="h-full bg-linear-to-r from-rose-400 to-rose-600 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.3)] relative"
+                            >
+                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                            </motion.div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Consistency</p>
+                             <p className="text-xs font-black text-slate-800">98%</p>
+                        </div>
+                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Syllabus</p>
+                             <p className="text-xs font-black text-slate-800">42%</p>
+                        </div>
+                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Rank</p>
+                             <p className="text-xs font-black text-slate-800">#12</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
 
             {/* Quick Access */}
             <div className="space-y-4 pt-2">
@@ -3693,7 +3698,6 @@ const ProfilePage = () => {
 
     const handleLogout = async () => {
         try {
-            // Local cleanup only
             localStorage.clear();
             sessionStorage.clear();
             window.location.href = '/';
@@ -3702,139 +3706,157 @@ const ProfilePage = () => {
         }
     };
 
-    // Admin logic
     const adminEmails = ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'];
     const isAdmin = user?.email && (
         adminEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
         user.email.toLowerCase().includes('ashish')
     );
 
-    const stats = [
-        { val: (user?.xp || 0).toLocaleString(), label: 'Total XP', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
-        { val: (user?.streak || 0) + ' Days', label: 'Current Streak', icon: Flame, color: 'text-rose-500', bg: 'bg-rose-50' },
-        { val: user?.testsCompleted || 0, label: 'Tests Done', icon: ClipboardList, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { val: (user?.avgScore || 0).toFixed(1) + '%', label: 'Avg. Accuracy', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-        { val: 'Rank #12', label: 'Global Board', icon: Trophy, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-        { val: user?.completedChapters?.length || 0, label: 'Module Master', icon: BookOpen, color: 'text-purple-500', bg: 'bg-purple-50' }
+    const menuItems = [
+        { label: 'Edit Profile', icon: UserIcon, desc: 'Update name and details', path: '#' },
+        { label: 'Security', icon: Lock, desc: 'Manage your privacy', path: '#' },
+        { label: 'App Settings', icon: Settings, desc: 'Dark mode & notifications', path: '#' },
+        { label: 'Help & Support', icon: Megaphone, desc: 'Contact Aadhar team', path: '#' },
     ];
 
     return (
-        <div className="space-y-10 animate-fade-up pb-32 max-w-4xl mx-auto">
-            <header className="flex items-center justify-between">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-95 transition-all">
-                    <ArrowLeft className="w-6 h-6" />
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="animate-fade-up pb-32 max-w-4xl mx-auto space-y-6"
+        >
+            {/* Header Redesign */}
+            <header className="flex items-center justify-between px-2">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="flex gap-2">
-                    {isAdmin && (
-                        <button 
-                            onClick={() => navigate('/admin-portal')}
-                            className="p-3 bg-slate-800 rounded-xl text-white shadow-lg active:scale-95 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-2"
-                        >
-                            <Lock className="w-4 h-4" /> Hub Maintenance
-                        </button>
-                    )}
-                    <button className="p-3 bg-white rounded-xl border border-slate-100 text-slate-400 hover:text-blue transition-colors">
-                        <Settings className="w-5 h-5" />
+                {isAdmin && (
+                    <button 
+                        onClick={() => navigate('/admin-portal')}
+                        className="px-4 py-2 bg-rose-500 rounded-xl text-white shadow-xl shadow-rose-500/20 active:scale-95 transition-all text-[0.6rem] font-bold uppercase tracking-tighter flex items-center gap-2"
+                    >
+                        <Lock className="w-3 h-3" /> Maintenance
                     </button>
-                </div>
+                )}
             </header>
 
-            <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50" />
+            {/* Main Profile Card */}
+            <motion.div 
+                whileHover={{ scale: 1.01 }}
+                className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-white to-slate-50 border border-slate-100 shadow-2xl p-8"
+            >
+                <div className="absolute top-0 right-0 w-full h-32 bg-linear-to-br from-indigo-200 to-purple-200 opacity-20" />
                 
-                <div className="relative z-10 flex flex-col items-center text-center space-y-6">
-                    <div className="relative group">
-                        <div className="w-40 h-40 rounded-[3rem] p-1.5 bg-linear-to-br from-blue-500 via-indigo-600 to-purple-700 shadow-2xl rotate-3 group-hover:rotate-6 transition-transform">
-                            <div className="w-full h-full bg-white rounded-[2.8rem] flex items-center justify-center overflow-hidden">
+                <div className="relative flex flex-col md:flex-row items-center md:items-start gap-8">
+                    <motion.div 
+                        whileHover={{ rotate: 5 }}
+                        className="relative"
+                    >
+                        <div className="w-32 h-32 rounded-[2.5rem] p-1 bg-linear-to-br from-indigo-400 via-purple-500 to-pink-500 shadow-2xl shadow-purple-500/30">
+                            <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden">
                                 {user?.photoURL ? (
-                                    <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-slate-50">
-                                        <UserIcon className="w-16 h-16 text-slate-200" />
-                                    </div>
+                                    <UserIcon className="w-12 h-12 text-slate-300" />
                                 )}
                             </div>
                         </div>
-                        <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl border-4 border-white rotate-12">
-                            <Sparkles className="w-6 h-6" />
+                        <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-emerald-500 text-white rounded-xl border-4 border-white flex items-center justify-center shadow-lg">
+                           <CheckCircle className="w-5 h-5" />
                         </div>
-                    </div>
-                    
-                    <div className="space-y-1">
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{user?.name}</h1>
-                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.3em] font-mono">{user?.email}</p>
-                        <div className="inline-flex items-center gap-2 mt-4 px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest border border-indigo-100 italic">
-                             Grade 10 • SEE 2083 Standard Batch
+                    </motion.div>
+
+                    <div className="flex-1 text-center md:text-left space-y-2">
+                        <div className="space-y-1">
+                            <motion.h1 
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-800 to-slate-900"
+                            >
+                                {user?.name}
+                            </motion.h1>
+                            <p className="text-sm font-bold text-indigo-400 font-mono tracking-tight">{user?.email}</p>
+                        </div>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
+                            <span className="px-3 py-1 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg text-[0.6rem] font-black uppercase tracking-widest italic shadow-lg">Grade 10</span>
+                            <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 rounded-lg text-[0.6rem] font-black uppercase tracking-widest italic border border-indigo-200">SEE 2083 Batch</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-12 relative z-10">
-                    {stats.map(s => (
-                        <div key={s.label} className="bg-white p-6 rounded-[2.5rem] border border-slate-50 shadow-[0_10px_30px_rgba(0,0,0,0.03)] flex flex-col items-center justify-center space-y-3 group hover:border-blue transition-all">
-                            <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform", s.bg)}>
-                                <s.icon className={cn("w-5 h-5", s.color)} />
-                            </div>
-                            <div className="text-center">
-                                <p className="text-xl font-black text-slate-900 tracking-tighter leading-none">{s.val}</p>
-                                <p className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest mt-1.5">{s.label}</p>
-                            </div>
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                    <div className="bg-linear-to-br from-rose-500 to-rose-700 p-6 rounded-3xl border border-rose-400 shadow-xl shadow-rose-500/20 text-white">
+                        <p className="text-[0.6rem] font-black text-rose-100 uppercase tracking-widest mb-1">Current Streak</p>
+                        <div className="flex items-center gap-2">
+                            <Flame className="w-5 h-5 text-rose-200" />
+                            <span className="text-2xl font-black tracking-tighter">{user?.streak || 0} Days</span>
                         </div>
-                    ))}
+                    </div>
+                    <div className="bg-linear-to-br from-rose-600 to-rose-800 p-6 rounded-3xl border border-rose-500 shadow-xl shadow-rose-600/20 text-white">
+                        <p className="text-[0.6rem] font-black text-rose-100 uppercase tracking-widest mb-1">Chapters Mastered</p>
+                        <div className="flex items-center gap-2">
+                            <BookOpen className="w-5 h-5 text-rose-200" />
+                            <span className="text-2xl font-black tracking-tighter">{user?.completedChapters?.length || 0} Units</span>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Action Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-linear-to-br from-rose-500 to-rose-600 rounded-[2.5rem] border border-rose-400 p-6 shadow-xl shadow-rose-500/20 space-y-4">
+                    <h3 className="text-[0.65rem] font-black text-rose-100 uppercase tracking-[0.2em] px-2 italic">Aadhar Services</h3>
+                    <div className="space-y-2">
+                        {menuItems.slice(0, 2).map((item) => (
+                            <button key={item.label} className="w-full flex items-center gap-4 p-4 hover:bg-white/10 rounded-2xl transition-colors group">
+                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-rose-500 transition-colors">
+                                    <item.icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <p className="text-sm font-black text-white tracking-tight leading-none">{item.label}</p>
+                                    <p className="text-[0.65rem] font-bold text-rose-100 uppercase mt-1 opacity-70">{item.desc}</p>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-rose-200 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bg-linear-to-br from-slate-800 to-slate-900 rounded-[2.5rem] border border-slate-700 p-6 shadow-xl space-y-4 text-white">
+                    <h3 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.2em] px-2 italic">Aadhar Lab</h3>
+                    <div className="space-y-2">
+                        {menuItems.slice(2).map((item) => (
+                            <button key={item.label} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-2xl transition-colors group">
+                                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-slate-300">
+                                    <item.icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <p className="text-sm font-black tracking-tight leading-none">{item.label}</p>
+                                    <p className="text-[0.65rem] font-bold text-slate-500 uppercase mt-1 leading-none">{item.desc}</p>
+                                </div>
+                                <ChevronRight className="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
-            <div className="space-y-6">
-                <div className="flex items-center justify-between px-4">
-                    <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Hall of Badges</h2>
-                    <span className="text-[0.55rem] font-black text-blue uppercase tracking-widest">View All</span>
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {user?.badges.map((b: string) => (
-                        <div key={b} className="bg-slate-900 rounded-[2.5rem] p-6 text-white flex flex-col items-center text-center gap-3 shadow-xl group hover:scale-[1.03] transition-transform cursor-pointer overflow-hidden relative">
-                            <div className="absolute top-0 right-0 w-20 h-20 bg-white/5 rounded-full -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700" />
-                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center relative z-10">
-                                <Trophy className="w-6 h-6 text-amber-400" />
-                            </div>
-                            <div className="relative z-10">
-                                <h3 className="text-[0.7rem] font-black tracking-tight leading-none mb-1 uppercase italic">{b}</h3>
-                                <p className="text-[0.45rem] font-bold text-white/40 uppercase tracking-widest leading-none">Legendary</p>
-                            </div>
-                        </div>
-                    ))}
-                    {/* Placeholder for expansion */}
-                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-6 flex flex-col items-center justify-center gap-2 text-slate-300">
-                        <Plus className="w-6 h-6" />
-                        <span className="text-[0.5rem] font-black uppercase tracking-widest">Unlock More</span>
-                    </div>
-                </div>
-            </div>
-
-            <div className="space-y-3 pt-6">
-                <button 
-                    onClick={() => navigate('/hub')}
-                    className="w-full flex items-center justify-between p-6 bg-white border border-slate-100 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group"
-                >
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-50 text-blue rounded-2xl flex items-center justify-center group-hover:rotate-6 transition-transform">
-                            <Bookmark className="w-6 h-6" />
-                        </div>
-                        <div className="text-left">
-                            <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Study Planner</p>
-                            <p className="text-sm font-black uppercase italic tracking-tighter text-slate-900">Bookmarked Chapters</p>
-                        </div>
-                    </div>
-                    <ChevronRight className="w-6 h-6 text-slate-200 group-hover:translate-x-1 transition-transform" />
-                </button>
-
+            {/* Logout Button */}
+            <div className="pt-4">
                 <button 
                     onClick={handleLogout}
-                    className="w-full py-6 bg-rose-50 text-rose-500 rounded-[2.5rem] border border-rose-100 font-black uppercase tracking-widest text-[0.6rem] hover:bg-rose-100 transition-colors shadow-sm active:scale-[0.98]"
+                    className="w-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 transition-all text-slate-500 py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2"
                 >
-                    Terminal Session / Log Out
+                    <LogOut className="w-5 h-5" />
+                    Sign Out Protocol
                 </button>
             </div>
-        </div>
+            
+            <p className="text-center text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">Aadhar Pathshala • Version 3.4.2 Production</p>
+        </motion.div>
     );
 };
 
@@ -4287,7 +4309,7 @@ const NoteList = () => {
                     <div className="text-center py-20 bg-white rounded-[3rem] border border-slate-100 shadow-sm">
                         <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
                         <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase">No external notes yet</h2>
-                        <p className="text-[0.75rem] text-slate-400 font-bold max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest">Contribute your notes to earn XP for your district rank.</p>
+                        <p className="text-[0.65rem] font-bold text-slate-400 max-w-[240px] mx-auto mt-2 leading-relaxed uppercase tracking-widest leading-relaxed italic">Be the first to share notes and help your classmates.</p>
                     </div>
                 )}
             </div>
@@ -4730,9 +4752,21 @@ const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: s
         <div className="w-full bg-white pt-6 pb-24 md:pb-32 px-6 flex flex-col items-center relative overflow-hidden border-b border-slate-100">
              <div className="w-full max-w-[620px] relative z-20">
                 <div className="flex items-center justify-between mb-6 md:mb-10">
-                    <div className="flex flex-col">
-                        <span className="text-xl md:text-2xl font-black text-rose-600 leading-none tracking-tighter">AADHAR</span>
-                        <span className="text-xl md:text-2xl font-black text-blue-600 leading-none tracking-tight">PATHSHALA</span>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onBack();
+                            }} 
+                            className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all z-[100] shadow-lg active:scale-95"
+                        >
+                            <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                        <div className="flex flex-col">
+                            <span className="text-xl md:text-2xl font-black text-rose-600 leading-none tracking-tighter">AADHAR</span>
+                            <span className="text-xl md:text-2xl font-black text-blue-600 leading-none tracking-tight">PATHSHALA</span>
+                        </div>
                     </div>
                     <Link to="/profile" className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
                         {user?.photoURL ? (
@@ -4743,22 +4777,9 @@ const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: s
                     </Link>
                 </div>
 
-                <div className="flex items-center justify-between">
-                    <button 
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onBack();
-                        }} 
-                        className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-800 transition-all z-[100] shadow-lg active:scale-95"
-                    >
-                        <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
-                    </button>
-                    <div className="text-center px-4">
-                        <h1 className={cn("text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none", `text-${themeColor}-600`)}>{title}</h1>
-                        <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{subtitle}</p>
-                    </div>
-                    <div className="w-10 md:w-12" />
+                <div className="flex flex-col items-center">
+                    <h1 className={cn("text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none", `text-${themeColor}-600`)}>{title}</h1>
+                    <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{subtitle}</p>
                 </div>
             </div>
             <div className={cn("absolute bottom-0 left-0 right-0 h-24", `bg-gradient-to-t from-${themeColor}-50/50 to-transparent`)} />
@@ -4796,8 +4817,9 @@ const TranslatorPage = () => {
     };
 
     const swapLangs = () => {
+        const oldSource = sourceLang;
         setSourceLang(targetLang);
-        setTargetLang(sourceLang);
+        setTargetLang(oldSource);
         const oldText = text;
         setText(translated);
         setTranslated(oldText);
@@ -4816,7 +4838,7 @@ const TranslatorPage = () => {
     const speakText = (content: string, lang: string) => {
         if (!content) return;
         const utterance = new SpeechSynthesisUtterance(content);
-        utterance.lang = lang === 'Nepali' ? 'ne-NP' : 'en-US';
+        utterance.lang = lang === 'English' ? 'en-US' : 'ne-NP';
         window.speechSynthesis.speak(utterance);
     };
 
@@ -4826,7 +4848,7 @@ const TranslatorPage = () => {
                 title="AI Translator" 
                 subtitle="Linguistic Precision V.2" 
                 themeColor="blue" 
-                onBack={() => navigate(-1)} 
+                onBack={() => navigate('/tools')} 
             />
 
             <div className="w-full max-w-[800px] relative z-20 px-6 mt-[-60px] space-y-6">
@@ -5319,69 +5341,6 @@ const ExamCalendar = () => {
                         )}
                     </div>
                 </div>
-            </div>
-        </div>
-    );
-};
-
-const LeaderboardPage = () => {
-    const navigate = useNavigate();
-    const students = [
-        { name: 'Sameer Koirala', xp: 4500, grade: '10', streak: 22 },
-        { name: 'Anjali Sharma', xp: 4200, grade: '10', streak: 18 },
-        { name: 'Bibek Dhakal', xp: 3800, grade: '10', streak: 15 },
-        { name: 'Priya Thapa', xp: 3500, grade: '10', streak: 12 },
-        { name: 'Rajesh Hamal', xp: 3200, grade: '10', streak: 30 }
-    ];
-
-    return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">SEE Board</h1>
-            </div>
-
-            <div className="bg-linear-to-br from-indigo-900 via-indigo-800 to-blue-900 p-10 rounded-[3.5rem] text-white overflow-hidden relative shadow-2xl flex flex-col items-center">
-                <Trophy className="w-16 h-16 text-amber-400 mb-4 animate-bounce" />
-                <h2 className="text-3xl font-black italic tracking-tighter uppercase mb-6">Universal Leaders</h2>
-                <div className="grid grid-cols-3 gap-6 w-full text-center">
-                    <div>
-                        <p className="text-3xl font-black italic text-slate-400">#2</p>
-                        <p className="text-[0.6rem] font-black uppercase text-white/40 mt-1">Regional</p>
-                    </div>
-                    <div className="scale-125 border-x border-white/10 px-4">
-                        <p className="text-4xl font-black italic text-amber-400">#12</p>
-                        <p className="text-[0.6rem] font-black uppercase text-white/40 mt-1">National</p>
-                    </div>
-                    <div>
-                        <p className="text-3xl font-black italic text-slate-400">#1</p>
-                        <p className="text-[0.6rem] font-black uppercase text-white/40 mt-1">School</p>
-                    </div>
-                </div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/20 rounded-full -mr-32 -mt-32 blur-3xl" />
-            </div>
-
-            <div className="bg-white rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden">
-                {students.map((s, i) => (
-                    <div key={i} className={cn("p-6 flex items-center justify-between transition-colors", i % 2 === 0 ? "bg-white" : "bg-slate-50")}>
-                        <div className="flex items-center gap-5">
-                            <span className={cn("w-8 h-8 rounded-xl flex items-center justify-center text-sm font-black", 
-                                i === 0 ? "bg-amber-400 text-white" : 
-                                i === 1 ? "bg-slate-300 text-white" : 
-                                i === 2 ? "bg-amber-600 text-white" : "text-slate-400")}>
-                                {i + 1}
-                            </span>
-                            <div>
-                                <h4 className="font-black text-slate-800 uppercase tracking-tight">{s.name}</h4>
-                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">{s.streak} Day Streak 🔥</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                             <p className="font-black text-blue text-lg italic tracking-tighter leading-none">{s.xp.toLocaleString()}</p>
-                             <p className="text-[0.55rem] font-black text-slate-300 uppercase tracking-widest mt-1 text-center">XP</p>
-                        </div>
-                    </div>
-                ))}
             </div>
         </div>
     );
@@ -6338,7 +6297,6 @@ const AppContent = () => {
                 <Route path="/ai" element={<AITutor />} />
                 <Route path="/mock" element={<MockTest />} />
                 <Route path="/news" element={<NewsPage />} />
-                <Route path="/leaderboard" element={<LeaderboardPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/admin-portal" element={<AdminPortalPage />} />
                 <Route path="/tools" element={<AadharToolkit />} />
@@ -6427,11 +6385,7 @@ const AppProvider = ({ children }: any) => {
                     name: 'Guest Scholar',
                     email: 'guest@aadhar.edu.np',
                     grade: '10',
-                    xp: 1250,
                     streak: 5,
-                    badges: ['Early Bird'],
-                    testsCompleted: 4,
-                    avgScore: 85,
                     completedChapters: []
                 };
                 setUser(defaultUser);
@@ -6444,31 +6398,11 @@ const AppProvider = ({ children }: any) => {
 
     const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
         if (!user) return;
-        
-        let newXp = user.xp + (score * 25);
-        let newTests = user.testsCompleted + 1;
-        let newAvg = ((user.avgScore * user.testsCompleted) + ((score/total)*100)) / newTests;
-        
-        let newBadges = [...user.badges];
-        
-        if (score === total && !newBadges.includes('Perfect Score')) {
-            newBadges.push('Perfect Score');
-        }
-        if (timeSpentSecs < (total * 60) / 2 && score >= total * 0.8 && !newBadges.includes('Speed Demon')) {
-            newBadges.push('Speed Demon');
-        }
-        if (newTests >= 5 && !newBadges.includes('Consistent Performer')) {
-            newBadges.push('Consistent Performer');
-        }
-
         const updatedUser = { 
             ...user, 
-            xp: newXp, 
-            testsCompleted: newTests, 
-            avgScore: newAvg,
-            badges: newBadges
+            streak: user.streak + 1,
+            lastStudyDate: new Date().toISOString()
         };
-
         setUser(updatedUser);
         localStorage.setItem('logged_user', JSON.stringify(updatedUser));
     };

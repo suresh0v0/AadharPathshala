@@ -76,13 +76,9 @@ export interface User {
   name: string;
   email: string;
   grade: string;
-  xp: number;
-  testsCompleted: number;
-  avgScore: number;
   completedChapters: string[]; // List of chapter IDs
   streak: number;
   lastStudyDate?: string; // ISO date string
-  badges: string[];
 }
 
 export interface LeaderboardEntry {
