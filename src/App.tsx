@@ -34,7 +34,6 @@ import {
 } from 'recharts';
 import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
-import { supabase } from './supabaseClient.js';
 
 /**
  * Utility for Tailwind classes
@@ -3684,15 +3683,12 @@ const ProfilePage = () => {
 
     const handleLogout = async () => {
         try {
-            await supabase.auth.signOut();
-        } catch (e) {
-            console.error("Logout error", e);
-        } finally {
-            // Scorched earth cleanup to ensure fresh state
+            // Local cleanup only
             localStorage.clear();
             sessionStorage.clear();
-            // Redirect via window.location to force a full runtime reset
             window.location.href = '/';
+        } catch (e) {
+            console.error("Logout error", e);
         }
     };
 
@@ -3722,9 +3718,9 @@ const ProfilePage = () => {
                     {isAdmin && (
                         <button 
                             onClick={() => navigate('/admin-portal')}
-                            className="p-3 bg-rose-500 rounded-xl text-white shadow-lg shadow-rose-200 active:scale-95 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-2"
+                            className="p-3 bg-slate-800 rounded-xl text-white shadow-lg active:scale-95 transition-all text-xs font-black uppercase tracking-widest flex items-center gap-2"
                         >
-                            <Lock className="w-4 h-4" /> Admin Page
+                            <Lock className="w-4 h-4" /> Hub Maintenance
                         </button>
                     )}
                     <button className="p-3 bg-white rounded-xl border border-slate-100 text-slate-400 hover:text-blue transition-colors">
@@ -5445,115 +5441,40 @@ const NotePadPage = () => {
     const MAX_NOTES = 50;
 
     useEffect(() => {
-        if (user) {
-            fetchNotes();
-        }
+        const local = localStorage.getItem(`notes_${user?.id || 'guest'}`);
+        if (local) setNotes(JSON.parse(local));
+        setIsLoading(false);
     }, [user]);
 
-    const fetchNotes = async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('notes')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            if (data && data.length > 0) {
-                setNotes(data);
-                localStorage.setItem(`notes_${user?.id}`, JSON.stringify(data));
-            } else {
-                // If empty or user has nothing in DB, try local storage
-                const local = localStorage.getItem(`notes_${user?.id}`);
-                if (local) setNotes(JSON.parse(local));
-            }
-        } catch (error) {
-            console.error('Error fetching notes:', error);
-            // Fallback to local storage
-            const local = localStorage.getItem(`notes_${user?.id}`);
-            if (local) setNotes(JSON.parse(local));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const saveNote = async () => {
-        if (!user) {
-            addToast("Please login to save notes.", "error");
-            return;
-        }
-
         if (!title.trim() && !content.trim()) return;
 
-        if (!editingId && notes.length >= MAX_NOTES) {
-            addToast("Aadhar Cloud storage full! Clean up your logs.", "error");
-            return;
-        }
-
         const noteData: any = { 
-            user_id: user.id, 
+            id: editingId || 'note_' + Date.now(),
+            user_id: user?.id || 'guest', 
             title: title || 'Brain Dump', 
             content: content, 
             date: new Date().toLocaleDateString(),
-            category: tag 
+            category: tag,
+            created_at: new Date().toISOString()
         };
 
-        try {
-            if (editingId) {
-                const { data, error } = await supabase
-                    .from('notes')
-                    .update(noteData)
-                    .eq('id', editingId)
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                const updatedList = notes.map(n => n.id === editingId ? data : n);
-                setNotes(updatedList);
-                localStorage.setItem(`notes_${user?.id}`, JSON.stringify(updatedList));
-                addToast("Note updated successfully.", "success");
-            } else {
-                const { data, error } = await supabase
-                    .from('notes')
-                    .insert([noteData])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                if (data) {
-                    const newList = [data, ...notes];
-                    setNotes(newList);
-                    localStorage.setItem(`notes_${user?.id}`, JSON.stringify(newList));
-                    addToast("Sync complete. Log secured.", "success");
-                }
-            }
-            
-            setTitle('');
-            setContent('');
-            setEditingId(null);
-            setMode('library');
-        } catch (error) {
-            console.error('Error saving note:', error);
-            // Fallback saving directly to local storage!
-            const newId = editingId || 'local_' + Date.now();
-            const fallbackNote = { ...noteData, id: newId, created_at: new Date().toISOString() };
-            
-            let updatedList;
-            if (editingId) {
-                updatedList = notes.map(n => n.id === editingId ? fallbackNote : n);
-            } else {
-                updatedList = [fallbackNote, ...notes];
-            }
-            
-            setNotes(updatedList);
-            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(updatedList));
-            
-            setTitle('');
-            setContent('');
-            setEditingId(null);
-            setMode('library');
-            addToast("Saved locally (offline mode).", "success");
+        let updatedList;
+        if (editingId) {
+            updatedList = notes.map(n => n.id === editingId ? noteData : n);
+            addToast("Note updated locally.", "success");
+        } else {
+            updatedList = [noteData, ...notes];
+            addToast("Note saved locally.", "success");
         }
+        
+        setNotes(updatedList);
+        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updatedList));
+        
+        setTitle('');
+        setContent('');
+        setEditingId(null);
+        setMode('library');
     };
 
     const startEdit = (note: any) => {
@@ -5566,27 +5487,13 @@ const NotePadPage = () => {
         setMode('editor');
     };
 
-    const deleteNote = async (id: string, e: React.MouseEvent) => {
+    const deleteNote = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (!confirm("Are you sure you want to delete this log?")) return;
-        try {
-            const { error } = await supabase
-                .from('notes')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-            const remaining = notes.filter(n => n.id !== id);
-            setNotes(remaining);
-            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(remaining));
-            addToast("Log deleted.", "success");
-        } catch (error) {
-            console.error('Error deleting note:', error);
-            const remaining = notes.filter(n => n.id !== id);
-            setNotes(remaining);
-            localStorage.setItem(`notes_${user?.id}`, JSON.stringify(remaining));
-            addToast("Log deleted locally.", "success");
-        }
+        const remaining = notes.filter(n => n.id !== id);
+        setNotes(remaining);
+        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(remaining));
+        addToast("Log deleted locally.", "success");
     };
 
     const newNote = () => {
@@ -5783,103 +5690,30 @@ const TodoListPage = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (user) {
-            fetchTasks();
-        }
-    }, [user]);
+        const local = localStorage.getItem('tasks_local');
+        if (local) setTasks(JSON.parse(local));
+        setIsLoading(false);
+    }, []);
 
-    const fetchTasks = async () => {
-        setIsLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('tasks')
-                .select('*')
-                .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            if (data && data.length > 0) {
-                setTasks(data);
-                localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(data));
-            } else {
-                const local = localStorage.getItem(`tasks_${user?.id}`);
-                if (local) setTasks(JSON.parse(local));
-            }
-        } catch (error) {
-            console.error('Error fetching tasks:', error);
-            const local = localStorage.getItem(`tasks_${user?.id}`);
-            if (local) setTasks(JSON.parse(local));
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const addTask = async () => {
+    const addTask = () => {
         if (!newTask.trim()) return;
-        const newTaskData = { text: newTask, done: false, user_id: user.id };
-        
-        try {
-            const { data, error } = await supabase
-                .from('tasks')
-                .insert([newTaskData])
-                .select()
-                .single();
-
-            if (error) throw error;
-            if (data) {
-                const newList = [data, ...tasks];
-                setTasks(newList);
-                localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(newList));
-                setNewTask("");
-            }
-        } catch (error) {
-            console.error('Error saving task:', error);
-            const fallbackTask = { id: 'local_' + Date.now(), ...newTaskData, created_at: new Date().toISOString() };
-            const newList = [fallbackTask, ...tasks];
-            setTasks(newList);
-            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(newList));
-            setNewTask("");
-        }
+        const task = { id: 'task_' + Date.now(), text: newTask, done: false };
+        const newList = [task, ...tasks];
+        setTasks(newList);
+        localStorage.setItem('tasks_local', JSON.stringify(newList));
+        setNewTask("");
     };
 
-    const toggleStatus = async (id: string) => {
-        const taskToToggle = tasks.find(t => t.id === id);
-        if (!taskToToggle) return;
-
-        try {
-            const { error } = await supabase
-                .from('tasks')
-                .update({ done: !taskToToggle.done })
-                .eq('id', id);
-
-            if (error) throw error;
-            const updated = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-            setTasks(updated);
-            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updated));
-        } catch (error) {
-            console.error('Error updating task:', error);
-            const updated = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-            setTasks(updated);
-            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(updated));
-        }
+    const toggleStatus = (id: string) => {
+        const newList = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+        setTasks(newList);
+        localStorage.setItem('tasks_local', JSON.stringify(newList));
     };
 
-    const deleteStatus = async (id: string) => {
-        try {
-            const { error } = await supabase
-                .from('tasks')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-            const remaining = tasks.filter(t => t.id !== id);
-            setTasks(remaining);
-            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(remaining));
-        } catch (error) {
-            console.error('Error deleting task:', error);
-            const remaining = tasks.filter(t => t.id !== id);
-            setTasks(remaining);
-            localStorage.setItem(`tasks_${user?.id}`, JSON.stringify(remaining));
-        }
+    const deleteStatus = (id: string) => {
+        const newList = tasks.filter(t => t.id !== id);
+        setTasks(newList);
+        localStorage.setItem('tasks_local', JSON.stringify(newList));
     };
 
     return (
@@ -5935,247 +5769,6 @@ const ScrollToTop = () => {
     }, [pathname]);
     
     return null;
-};
-
-const AuthPage = () => {
-    const { setUser } = useApp();
-    const [isSignIn, setIsSignIn] = useState(true);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [name, setName] = useState('');
-    const [error, setError] = useState('');
-    const [successMsg, setSuccessMsg] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setSuccessMsg('');
-        if (!email || !password || (!isSignIn && !name)) return;
-        setLoading(true);
-        
-        try {
-            if (isSignIn) {
-                const { data, error: signInError } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-                
-                if (signInError) throw signInError;
-                
-                // Note: user state gets set securely via the onAuthStateChange listener on successful sign in
-            } else {
-                const { data, error: signUpError } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            name: name
-                        }
-                    }
-                });
-
-                if (signUpError) throw signUpError;
-                
-                if (!data.session) {
-                    setSuccessMsg('Your account has been created. Please check your email and verify your address before logging in.');
-                    setIsSignIn(true);
-                    setPassword(''); // Clear password for security, leave email for convenience
-                }
-                // if data.session exists, the listener inside AppProvider will pick it up
-            }
-        } catch (err: any) {
-            setError(err.message || 'An error occurred during authentication.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const toggleMode = () => {
-        setIsSignIn(!isSignIn);
-        setError('');
-        setSuccessMsg('');
-    };
-
-    const handleGoogleLogin = async () => {
-        try {
-            setLoading(true);
-            setError('');
-            const isIframe = window.self !== window.top;
-            
-            const { data, error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    skipBrowserRedirect: isIframe,
-                }
-            });
-            if (error) throw error;
-            
-            if (isIframe && data?.url) {
-                const popup = window.open(data.url, 'google-oauth', 'width=500,height=600');
-                if (!popup) {
-                    setError('Please allow popups to sign in with Google');
-                    setLoading(false);
-                    return;
-                }
-                
-                const handleMessage = async (e: MessageEvent) => {
-                    if (e.data?.type === 'SUPABASE_AUTH_SUCCESS' && e.data.session) {
-                        window.removeEventListener('message', handleMessage);
-                        await supabase.auth.setSession({
-                            access_token: e.data.session.access_token,
-                            refresh_token: e.data.session.refresh_token
-                        });
-                        popup.close();
-                    }
-                };
-                window.addEventListener('message', handleMessage);
-                
-                const checkClosed = setInterval(() => {
-                    if (popup.closed) {
-                        clearInterval(checkClosed);
-                        setLoading(false);
-                    }
-                }, 1000);
-            }
-        } catch (err: any) {
-            setError(err.message || 'An error occurred during Google Sign In.');
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-            {/* Background elements */}
-            <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-300/30 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-rose-300/30 rounded-full blur-[100px] pointer-events-none" />
-            
-            <div className="w-full max-w-sm relative z-10 animate-fade-up space-y-6 pb-20">
-                <div className="text-center space-y-2">
-                    <div className="flex items-center justify-center gap-3">
-                        <div className="w-12 h-12 bg-[#1D4ED8] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 transform -rotate-6">
-                            <span className="text-white font-black text-2xl italic tracking-tighter">A</span>
-                        </div>
-                        <div className="flex flex-col leading-none items-start justify-center">
-                            <span className="text-slate-900 font-black text-3xl tracking-tighter uppercase italic">Aadhar</span>
-                            <span className="text-blue-600 font-black text-lg tracking-[0.2em] uppercase">Pathshala</span>
-                        </div>
-                    </div>
-                    <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-[0.3em] mt-4">
-                        {isSignIn ? 'Student Portal Login' : 'Student Registration'}
-                    </p>
-                </div>
-
-                <div className="bg-white rounded-[3rem] shadow-2xl p-8 border border-slate-100">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {!isSignIn && (
-                            <div className="space-y-1.5">
-                                <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest pl-2 block">Full Name</label>
-                                <input 
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Your Full Name"
-                                    className="w-full bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-2xl font-bold text-slate-800 text-sm outline-none focus:border-blue-300 focus:bg-white transition-all placeholder:text-slate-300"
-                                />
-                            </div>
-                        )}
-                        
-                        <div className="space-y-1.5">
-                            <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest pl-2 block">Email Address</label>
-                            <input 
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="name@aadhar.edu.np"
-                                className="w-full bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-2xl font-bold text-slate-800 text-sm outline-none focus:border-blue-300 focus:bg-white transition-all placeholder:text-slate-300"
-                            />
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest pl-2 block">Password</label>
-                            <input 
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                className="w-full bg-slate-50 border border-slate-100 px-5 py-3.5 rounded-2xl font-black text-slate-800 text-xl outline-none focus:border-rose-300 focus:bg-white transition-all placeholder:text-slate-300 tracking-widest"
-                            />
-                        </div>
-                        
-                        {error && (
-                            <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-500 text-[0.65rem] font-black uppercase tracking-widest rounded-xl text-center">
-                                {error}
-                            </div>
-                        )}
-                        
-                        {successMsg && (
-                            <div className="mt-4 p-3 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[0.65rem] font-black uppercase tracking-widest rounded-xl text-center">
-                                {successMsg}
-                            </div>
-                        )}
-
-                        <button 
-                            type="submit"
-                            disabled={loading}
-                            className="w-full py-4 mt-6 bg-[linear-gradient(135deg,_#3b82f6_0%,_#8b5cf6_50%,_#f43f5e_100%)] text-white rounded-2xl font-black text-[0.7rem] uppercase tracking-widest shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-70"
-                        >
-                            {loading ? 'Processing...' : (isSignIn ? 'Enter Portal' : 'Create Account')}
-                        </button>
-                        
-                        <div className="relative pt-4 pb-2">
-                            <div className="absolute inset-0 flex items-center pt-2">
-                                <div className="w-full border-t border-slate-100"></div>
-                            </div>
-                            <div className="relative flex justify-center text-[0.6rem]">
-                                <span className="bg-white px-4 text-slate-300 font-black uppercase tracking-widest">Or Connect Using</span>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={handleGoogleLogin}
-                            disabled={loading}
-                            className="w-full py-4 bg-white border-2 border-slate-100 text-slate-700 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest shadow-sm hover:border-slate-300 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                        >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                            </svg>
-                            Google Connect
-                        </button>
-                    </form>
-
-                    {window.self !== window.top && (
-                        <div className="mt-8 bg-amber-50 border border-amber-200 p-5 rounded-2xl text-center">
-                            <p className="font-black text-amber-700 text-[0.65rem] uppercase tracking-widest mb-2">Preview Alert</p>
-                            <p className="text-[0.65rem] text-amber-600/80 mb-4 font-bold px-2 leading-relaxed">
-                                Login may not work correctly inside this window. For the best experience, open the app in a new tab.
-                            </p>
-                            <button 
-                                type="button"
-                                onClick={() => window.open(window.location.href, '_blank')}
-                                className="bg-amber-100 text-amber-700 py-3 px-6 rounded-xl font-black text-[0.6rem] uppercase tracking-widest hover:bg-amber-200 active:scale-95 w-full transition-all"
-                            >
-                                Open in New Tab
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="text-center pt-2">
-                    <button 
-                        onClick={toggleMode}
-                        className="text-[0.65rem] font-black text-slate-500 hover:text-blue-600 transition-colors uppercase tracking-widest bg-white px-6 py-3 rounded-full border border-slate-200 shadow-sm"
-                    >
-                        {isSignIn ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 };
 
 // ════════════════════════════════════════════
@@ -6368,707 +5961,19 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
 };
 
 const AdminPortalPage = () => {
-    const { user, liveNews, liveMaterials, liveNotices, fetchLiveNews, fetchLiveMaterials, fetchLiveNotices } = useApp();
-    const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'study' | 'model_q' | 'news' | 'notices' | 'analytics'>('study');
-    const [isUploading, setIsUploading] = useState(false);
-    const { toasts, addToast } = useToast();
-
-    // Content Type Selector
-    const [contentType, setContentType] = useState<string>('note');
-    
-    // Study Hub Form State
-    const [studyForm, setStudyForm] = useState({
-        title: '',
-        subject: 'Science',
-        description: '',
-        link_url: '',
-        text_content: '',
-        marks: '0',
-        topics: '',
-        file: null as File | null
-    });
-
-    // News Form State
-    const [newsForm, setNewsForm] = useState({
-        title: '',
-        content: '',
-        category: 'general',
-        is_notice: false,
-        image: null as File | null
-    });
-
-    // Simple Notice Table Form
-    const [noticeForm, setNoticeForm] = useState({
-        text: '',
-        type: 'info' as 'info' | 'alert' | 'update'
-    });
-
-    const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
-    const [bucketStatus, setBucketStatus] = useState<string>('checking...');
-
-    useEffect(() => {
-        const checkConn = async () => {
-            try {
-                const { data, error } = await supabase.from('notices').select('count', { count: 'exact', head: true });
-                if (error) throw error;
-                setConnStatus('ok');
-
-                // Check bucket
-                const { data: buckets, error: bErr } = await supabase.storage.listBuckets();
-                if (bErr) {
-                   setBucketStatus("Error: " + bErr.message);
-                } else {
-                   const hasBucket = buckets.some(b => b.name === 'official-assets');
-                   setBucketStatus(hasBucket ? "Bucket 'official-assets' OK" : "Bucket 'official-assets' MISSING!");
-                }
-            } catch (e: any) {
-                console.error("Supabase connection check failed:", e);
-                setConnStatus('fail');
-            }
-        };
-        checkConn();
-    }, []);
-
-    const isAdminEmail = user?.email && (
-        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
-        user.email.toLowerCase().includes('ashish')
-    );
-
-    if (!isAdminEmail) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4 text-center px-6">
-                <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
-                    <AlertTriangle className="w-12 h-12 text-rose-500" />
-                </div>
-                <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800 italic">Access Denied</h1>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">{user?.email ? `Identity (${user.email}) rejected.` : "Restricted to Authorized Admins"}</p>
-                <button onClick={() => navigate('/')} className="mt-6 px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl">Return to Safety</button>
-            </div>
-        );
-    }
-
-    const handleFileUpload = async (file: File, bucket: string) => {
-        try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from(bucket)
-                .upload(filePath, file, {
-                    cacheControl: '3600',
-                    upsert: true // Changed to true to overwrite if retrying
-                });
-
-            if (uploadError) {
-                console.error("Storage upload error detailed:", uploadError);
-                if (uploadError.message.includes("not found") || uploadError.message.includes("bucket_id")) {
-                    throw new Error(`Bucket '${bucket}' is missing. Go to Supabase Storage -> New Bucket -> name it 'official-assets' -> set to Public.`);
-                }
-                if (uploadError.message.includes("row-level security") || uploadError.message.includes("permission denied")) {
-                    throw new Error(`Upload Denied: Need a permission policy in Storage for bucket '${bucket}'.`);
-                }
-                throw new Error(`Upload System Error: ${uploadError.message}`);
-            }
-
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
-
-            return publicUrl;
-        } catch (err: any) {
-            console.error("handleFileUpload caught error:", err);
-            throw err;
-        }
-    };
-
-    const handleStudySubmit = async (e: React.FormEvent, typeOverride?: string) => {
-        e.preventDefault();
-        setIsUploading(true);
-        const finalType = typeOverride || contentType;
-        try {
-            let fileUrl = null;
-            if (studyForm.file) {
-                fileUrl = await handleFileUpload(studyForm.file, 'official-assets');
-            }
-
-            let youtubeId = null;
-            if (finalType === 'video' && studyForm.link_url) {
-                youtubeId = extractYoutubeId(studyForm.link_url);
-            }
-
-            const { error } = await supabase
-                .from('study_hub')
-                .insert([{
-                    title: studyForm.title,
-                    subject: studyForm.subject,
-                    type: finalType,
-                    description: studyForm.description,
-                    link_url: studyForm.link_url,
-                    text_content: studyForm.text_content,
-                    youtube_id: youtubeId,
-                    file_url: fileUrl,
-                    marks: parseInt(studyForm.marks) || 0,
-                    topics: studyForm.topics
-                }]);
-
-            if (error) throw error;
-            addToast("Material published successfully!");
-            setStudyForm({ title: '', subject: 'Science', description: '', link_url: '', text_content: '', marks: '0', topics: '', file: null });
-            fetchLiveMaterials();
-        } catch (error: any) {
-            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleNewsSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsUploading(true);
-        try {
-            let imageUrl = null;
-            if (newsForm.image) {
-                try {
-                    imageUrl = await handleFileUpload(newsForm.image, 'official-assets');
-                } catch (uploadError) {
-                    console.error("Image upload failed, proceeding without image", uploadError);
-                    // If image upload fails, we still want to save the news
-                }
-            }
-
-            const { error } = await supabase
-                .from('news_notices')
-                .insert([{
-                    title: newsForm.title,
-                    content: newsForm.content,
-                    category: newsForm.category,
-                    image_url: imageUrl,
-                    is_notice: false // Force false for broadast station
-                }]);
-
-            if (error) throw error;
-            addToast("Communication broadcasted!");
-            setNewsForm({ title: '', content: '', category: 'general', is_notice: false, image: null });
-            fetchLiveNews();
-        } catch (error: any) {
-            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleNoticeSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!noticeForm.text) return;
-        setIsUploading(true);
-        try {
-            const { error } = await supabase
-                .from('notices')
-                .insert([{
-                    text: noticeForm.text,
-                    type: noticeForm.type,
-                    active: true
-                }]);
-
-            if (error) throw error;
-            addToast("Board notice updated!");
-            setNoticeForm({ text: '', type: 'info' });
-            fetchLiveNotices();
-        } catch (error: any) {
-            addToast(error?.message || typeof error === 'string' ? error : 'An error occurred', 'error');
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
-    const handleDelete = async (table: string, id: string) => {
-        if (!confirm("Are you sure? This action is permanent and will remove content for all users.")) return;
-        try {
-            const { error } = await supabase.from(table).delete().eq('id', id);
-            if (error) throw error;
-            addToast("Content deleted.");
-            if (table === 'study_hub') fetchLiveMaterials();
-            if (table === 'news_notices') fetchLiveNews();
-            if (table === 'notices') fetchLiveNotices();
-        } catch (err: any) {
-            addToast(err?.message || typeof err === 'string' ? err : 'Error deleting', 'error');
-        }
-    };
-
-    const studyTypes = [
-        { id: 'chapter', label: 'Chapter', icon: Book, color: 'bg-emerald-50 text-emerald-600' },
-        { id: 'digital_textbook', label: 'Textbook', icon: Library, color: 'bg-cyan-50 text-cyan-600' },
-        { id: 'video', label: 'Video', icon: Video, color: 'bg-rose-50 text-rose-600' },
-        { id: 'note_archive', label: 'Archive', icon: Archive, color: 'bg-blue-50 text-blue-600' },
-        { id: 'shared_note', label: 'Share', icon: Sparkles, color: 'bg-amber-50 text-amber-600' },
-        { id: 'mcq', label: 'MCQ', icon: FileJson, color: 'bg-indigo-50 text-indigo-600' },
-        { id: 'model_question', label: 'Model Q', icon: ClipboardCheck, color: 'bg-violet-50 text-violet-600' },
-        { id: 'note', label: 'Note', icon: PenTool, color: 'bg-slate-50 text-slate-600' }
-    ];
-
-    const [adminSubView, setAdminSubView] = useState<'menu' | 'form'>('menu');
-
     return (
-        <div className="space-y-8 pb-32 max-w-5xl mx-auto px-4">
-            <ToastContainer toasts={toasts} />
-
-            {/* System Status Banner */}
-            <div className={cn(
-                "p-4 rounded-3xl border flex items-center justify-between shadow-sm",
-                connStatus === 'ok' ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"
-            )}>
-                <div className="flex items-center gap-3">
-                    <Activity className="w-5 h-5 animate-pulse" />
-                    <div>
-                        <p className="text-[0.6rem] font-black uppercase tracking-widest">
-                            Database: {connStatus === 'ok' ? 'Connected' : 'Disconnected / Invalid Key'}
-                        </p>
-                        <p className="text-[0.5rem] font-bold opacity-60 uppercase tracking-tighter mt-0.5">Storage: {bucketStatus}</p>
-                    </div>
-                </div>
-                {connStatus === 'fail' && (
-                    <button onClick={() => window.location.reload()} className="text-[0.6rem] font-black underline uppercase tracking-widest hover:text-rose-900 transition-colors">Re-evaluate Engine</button>
-                )}
+        <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center space-y-6">
+            <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 shadow-inner">
+                <ShieldCheck className="w-12 h-12" />
             </div>
-            
-            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={() => adminSubView === 'form' ? setAdminSubView('menu') : navigate(-1)} 
-                        className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 hover:border-slate-200 transition-all shadow-sm"
-                    >
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Aadhar Desk</h1>
-                        <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Unified Command Center</p>
-                    </div>
-                </div>
-                {isUploading && (
-                    <div className="flex items-center gap-3 px-6 py-3 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
-                        <Zap className="w-4 h-4 animate-pulse" />
-                        <span className="text-[0.6rem] font-black uppercase tracking-widest">Processing Node...</span>
-                    </div>
-                )}
-            </header>
-
-            {adminSubView === 'menu' ? (
-                <div className="space-y-10 animate-fade-up">
-                    {/* ADMIN QUICK STATS */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[
-                            { label: 'Active Sessions', value: '1,240', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-                            { label: 'Uptime', value: '99.9%', icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-                            { label: 'Cloud Buffer', value: '42%', icon: Database, color: 'text-amber-500', bg: 'bg-amber-50' },
-                            { label: 'Security', value: 'Level 4', icon: ShieldCheck, color: 'text-rose-500', bg: 'bg-rose-50' }
-                        ].map((stat, i) => (
-                            <div key={i} className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-50 flex flex-col items-center justify-center text-center">
-                                <stat.icon className={cn("w-6 h-6 mb-2", stat.color)} />
-                                <span className="text-xl font-black text-slate-800 leading-none">{stat.value}</span>
-                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mt-1">{stat.label}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {[
-                            { id: 'study', title: 'Forge Material', desc: 'Syllabus, Videos, Notes', icon: BookOpen, color: 'text-emerald-500', bg: 'bg-emerald-50', gradient: 'from-emerald-500/10 to-transparent' },
-                            { id: 'model_q', title: 'Board Question Bank', desc: 'Model Sets & Past Papers', icon: ClipboardCheck, color: 'text-indigo-500', bg: 'bg-indigo-50', gradient: 'from-indigo-500/10 to-transparent' },
-                            { id: 'news', title: 'Broadcast Station', desc: 'Global News & Articles', icon: Newspaper, color: 'text-rose-500', bg: 'bg-rose-50', gradient: 'from-rose-500/10 to-transparent' },
-                            { id: 'notices', title: 'Board Dispatch', desc: 'Live Ticker Updates', icon: Megaphone, color: 'text-blue-500', bg: 'bg-blue-50', gradient: 'from-blue-500/10 to-transparent' },
-                            { id: 'analytics', title: 'Command Stats', desc: 'Platform Performance', icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50', gradient: 'from-amber-500/10 to-transparent' },
-                            { id: 'users', title: 'User Nexus', desc: 'Student Registry', icon: Users, color: 'text-violet-500', bg: 'bg-violet-50', gradient: 'from-violet-500/10 to-transparent' }
-                        ].map(item => (
-                            <button 
-                                key={item.id}
-                                onClick={() => { setActiveTab(item.id as any); setAdminSubView('form'); }}
-                                className="bg-white p-8 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all group flex items-center gap-8 text-left relative overflow-hidden"
-                            >
-                                <div className={cn("absolute inset-0 bg-linear-to-br opacity-0 group-hover:opacity-100 transition-opacity", item.gradient)} />
-                                <div className={cn("w-20 h-20 md:w-24 md:h-24 rounded-[2rem] md:rounded-[2.5rem] flex items-center justify-center shrink-0 border border-transparent group-hover:rotate-6 transition-all duration-500 shadow-xl", item.bg, item.color)}>
-                                    <item.icon className="w-10 h-10 md:w-12 md:h-12" />
-                                </div>
-                                <div className="relative z-10">
-                                    <h3 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{item.title}</h3>
-                                    <p className="text-[0.7rem] md:text-[0.8rem] font-black text-slate-400 uppercase tracking-widest mt-1">{item.desc}</p>
-                                </div>
-                                <div className="ml-auto relative z-10 w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all">
-                                    <ArrowRight className="w-5 h-5" />
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            ) : (
-                <div className="space-y-10 animate-fade-up">
-                    <div className="flex items-center gap-4 px-6">
-                        <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tighter italic">
-                            {activeTab === 'study' && 'Study Hub Manager'}
-                            {activeTab === 'model_q' && 'Board Question Bank'}
-                            {activeTab === 'news' && 'News Broadcaster'}
-                            {activeTab === 'notices' && 'Ticker Board Editor'}
-                            {activeTab === 'analytics' && 'System Analytics'}
-                        </h2>
-                    </div>
-
-                    <AnimatePresence mode="wait">
-                        {activeTab === 'analytics' && (
-                            <AdminAnalytics liveMaterials={liveMaterials} liveNews={liveNews} liveNotices={liveNotices} />
-                        )}
-                        {activeTab === 'study' && (
-                            <motion.div key="admin-study" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                                <section className="space-y-4">
-                                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-6">Forge Protocol</h3>
-                                    <div className="flex gap-4 overflow-x-auto pb-6 px-4 custom-scrollbar">
-                                        {studyTypes.map(t => (
-                                            <button 
-                                                key={t.id}
-                                                onClick={() => setContentType(t.id)}
-                                                className={cn(
-                                                    "shrink-0 p-8 rounded-[3rem] border font-black transition-all flex flex-col items-center justify-center text-center gap-4 min-w-[140px] shadow-sm",
-                                                    contentType === t.id ? "bg-white border-blue shadow-2xl scale-[1.05] -translate-y-1" : "bg-white border-slate-50 hover:bg-white hover:border-slate-200"
-                                                )}
-                                            >
-                                                <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110", t.color)}>
-                                                    <t.icon className="w-7 h-7" />
-                                                </div>
-                                                <span className="text-[0.65rem] font-black uppercase tracking-widest leading-none italic">{t.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </section>
-
-                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8 relative overflow-hidden">
-                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-                                        <div>
-                                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Forge Resource</h2>
-                                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Status: Ready for Sync • {contentType.replace('_', ' ')}</p>
-                                        </div>
-                                        <select 
-                                            className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-blue-600"
-                                            value={studyForm.subject}
-                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
-                                        >
-                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <form onSubmit={handleStudySubmit} className="space-y-8 relative z-10">
-                                        <div className="space-y-6">
-                                            <div className="space-y-2">
-                                                <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Resource Title</label>
-                                                <input 
-                                                    required
-                                                    className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
-                                                    placeholder="Enter descriptive title..."
-                                                    value={studyForm.title}
-                                                    onChange={e => setStudyForm({...studyForm, title: e.target.value})}
-                                                />
-                                            </div>
-
-                                            {contentType === 'chapter' && (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                                    <div className="space-y-2">
-                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Weight (Marks)</label>
-                                                        <input 
-                                                            type="number"
-                                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
-                                                            placeholder="e.g. 10"
-                                                            value={studyForm.marks}
-                                                            onChange={e => setStudyForm({...studyForm, marks: e.target.value})}
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Key Topics (Comma Separated)</label>
-                                                        <input 
-                                                            className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none"
-                                                            placeholder="Force, Gravity, Pressure..."
-                                                            value={studyForm.topics}
-                                                            onChange={e => setStudyForm({...studyForm, topics: e.target.value})}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {(contentType === 'video' || contentType === 'digital_textbook' || contentType === 'model_question' || contentType === 'shared_note' || contentType === 'note_archive') && (
-                                                <div className="space-y-2">
-                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">
-                                                        {contentType === 'video' ? 'YouTube URL' : 'Cloud Link (Optional if uploading file)'}
-                                                    </label>
-                                                    <input 
-                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md outline-none text-rose-600"
-                                                        placeholder="https://..."
-                                                        value={studyForm.link_url}
-                                                        onChange={e => setStudyForm({...studyForm, link_url: e.target.value})}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {contentType === 'shared_note' && (
-                                                <div className="space-y-2">
-                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Markdown Script (Rich Text)</label>
-                                                    <textarea 
-                                                        required
-                                                        rows={10}
-                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-sm outline-none resize-none font-mono text-slate-700"
-                                                        placeholder="### Unit Title\n- Key points...\n"
-                                                        value={studyForm.text_content}
-                                                        onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {contentType === 'mcq' && (
-                                                <div className="space-y-2">
-                                                    <div className="flex justify-between items-center ml-6">
-                                                        <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">MCQ Payload (Strict JSON)</label>
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setStudyForm({...studyForm, text_content: JSON.stringify({ setName: "Set 1", questions: [{ q: "Sample Question?", a: "Option A", b: "Option B", c: "Option C", d: "Option D", correct: "a" }] }, null, 2)})}
-                                                            className="text-[0.55rem] font-black text-blue-500 uppercase tracking-widest hover:underline"
-                                                        >
-                                                            Load Template
-                                                        </button>
-                                                    </div>
-                                                    <textarea 
-                                                        required
-                                                        rows={12}
-                                                        className="w-full bg-slate-50 border border-slate-100 px-8 py-8 rounded-[2.5rem] font-bold text-xs outline-none text-indigo-600 font-mono scrollbar-hide"
-                                                        placeholder='{ "setName": "Example", "questions": [ { "q": "...", "a": "...", "correct": "a" } ] }'
-                                                        value={studyForm.text_content}
-                                                        onChange={e => setStudyForm({...studyForm, text_content: e.target.value})}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            {(['chapter', 'note', 'note_archive', 'mcq', 'model_question', 'shared_note'].includes(contentType)) && (
-                                                <div className="space-y-2">
-                                                    <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Attachment Core (Max 50MB)</label>
-                                                    <input type="file" className="hidden" id="adminHubFile" onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})} />
-                                                    <label 
-                                                        htmlFor="adminHubFile"
-                                                        className={cn(
-                                                            "w-full flex flex-col items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 transition-all",
-                                                            studyForm.file && "border-blue-500 border-solid bg-blue-50"
-                                                        )}
-                                                    >
-                                                        <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-blue-500" : "text-slate-300")} />
-                                                        <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
-                                                            {studyForm.file ? studyForm.file.name : "Select or Drop Resource Asset"}
-                                                        </p>
-                                                    </label>
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2.5rem] font-black text-sm uppercase tracking-widest shadow-2xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3">
-                                            {isUploading ? <Flame className="w-5 h-5 animate-pulse" /> : <Sparkles className="w-5 h-5" />}
-                                            <span>{isUploading ? "Syncing Logic..." : "Commit to Hub"}</span>
-                                        </button>
-                                    </form>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 ml-6">Resource Registry</h3>
-                                    <div className="flex flex-col gap-4">
-                                        {liveMaterials.map(m => (
-                                            <div key={m.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:border-blue-500/30 transition-all">
-                                                <div className="flex items-center gap-6 min-w-0">
-                                                    <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center shrink-0 border border-slate-100 uppercase italic font-black text-[0.6rem]">
-                                                        {m.type.slice(0, 3)}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <p className="text-[0.55rem] font-black text-blue-600 uppercase tracking-widest">{m.subject}</p>
-                                                        <h4 className="text-md font-black text-slate-900 uppercase truncate tracking-tight italic">{m.title}</h4>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => handleDelete('study_hub', m.id)} className="w-12 h-12 bg-rose-50 text-rose-300 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100">
-                                                    <Trash2 className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'model_q' && (
-                            <motion.div key="admin-model" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
-                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
-                                    <div className="flex justify-between items-center">
-                                        <div>
-                                            <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Board Exam Bank</h2>
-                                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Archiving Board Standard Question Sets</p>
-                                        </div>
-                                        <select 
-                                            className="bg-slate-50 border border-slate-200 px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-100 transition-all text-indigo-600"
-                                            value={studyForm.subject}
-                                            onChange={e => setStudyForm({...studyForm, subject: e.target.value})}
-                                        >
-                                            {Object.keys(SUBJECTS_CONFIG).map(s => <option key={s} value={s}>{s}</option>)}
-                                        </select>
-                                    </div>
-
-                                    <form onSubmit={(e) => handleStudySubmit(e, 'model_question')} className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Document Title</label>
-                                            <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={studyForm.title} placeholder="e.g. Science Model Set 2083" onChange={e => setStudyForm({...studyForm, title: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Cloud Asset Link</label>
-                                            <input className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={studyForm.link_url} placeholder="https://drive.google.com/..." onChange={e => setStudyForm({...studyForm, link_url: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">PDF / Document / Image Asset</label>
-                                            <input type="file" className="hidden" id="adminModelFile" onChange={e => setStudyForm({...studyForm, file: e.target.files?.[0] || null})} />
-                                            <label htmlFor="adminModelFile" className="flex items-center justify-center p-14 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] cursor-pointer hover:bg-slate-100 transition-all">
-                                                <Plus className={cn("w-12 h-12 mb-4", studyForm.file ? "text-indigo-500" : "text-slate-300")} />
-                                                <p className="text-sm font-black text-slate-800 uppercase tracking-tighter">
-                                                    {studyForm.file ? studyForm.file.name : "Select Board Question File"}
-                                                </p>
-                                            </label>
-                                        </div>
-                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Archive to Bank</button>
-                                    </form>
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'news' && (
-                            <motion.div key="admin-news" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
-                                     <div className="flex justify-between items-center">
-                                        <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Broadcast Station</h2>
-                                        <button 
-                                            type="button"
-                                            onClick={() => setNewsForm({...newsForm, is_notice: !newsForm.is_notice})}
-                                            className={cn(
-                                                "px-8 py-3 rounded-full font-black text-[0.65rem] uppercase tracking-widest transition-all shadow-xl",
-                                                newsForm.is_notice ? "bg-rose-500 text-white" : "bg-emerald-500 text-white"
-                                            )}
-                                        >
-                                            {newsForm.is_notice ? 'Notice Only' : 'Global News'}
-                                        </button>
-                                    </div>
-
-                                    <form onSubmit={handleNewsSubmit} className="space-y-6">
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Article Headline</label>
-                                            <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-5 rounded-[1.5rem] font-bold text-md" value={newsForm.title} onChange={e => setNewsForm({...newsForm, title: e.target.value})} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Content Body</label>
-                                            <textarea required rows={6} className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-sm outline-none resize-none" value={newsForm.content} onChange={e => setNewsForm({...newsForm, content: e.target.value})} />
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                            <select className="bg-slate-50 border border-slate-100 px-8 py-4 rounded-xl font-bold" value={newsForm.category} onChange={e => setNewsForm({...newsForm, category: e.target.value})}>
-                                                <option value="general">General</option>
-                                                <option value="exam">Exam Board</option>
-                                                <option value="result">Exam Result</option>
-                                            </select>
-                                            <input type="file" className="hidden" id="adminNewsFile" onChange={e => setNewsForm({...newsForm, image: e.target.files?.[0] || null})} />
-                                            <label htmlFor="adminNewsFile" className="flex items-center justify-center p-4 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer font-black text-[0.65rem] uppercase tracking-widest text-slate-500">
-                                                {newsForm.image ? newsForm.image.name : 'Upload Banner Asset'}
-                                            </label>
-                                        </div>
-                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Broadcast Entry</button>
-                                    </form>
-                                </div>
-                                <div className="space-y-4">
-                                     {liveNews.map(n => (
-                                         <div key={n.id} className="bg-white p-7 rounded-[3rem] border border-slate-100 shadow-sm flex items-center justify-between group">
-                                             <div className="flex items-center gap-6">
-                                                 <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden shrink-0">
-                                                      {n.image_url ? <img src={n.image_url} className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <div className="w-full h-full flex items-center justify-center"><Newspaper className="text-slate-300" /></div>}
-                                                 </div>
-                                                 <div>
-                                                      <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-widest mb-1 block">{n.category}</span>
-                                                      <h4 className="font-black text-slate-800 uppercase truncate text-md leading-tight">{n.title}</h4>
-                                                 </div>
-                                             </div>
-                                             <button onClick={() => handleDelete('news_notices', n.id)} className="w-12 h-12 bg-rose-50 text-rose-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm"><Trash2 className="w-5 h-5" /></button>
-                                         </div>
-                                     ))}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'notices' && (
-                            <motion.div key="admin-notices" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-2xl space-y-8">
-                                    <h2 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900">Live Board Dispatch</h2>
-                                    <form onSubmit={handleNoticeSubmit} className="space-y-6">
-                                        <div className="space-y-2">
-                                             <label className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400 ml-6">Ticker Message</label>
-                                             <input required className="w-full bg-slate-50 border border-slate-100 px-8 py-6 rounded-[2rem] font-bold text-md" placeholder="e.g. Science Board Exam in 15 days..." value={noticeForm.text} onChange={e => setNoticeForm({...noticeForm, text: e.target.value})} />
-                                        </div>
-                                        <div className="grid grid-cols-3 gap-4">
-                                             {['info', 'alert', 'update'].map(type => (
-                                                 <button key={type} type="button" onClick={() => setNoticeForm({...noticeForm, type: type as any})} className={cn("py-4 rounded-2xl font-black text-[0.6rem] uppercase tracking-widest border-2 transition-all shadow-sm", noticeForm.type === type ? "bg-slate-900 text-white border-slate-900 scale-[1.05]" : "bg-white text-slate-400 border-slate-50 hover:border-slate-200")}>{type}</button>
-                                             ))}
-                                        </div>
-                                        <button disabled={isUploading} className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl">Push to Board</button>
-                                    </form>
-                                </div>
-                                <div className="space-y-4">
-                                     {liveNotices.map(n => (
-                                         <div key={n.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
-                                             <div className="flex items-center gap-4">
-                                                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", n.type === 'alert' ? 'bg-rose-50 text-rose-500' : (n.type === 'update' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'))}>
-                                                      <Megaphone className="w-5 h-5" />
-                                                  </div>
-                                                  <p className="font-bold text-slate-700 uppercase tracking-tighter text-sm">{n.text}</p>
-                                             </div>
-                                             <button onClick={() => handleDelete('notices', n.id)} className="w-10 h-10 bg-rose-50 text-rose-300 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all"><Trash2 className="w-4 h-4" /></button>
-                                         </div>
-                                     ))}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {activeTab === 'analytics' && (
-                             <motion.div key="admin-analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
-                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                     {[
-                                         { label: 'Total Nodes', val: liveMaterials.length, icon: BrainCircuit, color: 'text-blue-500' },
-                                         { label: 'Broadcasts', val: liveNews.length, icon: Newspaper, color: 'text-rose-500' },
-                                         { label: 'Active Ticks', val: liveNotices.length, icon: Megaphone, color: 'text-amber-500' }
-                                     ].map((s, i) => (
-                                         <div key={i} className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl flex flex-col items-center">
-                                             <s.icon className={cn("w-10 h-10 mb-4", s.color)} />
-                                             <span className="text-4xl font-black italic tracking-tighter text-slate-900">{s.val}</span>
-                                             <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-2">{s.label}</span>
-                                         </div>
-                                     ))}
-                                 </div>
-                                 <div className="bg-slate-900 p-12 rounded-[4rem] text-white text-center relative overflow-hidden">
-                                     <div className="relative z-10">
-                                         <h3 className="text-3xl font-black italic tracking-tighter uppercase mb-2">Platform Integrity</h3>
-                                         <p className="text-slate-400 font-bold uppercase text-[0.65rem] tracking-[0.3em] mb-8">Node Synchronization Protocol: V4.2.0-Alpha</p>
-                                         <div className="inline-flex items-center gap-2 px-6 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                             All Systems Operational
-                                         </div>
-                                     </div>
-                                     <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/10 to-transparent pointer-events-none" />
-                                 </div>
-                             </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
-            )}
+            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-slate-800">Admin Engine Offline</h1>
+            <p className="text-slate-500 font-bold max-w-sm uppercase tracking-widest text-xs leading-relaxed">The backend management system is currently undergoing a full reconstruction. Direct database management is suspended.</p>
+            <Link to="/" className="px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">Back to Home</Link>
         </div>
     );
 };
 
 const AppContent = () => {
-    const { user } = useApp();
-    if (!user) {
-        return <AuthPage />;
-    }
     return (
         <Layout>
             <Routes>
@@ -7149,262 +6054,48 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data] = useState<AppData>(INITIAL_DATA);
-    const [liveNews, setLiveNews] = useState<any[]>([]);
-    const [liveMaterials, setLiveMaterials] = useState<any[]>([]);
-    const [liveNotices, setLiveNotices] = useState<any[]>([]);
+    const [liveNews, setLiveNews] = useState<any[]>([
+        { id: '1', title: 'Welcome to Aadhar Desk', content: 'Our new platform is now live. Explore study materials and interactive tests.', category: 'general', created_at: new Date().toISOString() },
+        { id: '2', title: 'Exam Guidelines 2083', content: 'Important updates regarding the upcoming board examinations.', category: 'exam', created_at: new Date().toISOString() }
+    ]);
+    const [liveMaterials, setLiveMaterials] = useState<any[]>([
+        { id: 'm1', subject: 'Science', type: 'model_question', title: 'Science Board Model 2083', file_url: '#', created_at: new Date().toISOString() },
+        { id: 'm2', subject: 'Maths', type: 'note', title: 'Calculus Cheat Sheet', text_content: '### Derivatives\n- d/dx(sin x) = cos x\n- d/dx(cos x) = -sin x', created_at: new Date().toISOString() }
+    ]);
+    const [liveNotices, setLiveNotices] = useState<any[]>([
+        { id: 'n1', text: 'Pre-board results will be published on Sunday.', type: 'info', created_at: new Date().toISOString() }
+    ]);
     const [isInitializing, setIsInitializing] = useState(true);
 
-    const fetchLiveNews = async () => {
-        try {
-            const { data: news, error } = await supabase
-                .from('news_notices')
-                .select('*')
-                .eq('is_notice', false)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setLiveNews(news || []);
-        } catch (err) {
-            console.error('Error fetching dynamic news:', err);
-        }
-    };
-
-    const fetchLiveMaterials = async () => {
-        try {
-            const { data: materials, error } = await supabase
-                .from('study_hub')
-                .select('*')
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setLiveMaterials(materials || []);
-        } catch (err) {
-            console.error('Error fetching dynamic materials:', err);
-        }
-    };
-
-    const fetchLiveNotices = async () => {
-        try {
-            const { data: notices, error } = await supabase
-                .from('notices')
-                .select('*')
-                .eq('active', true)
-                .order('created_at', { ascending: false });
-            if (error) throw error;
-            setLiveNotices(notices || []);
-        } catch (err) {
-            console.error('Error fetching dynamic notices:', err);
-        }
-    };
-
-    const fetchUserStats = async (userId: string) => {
-        if (!userId) return;
-        try {
-            // Check profiles
-            const { data: profile, error: profileErr } = await supabase
-                .from('user_profiles')
-                .select('*')
-                .eq('user_id', userId)
-                .maybeSingle();
-
-            if (profile) {
-                setUser(prev => prev ? {
-                    ...prev,
-                    xp: profile.xp || 0,
-                    streak: profile.streak || 0,
-                    badges: profile.badges || [],
-                    testsCompleted: profile.tests_completed || 0,
-                    avgScore: profile.avg_score || 0,
-                    completedChapters: profile.completed_chapters || []
-                } : null);
-                localStorage.setItem(`user_stats_${userId}`, JSON.stringify(profile));
-                return;
-            }
-
-            // Fallback to notes count
-            const { data: activity } = await supabase
-                .from('notes')
-                .select('created_at')
-                .eq('user_id', userId);
-            
-            if (activity) calculateAndSetStats(activity, userId);
-        } catch (err) {
-            console.warn('Silent failure on stats fetch - likely missing tables.');
-        }
-    };
-
-    const calculateAndSetStats = (data: any[], userId: string) => {
-        const noteCount = data?.length || 0;
-            
-        // Calculate streak (consecutive days of activity)
-        let streak = 0;
-        if (data && data.length > 0) {
-            // Get unique dates in local time
-            const dates = [...new Set(data.map(n => new Date(n.created_at || new Date()).toLocaleDateString()))];
-            // Sort dates descending
-            dates.sort((a,b) => new Date(b).getTime() - new Date(a).getTime());
-            
-            const today = new Date().toLocaleDateString();
-            const yesterday = new Date(Date.now() - 86400000).toLocaleDateString();
-            
-            // If most recent note is today or yesterday, start counting streak
-            if (dates[0] === today || dates[0] === yesterday) {
-                streak = 1;
-                // Ensure it starts from at least 1 if they have ANY activity in last 2 days
-                for (let i = 0; i < dates.length - 1; i++) {
-                    const d1 = new Date(dates[i]);
-                    const d2 = new Date(dates[i+1]);
-                    // Math.round handles daylight saving boundaries
-                    const diff = (d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24);
-                    if (Math.round(diff) === 1) {
-                        streak++;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-
-        setUser(prev => {
-            if (!prev) return null;
-            const updated = {
-                ...prev,
-                xp: noteCount * 125, // 125 XP per note
-                streak: streak
-            };
-            localStorage.setItem(`user_stats_${userId}`, JSON.stringify(updated));
-            return updated;
-        });
-    };
+    const fetchLiveNews = async () => {};
+    const fetchLiveMaterials = async () => {};
+    const fetchLiveNotices = async () => {};
 
     useEffect(() => {
-        const initAuth = async () => {
-            // Safety timeout: If initialization takes more than 5 seconds, force proceed
-            const safetyTimer = setTimeout(() => {
-                console.warn("Auth initialization timed out. Forcing proceed.");
-                setIsInitializing(false);
-            }, 5000);
-
-            try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
-                if (sessionError) {
-                    console.error("Session fetch error:", sessionError);
-                }
-
-                if (session?.user) {
-                    const initialUser: User = {
-                        id: session.user.id,
-                        name: session.user.user_metadata?.name || 'Adhyeta Nepal',
-                        email: session.user.email || '',
-                        grade: '10',
-                        xp: 0, 
-                        streak: 0, 
-                        badges: ['Early Bird', 'Quiz Master'],
-                        testsCompleted: 0, 
-                        avgScore: 0, 
-                        completedChapters: []
-                    };
-                    setUser(initialUser);
-                    // Fetch stats in background, don't necessarily block if it's slow
-                    fetchUserStats(session.user.id).catch(err => console.error("Error in background stats fetch:", err));
-                }
-                
-                // Fetch live content
-                await Promise.allSettled([
-                    fetchLiveNews(), 
-                    fetchLiveMaterials(), 
-                    fetchLiveNotices()
-                ]);
-            } catch (err) {
-                console.error('Critical error during auth initialization:', err);
-            } finally {
-                clearTimeout(safetyTimer);
-                setIsInitializing(false);
-            }
-        };
-        initAuth();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            if (session?.user) {
-                if (window.opener) {
-                    window.opener.postMessage({ type: 'SUPABASE_AUTH_SUCCESS', session }, '*');
-                }
-                try {
-                    // Start with basic user info immediately to allow UI transition
-                    const initialUser: User = {
-                        id: session.user.id,
-                        name: session.user.user_metadata?.name || 'Adhyeta Nepal',
-                        email: session.user.email || '',
-                        grade: '10',
-                        xp: 0,
-                        streak: 0,
-                        badges: ['Early Bird', 'Quiz Master'],
-                        testsCompleted: 0,
-                        avgScore: 0,
-                        completedChapters: []
-                    };
-                    setUser(initialUser);
-
-                    // Fetch profile stats in background
-                    const { data: savedStats } = await supabase
-                        .from('user_profiles')
-                        .select('*')
-                        .eq('user_id', session.user.id)
-                        .maybeSingle(); // maybeSingle() is safer than single() as it doesn't throw if missing
-
-                    const localStatsStr = localStorage.getItem(`user_stats_${session.user.id}`);
-                    const localStats = localStatsStr ? JSON.parse(localStatsStr) : null;
-
-                    const updatedUser: User = {
-                        ...initialUser,
-                        xp: savedStats?.xp || localStats?.xp || 0, 
-                        streak: savedStats?.streak || localStats?.streak || 0, 
-                        badges: savedStats?.badges || localStats?.badges || initialUser.badges,
-                        testsCompleted: savedStats?.testsCompleted || localStats?.testsCompleted || 0, 
-                        avgScore: savedStats?.avgScore || localStats?.avgScore || 0, 
-                        completedChapters: savedStats?.completedChapters || localStats?.completedChapters || []
-                    };
-                    setUser(updatedUser);
-                    
-                    // Trigger background stats re-calculation from activity
-                    fetchUserStats(session.user.id);
-                } catch (err) {
-                    console.error("Auth state change processing error:", err);
-                    // Ensure we at least have basic user info if the profiles fetch crashes
-                    if (session?.user) {
-                        setUser({
-                            id: session.user.id,
-                            name: session.user.user_metadata?.name || 'Adhyeta Nepal',
-                            email: session.user.email || '',
-                            grade: '10',
-                            xp: 0, streak: 0, badges: ['Early Bird'], testsCompleted: 0, avgScore: 0, completedChapters: []
-                        });
-                    }
-                }
+        const init = async () => {
+            const savedUser = localStorage.getItem('logged_user');
+            if (savedUser) {
+                setUser(JSON.parse(savedUser));
             } else {
-                setUser(null);
+                // Initialize default student profile
+                const defaultUser: User = {
+                    id: 'guest_' + Math.random().toString(36).substr(2, 9),
+                    name: 'Guest Scholar',
+                    email: 'guest@aadhar.edu.np',
+                    grade: '10',
+                    xp: 1250,
+                    streak: 5,
+                    badges: ['Early Bird'],
+                    testsCompleted: 4,
+                    avgScore: 85,
+                    completedChapters: []
+                };
+                setUser(defaultUser);
+                localStorage.setItem('logged_user', JSON.stringify(defaultUser));
             }
-        });
-
-        // Real-time subscription to notes for automatic updates
-        const notesSubscription = supabase
-            .channel('any-note-change')
-            .on('postgres_changes', { 
-                event: '*', 
-                schema: 'public', 
-                table: 'notes' 
-            }, async (payload: any) => {
-                // If it's the current user's note, re-fetch stats
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user) {
-                    await fetchUserStats(session.user.id);
-                }
-            })
-            .subscribe();
-
-        return () => {
-            authListener.subscription.unsubscribe();
-            supabase.removeChannel(notesSubscription);
+            setIsInitializing(false);
         };
+        init();
     }, []);
 
     const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
@@ -7435,23 +6126,7 @@ const AppProvider = ({ children }: any) => {
         };
 
         setUser(updatedUser);
-        
-        // Persist to localStorage for fallback
-        localStorage.setItem(`user_stats_${user.id}`, JSON.stringify(updatedUser));
-
-        // Attempt silent sync to DB if table exists (ignore errors silently)
-        supabase.from('user_profiles').upsert({
-            user_id: user.id,
-            xp: newXp,
-            tests_completed: newTests,
-            avg_score: newAvg,
-            badges: newBadges,
-            updated_at: new Date().toISOString()
-        }).then(({ error }) => {
-            if (error && error.code !== 'PGRST116') {
-                 console.warn("DB Stats Sync failed (table might be missing), using localStorage fallback.");
-            }
-        });
+        localStorage.setItem('logged_user', JSON.stringify(updatedUser));
     };
 
     const toggleChapterComplete = (chapterId: string) => {
@@ -7463,17 +6138,7 @@ const AppProvider = ({ children }: any) => {
         
         const updatedUser = { ...user, completedChapters: newList };
         setUser(updatedUser);
-        localStorage.setItem(`user_stats_${user.id}`, JSON.stringify(updatedUser));
-        
-        supabase.from('user_profiles').upsert({
-            user_id: user.id,
-            completed_chapters: newList,
-            updated_at: new Date().toISOString()
-        }).then(({ error }) => {
-            if (error && error.code !== 'PGRST116') {
-                 console.warn("DB Chapter Sync failed", error);
-            }
-        });
+        localStorage.setItem('logged_user', JSON.stringify(updatedUser));
     };
 
     if (isInitializing) {
