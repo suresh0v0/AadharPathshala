@@ -3688,8 +3688,10 @@ const ProfilePage = () => {
         } catch (e) {
             console.error("Logout error", e);
         } finally {
+            // Scorched earth cleanup to ensure fresh state
             localStorage.clear();
             sessionStorage.clear();
+            // Redirect via window.location to force a full runtime reset
             window.location.href = '/';
         }
     };
@@ -5473,6 +5475,11 @@ const NotePadPage = () => {
     };
 
     const saveNote = async () => {
+        if (!user) {
+            addToast("Please login to save notes.", "error");
+            return;
+        }
+
         if (!title.trim() && !content.trim()) return;
 
         if (!editingId && notes.length >= MAX_NOTES) {
@@ -6416,9 +6423,15 @@ const AdminPortalPage = () => {
 
         const { error: uploadError } = await supabase.storage
             .from(bucket)
-            .upload(filePath, file);
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+            });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+            console.error("Storage upload error detailed:", uploadError);
+            throw new Error(`Upload failed: ${uploadError.message}`);
+        }
 
         const { data: { publicUrl } } = supabase.storage
             .from(bucket)
