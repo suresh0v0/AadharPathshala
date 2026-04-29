@@ -186,3 +186,30 @@
   100% { transform: translateY(-50px); opacity: 0; }
 }
 
+/* ── BOOK 3D EFFECT ── */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.rotate-y-[-20deg] {
+  transform: rotateY(-20deg);
+}
+
+.rotate-y-0 {
+  transform: rotateY(0deg);
+}
+
+.group:hover .group-hover\:rotate-y-0 {
+  transform: rotateY(0deg);
+}
+
+.group-hover\:btn-rotate {
+  animation: btn-wiggle 1s ease-in-out infinite;
+}
+
+@keyframes btn-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg); }
+  75% { transform: rotate(10deg); }
+}
+

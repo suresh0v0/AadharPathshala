@@ -16,9 +16,16 @@ import {
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
-  ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save
+  ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
+  BookMarked, Layout as LayoutIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Set worker for react-pdf
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -141,9 +148,7 @@ const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient:
   'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber-500 to-orange-500' },
   'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo-600 to-violet-700' },
   'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange-500 to-yellow-600' },
-  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' },
-  'Economics': { color: 'green', icon: TrendingUp, gradient: 'from-green-500 to-emerald-600' },
-  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose-400 to-red-500' }
+  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' }
 };
 
 const BOOK_LINKS: Record<string, string> = {
@@ -154,8 +159,7 @@ const BOOK_LINKS: Record<string, string> = {
     'English': 'https://drive.google.com/file/d/1kmRslmTG3vzXFGwjE5xsdE0SzAPi75bt/view?usp=drivesdk',
     'नेपाली': 'https://drive.google.com/file/d/1aaVFJKXRRIrW4UriLQaaopVpkaA9AQZY/view?usp=drivesdk',
     'Computer': 'https://drive.google.com/file/d/1XL9dSK7Vjvxo888E4ThIxbb5yQSljUdb/view?usp=drivesdk',
-    'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk',
-    'Economics': 'https://drive.google.com/file/d/1UEAYMTbPv1zSKzBKjwwBVEa3-UeiSz0E/view?usp=drivesdk'
+    'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk'
 };
 
 const STATIC_MCQS: Record<string, any[]> = {};
@@ -1947,7 +1951,7 @@ const HomePage = () => {
                     <div className="relative z-10 space-y-1">
                         <p className="text-[0.55rem] font-black uppercase tracking-[0.4em] opacity-80">Sync Status: Peak Performance</p>
                         <h1 className="text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-tight italic leading-tight max-w-[90%]">
-                            {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE", "ECONOMIZE YOUR KNOWLEDGE", "A HEALTHY MIND AT WORK"][bannerColorIndex]}
+                            {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE"][bannerColorIndex % 8]}
                         </h1>
                     </div>
                 </motion.div>
@@ -4322,75 +4326,327 @@ const ModelList = () => {
     );
 };
 
+/** ── GOOGLE DRIVE UTILITY ── */
+const getDirectPdfUrl = (url: string) => {
+    if (!url) return '';
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) {
+            // Using AllOrigins proxy to bypass CORS for Google Drive
+            // This allows react-pdf to fetch the binary data for the flip animation
+            const googleUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+            return `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`;
+        }
+    }
+    return url;
+};
+
+const getPreviewUrl = (url: string) => {
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([^\/]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/file/d/${match[1]}/preview`;
+        }
+    }
+    return url;
+};
+
+/** ── BOOK VIEWER COMPONENT ── */
+const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean, onClose: () => void, url: string, title: string }) => {
+    const [numPages, setNumPages] = useState<number | null>(null);
+    const [pageNumber, setPageNumber] = useState(1);
+    const [loadError, setLoadError] = useState(false);
+    const [scale, setScale] = useState(1.0);
+    const [direction, setDirection] = useState(0);
+
+    const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+        setNumPages(numPages);
+        setPageNumber(1);
+        setLoadError(false);
+    };
+
+    const directUrl = getDirectPdfUrl(url);
+    const previewUrl = getPreviewUrl(url);
+    const isGoogleDrive = url.includes('drive.google.com');
+
+    const paginate = (newDirection: number) => {
+        if (!numPages) return;
+        const nextPage = pageNumber + newDirection;
+        if (nextPage >= 1 && nextPage <= numPages) {
+            setDirection(newDirection);
+            setPageNumber(nextPage);
+        }
+    };
+
+    const variants = {
+        enter: (direction: number) => ({
+            rotateY: direction > 0 ? 90 : -90,
+            opacity: 0,
+            transformOrigin: direction > 0 ? 'left' : 'right'
+        }),
+        center: {
+            rotateY: 0,
+            opacity: 1,
+            zIndex: 1,
+            transition: {
+                rotateY: { type: "spring", stiffness: 100, damping: 20 } as const,
+                opacity: { duration: 0.2 } as const
+            }
+        },
+        exit: (direction: number) => ({
+            rotateY: direction < 0 ? 90 : -90,
+            opacity: 0,
+            zIndex: 0,
+            transformOrigin: direction < 0 ? 'left' : 'right',
+            transition: {
+                rotateY: { type: "spring", stiffness: 100, damping: 20 } as const,
+                opacity: { duration: 0.2 } as const
+            }
+        })
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950 p-2 md:p-6 select-none"
+            >
+                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xl" onClick={onClose} />
+                
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    className="relative w-full h-full max-w-7xl bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/10"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {/* Header Overlay - Floating & Minimal */}
+                    <div className="absolute top-6 left-6 right-6 z-[120] flex items-center justify-between pointer-events-none">
+                        <div className="flex items-center gap-4 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-100 pointer-events-auto">
+                            <div className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center shrink-0">
+                                <BookOpen className="w-4 h-4" />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-[0.65rem] font-black uppercase tracking-widest text-slate-900 truncate max-w-[120px] md:max-w-xs">{title}</h3>
+                                <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-[0.2em]">{numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating...'}</p>
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={onClose}
+                            className="w-12 h-12 bg-white/90 backdrop-blur-md text-slate-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-xl border border-slate-100 pointer-events-auto active:scale-90"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* Viewer Wrapper with Flip Interaction */}
+                    <div className="flex-1 bg-slate-50 flex items-center justify-center relative overflow-hidden perspective-1000">
+                        {loadError ? (
+                            <div className="w-full h-full p-4 md:p-12">
+                                <iframe 
+                                    src={previewUrl} 
+                                    className="w-full h-full rounded-[2rem] border-none shadow-2xl bg-white"
+                                    title="PDF Preview"
+                                />
+                                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-6 py-3 rounded-full text-[0.6rem] font-black uppercase tracking-widest border border-white/10 shadow-2xl">
+                                    Enhanced Cloud Sync Active
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                                {/* Page Flip Area */}
+                                <div 
+                                    className="relative h-[90%] w-full flex items-center justify-center group"
+                                    onWheel={(e) => {
+                                        if (e.deltaY > 0) paginate(1);
+                                        else paginate(-1);
+                                    }}
+                                >
+                                    {/* Left interaction zone */}
+                                    <div 
+                                        className="absolute left-0 top-0 bottom-0 w-1/4 z-20 cursor-w-resize" 
+                                        onClick={() => paginate(-1)}
+                                    />
+                                    {/* Right interaction zone */}
+                                    <div 
+                                        className="absolute right-0 top-0 bottom-0 w-1/4 z-20 cursor-e-resize" 
+                                        onClick={() => paginate(1)}
+                                    />
+
+                                    <AnimatePresence initial={false} custom={direction} mode="popLayout">
+                                        <motion.div
+                                            key={pageNumber}
+                                            custom={direction}
+                                            variants={variants}
+                                            initial="enter"
+                                            animate="center"
+                                            exit="exit"
+                                            className="w-full max-w-[90%] md:max-w-fit h-full flex items-center justify-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] bg-white rounded-sm border border-slate-200"
+                                            drag="x"
+                                            dragConstraints={{ left: 0, right: 0 }}
+                                            dragElastic={0.2}
+                                            onDragEnd={(_, info) => {
+                                                if (info.offset.x > 100) paginate(-1);
+                                                else if (info.offset.x < -100) paginate(1);
+                                            }}
+                                        >
+                                            <Document
+                                                file={directUrl}
+                                                onLoadSuccess={onDocumentLoadSuccess}
+                                                onLoadError={() => setLoadError(true)}
+                                                loading={
+                                                    <div className="flex flex-col items-center justify-center min-h-[400px] w-[300px] md:w-[500px] gap-8 bg-white">
+                                                        <div className="relative">
+                                                            {[...Array(3)].map((_, i) => (
+                                                                <motion.div
+                                                                    key={i}
+                                                                    className="absolute inset-0 w-12 h-16 bg-blue-500 rounded-sm origin-left border-l-2 border-blue-600"
+                                                                    animate={{ rotateY: -180 }}
+                                                                    transition={{
+                                                                        duration: 1.5,
+                                                                        repeat: Infinity,
+                                                                        delay: i * 0.2,
+                                                                        ease: "easeInOut"
+                                                                    }}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Syncing Leaf...</span>
+                                                    </div>
+                                                }
+                                            >
+                                                <Page 
+                                                    pageNumber={pageNumber} 
+                                                    scale={scale}
+                                                    renderAnnotationLayer={false}
+                                                    renderTextLayer={true}
+                                                    className="rounded-sm"
+                                                    width={window.innerWidth < 768 ? window.innerWidth * 0.85 : undefined}
+                                                />
+                                            </Document>
+                                        </motion.div>
+                                    </AnimatePresence>
+                                </div>
+                                
+                                {/* Bottom Floating Controls */}
+                                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[120] flex items-center gap-1 bg-slate-900/90 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl">
+                                    <button 
+                                        onClick={() => paginate(-1)}
+                                        disabled={pageNumber <= 1}
+                                        className="w-12 h-12 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-all rounded-full"
+                                    >
+                                        <ChevronLeft className="w-6 h-6" />
+                                    </button>
+                                    <div className="px-6 py-2 flex items-center gap-3">
+                                        <span className="text-[0.7rem] font-black italic tracking-tighter text-white uppercase">{pageNumber}</span>
+                                        <div className="w-1 h-3 bg-white/20 rounded-full" />
+                                        <span className="text-[0.6rem] font-bold text-white/40 uppercase tracking-widest">{numPages || '--'}</span>
+                                    </div>
+                                    <button 
+                                        onClick={() => paginate(1)}
+                                        disabled={!numPages || pageNumber >= numPages}
+                                        className="w-12 h-12 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-all rounded-full"
+                                    >
+                                        <ChevronRight className="w-6 h-6" />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 const DigitalTextbookList = () => {
     const { name } = useParams();
     const { liveMaterials } = useApp();
     const navigate = useNavigate();
+    const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
 
     const staticLink = BOOK_LINKS[name as string];
     const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'digital_textbook');
+    const subjectConfig = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Digital Library</h1>
+        <div className="space-y-10 animate-fade-up pb-24 text-[#020617] px-2">
+            <div className="flex items-center gap-4">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90"><ArrowLeft className="w-6 h-6" /></button>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Study Material</h1>
+                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest leading-none">Your Digital Archive</p>
+                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+                {/* Main Static Textbook - colorful compact bento design */}
+                {staticLink && (
+                    <button 
+                        onClick={() => setViewer({ isOpen: true, url: staticLink, title: `${name} Textbook` })}
+                        className="group relative flex flex-col items-center justify-center p-6 md:p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:scale-[1.05] transition-all duration-500 overflow-hidden"
+                    >
+                        <div className={`absolute inset-0 bg-linear-to-br opacity-[0.05] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
+                        
+                        <div className={`w-16 h-16 md:w-20 md:h-20 ${
+                            subjectConfig.color === 'blue' ? 'bg-blue-500' : 
+                            subjectConfig.color === 'purple' ? 'bg-purple-500' :
+                            subjectConfig.color === 'red' ? 'bg-rose-500' :
+                            subjectConfig.color === 'emerald' ? 'bg-emerald-500' :
+                            subjectConfig.color === 'amber' ? 'bg-amber-500' :
+                            subjectConfig.color === 'indigo' ? 'bg-indigo-500' :
+                            subjectConfig.color === 'orange' ? 'bg-orange-500' :
+                            'bg-cyan-500'
+                        } rounded-3xl flex items-center justify-center shadow-xl transition-transform duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6`}>
+                            {React.createElement(subjectConfig.icon, { className: "w-8 h-8 md:w-10 md:h-10 text-white" })}
+                        </div>
+                        
+                        <div className="relative z-10 mt-5 text-center">
+                            <h3 className="text-xs md:text-sm font-black italic tracking-tighter uppercase text-slate-900 leading-tight mb-1">{name}</h3>
+                            <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-[0.2em] leading-relaxed">Book Vol.1</p>
+                        </div>
+                    </button>
+                )}
+
                 {/* Dynamic Textbooks */}
                 {dynamicBooks.map((b: any) => (
-                    <div key={b.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center gap-6 group hover:border-blue transition-all">
-                        <div className="w-20 h-20 bg-cyan-50 text-cyan-600 rounded-2xl flex items-center justify-center shrink-0 border border-cyan-100">
-                             <Library className="w-10 h-10" />
+                    <button 
+                        key={b.id}
+                        onClick={() => setViewer({ isOpen: true, url: b.link_url || b.file_url, title: b.title })}
+                        className="group relative flex flex-col items-center justify-center p-6 md:p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:scale-[1.05] transition-all duration-500 overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-linear-to-br from-violet-500 to-indigo-600 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity" />
+                        
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-xl transition-transform duration-500 relative z-10 group-hover:scale-110 group-hover:-rotate-6">
+                            <Library className="w-8 h-8 md:w-10 md:h-10 text-white" />
                         </div>
-                        <div className="flex-1">
-                             <h3 className="text-xl font-black text-slate-900 tracking-tight uppercase leading-tight mb-2">{b.title}</h3>
-                             <div className="flex items-center gap-4">
-                                <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black uppercase tracking-widest text-slate-400">PDF Document</span>
-                                <span className="text-[0.6rem] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" /> Latest Edition
-                                </span>
-                             </div>
+                        
+                        <div className="relative z-10 mt-5 text-center">
+                            <h3 className="text-xs md:text-sm font-black italic tracking-tighter uppercase text-slate-900 leading-tight mb-1 truncate max-w-[120px]">{b.title}</h3>
+                            <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-[0.2em] leading-relaxed">External Resource</p>
                         </div>
-                        <button 
-                            onClick={() => window.open(b.link_url || b.file_url, '_blank')}
-                            className="w-full sm:w-auto px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-slate-900/10 active:scale-95 transition-all"
-                        >
-                            Open Textbook
-                        </button>
-                    </div>
+                    </button>
                 ))}
-
-                {/* Main Static Textbook */}
-                {staticLink && (
-                    <div className="bg-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
-                        <div className="relative z-10 flex flex-col sm:flex-row items-center gap-8">
-                            <div className="w-24 h-32 bg-white/10 backdrop-blur-md rounded-xl border border-white/10 flex items-center justify-center rotate-3 group-hover:rotate-0 transition-transform duration-500">
-                                 <Library className="w-12 h-12 text-white/40" />
-                            </div>
-                            <div className="text-center sm:text-left flex-1">
-                                <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-tight mb-2">Official {name} Textbook</h3>
-                                <p className="text-sm font-bold opacity-60 uppercase tracking-widest">CDC Approved Curriculum • SEE 2083</p>
-                            </div>
-                            <button 
-                                onClick={() => window.open(staticLink, '_blank')}
-                                className="w-full sm:w-auto px-10 py-5 bg-white text-slate-900 rounded-[1.5rem] font-black text-sm uppercase tracking-widest active:scale-95 transition-all shadow-xl"
-                            >
-                                Get Official PDF
-                            </button>
-                        </div>
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-20 translate-x-32" />
-                    </div>
-                )}
-
-                {dynamicBooks.length === 0 && !staticLink && (
-                    <div className="text-center py-20 opacity-30">
-                        <Pin className="w-12 h-12 mx-auto mb-4" />
-                        <p className="font-black uppercase tracking-widest text-xs">No textbooks available yet</p>
-                    </div>
-                )}
             </div>
+
+            {dynamicBooks.length === 0 && !staticLink && (
+                <div className="text-center py-20 opacity-30">
+                    <Pin className="w-12 h-12 mx-auto mb-4" />
+                    <p className="font-black uppercase tracking-widest text-xs">No textbooks available yet</p>
+                </div>
+            )}
+
+            <BookViewer 
+                isOpen={viewer.isOpen}
+                onClose={() => setViewer({ ...viewer, isOpen: false })}
+                url={viewer.url}
+                title={viewer.title}
+            />
         </div>
     );
 };
@@ -6043,9 +6299,7 @@ const INITIAL_DATA: AppData = {
         'English': { id: 'English', color: 'blue', icon: 'Languages', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Optional Maths': { id: 'Optional Maths', color: 'indigo', icon: 'Binary', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Account': { id: 'Account', color: 'orange', icon: 'ListChecks', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'Computer': { id: 'Computer', color: 'cyan', icon: 'Monitor', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'Economics': { id: 'Economics', color: 'green', icon: 'TrendingUp', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'Health': { id: 'Health', color: 'rose', icon: 'Activity', chapters: [], videos: [], pdfs: [], modelQuestions: [] }
+        'Computer': { id: 'Computer', color: 'cyan', icon: 'Monitor', chapters: [], videos: [], pdfs: [], modelQuestions: [] }
     },
     calendar: [],
     settings: { welcomeMessage: 'Namaste', registrationOpen: true }

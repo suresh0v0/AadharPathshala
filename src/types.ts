@@ -1,4 +1,4 @@
-export type SubjectType = 'English' | 'नेपाली' | 'Maths' | 'Science'| 'सामाजिक' | 'Optional Maths' | 'Account' | 'Computer' | 'Economics' | 'Health';
+export type SubjectType = 'English' | 'नेपाली' | 'Maths' | 'Science'| 'सामाजिक' | 'Optional Maths' | 'Account' | 'Computer';
 
 export interface Chapter {
   id: string;

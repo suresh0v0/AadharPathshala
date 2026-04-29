@@ -1,7 +1,7 @@
 const fs = require('fs');
 
 const subjects = [
-  'English', 'नेपाली', 'Maths', 'Science', 'सामाजिक', 'Optional Maths', 'Account', 'Computer', 'Economics', 'Health'
+  'English', 'नेपाली', 'Maths', 'Science', 'सामाजिक', 'Optional Maths', 'Account', 'Computer'
 ];
 
 let mcqsObjStr = "const STATIC_MCQS: Record<string, any[]> = {\n";
@@ -11,7 +11,7 @@ subjects.forEach(sub => {
   for(let i=1; i<=30; i++) {
     mcqsObjStr += `            { q: "Sample Question ${i} for ${sub}?", a: "Option A", b: "Option B", c: "Option C", d: "Option D", correct: "a", explanation: "This is the explanation for ${sub}." }${i===30 ? '' : ','}\n`;
   }
-  mcqsObjStr += `        ]\n    }]${sub === 'Health' ? '' : ','}\n`;
+  mcqsObjStr += `        ]\n    }]${sub === 'Computer' ? '' : ','}\n`;
 });
 mcqsObjStr += "};\n";
 
