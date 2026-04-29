@@ -3698,7 +3698,10 @@ const ProfilePage = () => {
 
     // Admin logic
     const adminEmails = ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'];
-    const isAdmin = user?.email && (adminEmails.includes(user.email) || user.email.includes('ashish'));
+    const isAdmin = user?.email && (
+        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email) || 
+        user.email.toLowerCase().includes('ashish')
+    );
 
     const stats = [
         { val: (user?.xp || 0).toLocaleString(), label: 'Total XP', icon: Zap, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -6401,7 +6404,10 @@ const AdminPortalPage = () => {
         type: 'info' as 'info' | 'alert' | 'update'
     });
 
-    const isAdminEmail = user?.email && ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email);
+    const isAdminEmail = user?.email && (
+        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email) || 
+        user.email.toLowerCase().includes('ashish')
+    );
 
     if (!isAdminEmail) {
         return (
@@ -6417,27 +6423,35 @@ const AdminPortalPage = () => {
     }
 
     const handleFileUpload = async (file: File, bucket: string) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${fileName}`;
+        try {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
-            .from(bucket)
-            .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-            });
+            const { error: uploadError, data } = await supabase.storage
+                .from(bucket)
+                .upload(filePath, file, {
+                    cacheControl: '3600',
+                    upsert: false
+                });
 
-        if (uploadError) {
-            console.error("Storage upload error detailed:", uploadError);
-            throw new Error(`Upload failed: ${uploadError.message}`);
+            if (uploadError) {
+                console.error("Storage upload error detailed:", uploadError);
+                if (uploadError.message.includes("not found")) {
+                    throw new Error(`Bucket '${bucket}' not found. Please create it in Supabase Storage with 'Public' access.`);
+                }
+                throw new Error(`Upload failed: ${uploadError.message}`);
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucket)
+                .getPublicUrl(filePath);
+
+            return publicUrl;
+        } catch (err: any) {
+            console.error("handleFileUpload caught error:", err);
+            throw err;
         }
-
-        const { data: { publicUrl } } = supabase.storage
-            .from(bucket)
-            .getPublicUrl(filePath);
-
-        return publicUrl;
     };
 
     const handleStudySubmit = async (e: React.FormEvent, typeOverride?: string) => {
@@ -7135,37 +7149,54 @@ const AppProvider = ({ children }: any) => {
 
     const fetchUserStats = async (userId: string) => {
         try {
-            const { data, error } = await supabase
+            // First check user_profiles table
+            const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('user_id', userId)
+                .maybeSingle();
+
+            if (profile) {
+                setUser(prev => prev ? {
+                    ...prev,
+                    xp: profile.xp || 0,
+                    streak: profile.streak || 0,
+                    badges: profile.badges || [],
+                    testsCompleted: profile.tests_completed || 0,
+                    avgScore: profile.avg_score || 0,
+                    completedChapters: profile.completed_chapters || []
+                } : null);
+                localStorage.setItem(`user_stats_${userId}`, JSON.stringify(profile));
+                return;
+            }
+
+            // Fallback: Calculate from activity if profile table is empty/missing
+            const { data: activity, error: activityError } = await supabase
                 .from('notes')
                 .select('created_at')
                 .eq('user_id', userId)
                 .order('created_at', { ascending: false });
             
-            if (error) throw error;
-            
-            calculateAndSetStats(data, userId);
+            if (!activityError && activity) {
+                calculateAndSetStats(activity, userId);
+            } else {
+                throw new Error("Activity fetch failed");
+            }
         } catch (err) {
             console.error('Error fetching user stats:', err);
-            // Fallback to localStorage
-            try {
-                const localStr = localStorage.getItem(`notes_${userId}`);
-                if (localStr) {
-                    const localNotes = JSON.parse(localStr);
-                    calculateAndSetStats(localNotes, userId);
-                } else {
-                    // Try getting raw user stats if no notes exist
-                    const localUserStatsStr = localStorage.getItem(`user_stats_${userId}`);
-                    if (localUserStatsStr) {
-                        const localUserStats = JSON.parse(localUserStatsStr);
-                        setUser(prev => prev ? {
-                            ...prev,
-                            xp: localUserStats.xp || 0,
-                            streak: localUserStats.streak || 0
-                        } : null);
-                    }
-                }
-            } catch (e) {
-                console.error("Local stats calculation failed", e);
+            // Absolute fallback to localStorage
+            const localUserStatsStr = localStorage.getItem(`user_stats_${userId}`);
+            if (localUserStatsStr) {
+                const localUserStats = JSON.parse(localUserStatsStr);
+                setUser(prev => prev ? {
+                    ...prev,
+                    xp: localUserStats.xp || localUserStats.xp === 0 ? localUserStats.xp : (prev.xp || 0),
+                    streak: localUserStats.streak || 0,
+                    badges: localUserStats.badges || prev.badges,
+                    testsCompleted: localUserStats.testsCompleted || 0,
+                    avgScore: localUserStats.avgScore || 0,
+                    completedChapters: localUserStats.completedChapters || []
+                } : null);
             }
         }
     };
