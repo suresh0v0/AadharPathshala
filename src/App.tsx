@@ -1401,8 +1401,9 @@ const StandardCalculator = () => {
             
             if (outputMode === 'fraction') {
                 try {
-                    const frac = math.fraction(result);
-                    resultStr = Number(frac.d) === 1 ? frac.n.toString() : `${frac.n}/${frac.d}`;
+                    const frac: any = math.fraction(result);
+                    const sign = frac.s === -1 ? '-' : '';
+                    resultStr = Number(frac.d) === 1 ? `${sign}${frac.n}` : `${sign}${frac.n}/${frac.d}`;
                 } catch (e) {
                     resultStr = typeof result === 'number' ? result.toFixed(8).replace(/\.?0+$/, '') : math.format(result, { precision: 8 });
                 }
@@ -3273,9 +3274,12 @@ const SubjectDetail = () => {
 
     return (
         <div className="space-y-8 animate-fade-up pb-24 text-[#020617]">
-            <header className="flex items-center justify-between">
-                <button onClick={() => navigate('/hub')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90 transition-all">
-                    <ArrowLeft className="w-6 h-6" />
+            <header className="flex items-center justify-between px-2">
+                <button 
+                    onClick={() => navigate('/hub')} 
+                    className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
                 <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", `bg-${config.color}-50 text-${config.color}-600`)}>
                     Active Subject Hub
@@ -3288,7 +3292,7 @@ const SubjectDetail = () => {
                         <Icon className="w-8 h-8 text-white" />
                     </div>
                     <div className="space-y-1">
-                        <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none">{name}</h1>
+                        <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">{name}</h1>
                         <p className="text-[0.7rem] font-black text-white/60 uppercase tracking-widest">Mastery Level: 45%</p>
                     </div>
                 </div>
@@ -3968,8 +3972,13 @@ const ChapterDetail = () => {
 
     return (
         <div className="space-y-8 animate-fade-up pb-24 text-slate-800">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 line-clamp-1">{chapter.title}</h1>
             </div>
 
@@ -4061,8 +4070,13 @@ const VideoList = () => {
 
     return (
         <div className="space-y-6 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Explainer TV</h1>
             </div>
 
@@ -4141,8 +4155,13 @@ const PdfList = () => {
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Archives</h1>
             </div>
 
@@ -4567,6 +4586,56 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
     );
 };
 
+/** ── BOOK ILLUSTRATION COMPONENT ── */
+const BookIllustration = ({ color, subject }: { color: string, subject: string }) => {
+    const colors: Record<string, { primary: string, secondary: string, accent: string }> = {
+        blue: { primary: 'bg-blue-500', secondary: 'bg-blue-600', accent: 'bg-blue-400' },
+        purple: { primary: 'bg-purple-500', secondary: 'bg-purple-600', accent: 'bg-purple-400' },
+        red: { primary: 'bg-rose-500', secondary: 'bg-rose-600', accent: 'bg-rose-400' },
+        emerald: { primary: 'bg-emerald-500', secondary: 'bg-emerald-600', accent: 'bg-emerald-400' },
+        amber: { primary: 'bg-amber-500', secondary: 'bg-amber-600', accent: 'bg-amber-400' },
+        indigo: { primary: 'bg-indigo-500', secondary: 'bg-indigo-600', accent: 'bg-indigo-400' },
+        orange: { primary: 'bg-orange-500', secondary: 'bg-orange-600', accent: 'bg-orange-400' },
+        cyan: { primary: 'bg-cyan-500', secondary: 'bg-cyan-600', accent: 'bg-cyan-400' },
+        rose: { primary: 'bg-rose-500', secondary: 'bg-rose-600', accent: 'bg-rose-400' },
+    };
+
+    const c = colors[color] || colors.blue;
+    const subjectConfig = SUBJECTS_CONFIG[subject as SubjectType] || { icon: BookOpen };
+    const SubjectIcon = subjectConfig.icon || BookOpen;
+
+    return (
+        <div className="relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center transform group-hover:rotate-[-5deg] transition-transform duration-500">
+            {/* The Book Body */}
+            <div className={cn("absolute w-16 h-20 md:w-20 md:h-24 rounded-r-lg shadow-2xl relative z-20", c.primary)}>
+                {/* Spine shadow */}
+                <div className="absolute left-0 top-0 bottom-0 w-2 bg-black/10 rounded-r-sm" />
+                {/* Book Details */}
+                <div className="absolute inset-2 border border-white/20 rounded-md flex flex-col items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mb-1">
+                        <SubjectIcon className="w-5 h-5 text-white/60" />
+                    </div>
+                    <span className="text-[0.4rem] font-black text-white/40 uppercase tracking-tighter mb-1">Vault</span>
+                    <div className="w-6 h-0.5 bg-white/30 rounded-full mb-1" />
+                    <div className="w-4 h-0.5 bg-white/20 rounded-full" />
+                </div>
+                {/* Bookmark */}
+                <div className="absolute top-0 right-3 w-3 h-6 bg-yellow-400 rounded-b-sm shadow-sm flex items-end justify-center pb-1">
+                    <div className="w-1 h-1 bg-black/10 rounded-full" />
+                </div>
+            </div>
+            {/* The Pages (Bottom layers) */}
+            <div className="absolute w-[calc(100%-4px)] h-[calc(100%-4px)] translate-x-1 translate-y-1 bg-white rounded-r-lg shadow-md z-10" />
+            <div className={cn("absolute w-16 h-20 md:w-20 md:h-24 translate-x-2 translate-y-2 rounded-r-lg shadow-lg z-0 opacity-40", c.secondary)} />
+            
+            {/* Subject Label Overlay */}
+            <div className="absolute -bottom-2 z-30 px-3 py-1 bg-white rounded-full border border-slate-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+               <span className="text-[0.5rem] font-black uppercase tracking-widest text-slate-400">{subject}</span>
+            </div>
+        </div>
+    );
+};
+
 const DigitalTextbookList = () => {
     const { name } = useParams();
     const { liveMaterials } = useApp();
@@ -4608,18 +4677,7 @@ const DigitalTextbookList = () => {
                         >
                             <div className={`absolute inset-0 bg-linear-to-br opacity-[0.03] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
                             
-                            <div className={`w-16 h-16 md:w-20 md:h-20 ${
-                                subjectConfig.color === 'blue' ? 'bg-[#40C9FF]' : 
-                                subjectConfig.color === 'purple' ? 'bg-[#BD7AF5]' :
-                                subjectConfig.color === 'red' ? 'bg-[#FF7A8A]' :
-                                subjectConfig.color === 'emerald' ? 'bg-[#4ADE80]' :
-                                subjectConfig.color === 'amber' ? 'bg-[#FBBF24]' :
-                                subjectConfig.color === 'indigo' ? 'bg-[#818CF8]' :
-                                subjectConfig.color === 'orange' ? 'bg-[#FB923C]' :
-                                'bg-[#22D3EE]'
-                            } rounded-3xl flex items-center justify-center shadow-xl transition-all duration-500 relative z-10 group-hover:scale-110`}>
-                                {React.createElement(subjectConfig.icon, { className: "w-8 h-8 md:w-10 md:h-10 text-white" })}
-                            </div>
+                            <BookIllustration color={subjectConfig.color} subject={name as string} />
                             
                             <div className="relative z-10 mt-6 px-4">
                                 <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors">Vol 1.0</h3>
@@ -4637,9 +4695,7 @@ const DigitalTextbookList = () => {
                         >
                             <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity" />
                             
-                            <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-500 rounded-3xl flex items-center justify-center shadow-xl transition-all duration-500 relative z-10 group-hover:scale-110">
-                                <Library className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                            </div>
+                            <BookIllustration color="indigo" subject={b.title} />
                             
                             <div className="relative z-10 mt-6 px-4 w-full">
                                 <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors line-clamp-1">{b.title}</h3>
@@ -4671,31 +4727,38 @@ const DigitalTextbookList = () => {
 const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: string, subtitle: string, themeColor?: string, onBack: () => void }) => {
     const { user } = useApp();
     return (
-        <div className="w-full bg-white pt-8 pb-32 px-6 flex flex-col items-center relative overflow-hidden border-b border-slate-100">
+        <div className="w-full bg-white pt-6 pb-24 md:pb-32 px-6 flex flex-col items-center relative overflow-hidden border-b border-slate-100">
              <div className="w-full max-w-[620px] relative z-20">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-6 md:mb-10">
                     <div className="flex flex-col">
-                        <span className="text-2xl font-black text-rose-600 leading-none tracking-tighter">AADHAR</span>
-                        <span className="text-2xl font-black text-blue-600 leading-none tracking-tight">PATHSHALA</span>
+                        <span className="text-xl md:text-2xl font-black text-rose-600 leading-none tracking-tighter">AADHAR</span>
+                        <span className="text-xl md:text-2xl font-black text-blue-600 leading-none tracking-tight">PATHSHALA</span>
                     </div>
-                    <Link to="/profile" className="w-12 h-12 bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
+                    <Link to="/profile" className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
                         {user?.photoURL ? (
                             <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                            <UserIcon className="w-6 h-6 text-slate-400" />
+                            <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
                         )}
                     </Link>
                 </div>
 
                 <div className="flex items-center justify-between">
-                    <button onClick={onBack} className="w-10 h-10 bg-slate-900/5 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-900/10 transition-all">
-                        <ArrowLeft className="w-5 h-5" />
+                    <button 
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onBack();
+                        }} 
+                        className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-800 transition-all z-[100] shadow-lg active:scale-95"
+                    >
+                        <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
                     </button>
-                    <div className="text-center">
-                        <h1 className={cn("text-2xl font-black italic tracking-tighter uppercase leading-none", `text-${themeColor}-600`)}>{title}</h1>
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{subtitle}</p>
+                    <div className="text-center px-4">
+                        <h1 className={cn("text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none", `text-${themeColor}-600`)}>{title}</h1>
+                        <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{subtitle}</p>
                     </div>
-                    <div className="w-10" />
+                    <div className="w-10 md:w-12" />
                 </div>
             </div>
             <div className={cn("absolute bottom-0 left-0 right-0 h-24", `bg-gradient-to-t from-${themeColor}-50/50 to-transparent`)} />
@@ -4868,6 +4931,15 @@ const DictionaryPage = () => {
         { term: 'biology', color: 'bg-amber-50 text-amber-600 border-amber-100' }
     ];
 
+    const speakWord = (text: string) => {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+    };
+
     const searchWord = async (word: string) => {
         if (!word) return;
         setLoading(true);
@@ -4898,12 +4970,6 @@ const DictionaryPage = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const playAudio = (audioUrl: string) => {
-        if (!audioUrl) return;
-        const audio = new Audio(audioUrl);
-        audio.play();
     };
 
     return (
@@ -4977,15 +5043,23 @@ const DictionaryPage = () => {
                         </header>
 
                         <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-50 space-y-6">
-                            <div className="space-y-1">
-                                <span className="text-rose-600 font-black uppercase tracking-[0.2em] text-[0.6rem]">{result.partOfSpeech}</span>
-                                <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-2 lowercase">{result.word}</h2>
-                                {result.phonetic && <p className="text-slate-400 font-mono italic text-sm">[{result.phonetic}]</p>}
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="space-y-1 min-w-0">
+                                    <span className="text-rose-600 font-black uppercase tracking-[0.2em] text-[0.6rem]">{result.partOfSpeech}</span>
+                                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2 lowercase break-words leading-[0.9]">{result.word}</h2>
+                                    {result.phonetic && <p className="text-slate-400 font-mono italic text-sm">[{result.phonetic}]</p>}
+                                </div>
+                                <button 
+                                    onClick={() => speakWord(result.word)}
+                                    className="w-12 h-12 bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200 hover:scale-110 active:scale-95 transition-all flex-shrink-0 mt-4"
+                                >
+                                    <Volume2 className="w-6 h-6" />
+                                </button>
                             </div>
 
                             <div className="p-6 bg-rose-50/30 rounded-3xl border border-rose-50">
                                 <label className="text-[0.6rem] font-black text-rose-600 uppercase tracking-widest block mb-2">Definition</label>
-                                <p className="text-xl font-bold text-slate-800 leading-tight">{result.meaning}</p>
+                                <p className="text-lg md:text-xl font-bold text-slate-800 leading-tight">{result.meaning}</p>
                             </div>
 
                             <div className="space-y-4">

@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   const groqKey = process.env.VITE_GROQ_API_KEY || env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || env.GROQ_API_KEY || "";
 
   return {
+    base: './',
     plugins: [react(), tailwindcss()],
     define: {
       'import.meta.env.VITE_CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
@@ -25,11 +26,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
-    },
-    build: {
-      outDir: 'dist',
-      assetsDir: 'assets',
-      emptyOutDir: true,
     },
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
