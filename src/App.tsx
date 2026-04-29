@@ -148,7 +148,9 @@ const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient:
   'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber-500 to-orange-500' },
   'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo-600 to-violet-700' },
   'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange-500 to-yellow-600' },
-  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' }
+  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' },
+  'Economics': { color: 'emerald', icon: TrendingUp, gradient: 'from-emerald-600 to-green-700' },
+  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose-500 to-red-600' }
 };
 
 const BOOK_LINKS: Record<string, string> = {
@@ -4332,10 +4334,9 @@ const getDirectPdfUrl = (url: string) => {
     if (url.includes('drive.google.com')) {
         const match = url.match(/\/d\/([^\/]+)/);
         if (match && match[1]) {
-            // Using AllOrigins proxy to bypass CORS for Google Drive
-            // This allows react-pdf to fetch the binary data for the flip animation
-            const googleUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
-            return `https://api.allorigins.win/raw?url=${encodeURIComponent(googleUrl)}`;
+            // Using a different proxy with a cache buster to avoid 408 timeouts
+            const googleUrl = `https://drive.google.com/uc?export=download&id=${match[1]}&t=${Date.now()}`;
+            return `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(googleUrl)}`;
         }
     }
     return url;
@@ -4352,12 +4353,10 @@ const getPreviewUrl = (url: string) => {
 };
 
 /** ── BOOK VIEWER COMPONENT ── */
-const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean, onClose: () => void, url: string, title: string }) => {
+const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
     const [numPages, setNumPages] = useState<number | null>(null);
     const [pageNumber, setPageNumber] = useState(1);
     const [loadError, setLoadError] = useState(false);
-    const [scale, setScale] = useState(1.0);
-    const [direction, setDirection] = useState(0);
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
@@ -4367,42 +4366,13 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean, onClose:
 
     const directUrl = getDirectPdfUrl(url);
     const previewUrl = getPreviewUrl(url);
-    const isGoogleDrive = url.includes('drive.google.com');
 
     const paginate = (newDirection: number) => {
         if (!numPages) return;
         const nextPage = pageNumber + newDirection;
         if (nextPage >= 1 && nextPage <= numPages) {
-            setDirection(newDirection);
             setPageNumber(nextPage);
         }
-    };
-
-    const variants = {
-        enter: (direction: number) => ({
-            rotateY: direction > 0 ? 90 : -90,
-            opacity: 0,
-            transformOrigin: direction > 0 ? 'left' : 'right'
-        }),
-        center: {
-            rotateY: 0,
-            opacity: 1,
-            zIndex: 1,
-            transition: {
-                rotateY: { type: "spring", stiffness: 100, damping: 20 } as const,
-                opacity: { duration: 0.2 } as const
-            }
-        },
-        exit: (direction: number) => ({
-            rotateY: direction < 0 ? 90 : -90,
-            opacity: 0,
-            zIndex: 0,
-            transformOrigin: direction < 0 ? 'left' : 'right',
-            transition: {
-                rotateY: { type: "spring", stiffness: 100, damping: 20 } as const,
-                opacity: { duration: 0.2 } as const
-            }
-        })
     };
 
     if (!isOpen) return null;
@@ -4413,146 +4383,167 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean, onClose:
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950 p-2 md:p-6 select-none"
+                className="fixed inset-0 z-[110] flex items-center justify-center bg-[#020617]/98 select-none p-4 md:p-8"
             >
-                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xl" onClick={onClose} />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.05),transparent)] pointer-events-none" />
+                <div className="absolute inset-0 backdrop-blur-2xl" onClick={onClose} />
                 
                 <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="relative w-full h-full max-w-7xl bg-white rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/10"
+                    initial={{ scale: 0.95, opacity: 0, y: 30 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0, y: 30 }}
+                    className="relative w-full h-full max-w-6xl bg-[#0F172A]/40 rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/5 backdrop-blur-md"
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Header Overlay - Floating & Minimal */}
-                    <div className="absolute top-6 left-6 right-6 z-[120] flex items-center justify-between pointer-events-none">
-                        <div className="flex items-center gap-4 bg-white/90 backdrop-blur-md px-5 py-3 rounded-2xl shadow-xl border border-slate-100 pointer-events-auto">
-                            <div className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center shrink-0">
-                                <BookOpen className="w-4 h-4" />
+                    {/* Header: Aesthetic Glassmorphism */}
+                    <div className="sticky top-0 left-0 right-0 z-[120] flex items-center justify-between p-6 md:p-10 pointer-events-none">
+                        <div className="flex items-center gap-5 bg-white/5 backdrop-blur-3xl px-6 py-4 rounded-3xl border border-white/10 pointer-events-auto shadow-2xl">
+                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                <BookOpen className="w-6 h-6" />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="text-[0.65rem] font-black uppercase tracking-widest text-slate-900 truncate max-w-[120px] md:max-w-xs">{title}</h3>
-                                <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-[0.2em]">{numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating...'}</p>
+                            <div className="min-w-0 pr-4">
+                                <h3 className="text-[0.8rem] font-black text-white uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-md italic">{title}</h3>
+                                <div className="flex items-center gap-3">
+                                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
+                                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-[0.3em]">
+                                        {numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating Opticals'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <button 
-                            onClick={onClose}
-                            className="w-12 h-12 bg-white/90 backdrop-blur-md text-slate-400 rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-xl border border-slate-100 pointer-events-auto active:scale-90"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => window.open(url, '_blank')}
+                                className="w-16 h-16 bg-white/5 backdrop-blur-3xl text-white/50 rounded-3xl flex items-center justify-center hover:bg-white/10 hover:text-white transition-all border border-white/10 pointer-events-auto active:scale-95 group"
+                                title="Open in New Tab"
+                            >
+                                <ExternalLink className="w-7 h-7" />
+                            </button>
+                            <button 
+                                onClick={onClose}
+                                className="w-16 h-16 bg-white/5 backdrop-blur-3xl text-white rounded-3xl flex items-center justify-center hover:bg-rose-500/80 transition-all border border-white/10 pointer-events-auto active:scale-95 group"
+                            >
+                                <X className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
+                            </button>
+                        </div>
                     </div>
 
-                    {/* Viewer Wrapper with Flip Interaction */}
-                    <div className="flex-1 bg-slate-50 flex items-center justify-center relative overflow-hidden perspective-1000">
+                    {/* Viewer Core */}
+                    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden pb-10">
                         {loadError ? (
-                            <div className="w-full h-full p-4 md:p-12">
+                            <div className="w-full h-full p-6 md:p-14 relative z-10">
                                 <iframe 
                                     src={previewUrl} 
-                                    className="w-full h-full rounded-[2rem] border-none shadow-2xl bg-white"
+                                    className="w-full h-full rounded-3xl shadow-2xl border-none bg-white/5 backdrop-blur-sm"
                                     title="PDF Preview"
                                 />
-                                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white px-6 py-3 rounded-full text-[0.6rem] font-black uppercase tracking-widest border border-white/10 shadow-2xl">
-                                    Enhanced Cloud Sync Active
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                                    <p className="text-[0.6rem] font-black text-white/10 uppercase tracking-[2em] whitespace-nowrap">Cloud Stream Interface</p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-                                {/* Page Flip Area */}
+                            <div className="relative w-full h-full flex flex-col items-center justify-center">
                                 <div 
-                                    className="relative h-[90%] w-full flex items-center justify-center group"
+                                    className="relative flex-1 w-full flex items-center justify-center px-4"
                                     onWheel={(e) => {
-                                        if (e.deltaY > 0) paginate(1);
-                                        else paginate(-1);
+                                        if (Math.abs(e.deltaY) > 50) {
+                                            if (e.deltaY > 0) paginate(1);
+                                            else paginate(-1);
+                                        }
                                     }}
                                 >
-                                    {/* Left interaction zone */}
-                                    <div 
-                                        className="absolute left-0 top-0 bottom-0 w-1/4 z-20 cursor-w-resize" 
+                                    {/* Interaction zones (Invisible but large) */}
+                                    <button 
+                                        className="absolute left-6 md:left-12 z-50 w-16 h-16 md:w-20 md:h-20 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-all group scale-90 hover:scale-100"
                                         onClick={() => paginate(-1)}
-                                    />
-                                    {/* Right interaction zone */}
-                                    <div 
-                                        className="absolute right-0 top-0 bottom-0 w-1/4 z-20 cursor-e-resize" 
+                                    >
+                                        <ChevronLeft className="w-8 h-8 text-white" />
+                                    </button>
+                                    
+                                    <button 
+                                        className="absolute right-6 md:right-12 z-50 w-16 h-16 md:w-20 md:h-20 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-all group scale-90 hover:scale-100"
                                         onClick={() => paginate(1)}
-                                    />
+                                    >
+                                        <ChevronRight className="w-8 h-8 text-white" />
+                                    </button>
 
-                                    <AnimatePresence initial={false} custom={direction} mode="popLayout">
-                                        <motion.div
-                                            key={pageNumber}
-                                            custom={direction}
-                                            variants={variants}
-                                            initial="enter"
-                                            animate="center"
-                                            exit="exit"
-                                            className="w-full max-w-[90%] md:max-w-fit h-full flex items-center justify-center shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] bg-white rounded-sm border border-slate-200"
-                                            drag="x"
-                                            dragConstraints={{ left: 0, right: 0 }}
-                                            dragElastic={0.2}
-                                            onDragEnd={(_, info) => {
-                                                if (info.offset.x > 100) paginate(-1);
-                                                else if (info.offset.x < -100) paginate(1);
-                                            }}
-                                        >
-                                            <Document
-                                                file={directUrl}
-                                                onLoadSuccess={onDocumentLoadSuccess}
-                                                onLoadError={() => setLoadError(true)}
-                                                loading={
-                                                    <div className="flex flex-col items-center justify-center min-h-[400px] w-[300px] md:w-[500px] gap-8 bg-white">
-                                                        <div className="relative">
-                                                            {[...Array(3)].map((_, i) => (
-                                                                <motion.div
-                                                                    key={i}
-                                                                    className="absolute inset-0 w-12 h-16 bg-blue-500 rounded-sm origin-left border-l-2 border-blue-600"
-                                                                    animate={{ rotateY: -180 }}
-                                                                    transition={{
-                                                                        duration: 1.5,
-                                                                        repeat: Infinity,
-                                                                        delay: i * 0.2,
-                                                                        ease: "easeInOut"
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] animate-pulse">Syncing Leaf...</span>
-                                                    </div>
-                                                }
+                                    <div className="relative z-10 w-full max-w-4xl h-full flex items-center justify-center">
+                                        <AnimatePresence mode="wait">
+                                            <motion.div
+                                                key={pageNumber}
+                                                initial={{ opacity: 0, x: 10, filter: 'blur(10px)' }}
+                                                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                                exit={{ opacity: 0, x: -10, filter: 'blur(10px)' }}
+                                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                                                className="w-full flex justify-center"
                                             >
-                                                <Page 
-                                                    pageNumber={pageNumber} 
-                                                    scale={scale}
-                                                    renderAnnotationLayer={false}
-                                                    renderTextLayer={true}
-                                                    className="rounded-sm"
-                                                    width={window.innerWidth < 768 ? window.innerWidth * 0.85 : undefined}
-                                                />
-                                            </Document>
-                                        </motion.div>
-                                    </AnimatePresence>
+                                                <div className="relative p-1 bg-white/10 rounded-2xl md:rounded-3xl shadow-[0_40px_80px_rgba(0,0,0,0.6)] border border-white/5">
+                                                    <Document
+                                                        file={directUrl}
+                                                        onLoadSuccess={onDocumentLoadSuccess}
+                                                        onLoadError={(err) => {
+                                                            console.error("PDF Fetch/Parse Error:", err);
+                                                            setLoadError(true);
+                                                        }}
+                                                        loading={
+                                                            <div className="flex flex-col items-center justify-center h-[500px] w-[350px] md:w-[600px] gap-8 bg-[#0F172A]/40 rounded-2xl">
+                                                                <div className="relative">
+                                                                    <div className="w-20 h-20 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
+                                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                                        <div className="w-10 h-10 border-b-2 border-l-2 border-indigo-400 rounded-full animate-spin-reverse" />
+                                                                    </div>
+                                                                </div>
+                                                                <div className="text-center">
+                                                                    <h4 className="text-[0.6rem] font-black text-white/60 uppercase tracking-[0.5em] mb-2">Decrypting Pages</h4>
+                                                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                                        <motion.div 
+                                                                            className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                                                                            animate={{ x: [-128, 128] }}
+                                                                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    >
+                                                        <Page 
+                                                            pageNumber={pageNumber} 
+                                                            scale={1.2}
+                                                            renderAnnotationLayer={false}
+                                                            renderTextLayer={true}
+                                                            width={window.innerWidth < 768 ? window.innerWidth * 0.85 : 800}
+                                                            className="rounded-xl md:rounded-2xl overflow-hidden"
+                                                        />
+                                                    </Document>
+                                                </div>
+                                            </motion.div>
+                                        </AnimatePresence>
+                                    </div>
                                 </div>
                                 
-                                {/* Bottom Floating Controls */}
-                                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[120] flex items-center gap-1 bg-slate-900/90 backdrop-blur-xl p-1 rounded-full border border-white/10 shadow-2xl">
+                                {/* Bottom Controls: Minimalist Glass */}
+                                <div className="mt-8 flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-full border border-white/10 shadow-3xl">
                                     <button 
                                         onClick={() => paginate(-1)}
-                                        disabled={pageNumber <= 1}
-                                        className="w-12 h-12 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-all rounded-full"
+                                        disabled={pageNumber === 1}
+                                        className="p-2 text-white/40 hover:text-white disabled:opacity-20 transition-colors"
                                     >
-                                        <ChevronLeft className="w-6 h-6" />
+                                        <ChevronLeft className="w-5 h-5" />
                                     </button>
-                                    <div className="px-6 py-2 flex items-center gap-3">
-                                        <span className="text-[0.7rem] font-black italic tracking-tighter text-white uppercase">{pageNumber}</span>
-                                        <div className="w-1 h-3 bg-white/20 rounded-full" />
-                                        <span className="text-[0.6rem] font-bold text-white/40 uppercase tracking-widest">{numPages || '--'}</span>
+                                    <div className="w-px h-4 bg-white/10 mx-2" />
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-[0.9rem] font-black text-white italic">{pageNumber}</span>
+                                        <span className="text-[0.6rem] font-bold text-white/20 uppercase tracking-widest leading-none">OF</span>
+                                        <span className="text-[0.9rem] font-black text-white/40 italic">{numPages || '--'}</span>
                                     </div>
+                                    <div className="w-px h-4 bg-white/10 mx-2" />
                                     <button 
                                         onClick={() => paginate(1)}
-                                        disabled={!numPages || pageNumber >= numPages}
-                                        className="w-12 h-12 flex items-center justify-center text-white/40 hover:text-white disabled:opacity-20 transition-all rounded-full"
+                                        disabled={pageNumber === numPages}
+                                        className="p-2 text-white/40 hover:text-white disabled:opacity-20 transition-colors"
                                     >
-                                        <ChevronRight className="w-6 h-6" />
+                                        <ChevronRight className="w-5 h-5" />
                                     </button>
                                 </div>
                             </div>
@@ -4568,68 +4559,79 @@ const DigitalTextbookList = () => {
     const { name } = useParams();
     const { liveMaterials } = useApp();
     const navigate = useNavigate();
-    const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '' });
+    const [viewer, setViewer] = useState<{ isOpen: boolean; url: string; title: string }>({ isOpen: false, url: '', title: '' });
 
     const staticLink = BOOK_LINKS[name as string];
     const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'digital_textbook');
     const subjectConfig = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     return (
-        <div className="space-y-10 animate-fade-up pb-24 text-[#020617] px-2">
-            <div className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90"><ArrowLeft className="w-6 h-6" /></button>
+        <div className="space-y-12 animate-fade-up pb-24 text-[#020617] px-4">
+            <div className="flex items-center gap-5">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
                 <div className="flex flex-col">
-                    <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Study Material</h1>
-                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest leading-none">Your Digital Archive</p>
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Digital Vault</h1>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Your Educational Archive</p>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                {/* Main Static Textbook - colorful compact bento design */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8 lg:gap-10">
+                {/* Main Static Textbook - colorful squircle design inspired by Image 2 */}
                 {staticLink && (
                     <button 
                         onClick={() => setViewer({ isOpen: true, url: staticLink, title: `${name} Textbook` })}
-                        className="group relative flex flex-col items-center justify-center p-6 md:p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:scale-[1.05] transition-all duration-500 overflow-hidden"
+                        className="group relative flex flex-col items-center justify-center aspect-square bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.05] transition-all duration-500 overflow-hidden"
                     >
-                        <div className={`absolute inset-0 bg-linear-to-br opacity-[0.05] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
+                        <div className={`absolute inset-0 bg-linear-to-br opacity-[0.03] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
                         
                         <div className={`w-16 h-16 md:w-20 md:h-20 ${
-                            subjectConfig.color === 'blue' ? 'bg-blue-500' : 
-                            subjectConfig.color === 'purple' ? 'bg-purple-500' :
-                            subjectConfig.color === 'red' ? 'bg-rose-500' :
-                            subjectConfig.color === 'emerald' ? 'bg-emerald-500' :
-                            subjectConfig.color === 'amber' ? 'bg-amber-500' :
-                            subjectConfig.color === 'indigo' ? 'bg-indigo-500' :
-                            subjectConfig.color === 'orange' ? 'bg-orange-500' :
-                            'bg-cyan-500'
-                        } rounded-3xl flex items-center justify-center shadow-xl transition-transform duration-500 relative z-10 group-hover:scale-110 group-hover:rotate-6`}>
+                            subjectConfig.color === 'blue' ? 'bg-[#40C9FF]' : 
+                            subjectConfig.color === 'purple' ? 'bg-[#BD7AF5]' :
+                            subjectConfig.color === 'red' ? 'bg-[#FF7A8A]' :
+                            subjectConfig.color === 'emerald' ? 'bg-[#4ADE80]' :
+                            subjectConfig.color === 'amber' ? 'bg-[#FBBF24]' :
+                            subjectConfig.color === 'indigo' ? 'bg-[#818CF8]' :
+                            subjectConfig.color === 'orange' ? 'bg-[#FB923C]' :
+                            'bg-[#22D3EE]'
+                        } rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-500 relative z-10 group-hover:scale-110`}>
                             {React.createElement(subjectConfig.icon, { className: "w-8 h-8 md:w-10 md:h-10 text-white" })}
                         </div>
                         
-                        <div className="relative z-10 mt-5 text-center">
-                            <h3 className="text-xs md:text-sm font-black italic tracking-tighter uppercase text-slate-900 leading-tight mb-1">{name}</h3>
-                            <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-[0.2em] leading-relaxed">Book Vol.1</p>
+                        <div className="relative z-10 mt-4 md:mt-6 text-center px-4">
+                            <h3 className="text-[0.65rem] md:text-[0.75rem] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 transition-colors">{name}</h3>
                         </div>
+                        
+                        {/* Interactive Dot */}
+                        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-slate-100 group-hover:bg-blue-400 transition-colors" />
                     </button>
                 )}
 
                 {/* Dynamic Textbooks */}
-                {dynamicBooks.map((b: any) => (
+                {dynamicBooks.map((b) => (
                     <button 
                         key={b.id}
                         onClick={() => setViewer({ isOpen: true, url: b.link_url || b.file_url, title: b.title })}
-                        className="group relative flex flex-col items-center justify-center p-6 md:p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-lg shadow-slate-200/50 hover:shadow-2xl hover:scale-[1.05] transition-all duration-500 overflow-hidden"
+                        className="group relative flex flex-col items-center justify-center aspect-square bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.05] transition-all duration-500 overflow-hidden"
                     >
-                        <div className="absolute inset-0 bg-linear-to-br from-violet-500 to-indigo-600 opacity-[0.05] group-hover:opacity-[0.1] transition-opacity" />
+                        <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity" />
                         
-                        <div className="w-16 h-16 md:w-20 md:h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-xl transition-transform duration-500 relative z-10 group-hover:scale-110 group-hover:-rotate-6">
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-500 rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-500 relative z-10 group-hover:scale-110">
                             <Library className="w-8 h-8 md:w-10 md:h-10 text-white" />
                         </div>
                         
-                        <div className="relative z-10 mt-5 text-center">
-                            <h3 className="text-xs md:text-sm font-black italic tracking-tighter uppercase text-slate-900 leading-tight mb-1 truncate max-w-[120px]">{b.title}</h3>
-                            <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-[0.2em] leading-relaxed">External Resource</p>
+                        <div className="relative z-10 mt-4 md:mt-6 text-center px-4">
+                            <h3 className="text-[0.65rem] md:text-[0.75rem] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 transition-colors truncate w-full">{b.title}</h3>
                         </div>
+                        
+                        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-slate-100 group-hover:bg-indigo-400 transition-colors" />
                     </button>
                 ))}
             </div>
@@ -4643,7 +4645,7 @@ const DigitalTextbookList = () => {
 
             <BookViewer 
                 isOpen={viewer.isOpen}
-                onClose={() => setViewer({ ...viewer, isOpen: false })}
+                onClose={() => setViewer(v => ({ ...v, isOpen: false }))}
                 url={viewer.url}
                 title={viewer.title}
             />
