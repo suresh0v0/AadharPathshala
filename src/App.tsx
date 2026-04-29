@@ -6404,6 +6404,32 @@ const AdminPortalPage = () => {
         type: 'info' as 'info' | 'alert' | 'update'
     });
 
+    const [connStatus, setConnStatus] = useState<'testing' | 'ok' | 'fail'>('testing');
+    const [bucketStatus, setBucketStatus] = useState<string>('checking...');
+
+    useEffect(() => {
+        const checkConn = async () => {
+            try {
+                const { data, error } = await supabase.from('notices').select('count', { count: 'exact', head: true });
+                if (error) throw error;
+                setConnStatus('ok');
+
+                // Check bucket
+                const { data: buckets, error: bErr } = await supabase.storage.listBuckets();
+                if (bErr) {
+                   setBucketStatus("Error: " + bErr.message);
+                } else {
+                   const hasBucket = buckets.some(b => b.name === 'official-assets');
+                   setBucketStatus(hasBucket ? "Bucket 'official-assets' OK" : "Bucket 'official-assets' MISSING!");
+                }
+            } catch (e: any) {
+                console.error("Supabase connection check failed:", e);
+                setConnStatus('fail');
+            }
+        };
+        checkConn();
+    }, []);
+
     const isAdminEmail = user?.email && (
         ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
         user.email.toLowerCase().includes('ashish')
@@ -6416,7 +6442,7 @@ const AdminPortalPage = () => {
                     <AlertTriangle className="w-12 h-12 text-rose-500" />
                 </div>
                 <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-800 italic">Access Denied</h1>
-                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">Restricted to Authorized Admins</p>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest max-w-xs">{user?.email ? `Identity (${user.email}) rejected.` : "Restricted to Authorized Admins"}</p>
                 <button onClick={() => navigate('/')} className="mt-6 px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest active:scale-95 transition-all shadow-xl">Return to Safety</button>
             </div>
         );
@@ -6587,6 +6613,25 @@ const AdminPortalPage = () => {
     return (
         <div className="space-y-8 pb-32 max-w-5xl mx-auto px-4">
             <ToastContainer toasts={toasts} />
+
+            {/* System Status Banner */}
+            <div className={cn(
+                "p-4 rounded-3xl border flex items-center justify-between shadow-sm",
+                connStatus === 'ok' ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"
+            )}>
+                <div className="flex items-center gap-3">
+                    <Activity className="w-5 h-5 animate-pulse" />
+                    <div>
+                        <p className="text-[0.6rem] font-black uppercase tracking-widest">
+                            Database: {connStatus === 'ok' ? 'Connected' : 'Disconnected / Invalid Key'}
+                        </p>
+                        <p className="text-[0.5rem] font-bold opacity-60 uppercase tracking-tighter mt-0.5">Storage: {bucketStatus}</p>
+                    </div>
+                </div>
+                {connStatus === 'fail' && (
+                    <button onClick={() => window.location.reload()} className="text-[0.6rem] font-black underline uppercase tracking-widest hover:text-rose-900 transition-colors">Re-evaluate Engine</button>
+                )}
+            </div>
             
             <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">

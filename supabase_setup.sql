@@ -109,13 +109,31 @@ CREATE POLICY "Admins can manage notices" ON public.notices FOR ALL USING (is_ad
 CREATE POLICY "Users can view their own profile" ON public.user_profiles FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update their own profile" ON public.user_profiles FOR ALL USING (auth.uid() = user_id);
 
--- 5. STORAGE BUCKET SETUP
+-- 5. AUTO-CREATE PROFILE TRIGGER
+-- This ensures every user gets a profile row automatically
+CREATE OR REPLACE FUNCTION public.handle_new_user() 
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.user_profiles (user_id, xp, streak)
+  VALUES (new.id, 0, 1)
+  ON CONFLICT (user_id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 6. STORAGE BUCKET SETUP
 -- Ensure the 'official-assets' bucket exists in the Supabase UI
--- Then run these policies (replace 'official-assets' with your bucket name if different)
+-- and IS SET TO 'PUBLIC'.
 
 -- Allow public access to read files
--- CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'official-assets');
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'official-assets');
 
 -- Allow admins to upload/delete files
--- CREATE POLICY "Admins can upload files" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'official-assets' AND is_admin());
--- CREATE POLICY "Admins can delete files" ON storage.objects FOR DELETE USING (bucket_id = 'official-assets' AND is_admin());
+CREATE POLICY "Admins can upload files" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'official-assets' AND is_admin());
+CREATE POLICY "Admins can update files" ON storage.objects FOR UPDATE USING (bucket_id = 'official-assets' AND is_admin());
+CREATE POLICY "Admins can delete files" ON storage.objects FOR DELETE USING (bucket_id = 'official-assets' AND is_admin());
