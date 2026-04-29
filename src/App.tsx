@@ -4161,10 +4161,10 @@ const PdfList = () => {
                             <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">Digital Archive • Vault Node</p>
                         </div>
                         <div className="flex items-center gap-3">
-                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
+                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-blue-100 hover:bg-blue-100">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
+                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-blue-500/10 hover:bg-blue-600">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
@@ -4254,10 +4254,10 @@ const NoteList = () => {
                             <p className="text-[0.65rem] text-emerald-400 font-bold leading-relaxed uppercase tracking-widest">Handwritten Note • Shared Legacy</p>
                         </div>
                         <div className="flex items-center gap-3">
-                            <button onClick={() => window.open(n.file_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
+                             <button onClick={() => window.open(n.file_url, '_blank')} className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-blue-100 hover:bg-blue-100">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={n.file_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
+                            <a href={n.file_url} download target="_blank" className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-emerald-500/10 hover:bg-emerald-600">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
@@ -4306,10 +4306,10 @@ const ModelList = () => {
                             <p className="text-[0.65rem] text-indigo-400 font-black leading-relaxed uppercase tracking-widest">Board Standard • 2083 Blueprint</p>
                         </div>
                         <div className="flex items-center gap-3">
-                             <button onClick={() => window.open(m.file_url || m.link_url, '_blank')} className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-100">
+                             <button onClick={() => window.open(m.file_url || m.link_url, '_blank')} className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-100">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-slate-900/10 hover:bg-black">
+                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-indigo-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-500/10 hover:bg-indigo-600">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
@@ -4375,181 +4375,132 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
         }
     };
 
+    // Keyboard support
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!isOpen) return;
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                paginate(1);
+            }
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                paginate(-1);
+            }
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, numPages, pageNumber, onClose]);
+
     if (!isOpen) return null;
 
     return (
         <AnimatePresence>
-            <motion.div 
+            <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[110] flex items-center justify-center bg-[#020617]/98 select-none p-4 md:p-8"
+                className="fixed inset-0 z-[2001] flex flex-col bg-slate-50 select-none"
             >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.05),transparent)] pointer-events-none" />
-                <div className="absolute inset-0 backdrop-blur-2xl" onClick={onClose} />
-                
-                <motion.div 
-                    initial={{ scale: 0.95, opacity: 0, y: 30 }}
-                    animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.95, opacity: 0, y: 30 }}
-                    className="relative w-full h-full max-w-6xl bg-[#0F172A]/40 rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden border border-white/5 backdrop-blur-md"
-                    onClick={(e) => e.stopPropagation()}
+                {/* Immersive Header */}
+                <div 
+                    className="flex items-center justify-between px-6 py-5 md:px-10 md:py-8 bg-white border-b border-slate-100 z-[120] shadow-sm shrink-0"
                 >
-                    {/* Header: Aesthetic Glassmorphism */}
-                    <div className="sticky top-0 left-0 right-0 z-[120] flex items-center justify-between p-6 md:p-10 pointer-events-none">
-                        <div className="flex items-center gap-5 bg-white/5 backdrop-blur-3xl px-6 py-4 rounded-3xl border border-white/10 pointer-events-auto shadow-2xl">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <BookOpen className="w-6 h-6" />
-                            </div>
-                            <div className="min-w-0 pr-4">
-                                <h3 className="text-[0.8rem] font-black text-white uppercase tracking-[0.2em] truncate max-w-[150px] md:max-w-md italic">{title}</h3>
-                                <div className="flex items-center gap-3">
-                                    <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse shadow-[0_0_8px_rgba(96,165,250,0.5)]" />
-                                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-[0.3em]">
-                                        {numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating Opticals'}
-                                    </p>
-                                </div>
-                            </div>
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 md:w-14 md:h-14 bg-indigo-600 text-white rounded-[1rem] md:rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                            <Book className="w-6 h-6 md:w-8 md:h-8" />
                         </div>
-
-                        <div className="flex items-center gap-3">
-                            <button 
-                                onClick={() => window.open(url, '_blank')}
-                                className="w-16 h-16 bg-white/5 backdrop-blur-3xl text-white/50 rounded-3xl flex items-center justify-center hover:bg-white/10 hover:text-white transition-all border border-white/10 pointer-events-auto active:scale-95 group"
-                                title="Open in New Tab"
-                            >
-                                <ExternalLink className="w-7 h-7" />
-                            </button>
-                            <button 
-                                onClick={onClose}
-                                className="w-16 h-16 bg-white/5 backdrop-blur-3xl text-white rounded-3xl flex items-center justify-center hover:bg-rose-500/80 transition-all border border-white/10 pointer-events-auto active:scale-95 group"
-                            >
-                                <X className="w-8 h-8 group-hover:rotate-90 transition-transform duration-500" />
-                            </button>
+                        <div className="min-w-0">
+                            <h3 className="text-[0.85rem] md:text-xl font-black text-slate-900 uppercase tracking-tighter truncate max-w-[150px] md:max-w-2xl italic leading-tight">{title}</h3>
+                            <p className="text-[0.55rem] md:text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.2em] mt-1">
+                                {numPages ? `Page ${pageNumber} of ${numPages}` : 'Calibrating Optical Feed'}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Viewer Core */}
-                    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden pb-10">
-                        {loadError ? (
-                            <div className="w-full h-full p-6 md:p-14 relative z-10">
-                                <iframe 
-                                    src={previewUrl} 
-                                    className="w-full h-full rounded-3xl shadow-2xl border-none bg-white/5 backdrop-blur-sm"
-                                    title="PDF Preview"
+                    <div className="flex items-center gap-2 md:gap-4">
+                        <button 
+                            onClick={() => window.open(url, '_blank')}
+                            className="w-10 h-10 md:w-14 md:h-14 bg-slate-50 text-slate-400 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100 shadow-sm active:scale-95"
+                            title="External Direct Stream"
+                        >
+                            <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
+                        </button>
+                        <button 
+                            onClick={onClose}
+                            className="w-10 h-10 md:w-14 md:h-14 bg-rose-50 text-rose-500 rounded-xl md:rounded-2xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 active:scale-95 group shadow-sm"
+                            title="Terminate Connection"
+                        >
+                            <X className="w-6 h-6 md:w-7 md:h-7 group-hover:rotate-90 transition-transform" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Viewer Shell */}
+                <div className="flex-1 relative overflow-hidden flex flex-col items-center bg-slate-100/30">
+                    {loadError ? (
+                        <div className="w-full h-full p-6 md:p-14 relative z-10">
+                            <iframe 
+                                src={previewUrl} 
+                                className="w-full h-full rounded-[2.5rem] shadow-2xl border-none bg-white"
+                                title="Cloud Relay Viewer"
+                            />
+                        </div>
+                    ) : (
+                        <div className="relative w-full h-full flex flex-col items-center overflow-y-auto custom-scrollbar pt-6 pb-32 px-4">
+                            <Document
+                                file={directUrl}
+                                onLoadSuccess={onDocumentLoadSuccess}
+                                onLoadError={() => setLoadError(true)}
+                                loading={
+                                    <div className="flex flex-col items-center justify-center p-12 md:p-24 bg-white rounded-[3rem] shadow-2xl border border-blue-50/50 mt-20">
+                                        <div className="relative w-16 h-16 mb-8">
+                                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full" />
+                                            <div className="absolute inset-0 border-4 border-t-blue-500 rounded-full animate-spin" />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.4em] mb-2">Establishing Stream</p>
+                                            <p className="text-[0.55rem] font-bold text-blue-500 uppercase tracking-widest animate-pulse">Syncing Digital Asset...</p>
+                                        </div>
+                                    </div>
+                                }
+                            >
+                                <Page 
+                                    pageNumber={pageNumber} 
+                                    width={Math.min(window.innerWidth - 32, 900)}
+                                    renderAnnotationLayer={false}
+                                    renderTextLayer={false}
+                                    className="shadow-[0_30px_70px_rgba(0,0,0,0.08)] rounded-xl md:rounded-2xl overflow-hidden border border-slate-200"
                                 />
-                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                                    <p className="text-[0.6rem] font-black text-white/10 uppercase tracking-[2em] whitespace-nowrap">Cloud Stream Interface</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="relative w-full h-full flex flex-col items-center justify-center">
-                                <div 
-                                    className="relative flex-1 w-full flex items-center justify-center px-4"
-                                    onWheel={(e) => {
-                                        if (Math.abs(e.deltaY) > 50) {
-                                            if (e.deltaY > 0) paginate(1);
-                                            else paginate(-1);
-                                        }
-                                    }}
-                                >
-                                    {/* Interaction zones (Invisible but large) */}
-                                    <button 
-                                        className="absolute left-6 md:left-12 z-50 w-16 h-16 md:w-20 md:h-20 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-all group scale-90 hover:scale-100"
-                                        onClick={() => paginate(-1)}
-                                    >
-                                        <ChevronLeft className="w-8 h-8 text-white" />
-                                    </button>
-                                    
-                                    <button 
-                                        className="absolute right-6 md:right-12 z-50 w-16 h-16 md:w-20 md:h-20 bg-white/5 hover:bg-white/10 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center opacity-0 hover:opacity-100 transition-all group scale-90 hover:scale-100"
-                                        onClick={() => paginate(1)}
-                                    >
-                                        <ChevronRight className="w-8 h-8 text-white" />
-                                    </button>
+                            </Document>
 
-                                    <div className="relative z-10 w-full max-w-4xl h-full flex items-center justify-center">
-                                        <AnimatePresence mode="wait">
-                                            <motion.div
-                                                key={pageNumber}
-                                                initial={{ opacity: 0, x: 10, filter: 'blur(10px)' }}
-                                                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                                exit={{ opacity: 0, x: -10, filter: 'blur(10px)' }}
-                                                transition={{ duration: 0.3, ease: 'easeOut' }}
-                                                className="w-full flex justify-center"
-                                            >
-                                                <div className="relative p-1 bg-white/10 rounded-2xl md:rounded-3xl shadow-[0_40px_80px_rgba(0,0,0,0.6)] border border-white/5">
-                                                    <Document
-                                                        file={directUrl}
-                                                        onLoadSuccess={onDocumentLoadSuccess}
-                                                        onLoadError={(err) => {
-                                                            console.error("PDF Fetch/Parse Error:", err);
-                                                            setLoadError(true);
-                                                        }}
-                                                        loading={
-                                                            <div className="flex flex-col items-center justify-center h-[500px] w-[350px] md:w-[600px] gap-8 bg-[#0F172A]/40 rounded-2xl">
-                                                                <div className="relative">
-                                                                    <div className="w-20 h-20 border-t-2 border-r-2 border-blue-500 rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
-                                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                                        <div className="w-10 h-10 border-b-2 border-l-2 border-indigo-400 rounded-full animate-spin-reverse" />
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-center">
-                                                                    <h4 className="text-[0.6rem] font-black text-white/60 uppercase tracking-[0.5em] mb-2">Decrypting Pages</h4>
-                                                                    <div className="w-32 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                                        <motion.div 
-                                                                            className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                                                                            animate={{ x: [-128, 128] }}
-                                                                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    >
-                                                        <Page 
-                                                            pageNumber={pageNumber} 
-                                                            scale={1.2}
-                                                            renderAnnotationLayer={false}
-                                                            renderTextLayer={true}
-                                                            width={window.innerWidth < 768 ? window.innerWidth * 0.85 : 800}
-                                                            className="rounded-xl md:rounded-2xl overflow-hidden"
-                                                        />
-                                                    </Document>
-                                                </div>
-                                            </motion.div>
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
-                                
-                                {/* Bottom Controls: Minimalist Glass */}
-                                <div className="mt-8 flex items-center gap-3 bg-white/5 backdrop-blur-3xl px-8 py-4 rounded-full border border-white/10 shadow-3xl">
+                            {/* Floating Navigation Controls */}
+                            {numPages && (
+                                <div className="fixed bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/90 backdrop-blur-xl px-6 py-4 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] z-[150] border border-slate-100">
                                     <button 
                                         onClick={() => paginate(-1)}
-                                        disabled={pageNumber === 1}
-                                        className="p-2 text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+                                        disabled={pageNumber <= 1}
+                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all hover:bg-slate-50"
                                     >
-                                        <ChevronLeft className="w-5 h-5" />
+                                        <ChevronLeft className="w-6 h-6" />
                                     </button>
-                                    <div className="w-px h-4 bg-white/10 mx-2" />
-                                    <div className="flex items-center gap-4">
-                                        <span className="text-[0.9rem] font-black text-white italic">{pageNumber}</span>
-                                        <span className="text-[0.6rem] font-bold text-white/20 uppercase tracking-widest leading-none">OF</span>
-                                        <span className="text-[0.9rem] font-black text-white/40 italic">{numPages || '--'}</span>
+                                    <div className="flex flex-col items-center min-w-[70px]">
+                                        <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-[0.2em] leading-none mb-1">Optical Frame</span>
+                                        <span className="text-slate-900 font-black text-sm">{pageNumber} / {numPages}</span>
                                     </div>
-                                    <div className="w-px h-4 bg-white/10 mx-2" />
                                     <button 
                                         onClick={() => paginate(1)}
-                                        disabled={pageNumber === numPages}
-                                        className="p-2 text-white/40 hover:text-white disabled:opacity-20 transition-colors"
+                                        disabled={pageNumber >= numPages}
+                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 disabled:opacity-20 transition-all hover:bg-slate-50"
                                     >
-                                        <ChevronRight className="w-5 h-5" />
+                                        <ChevronRight className="w-6 h-6" />
                                     </button>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                </motion.div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </motion.div>
         </AnimatePresence>
     );
@@ -4566,82 +4517,84 @@ const DigitalTextbookList = () => {
     const subjectConfig = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     return (
-        <div className="space-y-12 animate-fade-up pb-24 text-[#020617] px-4">
-            <div className="flex items-center gap-5">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-90"
-                >
-                    <ArrowLeft className="w-6 h-6" />
-                </button>
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">Digital Vault</h1>
-                    <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Your Educational Archive</p>
+        <div className="fixed inset-0 z-[1001] bg-slate-50 flex flex-col overflow-y-auto animate-fade-up">
+            {/* Immersive Header inspired by Dictionary */}
+            <div className="w-full max-w-7xl mx-auto px-6 py-8 md:py-16 space-y-4">
+                <div className="flex items-center gap-5">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
+                    >
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{name} Vault</h1>
+                        <div className="flex items-center gap-2 mt-1">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Curated Educational Archive</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-8 lg:gap-10">
-                {/* Main Static Textbook - colorful squircle design inspired by Image 2 */}
-                {staticLink && (
-                    <button 
-                        onClick={() => setViewer({ isOpen: true, url: staticLink, title: `${name} Textbook` })}
-                        className="group relative flex flex-col items-center justify-center aspect-square bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.05] transition-all duration-500 overflow-hidden"
-                    >
-                        <div className={`absolute inset-0 bg-linear-to-br opacity-[0.03] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
-                        
-                        <div className={`w-16 h-16 md:w-20 md:h-20 ${
-                            subjectConfig.color === 'blue' ? 'bg-[#40C9FF]' : 
-                            subjectConfig.color === 'purple' ? 'bg-[#BD7AF5]' :
-                            subjectConfig.color === 'red' ? 'bg-[#FF7A8A]' :
-                            subjectConfig.color === 'emerald' ? 'bg-[#4ADE80]' :
-                            subjectConfig.color === 'amber' ? 'bg-[#FBBF24]' :
-                            subjectConfig.color === 'indigo' ? 'bg-[#818CF8]' :
-                            subjectConfig.color === 'orange' ? 'bg-[#FB923C]' :
-                            'bg-[#22D3EE]'
-                        } rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-500 relative z-10 group-hover:scale-110`}>
-                            {React.createElement(subjectConfig.icon, { className: "w-8 h-8 md:w-10 md:h-10 text-white" })}
-                        </div>
-                        
-                        <div className="relative z-10 mt-4 md:mt-6 text-center px-4">
-                            <h3 className="text-[0.65rem] md:text-[0.75rem] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 transition-colors">{name}</h3>
-                        </div>
-                        
-                        {/* Interactive Dot */}
-                        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-slate-100 group-hover:bg-blue-400 transition-colors" />
-                    </button>
-                )}
+            <div className="flex-1 w-full max-w-7xl mx-auto px-6 pb-32">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-10">
+                    {/* Main Static Textbook */}
+                    {staticLink && (
+                        <button 
+                            onClick={() => setViewer({ isOpen: true, url: staticLink, title: `${name} Textbook` })}
+                            className="group relative flex flex-col items-center justify-center aspect-[4/5] bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.08)] hover:translate-y-[-5px] transition-all duration-500 overflow-hidden text-center"
+                        >
+                            <div className={`absolute inset-0 bg-linear-to-br opacity-[0.03] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
+                            
+                            <div className={`w-16 h-16 md:w-20 md:h-20 ${
+                                subjectConfig.color === 'blue' ? 'bg-[#40C9FF]' : 
+                                subjectConfig.color === 'purple' ? 'bg-[#BD7AF5]' :
+                                subjectConfig.color === 'red' ? 'bg-[#FF7A8A]' :
+                                subjectConfig.color === 'emerald' ? 'bg-[#4ADE80]' :
+                                subjectConfig.color === 'amber' ? 'bg-[#FBBF24]' :
+                                subjectConfig.color === 'indigo' ? 'bg-[#818CF8]' :
+                                subjectConfig.color === 'orange' ? 'bg-[#FB923C]' :
+                                'bg-[#22D3EE]'
+                            } rounded-3xl flex items-center justify-center shadow-xl transition-all duration-500 relative z-10 group-hover:scale-110`}>
+                                {React.createElement(subjectConfig.icon, { className: "w-8 h-8 md:w-10 md:h-10 text-white" })}
+                            </div>
+                            
+                            <div className="relative z-10 mt-6 px-4">
+                                <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors">Vol 1.0</h3>
+                                <p className="text-[0.55rem] font-bold text-slate-300 uppercase mt-1">Official Publication</p>
+                            </div>
+                        </button>
+                    )}
 
-                {/* Dynamic Textbooks */}
-                {dynamicBooks.map((b) => (
-                    <button 
-                        key={b.id}
-                        onClick={() => setViewer({ isOpen: true, url: b.link_url || b.file_url, title: b.title })}
-                        className="group relative flex flex-col items-center justify-center aspect-square bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-50 shadow-[0_15px_40px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.05] transition-all duration-500 overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity" />
-                        
-                        <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-500 rounded-3xl flex items-center justify-center shadow-2xl transition-all duration-500 relative z-10 group-hover:scale-110">
-                            <Library className="w-8 h-8 md:w-10 md:h-10 text-white" />
-                        </div>
-                        
-                        <div className="relative z-10 mt-4 md:mt-6 text-center px-4">
-                            <h3 className="text-[0.65rem] md:text-[0.75rem] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900 transition-colors truncate w-full">{b.title}</h3>
-                        </div>
-                        
-                        <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-slate-100 group-hover:bg-indigo-400 transition-colors" />
-                    </button>
-                ))}
-            </div>
-
-            {dynamicBooks.length === 0 && !staticLink && (
-                <div className="text-center py-20 opacity-30">
-                    <Pin className="w-12 h-12 mx-auto mb-4" />
-                    <p className="font-black uppercase tracking-widest text-xs">No textbooks available yet</p>
+                    {/* Secondary Link Books */}
+                    {dynamicBooks.map((b) => (
+                        <button 
+                            key={b.id}
+                            onClick={() => setViewer({ isOpen: true, url: b.link_url || b.file_url, title: b.title })}
+                            className="group relative flex flex-col items-center justify-center aspect-[4/5] bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.08)] hover:translate-y-[-5px] transition-all duration-500 overflow-hidden text-center"
+                        >
+                            <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity" />
+                            
+                            <div className="w-16 h-16 md:w-20 md:h-20 bg-indigo-500 rounded-3xl flex items-center justify-center shadow-xl transition-all duration-500 relative z-10 group-hover:scale-110">
+                                <Library className="w-8 h-8 md:w-10 md:h-10 text-white" />
+                            </div>
+                            
+                            <div className="relative z-10 mt-6 px-4 w-full">
+                                <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors line-clamp-1">{b.title}</h3>
+                                <p className="text-[0.55rem] font-bold text-slate-300 uppercase mt-1">Reference Material</p>
+                            </div>
+                        </button>
+                    ))}
                 </div>
-            )}
+
+                {dynamicBooks.length === 0 && !staticLink && (
+                    <div className="flex flex-col items-center justify-center py-32 opacity-20">
+                        <BookOpen className="w-20 h-20 text-slate-300 stroke-[1]" />
+                        <p className="text-[0.7rem] font-black uppercase tracking-[0.4em] mt-8">Secure Archive Empty</p>
+                    </div>
+                )}
+            </div>
 
             <BookViewer 
                 isOpen={viewer.isOpen}
