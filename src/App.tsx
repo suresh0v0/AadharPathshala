@@ -3699,7 +3699,7 @@ const ProfilePage = () => {
     // Admin logic
     const adminEmails = ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'];
     const isAdmin = user?.email && (
-        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email) || 
+        adminEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
         user.email.toLowerCase().includes('ashish')
     );
 
@@ -5610,16 +5610,16 @@ const NotePadPage = () => {
                         <p className="text-[0.6rem] font-black text-amber-500 uppercase tracking-widest mt-1">Thought Capture Engine</p>
                     </div>
                 </div>
-                <div className="flex bg-slate-100 p-1 rounded-2xl w-full md:w-auto overflow-x-auto custom-scrollbar shadow-inner hidden md:flex">
+                <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-inner">
                     <button 
                         onClick={() => setMode('library')}
-                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap", mode === 'library' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
+                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none", mode === 'library' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
                     >
                         Archives
                     </button>
                     <button 
                         onClick={newNote}
-                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap", mode === 'editor' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
+                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none", mode === 'editor' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
                     >
                         Compose
                     </button>
@@ -6405,7 +6405,7 @@ const AdminPortalPage = () => {
     });
 
     const isAdminEmail = user?.email && (
-        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].includes(user.email) || 
+        ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'].map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
         user.email.toLowerCase().includes('ashish')
     );
 
@@ -6428,19 +6428,22 @@ const AdminPortalPage = () => {
             const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
             const filePath = `${fileName}`;
 
-            const { error: uploadError, data } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
                 .from(bucket)
                 .upload(filePath, file, {
                     cacheControl: '3600',
-                    upsert: false
+                    upsert: true // Changed to true to overwrite if retrying
                 });
 
             if (uploadError) {
                 console.error("Storage upload error detailed:", uploadError);
-                if (uploadError.message.includes("not found")) {
-                    throw new Error(`Bucket '${bucket}' not found. Please create it in Supabase Storage with 'Public' access.`);
+                if (uploadError.message.includes("not found") || uploadError.message.includes("bucket_id")) {
+                    throw new Error(`Bucket '${bucket}' is missing. Go to Supabase Storage -> New Bucket -> name it 'official-assets' -> set to Public.`);
                 }
-                throw new Error(`Upload failed: ${uploadError.message}`);
+                if (uploadError.message.includes("row-level security") || uploadError.message.includes("permission denied")) {
+                    throw new Error(`Upload Denied: Need a permission policy in Storage for bucket '${bucket}'.`);
+                }
+                throw new Error(`Upload System Error: ${uploadError.message}`);
             }
 
             const { data: { publicUrl } } = supabase.storage
@@ -7148,9 +7151,10 @@ const AppProvider = ({ children }: any) => {
     };
 
     const fetchUserStats = async (userId: string) => {
+        if (!userId) return;
         try {
-            // First check user_profiles table
-            const { data: profile } = await supabase
+            // Check profiles
+            const { data: profile, error: profileErr } = await supabase
                 .from('user_profiles')
                 .select('*')
                 .eq('user_id', userId)
@@ -7170,34 +7174,15 @@ const AppProvider = ({ children }: any) => {
                 return;
             }
 
-            // Fallback: Calculate from activity if profile table is empty/missing
-            const { data: activity, error: activityError } = await supabase
+            // Fallback to notes count
+            const { data: activity } = await supabase
                 .from('notes')
                 .select('created_at')
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false });
+                .eq('user_id', userId);
             
-            if (!activityError && activity) {
-                calculateAndSetStats(activity, userId);
-            } else {
-                throw new Error("Activity fetch failed");
-            }
+            if (activity) calculateAndSetStats(activity, userId);
         } catch (err) {
-            console.error('Error fetching user stats:', err);
-            // Absolute fallback to localStorage
-            const localUserStatsStr = localStorage.getItem(`user_stats_${userId}`);
-            if (localUserStatsStr) {
-                const localUserStats = JSON.parse(localUserStatsStr);
-                setUser(prev => prev ? {
-                    ...prev,
-                    xp: localUserStats.xp || localUserStats.xp === 0 ? localUserStats.xp : (prev.xp || 0),
-                    streak: localUserStats.streak || 0,
-                    badges: localUserStats.badges || prev.badges,
-                    testsCompleted: localUserStats.testsCompleted || 0,
-                    avgScore: localUserStats.avgScore || 0,
-                    completedChapters: localUserStats.completedChapters || []
-                } : null);
-            }
+            console.warn('Silent failure on stats fetch - likely missing tables.');
         }
     };
 

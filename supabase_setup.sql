@@ -68,13 +68,12 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 );
 
 -- 3. ADMIN CHECK FUNCTION
--- Replace with actual admin emails
 CREATE OR REPLACE FUNCTION is_admin() 
 RETURNS boolean AS $$
 BEGIN
   RETURN (
-    auth.jwt() ->> 'email' IN ('admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com') OR
-    auth.jwt() ->> 'email' LIKE '%ashish%'
+    LOWER(auth.jwt() ->> 'email') IN ('admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com') OR
+    LOWER(auth.jwt() ->> 'email') LIKE '%ashish%'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
