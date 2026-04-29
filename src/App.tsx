@@ -4321,8 +4321,6 @@ const ModelList = () => {
                         <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest">Model sets are being developed.</p>
                     </div>
                 )}
-
-                {/* Static Content removal check */}
             </div>
         </div>
     );
@@ -4334,9 +4332,8 @@ const getDirectPdfUrl = (url: string) => {
     if (url.includes('drive.google.com')) {
         const match = url.match(/\/d\/([^\/]+)/);
         if (match && match[1]) {
-            // Using a different proxy with a cache buster to avoid 408 timeouts
-            const googleUrl = `https://drive.google.com/uc?export=download&id=${match[1]}&t=${Date.now()}`;
-            return `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(googleUrl)}`;
+            // Raw Google Drive download link - we'll wrap it in a proxy during fetch for better control
+            return `https://drive.google.com/uc?export=download&id=${match[1]}&t=${Date.now()}`;
         }
     }
     return url;
@@ -4352,30 +4349,78 @@ const getPreviewUrl = (url: string) => {
     return url;
 };
 
-/** ── BOOK VIEWER COMPONENT ── */
 const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
     const [numPages, setNumPages] = useState<number | null>(null);
-    const [pageNumber, setPageNumber] = useState(1);
     const [loadError, setLoadError] = useState(false);
+    const [downloadProgress, setDownloadProgress] = useState(0);
+    const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
-        setPageNumber(1);
         setLoadError(false);
     };
 
     const directUrl = getDirectPdfUrl(url);
     const previewUrl = getPreviewUrl(url);
 
-    const paginate = (newDirection: number) => {
-        if (!numPages) return;
-        const nextPage = pageNumber + newDirection;
-        if (nextPage >= 1 && nextPage <= numPages) {
-            setPageNumber(nextPage);
-        }
-    };
+    // High-Speed Data Streaming & Real-time Progress Tracking
+    useEffect(() => {
+        if (!isOpen || !url) return;
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-    // Keyboard support
+        const fetchPdf = async () => {
+            setDownloadProgress(0);
+            setLoadError(false);
+            setPdfData(null);
+
+            try {
+                // Using corsproxy.io as the primary node - it's generally more stable for GDrive redirects
+                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(directUrl)}`;
+                const response = await fetch(proxyUrl, { signal: controller.signal });
+                
+                if (!response.ok) throw new Error('CORS Handshake Rejected');
+                
+                const contentLength = response.headers.get('content-length');
+                const total = contentLength ? parseInt(contentLength, 10) : 0;
+                
+                const reader = response.body?.getReader();
+                if (!reader) throw new Error('Data Stream Unreadable');
+                
+                let loaded = 0;
+                const chunks = [];
+                
+                while(true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.length;
+                    
+                    if (total) {
+                        setDownloadProgress(Math.floor((loaded / total) * 100));
+                    } else {
+                        setDownloadProgress(p => Math.min(p + 1, 99));
+                    }
+                }
+                
+                const blob = new Blob(chunks, { type: 'application/pdf' });
+                const arrayBuffer = await blob.arrayBuffer();
+                setPdfData(new Uint8Array(arrayBuffer));
+                setDownloadProgress(100);
+            } catch (err) {
+                console.warn("Switching to Cloud Relay Mode:", err);
+                // On failure, we don't treat it as "Broken" but as "Switching mode"
+                setLoadError(true);
+            } finally {
+                clearTimeout(timeoutId);
+            }
+        };
+        
+        fetchPdf();
+        return () => controller.abort();
+    }, [isOpen, directUrl, url]);
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (!isOpen) return;
@@ -4401,14 +4446,14 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                 >
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
-                            <Book className="w-5 h-5 md:w-6 md:h-6" />
+                            {pdfData ? <Book className="w-5 h-5 md:w-6 md:h-6" /> : <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
                         </div>
                         <div className="min-w-0">
-                            <h3 className="text-[0.8rem] md:text-lg font-black text-slate-900 uppercase tracking-tighter truncate max-w-[150px] md:max-w-2xl italic leading-tight">{title}</h3>
+                            <h3 className="text-[0.8rem] md:text-lg font-black text-slate-800 uppercase tracking-tighter truncate max-w-[150px] md:max-w-2xl italic leading-tight">{title}</h3>
                             <div className="flex items-center gap-2 mt-0.5">
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                <p className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">
-                                    {numPages ? `${numPages} Digital Frames Synchronized` : 'Initiating Optical Stream'}
+                                <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-500 ${pdfData ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                                <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">
+                                    {pdfData ? `${numPages} Frames Online` : `Synchronizing: ${downloadProgress}%`}
                                 </p>
                             </div>
                         </div>
@@ -4430,72 +4475,44 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                     </div>
                 </div>
 
-                {/* Progress Bar for Loading Entire Document */}
-                {!numPages && !loadError && (
-                    <div className="w-full h-1 bg-slate-100 overflow-hidden shrink-0">
-                        <motion.div 
-                            className="h-full bg-indigo-500"
-                            initial={{ x: '-100%' }}
-                            animate={{ x: '100%' }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                        />
-                    </div>
-                )}
-
                 {/* Vertical Scroll Viewer Shell */}
-                <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-100/50 flex flex-col items-center py-8 md:py-12 scroll-smooth custom-scrollbar">
+                <div className="flex-1 relative overflow-y-auto overflow-x-hidden bg-slate-50 flex flex-col items-center py-6 md:py-16 scroll-smooth custom-scrollbar">
                     {loadError ? (
-                        <div className="w-full h-full max-w-5xl px-6 relative z-10">
+                        <div className="w-full h-full max-w-5xl px-4 md:px-10 relative z-10">
                             <iframe 
                                 src={previewUrl} 
-                                className="w-full h-[85vh] rounded-[2rem] shadow-2xl border-none bg-white"
-                                title="Cloud Relay Viewer"
+                                className="w-full h-[88vh] rounded-3xl shadow-2xl border-none bg-white"
+                                title="Fallback Data Stream"
                             />
                         </div>
-                    ) : (
+                    ) : ( pdfData ? (
                         <Document
-                            file={directUrl}
+                            file={pdfData}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={() => setLoadError(true)}
-                            loading={
-                                <div className="flex flex-col items-center justify-center min-h-[60vh] gap-10">
-                                    <div className="relative">
-                                        {/* Aesthetic Loader */}
-                                        <div className="w-24 h-24 rounded-full border-2 border-indigo-50 animate-pulse flex items-center justify-center">
-                                            <div className="w-16 h-16 rounded-full border-t-2 border-indigo-500 animate-spin" />
-                                        </div>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <BookOpen className="w-7 h-7 text-indigo-200 animate-bounce" />
-                                        </div>
-                                    </div>
-                                    <div className="text-center space-y-3">
-                                        <h4 className="text-[0.7rem] font-bold text-slate-800 uppercase tracking-[0.5em] animate-pulse">Syncing Archive</h4>
-                                        <div className="flex items-center gap-2 justify-center">
-                                            <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Optimizing high-def frames</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                            className="flex flex-col items-center gap-8 md:gap-16 w-full"
+                            className="flex flex-col items-center gap-6 md:gap-12 w-full"
                         >
                             {numPages && Array.from(new Array(numPages), (_, index) => (
                                 <motion.div
                                     key={`page_${index + 1}`}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ margin: "100px 0px" }}
-                                    className="relative px-4"
+                                    initial={{ opacity: 0, scale: 0.98, y: 15 }}
+                                    whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                                    viewport={{ margin: "150px 0px", once: true }}
+                                    className="relative px-3 md:px-6 w-full flex flex-col items-center"
                                 >
-                                    <div className="relative group">
+                                    <div className="relative group max-w-full">
                                         <Page 
                                             pageNumber={index + 1} 
-                                            width={Math.min(window.innerWidth * 0.92, 850)}
+                                            width={Math.min(window.innerWidth * 0.94, index === 0 ? 900 : 850)}
                                             renderAnnotationLayer={false}
-                                            renderTextLayer={true}
-                                            className="shadow-[0_10px_40px_rgba(30,41,59,0.05)] md:shadow-[0_40px_100px_rgba(30,41,59,0.08)] rounded-xl md:rounded-3xl overflow-hidden border border-white/50 transition-transform duration-700 bg-white"
+                                            renderTextLayer={false}
+                                            className="shadow-[0_15px_45px_rgba(30,41,59,0.06)] md:shadow-[0_50px_100px_rgba(30,41,59,0.1)] rounded-2xl md:rounded-[2.5rem] overflow-hidden border border-white/60 bg-white"
                                             loading={
-                                                <div className="bg-white/50 animate-pulse rounded-xl md:rounded-3xl h-[400px] md:h-[1100px] flex items-center justify-center">
-                                                    <div className="w-8 h-8 rounded-full border-b-2 border-indigo-200 animate-spin" />
+                                                <div className="bg-white/80 rounded-2xl md:rounded-[2.5rem] h-[550px] md:h-[1100px] w-full max-w-[850px] flex items-center justify-center">
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-full border-2 border-indigo-50 border-t-indigo-500 animate-spin" />
+                                                        <span className="text-[0.5rem] font-black text-slate-300 uppercase tracking-widest">Decoding Node</span>
+                                                    </div>
                                                 </div>
                                             }
                                         />
@@ -4511,7 +4528,39 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                                 </motion.div>
                             ))}
                         </Document>
-                    )}
+                    ) : (
+                        <div className="flex flex-col items-center justify-center min-h-[70vh] w-full px-10 gap-12">
+                            <div className="relative">
+                                <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-[3px] border-slate-100 flex items-center justify-center">
+                                    <motion.div
+                                        animate={{ 
+                                            rotate: 360, 
+                                            borderColor: ['#6366f1', '#a855f7', '#ec4899', '#6366f1']
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                        className="absolute inset-0 rounded-full border-t-[3px] border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]"
+                                    />
+                                    <BookOpen className="w-10 h-10 md:w-12 md:h-12 text-indigo-500/80 animate-pulse" />
+                                </div>
+                            </div>
+                            
+                            <div className="w-full max-w-xs space-y-5">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse italic">Hyper-Sync Active</span>
+                                    <span className="text-[0.55rem] font-bold text-indigo-500 uppercase tracking-widest">{downloadProgress}%</span>
+                                </div>
+                                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden p-[2px]">
+                                    <motion.div 
+                                        className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+                                        initial={{ width: "0%" }}
+                                        animate={{ width: `${downloadProgress}%` }}
+                                        transition={{ type: "spring", stiffness: 50, damping: 20 }}
+                                    />
+                                </div>
+                                <p className="text-center text-[0.5rem] font-bold text-slate-300 uppercase tracking-[0.3em] font-mono">Streaming digital assets from encrypted node...</p>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </motion.div>
         </AnimatePresence>
