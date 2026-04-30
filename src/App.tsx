@@ -62,9 +62,14 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
                 alt="Aadhar Pathshala Logo" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                    // Fallback to stylized SVG if image fails
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement?.classList.add('bg-black');
+                    // Try relative path if absolute fails
+                    const target = e.currentTarget;
+                    if (target.src.startsWith(window.location.origin + '/Logo.png')) {
+                        target.src = './Logo.png';
+                    } else {
+                        target.style.display = 'none';
+                        target.parentElement?.classList.add('bg-black');
+                    }
                 }}
             />
             <div className="absolute inset-0 bg-linear-to-tr from-black/[0.01] to-transparent pointer-events-none" />
@@ -3921,7 +3926,17 @@ const ProfilePage = () => {
                 >
                     <div className="w-20 h-20 sm:w-40 sm:h-40 rounded-[1.5rem] sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
                         {/* Forced App Logo as profile pic for now as requested */}
-                        <img src="/Logo.png" alt="App Logo" className="w-full h-full object-cover opacity-95 p-1" />
+                        <img 
+                            src="/Logo.png" 
+                            alt="App Logo" 
+                            className="w-full h-full object-cover opacity-95 p-1" 
+                            onError={(e) => {
+                                const target = e.currentTarget;
+                                if (target.src.includes('/Logo.png')) {
+                                    target.src = './Logo.png';
+                                }
+                            }}
+                        />
                     </div>
                     <motion.div 
                         initial={{ scale: 0 }}
@@ -3959,10 +3974,10 @@ const ProfilePage = () => {
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-                className="relative z-20 flex-1 bg-white rounded-t-[2rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-4 sm:pt-10 flex flex-col overflow-hidden"
+                className="relative z-20 flex-1 bg-white rounded-t-[2rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-4 sm:pt-6 flex flex-col overflow-hidden"
             >
-                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-hidden pb-4">
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-8">
+                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar pb-12 pr-1 scroll-smooth">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
                         <motion.div 
                             whileHover={{ y: -2 }}
                             className="bg-blue-50/50 p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-blue-100/50 flex flex-col items-center text-center"
