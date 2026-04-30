@@ -1,7 +1,7 @@
 import { create, all } from 'mathjs';
 const math = create(all);
 
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { 
   Home, BookOpen, MessageSquare, ListChecks, Newspaper, 
@@ -2159,7 +2159,8 @@ const AadharToolkit = () => {
             { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/translator' },
             { id: 'gpa', label: 'GPA Estimate', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
-            { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' }
+            { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
+            { id: 'pictures', label: 'Pictures', icon: ImageIcon, color: 'pink', path: '/tools/pictures' }
         ] : []),
     ];
 
@@ -3053,8 +3054,8 @@ const NepaliDictionaryPage = () => {
                                 <div className="pt-4 space-y-2">
                                     <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">समानार्थी शब्द (Synonyms)</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {result.synonyms.map((s: string) => (
-                                            <span key={s} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
+                                        {result.synonyms.map((s: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -3064,8 +3065,8 @@ const NepaliDictionaryPage = () => {
                                 <div className="pt-4 space-y-2">
                                     <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">विपरीतार्थी शब्द (Antonyms)</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {result.antonyms.map((a: string) => (
-                                            <span key={a} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
+                                        {result.antonyms.map((a: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -5142,8 +5143,8 @@ const DictionaryPage = () => {
                                 <div className="pt-4 space-y-2">
                                     <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">Synonyms</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {result.synonyms.map((s: string) => (
-                                            <span key={s} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
+                                        {result.synonyms.map((s: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -5153,8 +5154,8 @@ const DictionaryPage = () => {
                                 <div className="pt-4 space-y-2">
                                     <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">Antonyms</label>
                                     <div className="flex flex-wrap gap-2">
-                                        {result.antonyms.map((a: string) => (
-                                            <span key={a} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
+                                        {result.antonyms.map((a: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -6565,6 +6566,275 @@ const AdminPortalPage = () => {
     );
 };
 
+const ImageCard = ({ img, onClick }: { img: any, onClick: () => void }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    return (
+        <div 
+            onClick={onClick}
+            className="w-full break-inside-avoid rounded-2xl overflow-hidden cursor-pointer relative group bg-slate-100 shadow-sm inline-block"
+        >
+            {!isLoaded && (
+                <div className="w-full h-64 animate-pulse bg-slate-200" />
+            )}
+            <img 
+                src={img.webformatURL} 
+                alt="Student related" 
+                onLoad={() => setIsLoaded(true)}
+                className={`w-full h-auto transform group-hover:scale-105 transition-all duration-700 block ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                loading="lazy" 
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 pointer-events-none" />
+        </div>
+    );
+};
+
+const PicturesPage = () => {
+    const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [images, setImages] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    
+    const [selectedImage, setSelectedImage] = useState<any | null>(null);
+    const [similarImages, setSimilarImages] = useState<any[]>([]);
+    const [similarLoading, setSimilarLoading] = useState(false);
+    const [hasAttemptedSimilar, setHasAttemptedSimilar] = useState(false);
+
+    // Using provided client-side API key for prototyping
+    const API_KEY = '55653734-9bcb53c51c27b0c301beab7dc';
+    const DEFAULT_QUERY = 'education student learning handwritten diagram school';
+
+    const fetchImages = async (searchQuery: string, pageNum: number, isNewSearch: boolean = false) => {
+        if (isNewSearch) {
+            setLoading(true);
+            setImages([]);
+        } else {
+            setLoadingMore(true);
+        }
+        
+        try {
+            const currentQ = searchQuery.trim() || DEFAULT_QUERY;
+            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(currentQ)}&image_type=photo&per_page=30&page=${pageNum}`);
+            const data = await res.json();
+            
+            if (data.hits && data.hits.length > 0) {
+                setImages(prev => isNewSearch ? data.hits : [...prev, ...data.hits]);
+                setHasMore(data.hits.length === 30);
+            } else {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Failed to fetch images", error);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchImages(query, 1, true);
+        // eslint-disable-next-line
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setHasMore(true);
+        fetchImages(query, 1, true);
+        setSelectedImage(null);
+    };
+
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchImages(query, nextPage, false);
+        }
+    }, [loadingMore, hasMore, page, query]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) {
+                    loadMore();
+                }
+            },
+            { threshold: 0.1 }
+        );
+        const sentinel = document.getElementById('sentinel');
+        if (sentinel) observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, loadMore]);
+
+    const openImage = (img: any) => {
+        setSelectedImage(img);
+        setSimilarLoading(false);
+        setHasAttemptedSimilar(false);
+        setSimilarImages([]);
+    };
+
+    const loadSimilar = async () => {
+        if (!selectedImage) return;
+        setSimilarLoading(true);
+        setHasAttemptedSimilar(true);
+        
+        const firstTag = selectedImage.tags.split(',')[0].trim();
+        const searchTag = query.trim() || firstTag || 'study';
+        
+        try {
+            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(searchTag)}&image_type=photo&per_page=15`);
+            const data = await res.json();
+            setSimilarImages(data.hits?.filter((h: any) => h.id !== selectedImage.id) || []);
+        } catch (error) {
+            console.error("Failed to fetch similar images", error);
+        } finally {
+            setSimilarLoading(false);
+        }
+    };
+
+    const handleDownload = async (url: string, id: string) => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `student-pic-${id}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error("Download failed", error);
+            window.open(url, '_blank');
+        }
+    };
+
+    return (
+        <div className="pt-4 pb-20 relative">
+            <header className="mb-6 flex items-center justify-between">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">Pictures</h1>
+                </div>
+                <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 active:scale-90 transition-all">
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+            </header>
+
+            <div className="mb-6">
+                <form onSubmit={handleSearch}>
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input 
+                            type="text" 
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search topics (e.g. math diagram, essay notes)..."
+                            className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-slate-800 font-medium placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1D4ED8] shadow-sm"
+                        />
+                    </div>
+                </form>
+            </div>
+            
+            <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
+                {images.map((img, idx) => (
+                    <ImageCard key={`${img.id}-${idx}`} img={img} onClick={() => openImage(img)} />
+                ))}
+            </div>
+
+            {loading || loadingMore ? (
+                <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mt-4">
+                    {[...Array(6)].map((_, i) => (
+                        <div 
+                            key={i} 
+                            className="w-full bg-slate-200 animate-pulse rounded-2xl break-inside-avoid shadow-sm inline-block"
+                            style={{ height: `${Math.floor(Math.random() * (400 - 150 + 1) + 150)}px` }}
+                        />
+                    ))}
+                </div>
+            ) : null}
+
+            {/* Sentinel for infinite scroll */}
+            <div id="sentinel" className="h-10 mt-4" />
+
+            {/* Full-Screen Image Modal */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        id="pictures-modal"
+                        className="fixed inset-0 z-[2000] bg-white overflow-y-auto pb-20 custom-scrollbar"
+                    >
+                        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-100">
+                            <button onClick={() => setSelectedImage(null)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => handleDownload(selectedImage.largeImageURL, selectedImage.id)}
+                                    className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all active:scale-95"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
+                                <a href={selectedImage.pageURL} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
+                                    <ExternalLink className="w-4 h-4" />
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div className="max-w-4xl mx-auto px-4 pt-6 flex flex-col items-center">
+                            <div className="rounded-[2rem] overflow-hidden shadow-2xl mb-8 border border-slate-100 bg-slate-50 w-full">
+                                <img src={selectedImage.largeImageURL} alt="Detail" className="w-full h-auto block" />
+                            </div>
+                            
+                            <button
+                                onClick={() => handleDownload(selectedImage.largeImageURL, selectedImage.id)}
+                                className="mb-10 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 shadow-xl active:scale-95 transition-all hover:bg-black"
+                            >
+                                <Download className="w-5 h-5" />
+                                Download Full Image
+                            </button>
+                            
+                            {!hasAttemptedSimilar ? (
+                                <button 
+                                    onClick={loadSimilar}
+                                    className="w-full max-w-sm mb-12 py-5 border-2 border-slate-200 text-slate-600 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
+                                >
+                                    View More Like This
+                                </button>
+                            ) : (
+                                <div className="w-full">
+                                    <h4 className="text-2xl font-black text-[#020617] mb-6 italic tracking-tighter uppercase text-left">More like this</h4>
+                                    
+                                    {similarLoading ? (
+                                        <div className="flex justify-center py-10">
+                                            <RotateCw className="w-8 h-8 animate-spin text-slate-400" />
+                                        </div>
+                                    ) : (
+                                        <div className="columns-2 md:columns-3 gap-4 space-y-4">
+                                            {similarImages.map((img, idx) => (
+                                                <ImageCard key={`${img.id}-${idx}`} img={img} onClick={() => {
+                                                    const modalScroll = document.getElementById('pictures-modal');
+                                                    if (modalScroll) modalScroll.scrollTo({ top: 0, behavior: 'smooth' });
+                                                    openImage(img);
+                                                }} />
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 const AppContent = () => {
     const { user } = useApp();
 
@@ -6606,6 +6876,7 @@ const AppContent = () => {
                 <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
                 <Route path="/tools/translator" element={<TranslatorPage />} />
                 <Route path="/tools/flashcards" element={<FlashcardApp />} />
+                <Route path="/tools/pictures" element={<PicturesPage />} />
             </Routes>
         </Layout>
     );
