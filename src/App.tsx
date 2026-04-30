@@ -62,10 +62,14 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
                 alt="Aadhar Pathshala Logo" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                    // Try relative path if absolute fails
                     const target = e.currentTarget;
-                    if (target.src.startsWith(window.location.origin + '/Logo.png')) {
-                        target.src = './Logo.png';
+                    // Try multiple possible paths before giving up
+                    const paths = ['./Logo.png', 'Logo.png', '/logo.png', './logo.png'];
+                    const currentIdx = parseInt(target.dataset.errorIdx || '0');
+                    
+                    if (currentIdx < paths.length) {
+                        target.dataset.errorIdx = (currentIdx + 1).toString();
+                        target.src = paths[currentIdx];
                     } else {
                         target.style.display = 'none';
                         target.parentElement?.classList.add('bg-black');
@@ -3903,19 +3907,19 @@ const ProfilePage = () => {
             <div className="absolute inset-0 bg-linear-to-br from-sky-100/50 via-white to-blue-50/50" />
             
             {/* Header / Backdrop Area */}
-            <div className="relative pt-6 sm:pt-20 px-6 sm:px-10 pb-6 flex flex-col items-center z-10">
-                <div className="w-full max-w-md flex justify-between items-center mb-4 sm:mb-8">
+            <div className="relative pt-4 sm:pt-20 px-6 sm:px-10 pb-4 flex flex-col items-center z-10 shrink-0">
+                <div className="w-full max-w-md flex justify-between items-center mb-2 sm:mb-8">
                     <motion.button 
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => navigate(-1)} 
-                        className="w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-slate-800 shadow-sm border border-white/50"
+                        className="w-9 h-9 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-800 shadow-sm border border-white/50"
                     >
-                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
                     </motion.button>
                     <div className="flex flex-col items-end">
-                        <span className="text-[0.55rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#1D4ED8]">Account</span>
-                        <span className="text-[0.55rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#EF4444]">Verified</span>
+                        <span className="text-[0.5rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#1D4ED8]">Account</span>
+                        <span className="text-[0.5rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#EF4444]">Verified</span>
                     </div>
                 </div>
 
@@ -3924,7 +3928,7 @@ const ProfilePage = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     className="relative"
                 >
-                    <div className="w-20 h-20 sm:w-40 sm:h-40 rounded-[1.5rem] sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
+                    <div className="w-16 h-16 sm:w-40 sm:h-40 rounded-2xl sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
                         {/* Forced App Logo as profile pic for now as requested */}
                         <img 
                             src="/Logo.png" 
@@ -3932,8 +3936,11 @@ const ProfilePage = () => {
                             className="w-full h-full object-cover opacity-95 p-1" 
                             onError={(e) => {
                                 const target = e.currentTarget;
-                                if (target.src.includes('/Logo.png')) {
-                                    target.src = './Logo.png';
+                                const paths = ['./Logo.png', 'Logo.png', '/logo.png', './logo.png'];
+                                const currentIdx = parseInt(target.dataset.errorIdx || '0');
+                                if (currentIdx < paths.length) {
+                                    target.dataset.errorIdx = (currentIdx + 1).toString();
+                                    target.src = paths[currentIdx];
                                 }
                             }}
                         />
@@ -3942,19 +3949,19 @@ const ProfilePage = () => {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.5, type: 'spring' }}
-                        className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-12 sm:h-12 bg-[#EF4444] text-white rounded-lg sm:rounded-2xl border-2 sm:border-4 border-white flex items-center justify-center shadow-lg z-20"
+                        className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-12 sm:h-12 bg-[#EF4444] text-white rounded-lg sm:rounded-2xl border-2 sm:border-4 border-white flex items-center justify-center shadow-lg z-20"
                     >
-                        <ShieldCheck className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+                        <ShieldCheck className="w-3 h-3 sm:w-6 sm:h-6" />
                     </motion.div>
                     <div className="absolute -inset-4 bg-white/20 blur-2xl rounded-full -z-10" />
                 </motion.div>
 
-                <div className="mt-4 sm:mt-8 text-center max-w-xs">
+                <div className="mt-2 sm:mt-8 text-center max-w-xs">
                     <motion.h1 
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.2 }}
-                        className="text-xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-1 sm:mb-2"
+                        className="text-lg sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-0.5 sm:mb-2"
                     >
                         {user?.name || 'Aadhar Scholar'}
                     </motion.h1>
@@ -3962,7 +3969,7 @@ const ProfilePage = () => {
                         initial={{ y: 10, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.3 }}
-                        className="text-[0.65rem] sm:text-sm font-bold text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full inline-block"
+                        className="text-[0.6rem] sm:text-sm font-bold text-slate-500 uppercase tracking-widest bg-slate-100/50 px-2.5 py-0.5 sm:px-4 sm:py-1.5 rounded-full inline-block"
                     >
                         {user?.email || 'guest@learn'}
                     </motion.p>
@@ -3974,29 +3981,29 @@ const ProfilePage = () => {
                 initial={{ y: "100%" }}
                 animate={{ y: 0 }}
                 transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-                className="relative z-20 flex-1 bg-white rounded-t-[2rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-4 sm:pt-6 flex flex-col overflow-hidden"
+                className="relative z-20 flex-1 bg-white rounded-t-[1.5rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-3 sm:pt-6 flex flex-col overflow-hidden"
             >
-                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar pb-12 pr-1 scroll-smooth">
-                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-6">
+                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar pb-6 pr-1 scroll-smooth min-h-0">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-2 sm:mb-6">
                         <motion.div 
                             whileHover={{ y: -2 }}
-                            className="bg-blue-50/50 p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-blue-100/50 flex flex-col items-center text-center"
+                            className="bg-blue-50/50 p-2 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-blue-100/50 flex flex-col items-center text-center"
                         >
-                            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#1D4ED8] mb-1 sm:mb-3">
-                                <Trophy className="w-4 h-4 sm:w-6 sm:h-6" />
+                            <div className="w-7 h-7 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#1D4ED8] mb-1 sm:mb-3">
+                                <Trophy className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
                             </div>
-                            <span className="text-[0.5rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">XP Points</span>
-                            <span className="text-base sm:text-xl font-black text-[#1D4ED8]">{user?.xp || 1250}</span>
+                            <span className="text-[0.45rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">XP Points</span>
+                            <span className="text-sm sm:text-xl font-black text-[#1D4ED8]">{user?.xp || 1250}</span>
                         </motion.div>
                         <motion.div 
                             whileHover={{ y: -2 }}
-                            className="bg-red-50/50 p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-red-100/50 flex flex-col items-center text-center"
+                            className="bg-red-50/50 p-2 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-red-100/50 flex flex-col items-center text-center"
                         >
-                            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#EF4444] mb-1 sm:mb-3">
-                                <Zap className="w-4 h-4 sm:w-6 sm:h-6" />
+                            <div className="w-7 h-7 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#EF4444] mb-1 sm:mb-3">
+                                <Zap className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
                             </div>
-                            <span className="text-[0.5rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">Day Streak</span>
-                            <span className="text-base sm:text-xl font-black text-[#EF4444]">{user?.streak || 5}</span>
+                            <span className="text-[0.45rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">Day Streak</span>
+                            <span className="text-sm sm:text-xl font-black text-[#EF4444]">{user?.streak || 5}</span>
                         </motion.div>
                     </div>
 
@@ -4012,25 +4019,25 @@ const ProfilePage = () => {
                                 initial={{ opacity: 0, x: -10 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.4 + (idx * 0.1) }}
-                                className="flex items-center justify-between p-3 sm:p-5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-3xl group hover:bg-white hover:shadow-md transition-all"
+                                className="flex items-center justify-between p-2.5 sm:p-5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-3xl group hover:bg-white hover:shadow-md transition-all"
                             >
                                 <div className="flex items-center gap-2 sm:gap-4">
-                                    <div className="w-7 h-7 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#1D4ED8] transition-colors shadow-sm">
-                                        <item.icon className="w-3.5 h-3.5 sm:w-5 h-5" />
+                                    <div className="w-6 h-6 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#1D4ED8] transition-colors shadow-sm">
+                                        <item.icon className="w-3 h-3 sm:w-5 h-5" />
                                     </div>
-                                    <span className="text-[0.55rem] sm:text-[0.7rem] font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
+                                    <span className="text-[0.5rem] sm:text-[0.7rem] font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
                                 </div>
-                                <span className="text-[0.6rem] sm:text-[0.75rem] font-black text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{item.value}</span>
+                                <span className="text-[0.55rem] sm:text-[0.75rem] font-black text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{item.value}</span>
                             </motion.div>
                         ))}
                     </div>
 
-                    <div className="mt-auto pt-4 flex flex-col gap-2">
-                        <button className="w-full py-3.5 sm:py-6 bg-[#16423C] text-white rounded-2xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.55rem] sm:text-[0.65rem] shadow-lg shadow-[#16423C]/20 active:scale-95 transition-all">
+                    <div className="mt-3 pt-2 flex flex-col gap-2">
+                        <button className="w-full py-3 sm:py-6 bg-[#16423C] text-white rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.5rem] sm:text-[0.65rem] shadow-lg shadow-[#16423C]/20 active:scale-95 transition-all">
                             Update Core Profile
                         </button>
                         
-                        <button onClick={() => { setUser(null); navigate('/login'); }} className="w-full py-3 sm:py-4 bg-white text-slate-400 rounded-2xl sm:rounded-[2rem] border border-slate-100 font-black uppercase tracking-[0.2em] text-[0.5rem] sm:text-[0.6rem] hover:text-[#EF4444] transition-all">
+                        <button onClick={() => { setUser(null); navigate('/login'); }} className="w-full py-2.5 sm:py-4 bg-white text-slate-400 rounded-xl sm:rounded-[2rem] border border-slate-100 font-black uppercase tracking-[0.2em] text-[0.45rem] sm:text-[0.6rem] hover:text-[#EF4444] transition-all">
                             Sign Out Account
                         </button>
                     </div>
