@@ -51,47 +51,22 @@ function cn(...inputs: ClassValue[]) {
 
 /* ── LOGO COMPONENT ── */
 const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg", className?: string }) => {
-    // Making the hat bigger relative to the container as requested
-    const iconSize = size === 'sm' ? '24' : size === 'md' ? '54' : '72';
-    
     return (
         <div className={cn(
             "relative flex items-center justify-center overflow-hidden bg-white border border-slate-100",
             size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-20 h-20 rounded-[2.5rem]' : 'w-28 h-28 rounded-[3rem]',
             className
         )}>
-            <svg 
-                width={iconSize} 
-                height={iconSize} 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-black"
-            >
-                <path 
-                    d="M22 10L12 5L2 10L12 15L22 10Z" 
-                    fill="currentColor" 
-                    stroke="currentColor" 
-                    strokeWidth="1.2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                />
-                <path 
-                    d="M6 12.5V16C6 16 8.5 19 12 19C15.5 19 18 16 18 16V12.5" 
-                    stroke="currentColor" 
-                    strokeWidth="1.2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                />
-                <path 
-                    d="M22 10V16" 
-                    stroke="currentColor" 
-                    strokeWidth="1.2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                />
-                <circle cx="22" cy="16" r="1.2" fill="currentColor" />
-            </svg>
+            <img 
+                src="/Logo.png" 
+                alt="Aadhar Pathshala Logo" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                    // Fallback to stylized SVG if image fails
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('bg-black');
+                }}
+            />
             <div className="absolute inset-0 bg-linear-to-tr from-black/[0.01] to-transparent pointer-events-none" />
         </div>
     );
@@ -3914,140 +3889,138 @@ const LoginPage = () => {
 
 /* ── PROFILE PAGE ── */
 const ProfilePage = () => {
-    const { user } = useApp();
+    const { user, setUser } = useApp();
     const navigate = useNavigate();
     
-    // Background cycle sync
-    const [colorIndex, setColorIndex] = useState(0);
-
-    const PROFILE_GRADIENTS = [
-        'from-blue-500 to-cyan-600',
-        'from-red-500 to-rose-600',
-        'from-emerald-500 to-green-600',
-        'from-yellow-400 to-amber-600',
-        'from-pink-500 to-fuchsia-600'
-    ];
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setColorIndex(prev => (prev + 1) % PROFILE_GRADIENTS.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, []);
-
     return (
-        <div className="relative flex flex-col items-center w-full min-h-screen pb-24 pt-4">
-            {/* Fixed Full Screen Background */}
-            <div className="fixed inset-0 z-0 bg-slate-900">
-                {PROFILE_GRADIENTS.map((grad, idx) => (
-                    <div 
-                        key={grad}
-                        className={cn(
-                            "absolute inset-0 bg-linear-to-br transition-opacity duration-1000",
-                            grad,
-                            idx === colorIndex ? "opacity-100" : "opacity-0"
-                        )}
-                    />
-                ))}
-                
-                {/* Visual Orbs based on image design */}
-                <div className="absolute top-[-5%] left-[-10%] w-[400px] h-[400px] bg-white/10 rounded-full blur-[80px]" />
-                <div className="absolute top-[20%] right-[-5%] w-[300px] h-[300px] bg-white/5 rounded-full blur-[60px]" />
-                <div className="absolute bottom-[-10%] left-[15%] w-[250px] h-[250px] bg-[#1E3A8A]/10 rounded-full blur-[70px]" />
-            </div>
-
-            <div className="w-full max-w-[560px] mx-auto relative z-10 flex px-4">
-                 <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white hover:bg-white/30 active:scale-95 transition-all border border-white/10 shadow-lg">
-                     <ArrowLeft className="w-6 h-6" />
-                 </button>
-            </div>
-
-            {/* Profile Identity - Unobstructed */}
-            <div className="relative z-10 flex flex-col items-center px-4">
-                <div className="relative group mb-6 mt-4">
-                    <div className="w-36 h-36 rounded-full border-[8px] border-white/30 overflow-hidden shadow-2xl bg-white transition-transform group-hover:scale-105 duration-500">
-                         {user?.photoURL ? (
-                            <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-[#F8FAFC] text-slate-300">
-                                <UserIcon className="w-16 h-16" />
-                            </div>
-                        )}
-                    </div>
-                    <div className="absolute bottom-0 right-2 w-10 h-10 bg-emerald-500 text-white rounded-full border-[4px] border-white flex items-center justify-center shadow-lg">
-                        <Check className="w-5 h-5 stroke-[4]" />
+        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col bg-[#F0F9FF]">
+            {/* Soft Blue Gradient Background */}
+            <div className="absolute inset-0 bg-linear-to-br from-sky-100/50 via-white to-blue-50/50" />
+            
+            {/* Header / Backdrop Area */}
+            <div className="relative pt-6 sm:pt-20 px-6 sm:px-10 pb-6 flex flex-col items-center z-10">
+                <div className="w-full max-w-md flex justify-between items-center mb-4 sm:mb-8">
+                    <motion.button 
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => navigate(-1)} 
+                        className="w-10 h-10 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-slate-800 shadow-sm border border-white/50"
+                    >
+                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                    </motion.button>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[0.55rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#1D4ED8]">Account</span>
+                        <span className="text-[0.55rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#EF4444]">Verified</span>
                     </div>
                 </div>
-                <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase drop-shadow-md text-center leading-none">
-                    {user?.name || 'Aadhar Scholar'}
-                </h1>
-                <p className="text-xs md:text-sm font-bold text-white/90 tracking-widest mt-4 bg-white/20 px-5 py-2 rounded-full backdrop-blur-md shadow-sm text-center">
-                    {user?.email || 'guest@aadhar.edu.np'}
-                </p>
-            </div>
 
-            {/* Content Container */}
-            <div className="relative z-20 w-full max-w-[560px] mx-auto px-4 mt-12 space-y-4">
-                
-                {/* Stats / Quick Actions (Glassmorphism instead of opaque white) */}
-                <div className="bg-white/95 backdrop-blur-3xl rounded-[3rem] p-8 border border-white shadow-2xl">
-                    <div className="grid grid-cols-3 gap-6 mb-8">
-                        <div className="flex flex-col items-center gap-3">
-                            <button className="w-16 h-16 rounded-[1.5rem] bg-pink-50 text-pink-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
-                                <Trophy className="w-7 h-7" />
-                            </button>
-                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Awards</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-3">
-                            <button className="w-16 h-16 rounded-[1.5rem] bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
-                                <Settings className="w-7 h-7" />
-                            </button>
-                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Config</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-3">
-                            <button className="w-16 h-16 rounded-[1.5rem] bg-orange-50 text-orange-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
-                                <Bell className="w-7 h-7" />
-                            </button>
-                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Alerts</span>
-                        </div>
+                <motion.div 
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="relative"
+                >
+                    <div className="w-20 h-20 sm:w-40 sm:h-40 rounded-[1.5rem] sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
+                        {/* Forced App Logo as profile pic for now as requested */}
+                        <img src="/Logo.png" alt="App Logo" className="w-full h-full object-cover opacity-95 p-1" />
                     </div>
+                    <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.5, type: 'spring' }}
+                        className="absolute -bottom-1 -right-1 w-7 h-7 sm:w-12 sm:h-12 bg-[#EF4444] text-white rounded-lg sm:rounded-2xl border-2 sm:border-4 border-white flex items-center justify-center shadow-lg z-20"
+                    >
+                        <ShieldCheck className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
+                    </motion.div>
+                    <div className="absolute -inset-4 bg-white/20 blur-2xl rounded-full -z-10" />
+                </motion.div>
 
-                    {/* Academic Profile Details */}
-                    <div className="space-y-1">
-                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Security</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Pin</span>
-                                <ChevronRight className="w-3 h-3 text-slate-300" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Academic Grade</span>
-                            <span className="text-xl font-black italic text-slate-900">{user?.grade || 'CLASS 10 (SEE)'}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Current Stream</span>
-                            <span className="text-[0.65rem] font-black text-slate-900 uppercase">Science & Tech</span>
-                        </div>
-                        
-                        <div className="flex items-center justify-between py-4 pb-2">
-                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Zap className="w-4 h-4 text-emerald-500 fill-emerald-500" /> Current Streak
-                            </span>
-                            <span className="text-2xl font-black text-slate-900 tabular-nums">{user?.streak || 0} DAYS</span>
-                        </div>
-                    </div>
-
-                    {/* Primary Action */}
-                    <button className="w-full mt-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-[0.65rem] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
-                        Update Identity Core
-                    </button>
+                <div className="mt-4 sm:mt-8 text-center max-w-xs">
+                    <motion.h1 
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-1 sm:mb-2"
+                    >
+                        {user?.name || 'Aadhar Scholar'}
+                    </motion.h1>
+                    <motion.p 
+                        initial={{ y: 10, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-[0.65rem] sm:text-sm font-bold text-slate-500 uppercase tracking-widest bg-slate-100/50 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full inline-block"
+                    >
+                        {user?.email || 'guest@learn'}
+                    </motion.p>
                 </div>
             </div>
             
-            <p className="relative z-10 text-center text-[0.55rem] font-black text-white/50 uppercase tracking-widest mt-10">Aadhar Pathshala • Secure Profile V.4.0</p>
+            {/* Profile Content Section */}
+            <motion.div 
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+                className="relative z-20 flex-1 bg-white rounded-t-[2rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-4 sm:pt-10 flex flex-col overflow-hidden"
+            >
+                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-hidden pb-4">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-3 sm:mb-8">
+                        <motion.div 
+                            whileHover={{ y: -2 }}
+                            className="bg-blue-50/50 p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-blue-100/50 flex flex-col items-center text-center"
+                        >
+                            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#1D4ED8] mb-1 sm:mb-3">
+                                <Trophy className="w-4 h-4 sm:w-6 sm:h-6" />
+                            </div>
+                            <span className="text-[0.5rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">XP Points</span>
+                            <span className="text-base sm:text-xl font-black text-[#1D4ED8]">{user?.xp || 1250}</span>
+                        </motion.div>
+                        <motion.div 
+                            whileHover={{ y: -2 }}
+                            className="bg-red-50/50 p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2.5rem] border border-red-100/50 flex flex-col items-center text-center"
+                        >
+                            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#EF4444] mb-1 sm:mb-3">
+                                <Zap className="w-4 h-4 sm:w-6 sm:h-6" />
+                            </div>
+                            <span className="text-[0.5rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">Day Streak</span>
+                            <span className="text-base sm:text-xl font-black text-[#EF4444]">{user?.streak || 5}</span>
+                        </motion.div>
+                    </div>
+
+                    <div className="space-y-1 sm:space-y-2">
+                        {[
+                            { label: 'Year', value: '2083 BS', icon: Calendar },
+                            { label: 'Grade', value: user?.grade || 'Class 10', icon: GraduationCap },
+                            { label: 'Status', value: 'Verified', icon: UserCheck },
+                            { label: 'Mode', value: 'High Level', icon: Lock },
+                        ].map((item, idx) => (
+                            <motion.div 
+                                key={item.label}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.4 + (idx * 0.1) }}
+                                className="flex items-center justify-between p-3 sm:p-5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-3xl group hover:bg-white hover:shadow-md transition-all"
+                            >
+                                <div className="flex items-center gap-2 sm:gap-4">
+                                    <div className="w-7 h-7 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#1D4ED8] transition-colors shadow-sm">
+                                        <item.icon className="w-3.5 h-3.5 sm:w-5 h-5" />
+                                    </div>
+                                    <span className="text-[0.55rem] sm:text-[0.7rem] font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
+                                </div>
+                                <span className="text-[0.6rem] sm:text-[0.75rem] font-black text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{item.value}</span>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    <div className="mt-auto pt-4 flex flex-col gap-2">
+                        <button className="w-full py-3.5 sm:py-6 bg-[#16423C] text-white rounded-2xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.55rem] sm:text-[0.65rem] shadow-lg shadow-[#16423C]/20 active:scale-95 transition-all">
+                            Update Core Profile
+                        </button>
+                        
+                        <button onClick={() => { setUser(null); navigate('/login'); }} className="w-full py-3 sm:py-4 bg-white text-slate-400 rounded-2xl sm:rounded-[2rem] border border-slate-100 font-black uppercase tracking-[0.2em] text-[0.5rem] sm:text-[0.6rem] hover:text-[#EF4444] transition-all">
+                            Sign Out Account
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
         </div>
     );
 };
@@ -4720,7 +4693,7 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                         </div>
                     ) : ( pdfData ? (
                         <Document
-                            file={pdfData}
+                            file={pdfData as any}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={() => setLoadError(true)}
                             className="flex flex-col items-center gap-6 md:gap-12 w-full"
