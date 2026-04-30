@@ -213,3 +213,22 @@
   75% { transform: rotate(10deg); }
 }
 
+/* Hide Vercel Toolbar */
+#vercel-live-feedback, 
+.vercel-toolbar,
+[data-vercel-toolbar],
+.vercel-toolbar-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.1);
+  border-radius: 10px;
+}
+
