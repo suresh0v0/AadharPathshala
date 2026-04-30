@@ -41,6 +41,8 @@ import {
 } from 'recharts';
 import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
+import AppLogo from './assets/Logo.png';
+const LogoImg = AppLogo;
 
 /**
  * Utility for Tailwind classes
@@ -58,22 +60,13 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
             className
         )}>
             <img 
-                src="/Logo.png" 
+                src={LogoImg} 
                 alt="Aadhar Pathshala Logo" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
                     const target = e.currentTarget;
-                    // Try multiple possible paths before giving up
-                    const paths = ['./Logo.png', 'Logo.png', '/logo.png', './logo.png'];
-                    const currentIdx = parseInt(target.dataset.errorIdx || '0');
-                    
-                    if (currentIdx < paths.length) {
-                        target.dataset.errorIdx = (currentIdx + 1).toString();
-                        target.src = paths[currentIdx];
-                    } else {
-                        target.style.display = 'none';
-                        target.parentElement?.classList.add('bg-black');
-                    }
+                    target.style.display = 'none';
+                    target.parentElement?.classList.add('bg-black');
                 }}
             />
             <div className="absolute inset-0 bg-linear-to-tr from-black/[0.01] to-transparent pointer-events-none" />
@@ -3931,17 +3924,12 @@ const ProfilePage = () => {
                     <div className="w-16 h-16 sm:w-40 sm:h-40 rounded-2xl sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
                         {/* Forced App Logo as profile pic for now as requested */}
                         <img 
-                            src="/Logo.png" 
+                            src={LogoImg} 
                             alt="App Logo" 
                             className="w-full h-full object-cover opacity-95 p-1" 
                             onError={(e) => {
                                 const target = e.currentTarget;
-                                const paths = ['./Logo.png', 'Logo.png', '/logo.png', './logo.png'];
-                                const currentIdx = parseInt(target.dataset.errorIdx || '0');
-                                if (currentIdx < paths.length) {
-                                    target.dataset.errorIdx = (currentIdx + 1).toString();
-                                    target.src = paths[currentIdx];
-                                }
+                                target.src = 'https://ui-avatars.com/api/?name=Scholar&background=random';
                             }}
                         />
                     </div>
