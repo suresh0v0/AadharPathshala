@@ -50,19 +50,52 @@ function cn(...inputs: ClassValue[]) {
 }
 
 /* ── LOGO COMPONENT ── */
+const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg", className?: string }) => {
+    return (
+        <div className={cn(
+            "relative flex items-center justify-center overflow-hidden bg-white",
+            size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-20 h-20 rounded-[2rem]' : 'w-28 h-28 rounded-[2.5rem]',
+            className
+        )}>
+            <img 
+                src="/Logo.png" 
+                alt="Aadhar Pathshala Logo" 
+                className="w-full h-full object-cover"
+            />
+            {/* Glossy overlay to keep the modern feel */}
+            <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent pointer-events-none" />
+        </div>
+    );
+};
+
+const AnimatedLogo = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg", className?: string }) => {
+    return (
+        <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className={cn("relative flex items-center justify-center", className)}
+        >
+            <div className="absolute inset-x-0 bottom-0 h-4 bg-purple-500/20 blur-2xl rounded-full translate-y-8" />
+            <motion.div
+                animate={{ 
+                    y: [0, -10, 0],
+                }}
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                className="relative z-10"
+            >
+                <AppSymbol size={size} className="shadow-2xl shadow-purple-500/30 border-4 border-white/20" />
+            </motion.div>
+        </motion.div>
+    );
+};
+
 const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm' | 'md' | 'lg' }) => {
-    const iconSize = size === 'sm' ? 'w-5 h-5' : size === 'md' ? 'w-7 h-7' : 'w-10 h-10';
     return (
         <div className={cn("flex items-center gap-3", className)}>
-            <div className={cn(
-                "bg-linear-to-br from-blue-600 to-red-600 flex items-center justify-center shadow-md",
-                size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-12 h-12 rounded-2xl' : 'w-16 h-16 rounded-[1.5rem]'
-            )}>
-                <GraduationCap className={cn("text-white", iconSize)} strokeWidth={2} />
-            </div>
-            <div className="flex flex-col leading-none justify-center gap-0.5">
-                <span className={cn("font-black tracking-tight text-rose-600 uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'system-ui, sans-serif' }}>AADHAR</span>
-                <span className={cn("font-black italic uppercase tracking-tighter text-blue-600", size === 'sm' ? 'text-[0.65rem] mt-0.5' : size === 'md' ? 'text-[0.8rem]' : 'text-sm mt-1')} style={{ fontFamily: 'system-ui, sans-serif' }}>PATHSHALA</span>
+            <AppSymbol size={size === 'lg' ? 'md' : 'sm'} />
+            <div className="flex flex-col leading-none justify-center -space-y-0.5">
+                <span className={cn("font-black tracking-tighter text-[#FF2B85] uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'Inter, sans-serif' }}>AADHAR</span>
+                <span className={cn("font-bold italic uppercase tracking-[0.2em] text-[#2D5BFF]", size === 'sm' ? 'text-[0.6rem]' : size === 'md' ? 'text-[0.7rem]' : 'text-[0.85rem]')} style={{ fontFamily: 'Inter, sans-serif' }}>PATHSHALA</span>
             </div>
         </div>
     );
@@ -73,6 +106,9 @@ const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm'
  * Cerebras AI - Main Brain for MOMO
  */
 const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => {
+    if (!window.navigator.onLine) {
+        throw new Error("Network Disconnected. Our AI systems require an active connection to process your request. Please check your internet and try again.");
+    }
     // @ts-ignore
     const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
 
@@ -340,6 +376,10 @@ const MockTest = () => {
     const currentSubjectConfig = SUBJECTS_CONFIG[settings.subject];
 
     const startTest = async () => {
+        if (!window.navigator.onLine) {
+            alert("No Internet Connection. Board trial preparation requires an active link to our central core for question synthesis.");
+            return;
+        }
         setLoading(true);
         try {
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
@@ -920,6 +960,10 @@ const AITutor = () => {
     };
 
     const handleSend = async (txt: string) => {
+        if (!window.navigator.onLine) {
+            alert("Connection Lost. AI Scholars require an active link to respond. Please check your network.");
+            return;
+        }
         const text = txt || input;
         if (!text.trim()) return;
 
@@ -3731,9 +3775,7 @@ const LoginPage = () => {
                 className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl p-8 md:p-12 rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] border border-white/50 text-center"
             >
                 <div className="mb-10 text-center">
-                    <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-                        <GraduationCap className="w-10 h-10 text-blue-600" />
-                    </div>
+                    <AnimatedLogo size="md" className="mb-8" />
                     <h2 className="text-3xl font-black text-slate-800 tracking-tight italic uppercase leading-none">Welcome Back</h2>
                     <p className="text-slate-400 font-bold uppercase tracking-widest text-[0.65rem] mt-3">Nepal's Premier Learning OS</p>
                 </div>
@@ -6607,6 +6649,11 @@ const PicturesPage = () => {
     const DEFAULT_QUERY = 'education student learning handwritten diagram school';
 
     const fetchImages = async (searchQuery: string, pageNum: number, isNewSearch: boolean = false) => {
+        if (!window.navigator.onLine) {
+            setLoading(false);
+            setLoadingMore(false);
+            return;
+        }
         if (isNewSearch) {
             setLoading(true);
             setImages([]);
@@ -6640,11 +6687,25 @@ const PicturesPage = () => {
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!window.navigator.onLine) return alert("External imagery requires an active link.");
         setPage(1);
         setHasMore(true);
         fetchImages(query, 1, true);
         setSelectedImage(null);
     };
+
+    if (!window.navigator.onLine && images.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+                 <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                    <SearchX className="w-10 h-10 text-slate-300" />
+                 </div>
+                 <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tighter italic">Network Link Severed</h2>
+                 <p className="text-slate-400 font-bold uppercase tracking-widest text-[0.65rem] max-w-xs mt-3">Image synchronization requires an active uplink to our repositories.</p>
+                 <button onClick={() => navigate('/')} className="mt-8 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[0.6rem]">Back to Core</button>
+            </div>
+        );
+    }
 
     const loadMore = useCallback(() => {
         if (!loadingMore && hasMore) {
@@ -6919,6 +6980,7 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data] = useState<AppData>(INITIAL_DATA);
+    const [isOnline, setIsOnline] = useState(window.navigator.onLine);
     const [liveNews, setLiveNews] = useState<any[]>([
         { id: '1', title: 'Welcome to Aadhar Desk', content: 'Our new platform is now live. Explore study materials and interactive tests.', category: 'general', created_at: new Date().toISOString() },
         { id: '2', title: 'Exam Guidelines 2083', content: 'Important updates regarding the upcoming board examinations.', category: 'exam', created_at: new Date().toISOString() }
@@ -6937,6 +6999,12 @@ const AppProvider = ({ children }: any) => {
     const fetchLiveNotices = async () => {};
 
     useEffect(() => {
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
         const init = async () => {
             const savedUser = localStorage.getItem('logged_user');
             if (savedUser) {
@@ -6945,6 +7013,11 @@ const AppProvider = ({ children }: any) => {
             setIsInitializing(false);
         };
         init();
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, []);
 
     const addTestResult = (score: number, total: number = 10, timeSpentSecs: number = 120) => {
@@ -6972,13 +7045,46 @@ const AppProvider = ({ children }: any) => {
 
     if (isInitializing) {
         return (
-            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center space-y-4">
-                <div className="flex gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" />
+            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 text-center">
+                <AnimatedLogo size="lg" className="mb-12" />
+                
+                <div className="space-y-4 max-w-xs mx-auto">
+                    <motion.h2 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-2xl font-black italic tracking-tighter uppercase text-slate-800"
+                    >
+                        Aadhar Pathshala
+                    </motion.h2>
+                    <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="text-[0.7rem] font-bold text-slate-400 uppercase tracking-[0.4em] leading-relaxed"
+                    >
+                        Initializing Neural Learning Systems
+                    </motion.p>
+                    
+                    <div className="flex justify-center gap-1.5 pt-4">
+                        {[0, 1, 2].map(i => (
+                            <motion.div 
+                                key={i}
+                                animate={{ 
+                                    scale: [1, 1.5, 1],
+                                    opacity: [0.3, 1, 0.3]
+                                }}
+                                transition={{ 
+                                    repeat: Infinity, 
+                                    duration: 1.5, 
+                                    delay: i * 0.2,
+                                    ease: "easeInOut"
+                                }}
+                                className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                            />
+                        ))}
+                    </div>
                 </div>
-                <div className="text-slate-400 font-bold uppercase tracking-widest text-xs">Authenticating</div>
             </div>
         );
     }
@@ -6989,9 +7095,22 @@ const AppProvider = ({ children }: any) => {
             liveNews, liveMaterials, liveNotices, 
             fetchLiveNews, fetchLiveMaterials, fetchLiveNotices, 
             addTestResult, toggleChapterComplete,
-            isInitializing
+            isInitializing, isOnline
         }}>
             {children}
+            {!isOnline && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="fixed bottom-24 left-4 right-4 z-50 bg-slate-900/90 backdrop-blur-lg text-white px-6 py-4 rounded-[2rem] flex items-center justify-between shadow-2xl border border-white/10"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                        <span className="text-xs font-black uppercase tracking-widest">Offline Mode Active</span>
+                    </div>
+                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase italic">Limited Sync Capability</span>
+                </motion.div>
+            )}
         </AppContext.Provider>
     );
 };
