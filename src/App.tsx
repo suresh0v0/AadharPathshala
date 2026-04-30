@@ -17,7 +17,7 @@ import {
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
-  BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers, Scale, Sparkles, RotateCw
+  BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -51,12 +51,13 @@ function cn(...inputs: ClassValue[]) {
 
 /* ── LOGO COMPONENT ── */
 const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg", className?: string }) => {
-    const iconSize = size === 'sm' ? '18' : size === 'md' ? '36' : '48';
+    // Making the hat bigger relative to the container as requested
+    const iconSize = size === 'sm' ? '24' : size === 'md' ? '54' : '72';
     
     return (
         <div className={cn(
-            "relative flex items-center justify-center overflow-hidden bg-white border border-slate-200",
-            size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-20 h-20 rounded-[2rem]' : 'w-28 h-28 rounded-[2.5rem]',
+            "relative flex items-center justify-center overflow-hidden bg-white border border-slate-100",
+            size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-20 h-20 rounded-[2.5rem]' : 'w-28 h-28 rounded-[3rem]',
             className
         )}>
             <svg 
@@ -71,27 +72,27 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
                     d="M22 10L12 5L2 10L12 15L22 10Z" 
                     fill="currentColor" 
                     stroke="currentColor" 
-                    strokeWidth="1.5" 
+                    strokeWidth="1.2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                 />
                 <path 
                     d="M6 12.5V16C6 16 8.5 19 12 19C15.5 19 18 16 18 16V12.5" 
                     stroke="currentColor" 
-                    strokeWidth="1.5" 
+                    strokeWidth="1.2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                 />
                 <path 
                     d="M22 10V16" 
                     stroke="currentColor" 
-                    strokeWidth="1.5" 
+                    strokeWidth="1.2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round"
                 />
-                <circle cx="22" cy="16" r="1.5" fill="currentColor" />
+                <circle cx="22" cy="16" r="1.2" fill="currentColor" />
             </svg>
-            <div className="absolute inset-0 bg-linear-to-tr from-black/[0.02] to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-tr from-black/[0.01] to-transparent pointer-events-none" />
         </div>
     );
 };
@@ -106,7 +107,7 @@ const AnimatedLogo = ({ size = "md", className = "" }: { size?: "sm" | "md" | "l
             <div className="absolute inset-x-0 bottom-0 h-4 bg-slate-200/50 blur-2xl rounded-full translate-y-8" />
             <motion.div
                 animate={{ 
-                    y: [0, -10, 0],
+                    y: [0, -8, 0],
                 }}
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 className="relative z-10"
@@ -122,8 +123,9 @@ const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm'
         <div className={cn("flex items-center gap-3", className)}>
             <AppSymbol size={size === 'lg' ? 'md' : 'sm'} className="border-none shadow-none bg-transparent" />
             <div className="flex flex-col leading-none justify-center -space-y-0.5">
-                <span className={cn("font-black tracking-tighter text-black uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'Inter, sans-serif' }}>AADHAR</span>
-                <span className={cn("font-bold italic uppercase tracking-[0.2em] text-slate-500", size === 'sm' ? 'text-[0.6rem]' : size === 'md' ? 'text-[0.7rem]' : 'text-[0.85rem]')} style={{ fontFamily: 'Inter, sans-serif' }}>PATHSHALA</span>
+                {/* Branding blue and red as requested */}
+                <span className={cn("font-black tracking-tighter text-[#1D4ED8] uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'Inter, sans-serif' }}>AADHAR</span>
+                <span className={cn("font-bold italic uppercase tracking-[0.2em] text-[#EF4444]", size === 'sm' ? 'text-[0.6rem]' : size === 'md' ? 'text-[0.7rem]' : 'text-[0.85rem]')} style={{ fontFamily: 'Inter, sans-serif' }}>PATHSHALA</span>
             </div>
         </div>
     );
@@ -3747,17 +3749,8 @@ const BANNER_GRADIENTS = [
 const LoginPage = () => {
     const { setUser } = useApp();
     const navigate = useNavigate();
+    const [view, setView] = useState<'login' | 'signup'>('login');
     
-    // Background Cycle Sync with Home
-    const [colorIndex, setColorIndex] = useState(0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setColorIndex(prev => (prev + 1) % BANNER_GRADIENTS.length);
-        }, 2000);
-        return () => clearInterval(interval);
-    }, []);
-
     const handleLogin = (isGuest: boolean = true) => {
         const defaultUser: User = {
             id: 'u_' + Math.random().toString(36).substr(2, 9),
@@ -3775,68 +3768,146 @@ const LoginPage = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col items-center justify-center p-6">
-            {/* Dynamic Background */}
-            <AnimatePresence mode="wait">
-                <motion.div 
-                    key={colorIndex}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1.5 }}
-                    className={cn(
-                        "absolute inset-0 bg-linear-to-br transition-all duration-1000",
-                        BANNER_GRADIENTS[colorIndex]
-                    )}
-                />
-            </AnimatePresence>
+        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col bg-[#F0F9FF]">
+            {/* Soft Blue Gradient Background */}
+            <div className="absolute inset-0 bg-linear-to-br from-sky-100/50 via-white to-blue-50/50" />
             
-            {/* Visual Elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px]" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-black/10 rounded-full blur-[120px]" />
+            {/* Header Area */}
+            <div className="relative pt-8 sm:pt-16 px-10 pb-4 sm:pb-8 flex flex-col items-start z-10">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                >
+                    <AppSymbol size="lg" className="mb-2 border-none bg-transparent shadow-none" />
+                </motion.div>
+                <motion.h1 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none mb-1"
+                >
+                    Hello!
+                </motion.h1>
+                <motion.p 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="text-slate-500 font-bold text-base sm:text-lg"
+                >
+                    Welcome Student
+                </motion.p>
             </div>
-
+            
+            {/* Login/Signup Card */}
             <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl p-8 md:p-12 rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] border border-white/50 text-center"
+                key={view}
+                initial={{ y: "100%", opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
+                className="relative z-20 flex-1 bg-white rounded-t-[3rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-6 sm:px-8 pt-8 sm:pt-12 flex flex-col overflow-hidden"
             >
-                <div className="mb-10 text-center">
-                    <AnimatedLogo size="md" className="mb-8" />
-                    <h2 className="text-3xl font-black text-slate-800 tracking-tight italic uppercase leading-none">Welcome Back</h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[0.65rem] mt-3">Nepal's Premier Learning OS</p>
-                </div>
-
-                <div className="space-y-4">
-                    <button 
-                        onClick={() => handleLogin(false)}
-                        className="w-full py-5 bg-black text-white rounded-3xl font-black uppercase tracking-widest text-[0.65rem] shadow-2xl shadow-black/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar pb-6">
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                        className="flex items-center justify-between mb-6 sm:mb-8"
                     >
-                        <Lock className="w-4 h-4" />
-                        Aadhar Secure Sign In
-                    </button>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900">{view === 'login' ? 'Login' : 'Sign Up'}</h2>
+                        {view === 'signup' && (
+                            <button onClick={() => setView('login')} className="flex items-center gap-2 text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">
+                                <ChevronLeft className="w-4 h-4" />
+                                Back to login
+                            </button>
+                        )}
+                    </motion.div>
                     
-                    <button 
-                        onClick={() => handleLogin(true)}
-                        className="w-full py-5 bg-white text-slate-600 rounded-3xl font-black uppercase tracking-widest text-[0.65rem] border border-slate-100 hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
-                    >
-                        <UserIcon className="w-4 h-4" />
-                        Quick Access as Guest
-                    </button>
-                </div>
+                    <div className="space-y-4 sm:space-y-6 flex-1">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.6 }}
+                            className="space-y-3 sm:space-y-4"
+                        >
+                            <div className="relative">
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Languages className="w-5 h-5" /></span>
+                                <input 
+                                    type="text" 
+                                    placeholder="Email" 
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
+                                />
+                            </div>
+                            <div className="relative">
+                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Lock className="w-5 h-5" /></span>
+                                <input 
+                                    type="password" 
+                                    placeholder="Password" 
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
+                                />
+                            </div>
+                            {view === 'signup' && (
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><ShieldCheck className="w-5 h-5" /></span>
+                                    <input 
+                                        type="password" 
+                                        placeholder="Confirm Password" 
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
+                                    />
+                                </div>
+                            )}
+                            {view === 'login' && (
+                                <div className="flex justify-between items-center px-2">
+                                    <button onClick={() => setView('signup')} className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">New here? Sign Up</button>
+                                    <button className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-[#1D4ED8]">Forgot Password?</button>
+                                </div>
+                            )}
+                        </motion.div>
 
-                <div className="mt-10 pt-10 border-t border-slate-50">
-                    <p className="text-[0.6rem] text-slate-400 font-black uppercase tracking-[0.3em]">Institutional Grade Security</p>
-                    <div className="flex justify-center gap-4 mt-4">
-                        <ShieldCheck className="w-5 h-5 text-emerald-500/50" />
-                        <Lock className="w-5 h-5 text-blue-500/50" />
-                        <Activity className="w-5 h-5 text-rose-500/50" />
+                        <motion.button 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.7 }}
+                            onClick={() => handleLogin(false)}
+                            className="w-full py-5 sm:py-6 bg-[#16423C] text-white rounded-[1.5rem] sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.65rem] sm:text-xs shadow-xl shadow-[#16423C]/20 active:scale-95 transition-all"
+                        >
+                            {view === 'login' ? 'Login' : 'Sign Up'}
+                        </motion.button>
+
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.8 }}
+                            className="relative flex items-center gap-4 py-2 sm:py-4"
+                        >
+                            <div className="flex-1 h-[1px] bg-slate-100" />
+                            <span className="text-[0.55rem] sm:text-[0.6rem] font-black text-slate-300 uppercase tracking-widest whitespace-nowrap">Or {view === 'login' ? 'login' : 'sign up'} with</span>
+                            <div className="flex-1 h-[1px] bg-slate-100" />
+                        </motion.div>
+
+                        {/* Social Icons */}
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.9 }}
+                            className="flex justify-center gap-4 sm:gap-6"
+                        >
+                            <button className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90">
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6"><path fill="#f0f0f0" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path fill="#1877F2" d="M14.5 12h-2.5v9h-3v-9h-2V9.5h2V8c0-1.5 1-3.5 3.5-3.5h2.5v3h-1.5c-.83 0-1 .417-1 1v1h3l-.5 2.5z"/></svg>
+                            </button>
+                            <button className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90">
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067C3.186 21.302 7.275 24 12 24c3.11 0 5.924-1.006 8.054-2.813l-4.014-3.174z"/><path fill="#4285F4" d="M23.49 12.275c0-.868-.079-1.53-.236-2.25H12v4.526h6.488c-.133.864-.813 2.146-2.054 2.997l4.013 3.174c2.338-2.157 3.682-5.335 3.682-8.447z"/><path fill="#FBBC05" d="M5.277 14.268a7.12 7.12 0 000-4.503L1.24 6.65a11.962 11.962 0 000 10.7l4.037-3.082z"/></svg>
+                            </button>
+                            <button 
+                                onClick={() => handleLogin(true)}
+                                className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90 group"
+                            >
+                                <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-[#1D4ED8] transition-colors" />
+                            </button>
+                        </motion.div>
                     </div>
                 </div>
             </motion.div>
-
-            <p className="absolute bottom-10 text-white/40 font-black text-[0.6rem] uppercase tracking-[0.5em]">Powered by Aadhar Desk Engine</p>
         </div>
     );
 };
