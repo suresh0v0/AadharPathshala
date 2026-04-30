@@ -26,26 +26,26 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'Aadhar Pathshala',
           short_name: 'AadharDesk',
-          description: 'Advanced Learning Management System',
-          theme_color: '#0f172a',
+          description: 'Advanced Learning Management System for SEE 2083',
+          theme_color: '#9333EA',
           background_color: '#F8FAFC',
           display: 'standalone',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'Logo.png',
               sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
               type: 'image/png',
               purpose: 'any maskable'
+            },
+            {
+              src: 'Logo.png',
+              sizes: '512x512',
+              type: 'image/png'
             }
           ]
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,jpg}'],
           maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
           runtimeCaching: [
             {

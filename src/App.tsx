@@ -58,9 +58,14 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
             className
         )}>
             <img 
-                src="/Logo.png" 
+                src="Logo.png" 
                 alt="Aadhar Pathshala Logo" 
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                    // Fallback to stylized logo if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement?.classList.add('bg-linear-to-br', 'from-[#2D5BFF]', 'via-[#9333EA]', 'to-[#FF2B85]');
+                }}
             />
             {/* Glossy overlay to keep the modern feel */}
             <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent pointer-events-none" />
