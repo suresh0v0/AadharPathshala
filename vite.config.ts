@@ -16,18 +16,17 @@ export default defineConfig(({ mode }) => {
   const groqKey = process.env.VITE_GROQ_API_KEY || env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || env.GROQ_API_KEY || "";
 
   return {
-    base: './',
     plugins: [
       react(), 
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'maskable-icon.svg'],
+        includeAssets: ['Logo.png'],
         manifest: {
           name: 'Aadhar Pathshala',
           short_name: 'AadharDesk',
           description: 'Advanced Learning Management System for SEE 2083',
-          theme_color: '#9333EA',
+          theme_color: '#000000',
           background_color: '#F8FAFC',
           display: 'standalone',
           icons: [
@@ -35,37 +34,27 @@ export default defineConfig(({ mode }) => {
               src: 'Logo.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
             },
             {
               src: 'Logo.png',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/png',
+              purpose: 'any'
             }
           ]
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,jpg}'],
-          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-fonts-cache',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            }
-          ]
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         }
       })
     ],
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      emptyOutDir: true,
+    },
     define: {
       'import.meta.env.VITE_CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
       'import.meta.env.VITE_SAMBANOVA_API_KEY': JSON.stringify(sambanovaKey),

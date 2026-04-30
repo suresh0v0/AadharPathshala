@@ -17,7 +17,7 @@ import {
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
-  BookMarked, Layout as LayoutIcon, Star
+  BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers, Scale, Sparkles, RotateCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -51,24 +51,47 @@ function cn(...inputs: ClassValue[]) {
 
 /* ── LOGO COMPONENT ── */
 const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg", className?: string }) => {
+    const iconSize = size === 'sm' ? '18' : size === 'md' ? '36' : '48';
+    
     return (
         <div className={cn(
-            "relative flex items-center justify-center overflow-hidden bg-white",
+            "relative flex items-center justify-center overflow-hidden bg-white border border-slate-200",
             size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-20 h-20 rounded-[2rem]' : 'w-28 h-28 rounded-[2.5rem]',
             className
         )}>
-            <img 
-                src="Logo.png" 
-                alt="Aadhar Pathshala Logo" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                    // Fallback to stylized logo if image fails to load
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.parentElement?.classList.add('bg-linear-to-br', 'from-[#2D5BFF]', 'via-[#9333EA]', 'to-[#FF2B85]');
-                }}
-            />
-            {/* Glossy overlay to keep the modern feel */}
-            <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent pointer-events-none" />
+            <svg 
+                width={iconSize} 
+                height={iconSize} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-black"
+            >
+                <path 
+                    d="M22 10L12 5L2 10L12 15L22 10Z" 
+                    fill="currentColor" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                />
+                <path 
+                    d="M6 12.5V16C6 16 8.5 19 12 19C15.5 19 18 16 18 16V12.5" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                />
+                <path 
+                    d="M22 10V16" 
+                    stroke="currentColor" 
+                    strokeWidth="1.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                />
+                <circle cx="22" cy="16" r="1.5" fill="currentColor" />
+            </svg>
+            <div className="absolute inset-0 bg-linear-to-tr from-black/[0.02] to-transparent pointer-events-none" />
         </div>
     );
 };
@@ -80,7 +103,7 @@ const AnimatedLogo = ({ size = "md", className = "" }: { size?: "sm" | "md" | "l
             animate={{ scale: 1, opacity: 1 }}
             className={cn("relative flex items-center justify-center", className)}
         >
-            <div className="absolute inset-x-0 bottom-0 h-4 bg-purple-500/20 blur-2xl rounded-full translate-y-8" />
+            <div className="absolute inset-x-0 bottom-0 h-4 bg-slate-200/50 blur-2xl rounded-full translate-y-8" />
             <motion.div
                 animate={{ 
                     y: [0, -10, 0],
@@ -88,7 +111,7 @@ const AnimatedLogo = ({ size = "md", className = "" }: { size?: "sm" | "md" | "l
                 transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
                 className="relative z-10"
             >
-                <AppSymbol size={size} className="shadow-2xl shadow-purple-500/30 border-4 border-white/20" />
+                <AppSymbol size={size} className="shadow-2xl shadow-slate-200 border-4 border-white" />
             </motion.div>
         </motion.div>
     );
@@ -97,10 +120,10 @@ const AnimatedLogo = ({ size = "md", className = "" }: { size?: "sm" | "md" | "l
 const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm' | 'md' | 'lg' }) => {
     return (
         <div className={cn("flex items-center gap-3", className)}>
-            <AppSymbol size={size === 'lg' ? 'md' : 'sm'} />
+            <AppSymbol size={size === 'lg' ? 'md' : 'sm'} className="border-none shadow-none bg-transparent" />
             <div className="flex flex-col leading-none justify-center -space-y-0.5">
-                <span className={cn("font-black tracking-tighter text-[#FF2B85] uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'Inter, sans-serif' }}>AADHAR</span>
-                <span className={cn("font-bold italic uppercase tracking-[0.2em] text-[#2D5BFF]", size === 'sm' ? 'text-[0.6rem]' : size === 'md' ? 'text-[0.7rem]' : 'text-[0.85rem]')} style={{ fontFamily: 'Inter, sans-serif' }}>PATHSHALA</span>
+                <span className={cn("font-black tracking-tighter text-black uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'Inter, sans-serif' }}>AADHAR</span>
+                <span className={cn("font-bold italic uppercase tracking-[0.2em] text-slate-500", size === 'sm' ? 'text-[0.6rem]' : size === 'md' ? 'text-[0.7rem]' : 'text-[0.85rem]')} style={{ fontFamily: 'Inter, sans-serif' }}>PATHSHALA</span>
             </div>
         </div>
     );
@@ -2052,9 +2075,9 @@ const HomePage = () => {
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
+                        { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, path: '/tools/nepali-dictionary', color: 'amber' },
+                        { id: 'pictures', label: 'Pictures', icon: ImageIcon, path: '/tools/pictures', color: 'pink' },
                         { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
-                        { id: 'timer', label: 'Focus', icon: Timer, path: '/tools/timer', color: 'rose' },
-                        { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'purple' },
                     ].map((t) => (
                         <Link 
                             key={t.id} 
@@ -2198,6 +2221,7 @@ const AadharToolkit = () => {
         { id: 'hub', label: 'Study Hub', icon: BookOpen, color: 'indigo', path: '/hub' },
         { id: 'dictionary', label: 'Dictionary', icon: Book, color: 'rose', path: '/tools/dictionary' },
         { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, color: 'amber', path: '/tools/nepali-dictionary' },
+        { id: 'pictures', label: 'Pictures', icon: ImageIcon, color: 'pink', path: '/tools/pictures' },
         { id: 'notepad', label: 'Mind Log', icon: Edit3, color: 'orange', path: '/tools/notes' },
         { id: 'timer', label: 'Focus Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
         { id: 'formulas', label: 'Formula Bank', icon: Sigma, color: 'purple', path: '/tools/formulas' },
@@ -2209,7 +2233,6 @@ const AadharToolkit = () => {
             { id: 'gpa', label: 'GPA Estimate', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
             { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
-            { id: 'pictures', label: 'Pictures', icon: ImageIcon, color: 'pink', path: '/tools/pictures' }
         ] : []),
     ];
 
@@ -3788,7 +3811,7 @@ const LoginPage = () => {
                 <div className="space-y-4">
                     <button 
                         onClick={() => handleLogin(false)}
-                        className="w-full py-5 bg-[#1D4ED8] text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                        className="w-full py-5 bg-black text-white rounded-3xl font-black uppercase tracking-widest text-[0.65rem] shadow-2xl shadow-black/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
                     >
                         <Lock className="w-4 h-4" />
                         Aadhar Secure Sign In
@@ -3796,7 +3819,7 @@ const LoginPage = () => {
                     
                     <button 
                         onClick={() => handleLogin(true)}
-                        className="w-full py-5 bg-white text-slate-600 rounded-3xl font-black uppercase tracking-widest text-xs border border-slate-100 hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
+                        className="w-full py-5 bg-white text-slate-600 rounded-3xl font-black uppercase tracking-widest text-[0.65rem] border border-slate-100 hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
                     >
                         <UserIcon className="w-4 h-4" />
                         Quick Access as Guest
@@ -6739,22 +6762,23 @@ const PicturesPage = () => {
         setSimilarLoading(false);
         setHasAttemptedSimilar(false);
         setSimilarImages([]);
+        // Auto-load similar images for a seamless discovery experience
+        setTimeout(() => {
+            const firstTag = img.tags.split(',')[0].trim();
+            const searchTag = firstTag || 'study';
+            fetchSimilar(searchTag, img.id);
+        }, 300);
     };
 
-    const loadSimilar = async () => {
-        if (!selectedImage) return;
+    const fetchSimilar = async (tag: string, currentId: number) => {
         setSimilarLoading(true);
         setHasAttemptedSimilar(true);
-        
-        const firstTag = selectedImage.tags.split(',')[0].trim();
-        const searchTag = query.trim() || firstTag || 'study';
-        
         try {
-            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(searchTag)}&image_type=photo&per_page=15`);
+            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(tag)}&image_type=photo&per_page=12`);
             const data = await res.json();
-            setSimilarImages(data.hits?.filter((h: any) => h.id !== selectedImage.id) || []);
+            setSimilarImages(data.hits?.filter((h: any) => h.id !== currentId) || []);
         } catch (error) {
-            console.error("Failed to fetch similar images", error);
+            console.error("Discovery error", error);
         } finally {
             setSimilarLoading(false);
         }
@@ -6825,74 +6849,148 @@ const PicturesPage = () => {
             {/* Sentinel for infinite scroll */}
             <div id="sentinel" className="h-10 mt-4" />
 
-            {/* Full-Screen Image Modal */}
+            {/* Full-Screen Image Workspace */}
             <AnimatePresence>
                 {selectedImage && (
                     <motion.div 
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 50 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 150 }}
                         id="pictures-modal"
-                        className="fixed inset-0 z-[2000] bg-white overflow-y-auto pb-20 custom-scrollbar"
+                        className="fixed inset-0 z-[2000] bg-white overflow-y-auto custom-scrollbar"
                     >
-                        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-slate-100">
-                            <button onClick={() => setSelectedImage(null)} className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
+                        {/* Immersive Header */}
+                        <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-2xl px-6 py-4 flex items-center justify-between border-b border-slate-100 shadow-sm">
                             <div className="flex items-center gap-4">
-                                <button
-                                    onClick={() => handleDownload(selectedImage.largeImageURL, selectedImage.id)}
-                                    className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-100 transition-all active:scale-95"
-                                >
-                                    <Download className="w-4 h-4" />
+                                <button onClick={() => setSelectedImage(null)} className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-800 hover:bg-slate-200 transition-all active:scale-90">
+                                    <ChevronLeft className="w-6 h-6" />
                                 </button>
-                                <a href={selectedImage.pageURL} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-all">
-                                    <ExternalLink className="w-4 h-4" />
-                                </a>
+                                <div className="flex flex-col">
+                                    <span className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-blue-600">Image Workspace</span>
+                                    <span className="text-[0.8rem] font-bold text-slate-400 line-clamp-1 max-w-[120px] sm:max-w-xs">{selectedImage.tags}</span>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    onClick={() => handleDownload(selectedImage.largeImageURL, selectedImage.id)}
+                                    className="p-3 bg-slate-900 text-white rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95 flex items-center gap-2"
+                                >
+                                    <Download className="w-5 h-5" />
+                                    <span className="text-[0.65rem] font-black uppercase tracking-widest hidden sm:block">Full Resolution</span>
+                                </button>
+                                <button className="p-3 bg-slate-100 text-slate-600 rounded-2xl hover:bg-slate-200 transition-all">
+                                    <Share2 className="w-5 h-5" />
+                                </button>
                             </div>
                         </div>
                         
-                        <div className="max-w-4xl mx-auto px-4 pt-6 flex flex-col items-center">
-                            <div className="rounded-[2rem] overflow-hidden shadow-2xl mb-8 border border-slate-100 bg-slate-50 w-full">
-                                <img src={selectedImage.largeImageURL} alt="Detail" className="w-full h-auto block" />
-                            </div>
-                            
-                            <button
-                                onClick={() => handleDownload(selectedImage.largeImageURL, selectedImage.id)}
-                                className="mb-10 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 shadow-xl active:scale-95 transition-all hover:bg-black"
+                        <div className="max-w-4xl mx-auto px-6 pt-10 pb-32">
+                            {/* Cinematic Projection */}
+                            <motion.div 
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="relative rounded-[3rem] overflow-hidden shadow-[0_40px_80px_-15px_rgba(0,0,0,0.2)] border-2 border-slate-50 bg-slate-50 group mb-12"
                             >
-                                <Download className="w-5 h-5" />
-                                Download Full Image
-                            </button>
-                            
-                            {!hasAttemptedSimilar ? (
-                                <button 
-                                    onClick={loadSimilar}
-                                    className="w-full max-w-sm mb-12 py-5 border-2 border-slate-200 text-slate-600 rounded-[2rem] font-black uppercase text-xs tracking-widest hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
-                                >
-                                    View More Like This
-                                </button>
-                            ) : (
-                                <div className="w-full">
-                                    <h4 className="text-2xl font-black text-[#020617] mb-6 italic tracking-tighter uppercase text-left">More like this</h4>
-                                    
-                                    {similarLoading ? (
-                                        <div className="flex justify-center py-10">
-                                            <RotateCw className="w-8 h-8 animate-spin text-slate-400" />
-                                        </div>
-                                    ) : (
-                                        <div className="columns-2 md:columns-3 gap-4 space-y-4">
-                                            {similarImages.map((img, idx) => (
-                                                <ImageCard key={`${img.id}-${idx}`} img={img} onClick={() => {
-                                                    const modalScroll = document.getElementById('pictures-modal');
-                                                    if (modalScroll) modalScroll.scrollTo({ top: 0, behavior: 'smooth' });
-                                                    openImage(img);
-                                                }} />
+                                <img 
+                                    src={selectedImage.largeImageURL} 
+                                    alt="Academic Asset" 
+                                    className="w-full h-auto block transform group-hover:scale-[1.02] transition-transform duration-1000" 
+                                />
+                                <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex -space-x-2">
+                                            {[...Array(4)].map((_, i) => (
+                                                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-slate-200" />
                                             ))}
                                         </div>
-                                    )}
+                                        <span className="text-white text-[0.7rem] font-bold">Recommended for Science & Graphics</span>
+                                    </div>
                                 </div>
-                            )}
+                            </motion.div>
+
+                            {/* Intelligent Action Panel */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(selectedImage.largeImageURL);
+                                        alert("Direct link copied to clipboard!");
+                                    }}
+                                    className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 group hover:bg-white hover:border-blue-500 hover:shadow-xl transition-all"
+                                >
+                                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-3 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                        <Copy className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 group-hover:text-slate-900">Copy Link</span>
+                                </button>
+                                <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center mb-3">
+                                        <Heart className="w-5 h-5 fill-emerald-500" />
+                                    </div>
+                                    <span className="text-sm font-black text-slate-900">{selectedImage.likes}</span>
+                                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">Endorsed</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                    <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mb-3">
+                                        <Tag className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    </div>
+                                    <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest mt-2">Palettes</span>
+                                </div>
+                                <div className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                    <div className="w-12 h-12 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center mb-3">
+                                        <Sparkles className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-900">Enhanced</span>
+                                    <span className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest">AI Upscaled</span>
+                                </div>
+                            </div>
+
+                            {/* Related Discovery Stream */}
+                            <div className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <h4 className="text-3xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">The <span className="text-blue-600">Discovery</span> Stream</h4>
+                                        <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mt-2">Contextually synchronized assets for your projects</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-full">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        <span className="text-[0.6rem] font-black uppercase tracking-widest">Live Sync</span>
+                                    </div>
+                                </div>
+
+                                {similarLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-24 bg-slate-50 rounded-[3rem] border border-slate-100 italic transition-all">
+                                        <RotateCw className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+                                        <span className="text-[0.7rem] font-black uppercase tracking-widest text-slate-400">Synthesizing Related Content...</span>
+                                    </div>
+                                ) : (
+                                    <div className="columns-2 md:columns-3 gap-6 space-y-6">
+                                        {similarImages.map((img, idx) => (
+                                            <motion.div
+                                                key={`${img.id}-${idx}`}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                            >
+                                                <ImageCard 
+                                                    img={img} 
+                                                    onClick={() => {
+                                                        const modalScroll = document.getElementById('pictures-modal');
+                                                        if (modalScroll) modalScroll.scrollTo({ top: 0, behavior: 'smooth' });
+                                                        openImage(img);
+                                                    }} 
+                                                />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </motion.div>
                 )}
@@ -7058,7 +7156,7 @@ const AppProvider = ({ children }: any) => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="text-2xl font-black italic tracking-tighter uppercase text-slate-800"
+                        className="text-2xl font-black italic tracking-tighter uppercase text-black"
                     >
                         Aadhar Pathshala
                     </motion.h2>
@@ -7085,7 +7183,7 @@ const AppProvider = ({ children }: any) => {
                                     delay: i * 0.2,
                                     ease: "easeInOut"
                                 }}
-                                className="w-1.5 h-1.5 bg-blue-500 rounded-full"
+                                className="w-1.5 h-1.5 bg-slate-400 rounded-full"
                             />
                         ))}
                     </div>
