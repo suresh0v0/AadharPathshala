@@ -42,7 +42,7 @@ import {
 import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 
-const LogoImg = "/Logo.png?v=2";
+const LogoImg = "https://res.cloudinary.com/dtyjlnjjf/image/upload/f_auto,q_auto/9931_fogzow";
 
 /**
  * Utility for Tailwind classes
@@ -64,10 +64,7 @@ const AppSymbol = ({ size = "md", className = "" }: { size?: "sm" | "md" | "lg",
                 alt="Aadhar Pathshala Logo" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.src.includes('ui-avatars')) {
-                        target.src = 'https://ui-avatars.com/api/?name=Aadhar&background=000&color=fff';
-                    }
+                    e.currentTarget.src = 'https://ui-avatars.com/api/?name=Aadhar&background=000&color=fff';
                 }}
             />
             <div className="absolute inset-0 bg-linear-to-tr from-black/[0.01] to-transparent pointer-events-none" />
@@ -3929,10 +3926,7 @@ const ProfilePage = () => {
                             alt="App Logo" 
                             className="w-full h-full object-cover opacity-95 p-1" 
                             onError={(e) => {
-                                const target = e.currentTarget;
-                                if (!target.src.includes('ui-avatars')) {
-                                    target.src = 'https://ui-avatars.com/api/?name=Scholar&background=random';
-                                }
+                                e.currentTarget.src = 'https://ui-avatars.com/api/?name=Scholar&background=random';
                             }}
                         />
                     </div>
