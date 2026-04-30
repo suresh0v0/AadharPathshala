@@ -79,6 +79,8 @@ export interface User {
   completedChapters: string[]; // List of chapter IDs
   streak: number;
   lastStudyDate?: string; // ISO date string
+  xp?: number;
+  photoURL?: string;
 }
 
 export interface LeaderboardEntry {

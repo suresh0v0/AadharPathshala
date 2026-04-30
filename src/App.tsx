@@ -17,7 +17,7 @@ import {
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
-  BookMarked, Layout as LayoutIcon
+  BookMarked, Layout as LayoutIcon, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -48,6 +48,26 @@ import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, Leaderboard
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/* ── LOGO COMPONENT ── */
+const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm' | 'md' | 'lg' }) => {
+    const iconSize = size === 'sm' ? 'w-5 h-5' : size === 'md' ? 'w-7 h-7' : 'w-10 h-10';
+    return (
+        <div className={cn("flex items-center gap-3", className)}>
+            <div className={cn(
+                "bg-linear-to-br from-blue-600 to-red-600 flex items-center justify-center shadow-md",
+                size === 'sm' ? 'w-10 h-10 rounded-xl' : size === 'md' ? 'w-12 h-12 rounded-2xl' : 'w-16 h-16 rounded-[1.5rem]'
+            )}>
+                <GraduationCap className={cn("text-white", iconSize)} strokeWidth={2} />
+            </div>
+            <div className="flex flex-col leading-none justify-center gap-0.5">
+                <span className={cn("font-black tracking-tight text-rose-600 uppercase", size === 'sm' ? 'text-lg' : size === 'md' ? 'text-xl' : 'text-3xl')} style={{ fontFamily: 'system-ui, sans-serif' }}>AADHAR</span>
+                <span className={cn("font-black italic uppercase tracking-tighter text-blue-600", size === 'sm' ? 'text-[0.65rem] mt-0.5' : size === 'md' ? 'text-[0.8rem]' : 'text-sm mt-1')} style={{ fontFamily: 'system-ui, sans-serif' }}>PATHSHALA</span>
+            </div>
+        </div>
+    );
+};
+
 
 /**
  * Cerebras AI - Main Brain for MOMO
@@ -188,34 +208,42 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/news', icon: Newspaper, label: 'News' },
   ];
 
+  const handleLogout = () => {
+      localStorage.removeItem('logged_user');
+      window.location.href = '/';
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
-        <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
-          <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
-            <div className="flex flex-col leading-none">
-              <span className="text-[#E11D48] font-black text-xl tracking-tighter uppercase italic">Aadhar</span>
-              <span className="text-[#1D4ED8] font-black text-xl tracking-tighter uppercase italic">Pathshala</span>
+    <div className={cn("min-h-screen", location.pathname === '/profile' ? 'bg-[#F8FAFC]' : 'bg-[#F8FAFC]')}>
+        <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+          <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
+            <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
+              <Logo size="sm" />
+            </div>
+            <div className="flex items-center gap-4">
+               {user && location.pathname !== '/profile' && (
+                 <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
+                    <UserIcon className="w-5 h-5 fill-current" />
+                    <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
+                 </button>
+               )}
+               {user && location.pathname === '/profile' && (
+                 <button onClick={handleLogout} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
+                    <LogOut className="w-5 h-5 fill-current ml-0.5" />
+                 </button>
+               )}
             </div>
           </div>
-          <div className="flex items-center gap-4">
-             {user && (
-               <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
-                  <UserIcon className="w-5 h-5 fill-current" />
-                  <div className="absolute top-0 right-0 w-3 h-3 bg-[#4ADE80] border-2 border-white rounded-full" />
-               </button>
-             )}
-          </div>
-        </div>
-      </header>
+        </header>
 
-      <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pt-24 pb-32 min-h-screen">
+      <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen pt-24">
         {children}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
-        <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
-          {navItems.map((item) => {
+      {location.pathname !== '/profile' && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
+          <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
+            {navItems.map((item) => {
             const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
             
@@ -259,6 +287,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
           })}
         </div>
       </nav>
+      )}
 
       {/* Floating Admin Button Removed as requested */}
     </div>
@@ -1384,22 +1413,18 @@ const StandardCalculator = () => {
             const result = math.evaluate(expr, customScope);
             let resultStr = '';
             
-            if (outputMode === 'fraction') {
-                try {
-                    // Use math.format with ratio for better fraction handling including signs
-                    resultStr = math.format(result, { fraction: 'ratio' });
-                    // mathjs format for ratio returns e.g. "1/2" or "-1/2"
-                } catch (e) {
-                    resultStr = typeof result === 'number' ? result.toFixed(8).replace(/\.?0+$/, '') : math.format(result, { precision: 8 });
-                }
-            } else {
-                if (typeof result === 'number') {
-                    resultStr = result.toFixed(8).replace(/\.?0+$/, '');
-                } else if (result && result.value !== undefined) {
-                    resultStr = result.value.toFixed(8).replace(/\.?0+$/, '');
-                } else {
-                    resultStr = math.format(result, { precision: 8 });
-                }
+            // Fix for signs: Use math.format for EVERYTHING to ensure signs are preserved correctly
+            // mathjs handled signs internally in all its types (BigNumber, Fraction, Unit, etc)
+            resultStr = math.format(result, { 
+                precision: 14, 
+                fraction: outputMode === 'fraction' ? 'ratio' : 'decimal',
+                upperExp: 10,
+                lowerExp: -10
+            });
+            
+            // Clean up decimal point if needed
+            if (typeof result === 'number' || result.isBigNumber) {
+                 resultStr = resultStr.replace(/\.0+$/, '');
             }
 
             setAnswer(resultStr);
@@ -2003,59 +2028,87 @@ const HomePage = () => {
                 </div>
             </div>
 
-            {/* Syllabus Countdown Card */}
-            <div className="bg-white p-6 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-6 opacity-5">
-                    <Target className="w-32 h-32 text-blue group-hover:scale-110 transition-transform duration-700" />
+            {/* Syllabus Countdown Card - Improved with more features and better clock */}
+            <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
+                    <Target className="w-48 h-48 text-blue group-hover:rotate-12 transition-transform duration-1000" />
                 </div>
+                
                 <div className="relative z-10 space-y-6">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shadow-inner animate-pulse">
-                                <Clock className="w-5 h-5" />
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner relative">
+                                <Clock className="w-6 h-6 animate-spin-slow" />
+                                <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-ping" />
                             </div>
                             <div>
-                                <h3 className="font-black text-[0.7rem] text-slate-800 uppercase tracking-widest leading-none">Global Timer</h3>
-                                <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Live Board Tracking</p>
+                                <h3 className="font-black text-[0.8rem] text-slate-900 uppercase tracking-widest leading-none">Exam Countdown</h3>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">SEE 2083 Live Tracker</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-[0.6rem] font-black text-rose-600 bg-rose-50 px-3 py-1 rounded-full uppercase tracking-tighter italic">SEE 2083 Mode</span>
-                            <div className="text-[0.6rem] font-bold text-slate-400 mt-1 tabular-nums">
-                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center min-w-[80px]">
+                            <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Live UTC</span>
+                            <div className="text-sm font-black text-slate-800 tabular-nums">
+                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                             </div>
                         </div>
                     </div>
                     
-                    <div className="space-y-3">
-                        <div className="flex justify-between items-end px-1">
-                            <span className="text-4xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">245 Days Left</span>
-                            <span className="text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-lg">High Prep Zone</span>
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-end">
+                            <div className="space-y-1">
+                                <span className="text-4xl md:text-5xl font-black text-slate-900 italic tracking-tighter uppercase leading-none block">245 Days</span>
+                                <span className="text-[0.65rem] font-black text-emerald-600 uppercase tracking-[0.2em] bg-emerald-50 px-3 py-1 rounded-full inline-block mt-2">Active Prep Zone</span>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">Completion</p>
+                                <p className="text-xl font-black text-blue-600 italic">32.4%</p>
+                            </div>
                         </div>
-                        <div className="h-4 bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100">
-                            <motion.div 
-                                initial={{ width: 0 }}
-                                animate={{ width: "32%" }}
-                                transition={{ duration: 1.5, ease: "easeOut" }}
-                                className="h-full bg-linear-to-r from-rose-400 to-rose-600 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.3)] relative"
-                            >
-                                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                            </motion.div>
+                        
+                        <div className="space-y-2">
+                             <div className="h-4 bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100 shadow-inner">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: "32.4%" }}
+                                    transition={{ duration: 2, ease: "circOut" }}
+                                    className="h-full bg-linear-to-r from-blue-500 via-indigo-500 to-rose-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)] relative"
+                                >
+                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
+                                    <div className="absolute top-0 right-0 h-full w-4 bg-white/40 blur-sm skew-x-12" />
+                                </motion.div>
+                            </div>
+                            <div className="flex justify-between px-1">
+                                <span className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest">Beginning</span>
+                                <span className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest italic">Target: SEE 2083</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Consistency</p>
-                             <p className="text-xs font-black text-slate-800">98%</p>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-blue-50 transition-colors">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Consistency</p>
+                             <div className="flex items-end gap-1">
+                                <p className="text-lg font-black text-slate-800 leading-none">98</p>
+                                <span className="text-[0.6rem] font-bold text-slate-400 mb-0.5">%</span>
+                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Syllabus</p>
-                             <p className="text-xs font-black text-slate-800">42%</p>
+                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-rose-50 transition-colors">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Syllabus</p>
+                             <div className="flex items-end gap-1">
+                                <p className="text-lg font-black text-slate-800 leading-none">42</p>
+                                <span className="text-[0.6rem] font-bold text-slate-400 mb-0.5">%</span>
+                             </div>
                         </div>
-                        <div className="bg-slate-50 rounded-2xl p-2 text-center border border-slate-100">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase">Rank</p>
-                             <p className="text-xs font-black text-slate-800">#12</p>
+                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-amber-50 transition-colors">
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Rank</p>
+                             <div className="flex items-end gap-1">
+                                <span className="text-[0.7rem] font-black text-amber-500 mb-0.5">#</span>
+                                <p className="text-lg font-black text-slate-800 leading-none">12</p>
+                             </div>
                         </div>
                     </div>
                 </div>
@@ -2106,8 +2159,7 @@ const AadharToolkit = () => {
             { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/translator' },
             { id: 'gpa', label: 'GPA Estimate', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
             { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
-            { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
-            { id: 'attendance', label: 'Attendance', icon: UserCheck, color: 'teal', path: '/tools/attendance' }
+            { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' }
         ] : []),
     ];
 
@@ -3026,91 +3078,7 @@ const NepaliDictionaryPage = () => {
     );
 };
 
-/* ── ATTENDANCE TRACKER ── */
-const AttendanceTracker = () => {
-    const navigate = useNavigate();
-    const [attendance, setAttendance] = useState<Record<string, 'present' | 'absent' | null>>({});
-    
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const monthName = today.toLocaleString('default', { month: 'long' });
 
-    const toggleAttendance = (day: number) => {
-        const key = `${day}`;
-        setAttendance(prev => ({
-            ...prev,
-            [key]: prev[key] === 'present' ? 'absent' : 'present'
-        }));
-    };
-
-    const presentCount = Object.values(attendance).filter(v => v === 'present').length;
-
-    return (
-        <div className="space-y-10 animate-fade-up pb-24">
-            <header className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
-                    <ArrowLeft className="w-6 h-6" />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Attendance</h1>
-                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Consistency Log</p>
-                </div>
-            </header>
-
-            <div className="bg-white p-6 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-8 opacity-5">
-                    <UserCheck className="w-48 h-48" />
-                </div>
-                
-                <div className="flex items-center justify-between mb-8 relative z-10">
-                    <div>
-                        <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">{monthName} {year}</h2>
-                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest leading-relaxed">TAP A DATE TO LOG PRESENCE</p>
-                    </div>
-                    <div className="bg-teal-50 px-6 py-3 rounded-2xl border border-teal-100 text-center">
-                        <p className="text-[0.6rem] font-black text-teal-400 uppercase tracking-widest">Present</p>
-                        <p className="text-2xl font-black text-teal-600 leading-none">{presentCount}</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-7 gap-2 md:gap-4 max-w-lg mx-auto relative z-10">
-                    {Array.from({ length: daysInMonth }).map((_, i) => {
-                        const day = i + 1;
-                        const status = attendance[day.toString()];
-                        return (
-                            <button 
-                                key={i} 
-                                onClick={() => toggleAttendance(day)}
-                                className={cn(
-                                    "aspect-square rounded-xl md:rounded-2xl flex items-center justify-center text-xs md:text-sm font-black transition-all border group",
-                                    status === 'present' ? "bg-teal-500 text-white border-teal-600 shadow-lg shadow-teal-500/20" : 
-                                    status === 'absent' ? "bg-rose-500 text-white border-rose-600 shadow-lg shadow-rose-500/20" : 
-                                    "bg-slate-50 text-slate-400 border-slate-100 hover:border-teal-200 shadow-sm"
-                                )}
-                            >
-                                {day}
-                            </button>
-                        );
-                    })}
-                </div>
-                
-                <div className="mt-10 flex gap-6 justify-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-teal-500 shadow-sm shadow-teal-500/40" />
-                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Present</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-rose-500 shadow-sm shadow-rose-500/40" />
-                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Absent</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 /* ── FLASHCARDS APP ── */
 const FlashcardApp = () => {
@@ -3691,172 +3659,254 @@ const MCQTestPlayer = () => {
     );
 };
 
-/* ── PROFILE PAGE ── */
-const ProfilePage = () => {
-    const { user } = useApp();
-    const navigate = useNavigate();
+const BANNER_GRADIENTS = [
+    'from-emerald-500 to-teal-600',
+    'from-purple-500 to-indigo-600',
+    'from-amber-500 to-orange-600',
+    'from-rose-500 to-pink-600',
+    'from-blue-500 to-indigo-600',
+    'from-indigo-500 to-violet-600',
+    'from-orange-500 to-amber-600',
+    'from-cyan-500 to-blue-600'
+];
 
-    const handleLogout = async () => {
-        try {
-            localStorage.clear();
-            sessionStorage.clear();
-            window.location.href = '/';
-        } catch (e) {
-            console.error("Logout error", e);
-        }
+/* ── LOGIN PAGE ── */
+const LoginPage = () => {
+    const { setUser } = useApp();
+    const navigate = useNavigate();
+    
+    // Background Cycle Sync with Home
+    const [colorIndex, setColorIndex] = useState(0);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setColorIndex(prev => (prev + 1) % BANNER_GRADIENTS.length);
+        }, 2000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleLogin = (isGuest: boolean = true) => {
+        const defaultUser: User = {
+            id: 'u_' + Math.random().toString(36).substr(2, 9),
+            name: isGuest ? 'Guest Scholar' : 'Aadhar Student',
+            email: isGuest ? 'guest@aadhar.edu.np' : 'student@aadhar.edu.np',
+            grade: '10',
+            streak: 5,
+            completedChapters: [],
+            xp: 1250,
+            photoURL: isGuest ? undefined : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+        };
+        setUser(defaultUser);
+        localStorage.setItem('logged_user', JSON.stringify(defaultUser));
+        navigate('/');
     };
 
-    const adminEmails = ['admin@aadhar.edu.np', 'subashgautam305@gmail.com', 'gopanigautam96@gmail.com'];
-    const isAdmin = user?.email && (
-        adminEmails.map(e => e.toLowerCase()).includes(user.email.toLowerCase()) || 
-        user.email.toLowerCase().includes('ashish')
-    );
-
-    const menuItems = [
-        { label: 'Edit Profile', icon: UserIcon, desc: 'Update name and details', path: '#' },
-        { label: 'Security', icon: Lock, desc: 'Manage your privacy', path: '#' },
-        { label: 'App Settings', icon: Settings, desc: 'Dark mode & notifications', path: '#' },
-        { label: 'Help & Support', icon: Megaphone, desc: 'Contact Aadhar team', path: '#' },
-    ];
-
     return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="animate-fade-up pb-32 max-w-4xl mx-auto space-y-6"
-        >
-            {/* Header Redesign */}
-            <header className="flex items-center justify-between px-2">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                {isAdmin && (
-                    <button 
-                        onClick={() => navigate('/admin-portal')}
-                        className="px-4 py-2 bg-rose-500 rounded-xl text-white shadow-xl shadow-rose-500/20 active:scale-95 transition-all text-[0.6rem] font-bold uppercase tracking-tighter flex items-center gap-2"
-                    >
-                        <Lock className="w-3 h-3" /> Maintenance
-                    </button>
-                )}
-            </header>
+        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col items-center justify-center p-6">
+            {/* Dynamic Background */}
+            <AnimatePresence mode="wait">
+                <motion.div 
+                    key={colorIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.5 }}
+                    className={cn(
+                        "absolute inset-0 bg-linear-to-br transition-all duration-1000",
+                        BANNER_GRADIENTS[colorIndex]
+                    )}
+                />
+            </AnimatePresence>
+            
+            {/* Visual Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-white/10 rounded-full blur-[100px]" />
+                <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-black/10 rounded-full blur-[120px]" />
+            </div>
 
-            {/* Main Profile Card */}
             <motion.div 
-                whileHover={{ scale: 1.01 }}
-                className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-white to-slate-50 border border-slate-100 shadow-2xl p-8"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl p-8 md:p-12 rounded-[3.5rem] shadow-[0_32px_64px_-15px_rgba(0,0,0,0.3)] border border-white/50 text-center"
             >
-                <div className="absolute top-0 right-0 w-full h-32 bg-linear-to-br from-indigo-200 to-purple-200 opacity-20" />
-                
-                <div className="relative flex flex-col md:flex-row items-center md:items-start gap-8">
-                    <motion.div 
-                        whileHover={{ rotate: 5 }}
-                        className="relative"
-                    >
-                        <div className="w-32 h-32 rounded-[2.5rem] p-1 bg-linear-to-br from-indigo-400 via-purple-500 to-pink-500 shadow-2xl shadow-purple-500/30">
-                            <div className="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden">
-                                {user?.photoURL ? (
-                                    <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
-                                ) : (
-                                    <UserIcon className="w-12 h-12 text-slate-300" />
-                                )}
-                            </div>
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-emerald-500 text-white rounded-xl border-4 border-white flex items-center justify-center shadow-lg">
-                           <CheckCircle className="w-5 h-5" />
-                        </div>
-                    </motion.div>
-
-                    <div className="flex-1 text-center md:text-left space-y-2">
-                        <div className="space-y-1">
-                            <motion.h1 
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-indigo-800 to-slate-900"
-                            >
-                                {user?.name}
-                            </motion.h1>
-                            <p className="text-sm font-bold text-indigo-400 font-mono tracking-tight">{user?.email}</p>
-                        </div>
-                        <div className="flex flex-wrap justify-center md:justify-start gap-2 pt-2">
-                            <span className="px-3 py-1 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-lg text-[0.6rem] font-black uppercase tracking-widest italic shadow-lg">Grade 10</span>
-                            <span className="px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-indigo-700 rounded-lg text-[0.6rem] font-black uppercase tracking-widest italic border border-indigo-200">SEE 2083 Batch</span>
-                        </div>
+                <div className="mb-10 text-center">
+                    <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                        <GraduationCap className="w-10 h-10 text-blue-600" />
                     </div>
+                    <h2 className="text-3xl font-black text-slate-800 tracking-tight italic uppercase leading-none">Welcome Back</h2>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[0.65rem] mt-3">Nepal's Premier Learning OS</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                    <div className="bg-linear-to-br from-rose-500 to-rose-700 p-6 rounded-3xl border border-rose-400 shadow-xl shadow-rose-500/20 text-white">
-                        <p className="text-[0.6rem] font-black text-rose-100 uppercase tracking-widest mb-1">Current Streak</p>
-                        <div className="flex items-center gap-2">
-                            <Flame className="w-5 h-5 text-rose-200" />
-                            <span className="text-2xl font-black tracking-tighter">{user?.streak || 0} Days</span>
-                        </div>
-                    </div>
-                    <div className="bg-linear-to-br from-rose-600 to-rose-800 p-6 rounded-3xl border border-rose-500 shadow-xl shadow-rose-600/20 text-white">
-                        <p className="text-[0.6rem] font-black text-rose-100 uppercase tracking-widest mb-1">Chapters Mastered</p>
-                        <div className="flex items-center gap-2">
-                            <BookOpen className="w-5 h-5 text-rose-200" />
-                            <span className="text-2xl font-black tracking-tighter">{user?.completedChapters?.length || 0} Units</span>
-                        </div>
+                <div className="space-y-4">
+                    <button 
+                        onClick={() => handleLogin(false)}
+                        className="w-full py-5 bg-[#1D4ED8] text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl shadow-blue-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3"
+                    >
+                        <Lock className="w-4 h-4" />
+                        Aadhar Secure Sign In
+                    </button>
+                    
+                    <button 
+                        onClick={() => handleLogin(true)}
+                        className="w-full py-5 bg-white text-slate-600 rounded-3xl font-black uppercase tracking-widest text-xs border border-slate-100 hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
+                    >
+                        <UserIcon className="w-4 h-4" />
+                        Quick Access as Guest
+                    </button>
+                </div>
+
+                <div className="mt-10 pt-10 border-t border-slate-50">
+                    <p className="text-[0.6rem] text-slate-400 font-black uppercase tracking-[0.3em]">Institutional Grade Security</p>
+                    <div className="flex justify-center gap-4 mt-4">
+                        <ShieldCheck className="w-5 h-5 text-emerald-500/50" />
+                        <Lock className="w-5 h-5 text-blue-500/50" />
+                        <Activity className="w-5 h-5 text-rose-500/50" />
                     </div>
                 </div>
             </motion.div>
 
-            {/* Action Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-linear-to-br from-rose-500 to-rose-600 rounded-[2.5rem] border border-rose-400 p-6 shadow-xl shadow-rose-500/20 space-y-4">
-                    <h3 className="text-[0.65rem] font-black text-rose-100 uppercase tracking-[0.2em] px-2 italic">Aadhar Services</h3>
-                    <div className="space-y-2">
-                        {menuItems.slice(0, 2).map((item) => (
-                            <button key={item.label} className="w-full flex items-center gap-4 p-4 hover:bg-white/10 rounded-2xl transition-colors group">
-                                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white group-hover:bg-white group-hover:text-rose-500 transition-colors">
-                                    <item.icon className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-sm font-black text-white tracking-tight leading-none">{item.label}</p>
-                                    <p className="text-[0.65rem] font-bold text-rose-100 uppercase mt-1 opacity-70">{item.desc}</p>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-rose-200 group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
+            <p className="absolute bottom-10 text-white/40 font-black text-[0.6rem] uppercase tracking-[0.5em]">Powered by Aadhar Desk Engine</p>
+        </div>
+    );
+};
 
-                <div className="bg-linear-to-br from-slate-800 to-slate-900 rounded-[2.5rem] border border-slate-700 p-6 shadow-xl space-y-4 text-white">
-                    <h3 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.2em] px-2 italic">Aadhar Lab</h3>
-                    <div className="space-y-2">
-                        {menuItems.slice(2).map((item) => (
-                            <button key={item.label} className="w-full flex items-center gap-4 p-4 hover:bg-white/5 rounded-2xl transition-colors group">
-                                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-slate-300">
-                                    <item.icon className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1 text-left">
-                                    <p className="text-sm font-black tracking-tight leading-none">{item.label}</p>
-                                    <p className="text-[0.65rem] font-bold text-slate-500 uppercase mt-1 leading-none">{item.desc}</p>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
+/* ── PROFILE PAGE ── */
+const ProfilePage = () => {
+    const { user } = useApp();
+    const navigate = useNavigate();
+    
+    // Background cycle sync
+    const [colorIndex, setColorIndex] = useState(0);
+
+    const PROFILE_GRADIENTS = [
+        'from-blue-500 to-cyan-600',
+        'from-red-500 to-rose-600',
+        'from-emerald-500 to-green-600',
+        'from-yellow-400 to-amber-600',
+        'from-pink-500 to-fuchsia-600'
+    ];
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setColorIndex(prev => (prev + 1) % PROFILE_GRADIENTS.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="relative flex flex-col items-center w-full min-h-screen pb-24 pt-4">
+            {/* Fixed Full Screen Background */}
+            <div className="fixed inset-0 z-0 bg-slate-900">
+                {PROFILE_GRADIENTS.map((grad, idx) => (
+                    <div 
+                        key={grad}
+                        className={cn(
+                            "absolute inset-0 bg-linear-to-br transition-opacity duration-1000",
+                            grad,
+                            idx === colorIndex ? "opacity-100" : "opacity-0"
+                        )}
+                    />
+                ))}
+                
+                {/* Visual Orbs based on image design */}
+                <div className="absolute top-[-5%] left-[-10%] w-[400px] h-[400px] bg-white/10 rounded-full blur-[80px]" />
+                <div className="absolute top-[20%] right-[-5%] w-[300px] h-[300px] bg-white/5 rounded-full blur-[60px]" />
+                <div className="absolute bottom-[-10%] left-[15%] w-[250px] h-[250px] bg-[#1E3A8A]/10 rounded-full blur-[70px]" />
             </div>
 
-            {/* Logout Button */}
-            <div className="pt-4">
-                <button 
-                    onClick={handleLogout}
-                    className="w-full bg-slate-100 hover:bg-rose-50 hover:text-rose-600 transition-all text-slate-500 py-6 rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-2"
-                >
-                    <LogOut className="w-5 h-5" />
-                    Sign Out Protocol
-                </button>
+            <div className="w-full max-w-[560px] mx-auto relative z-10 flex px-4">
+                 <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white hover:bg-white/30 active:scale-95 transition-all border border-white/10 shadow-lg">
+                     <ArrowLeft className="w-6 h-6" />
+                 </button>
+            </div>
+
+            {/* Profile Identity - Unobstructed */}
+            <div className="relative z-10 flex flex-col items-center px-4">
+                <div className="relative group mb-6 mt-4">
+                    <div className="w-36 h-36 rounded-full border-[8px] border-white/30 overflow-hidden shadow-2xl bg-white transition-transform group-hover:scale-105 duration-500">
+                         {user?.photoURL ? (
+                            <img src={user.photoURL} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-[#F8FAFC] text-slate-300">
+                                <UserIcon className="w-16 h-16" />
+                            </div>
+                        )}
+                    </div>
+                    <div className="absolute bottom-0 right-2 w-10 h-10 bg-emerald-500 text-white rounded-full border-[4px] border-white flex items-center justify-center shadow-lg">
+                        <Check className="w-5 h-5 stroke-[4]" />
+                    </div>
+                </div>
+                <h1 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase drop-shadow-md text-center leading-none">
+                    {user?.name || 'Aadhar Scholar'}
+                </h1>
+                <p className="text-xs md:text-sm font-bold text-white/90 tracking-widest mt-4 bg-white/20 px-5 py-2 rounded-full backdrop-blur-md shadow-sm text-center">
+                    {user?.email || 'guest@aadhar.edu.np'}
+                </p>
+            </div>
+
+            {/* Content Container */}
+            <div className="relative z-20 w-full max-w-[560px] mx-auto px-4 mt-12 space-y-4">
+                
+                {/* Stats / Quick Actions (Glassmorphism instead of opaque white) */}
+                <div className="bg-white/95 backdrop-blur-3xl rounded-[3rem] p-8 border border-white shadow-2xl">
+                    <div className="grid grid-cols-3 gap-6 mb-8">
+                        <div className="flex flex-col items-center gap-3">
+                            <button className="w-16 h-16 rounded-[1.5rem] bg-pink-50 text-pink-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
+                                <Trophy className="w-7 h-7" />
+                            </button>
+                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Awards</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-3">
+                            <button className="w-16 h-16 rounded-[1.5rem] bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
+                                <Settings className="w-7 h-7" />
+                            </button>
+                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Config</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-3">
+                            <button className="w-16 h-16 rounded-[1.5rem] bg-orange-50 text-orange-500 flex items-center justify-center shadow-inner hover:scale-110 active:scale-95 transition-all">
+                                <Bell className="w-7 h-7" />
+                            </button>
+                            <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest text-center">Alerts</span>
+                        </div>
+                    </div>
+
+                    {/* Academic Profile Details */}
+                    <div className="space-y-1">
+                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Security</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest">Active Pin</span>
+                                <ChevronRight className="w-3 h-3 text-slate-300" />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Academic Grade</span>
+                            <span className="text-xl font-black italic text-slate-900">{user?.grade || 'CLASS 10 (SEE)'}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Current Stream</span>
+                            <span className="text-[0.65rem] font-black text-slate-900 uppercase">Science & Tech</span>
+                        </div>
+                        
+                        <div className="flex items-center justify-between py-4 pb-2">
+                            <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-emerald-500 fill-emerald-500" /> Current Streak
+                            </span>
+                            <span className="text-2xl font-black text-slate-900 tabular-nums">{user?.streak || 0} DAYS</span>
+                        </div>
+                    </div>
+
+                    {/* Primary Action */}
+                    <button className="w-full mt-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-[0.65rem] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+                        Update Identity Core
+                    </button>
+                </div>
             </div>
             
-            <p className="text-center text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">Aadhar Pathshala • Version 3.4.2 Production</p>
-        </motion.div>
+            <p className="relative z-10 text-center text-[0.55rem] font-black text-white/50 uppercase tracking-widest mt-10">Aadhar Pathshala • Secure Profile V.4.0</p>
+        </div>
     );
 };
 
@@ -4763,10 +4813,7 @@ const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: s
                         >
                             <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
                         </button>
-                        <div className="flex flex-col">
-                            <span className="text-xl md:text-2xl font-black text-rose-600 leading-none tracking-tighter">AADHAR</span>
-                            <span className="text-xl md:text-2xl font-black text-blue-600 leading-none tracking-tight">PATHSHALA</span>
-                        </div>
+                        <Logo size="sm" />
                     </div>
                     <Link to="/profile" className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
                         {user?.photoURL ? (
@@ -5137,7 +5184,35 @@ const StudyTimer = () => {
     const navigate = useNavigate();
     const [time, setTime] = useState(25 * 60);
     const [isActive, setIsActive] = useState(false);
-    const [mode, setMode] = useState<'focus' | 'break'>('focus');
+    const [mode, setMode] = useState<'focus' | 'break' | 'long_break'>('focus');
+    const [totalSeconds, setTotalSeconds] = useState(25 * 60);
+
+    const MODES = {
+        focus: { 
+            name: 'DEEP FOCUS', 
+            time: 25 * 60, 
+            color: 'rose', 
+            icon: Target, 
+            gradient: 'from-rose-500 to-pink-600',
+            bg: 'bg-rose-500'
+        },
+        break: { 
+            name: 'BRAIN REST', 
+            time: 5 * 60, 
+            color: 'emerald', 
+            icon: Coffee, 
+            gradient: 'from-emerald-500 to-teal-600',
+            bg: 'bg-emerald-500'
+        },
+        long_break: { 
+            name: 'EXTENDED RECHARGE', 
+            time: 15 * 60, 
+            color: 'blue', 
+            icon: Wind, 
+            gradient: 'from-blue-500 to-indigo-600',
+            bg: 'bg-blue-500'
+        }
+    };
 
     useEffect(() => {
         let interval: any;
@@ -5145,45 +5220,178 @@ const StudyTimer = () => {
             interval = setInterval(() => setTime(t => t - 1), 1000);
         } else if (isActive && time === 0) {
             setIsActive(false);
-            setMode(mode === 'focus' ? 'break' : 'focus');
-            setTime(mode === 'focus' ? 5 * 60 : 25 * 60);
-            alert(mode === 'focus' ? "Focus session complete! Take a break." : "Break over! Back to deep work.");
+            const nextMode = mode === 'focus' ? 'break' : 'focus';
+            handleModeChange(nextMode);
+            alert(mode === 'focus' ? "Focus session complete! Take a break." : "Break over! Ready for another session?");
         }
         return () => clearInterval(interval);
     }, [isActive, time, mode]);
 
-    return (
-        <div className="space-y-8 animate-fade-up pb-24 text-center">
-            <div className="flex items-center gap-3 text-left">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Deep Focus</h1>
-            </div>
+    const handleModeChange = (newMode: 'focus' | 'break' | 'long_break') => {
+        setIsActive(false);
+        setMode(newMode);
+        const newTime = MODES[newMode].time;
+        setTime(newTime);
+        setTotalSeconds(newTime);
+    };
 
-            <div className={cn(
-                "w-72 h-72 mx-auto rounded-full border-8 flex flex-col items-center justify-center shadow-2xl transition-all duration-700 relative",
-                mode === 'focus' ? "border-rose-500 bg-rose-500 shadow-rose-500/20" : "border-emerald-500 bg-emerald-500 shadow-emerald-500/20"
-            )}>
-                <div className="absolute inset-4 rounded-full border border-white/20 border-dashed animate-spin-slow" />
-                <p className="text-[0.65rem] font-black text-white/60 uppercase tracking-[0.3em] mb-2">{mode === 'focus' ? 'CONCENTRATING' : 'RECHARGING'}</p>
-                <h2 className="text-7xl font-black text-white tracking-tighter leading-none mb-4">
-                    {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}
-                </h2>
+    const progress = totalSeconds > 0 ? (time / totalSeconds) * 100 : 0;
+    const currentMode = MODES[mode];
+
+    return (
+        <div className="space-y-6 animate-fade-up pb-32">
+            <header className="flex items-center gap-4 text-left">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all hover:scale-105 active:scale-95"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div className="flex flex-col">
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Focus Mind</h1>
+                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Science-Based Productivity</p>
+                </div>
+            </header>
+
+            <div className="relative flex flex-col items-center justify-center pt-8 pb-12">
+                {/* Mode Selector Capsules */}
+                <div className="flex gap-2 p-1.5 bg-slate-100 rounded-[2.5rem] mb-12 shadow-inner border border-slate-50">
+                    {(Object.keys(MODES) as Array<keyof typeof MODES>).map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => handleModeChange(m)}
+                            className={cn(
+                                "px-5 py-2.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest transition-all",
+                                mode === m 
+                                    ? "bg-white text-slate-900 shadow-md scale-105" 
+                                    : "text-slate-400 hover:text-slate-600"
+                            )}
+                        >
+                            {m.replace('_', ' ')}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Circular Timer Display */}
+                <div className="relative group">
+                    <div className={cn(
+                        "w-72 h-72 md:w-80 md:h-80 rounded-full flex flex-col items-center justify-center shadow-[0_32px_64px_-15px_rgba(0,0,0,0.2)] transition-all duration-1000 border-[12px] relative z-10",
+                        mode === 'focus' ? "border-rose-50" : mode === 'break' ? "border-emerald-50" : "border-blue-50",
+                        "bg-white"
+                    )}>
+                        {/* Progress Liquid fill style or simple ring */}
+                        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none scale-105">
+                            <circle
+                                cx="50%"
+                                cy="50%"
+                                r="48%"
+                                className={cn(
+                                    "fill-none stroke-[8px] transition-all duration-1000 ease-linear",
+                                    mode === 'focus' ? "stroke-rose-500" : mode === 'break' ? "stroke-emerald-500" : "stroke-blue-500"
+                                )}
+                                strokeDasharray="301.59"
+                                strokeDashoffset={(301.59 - (progress * 301.59 / 100)).toString()}
+                                strokeLinecap="round"
+                            />
+                        </svg>
+
+                        <div className="relative z-20 flex flex-col items-center">
+                            <div className={cn(
+                                "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg transition-colors duration-1000",
+                                currentMode.bg
+                            )}>
+                                <currentMode.icon className="w-6 h-6" />
+                            </div>
+                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">{currentMode.name}</p>
+                            <h2 className="text-7xl font-black text-slate-900 tracking-tighter leading-none tabular-nums">
+                                {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}
+                            </h2>
+                        </div>
+                    </div>
+
+                    {/* Background Decorative Rings */}
+                    <div className={cn(
+                        "absolute inset-0 rounded-full scale-110 opacity-20 blur-2xl transition-colors duration-1000",
+                        currentMode.bg
+                    )} />
+                </div>
             </div>
             
-            <div className="flex justify-center gap-6 max-w-sm mx-auto">
-                <button onClick={() => { setIsActive(false); setTime(t => Math.max(0, t - 300)); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all font-black text-base shadow-sm">- 5m</button>
-                <button onClick={() => setIsActive(!isActive)} className="bg-slate-900 text-white p-5 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all">
-                    {isActive ? <Pause className="w-8 h-8" /> : <Play className="w-8 h-8 ml-1" />}
-                </button>
-                <button onClick={() => { setIsActive(false); setTime(t => t + 300); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all font-black text-base shadow-sm">+ 5m</button>
-                <button onClick={() => { setIsActive(false); setTime(mode === 'focus' ? 25 * 60 : 5 * 60); }} className="bg-slate-100 text-slate-600 p-4 rounded-full hover:bg-slate-200 transition-all shadow-sm">
-                    <RotateCcw className="w-6 h-6" />
-                </button>
+            {/* Main Controls */}
+            <div className="max-w-sm mx-auto space-y-8">
+                <div className="flex justify-center items-center gap-6">
+                    <button 
+                        onClick={() => setTime(t => Math.max(0, t - 60))} 
+                        className="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
+                    >
+                        <ChevronDown className="w-6 h-6" />
+                    </button>
+
+                    <button 
+                        onClick={() => setIsActive(!isActive)} 
+                        className={cn(
+                            "w-24 h-24 rounded-full shadow-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 group",
+                            isActive ? "bg-slate-900" : currentMode.bg
+                        )}
+                    >
+                        {isActive ? (
+                            <Pause className="w-10 h-10 text-white fill-current" />
+                        ) : (
+                            <Play className="w-10 h-10 text-white ml-2 fill-current" />
+                        )}
+                    </button>
+
+                    <button 
+                        onClick={() => setTime(t => t + 60)} 
+                        className="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
+                    >
+                        <ChevronUp className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <button 
+                        onClick={() => handleModeChange(mode)}
+                        className="flex items-center justify-center gap-3 py-5 bg-white border border-slate-100 rounded-3xl text-slate-400 font-black uppercase tracking-widest text-[0.6rem] hover:bg-slate-50 transition-all shadow-sm group"
+                    >
+                        <RotateCcw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
+                        Restart
+                    </button>
+                    <div className="flex items-center justify-center gap-3 py-5 bg-slate-900 rounded-3xl text-white font-black uppercase tracking-widest text-[0.6rem] shadow-xl">
+                        <Flame className="w-4 h-4 text-orange-400" />
+                        {Math.floor(totalSeconds / 60)}m Goal
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                <button onClick={() => { setMode('focus'); setTime(25*60); }} className={cn("p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'focus' ? "bg-rose-500 text-white border-rose-500" : "bg-white border-slate-100 text-slate-400")}>Focus Sprint</button>
-                <button onClick={() => { setMode('break'); setTime(5*60); }} className={cn("p-4 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] border font-black text-xs uppercase tracking-widest transition-all", mode === 'break' ? "bg-emerald-500 text-white border-emerald-500" : "bg-white border-slate-100 text-slate-400")}>Brain Rest</button>
+            {/* Quick Presets Section */}
+            <div className="max-w-md mx-auto pt-8">
+                <div className="flex items-center gap-3 mb-6 px-4">
+                    <div className="h-px flex-1 bg-slate-100" />
+                    <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">Scientific Presets</span>
+                    <div className="h-px flex-1 bg-slate-100" />
+                </div>
+                <div className="grid grid-cols-3 gap-3 px-2">
+                    {[
+                        { label: 'Hyper Focus', time: 50, icon: '⚡' },
+                        { label: 'Pomodoro', time: 25, icon: '🍅' },
+                        { label: 'Micro Rest', time: 10, icon: '☕' }
+                    ].map((p) => (
+                        <button
+                            key={p.label}
+                            onClick={() => {
+                                setTime(p.time * 60);
+                                setTotalSeconds(p.time * 60);
+                                setIsActive(false);
+                            }}
+                            className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:border-blue/30 hover:shadow-lg transition-all group flex flex-col items-center"
+                        >
+                            <span className="text-lg mb-1 group-hover:scale-110 transition-transform">{p.icon}</span>
+                            <span className="text-slate-800 font-black text-xs">{p.time}m</span>
+                            <span className="text-[0.5rem] text-slate-400 font-bold uppercase tracking-widest mt-1">{p.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -5198,7 +5406,7 @@ const ExamCalendar = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const events = [
+    const defaultEvents = [
         { id: '1', title: 'SEE Form Deadline', date: 'Chaitra 5', type: 'deadline' },
         { id: '2', title: 'Physics Mock Test', date: 'Baisakh 12', type: 'mock' },
         { id: '3', title: 'District Level Exam', date: 'Jestha 20', type: 'exam' },
@@ -5222,7 +5430,12 @@ const ExamCalendar = () => {
     ];
 
     const [activeMonth, setActiveMonth] = useState('Baisakh');
+    const [customTasks, setCustomTasks] = useState<{ id: string, title: string, date: string, type: string }[]>([]);
+    const [selectedDateToAdd, setSelectedDateToAdd] = useState<string | null>(null);
+    const [newTaskTitle, setNewTaskTitle] = useState('');
+
     const activeMonthData = months2083.find(m => m.name === activeMonth)!;
+    const allEvents = [...defaultEvents, ...customTasks];
 
     const typeColors: Record<string, { bg: string, text: string, border: string, dot: string }> = {
         'deadline': { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', dot: 'bg-rose-500' },
@@ -5231,10 +5444,28 @@ const ExamCalendar = () => {
         'event': { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', dot: 'bg-emerald-500' }
     };
 
+    const handlePrevMonth = () => {
+        const idx = months2083.findIndex(m => m.name === activeMonth);
+        if (idx > 0) setActiveMonth(months2083[idx - 1].name);
+    };
+
+    const handleNextMonth = () => {
+        const idx = months2083.findIndex(m => m.name === activeMonth);
+        if (idx < months2083.length - 1) setActiveMonth(months2083[idx + 1].name);
+    };
+
+    const handleAddTask = () => {
+        if (newTaskTitle.trim() && selectedDateToAdd) {
+            setCustomTasks([...customTasks, { id: 't' + Date.now().toString(), title: newTaskTitle, date: selectedDateToAdd, type: 'event' }]);
+            setSelectedDateToAdd(null);
+            setNewTaskTitle('');
+        }
+    };
+
     return (
         <div className="space-y-8 animate-fade-up pb-24">
             <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400">
+                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:scale-105 active:scale-95 transition-all">
                     <ArrowLeft className="w-6 h-6" />
                 </button>
                 <div className="space-y-0.5">
@@ -5251,57 +5482,113 @@ const ExamCalendar = () => {
             </header>
 
             <div className="bg-white p-4 md:p-8 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-8 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50 pointer-events-none" />
                 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 px-2">
-                    <div className="space-y-1">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 px-2 lg:px-4">
+                    <div className="space-y-2">
                         <p className="text-[0.55rem] font-black text-slate-300 uppercase tracking-[0.3em]">Active period</p>
-                        <select 
-                            value={activeMonth}
-                            onChange={(e) => setActiveMonth(e.target.value)}
-                            className="bg-transparent border-none text-2xl font-black italic uppercase tracking-tighter text-slate-800 outline-none cursor-pointer hover:text-blue transition-colors appearance-none"
-                        >
-                            {months2083.map(m => (
-                                <option key={m.name} value={m.name}>{m.name} 2083</option>
-                            ))}
-                        </select>
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={handlePrevMonth} 
+                                disabled={activeMonth === months2083[0].name}
+                                className="w-10 h-10 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-blue hover:bg-slate-100 disabled:opacity-50 transition-all"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <select 
+                                value={activeMonth}
+                                onChange={(e) => setActiveMonth(e.target.value)}
+                                className="bg-transparent border-none text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-800 outline-none cursor-pointer hover:text-blue transition-colors appearance-none min-w-[150px] text-center"
+                            >
+                                {months2083.map(m => (
+                                    <option key={m.name} value={m.name}>{m.name} 2083</option>
+                                ))}
+                            </select>
+                            <button 
+                                onClick={handleNextMonth} 
+                                disabled={activeMonth === months2083[months2083.length - 1].name}
+                                className="w-10 h-10 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-blue hover:bg-slate-100 disabled:opacity-50 transition-all"
+                            >
+                                <ChevronRight className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
                     <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                            <div key={i} className={cn("w-8 h-8 flex items-center justify-center font-black text-[0.6rem]", i === 0 || i === 6 ? "text-rose-500" : "text-slate-400")}>
+                            <div key={i} className={cn("w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-black text-[0.65rem] md:text-xs", i === 0 || i === 6 ? "text-rose-500" : "text-slate-400")}>
                                 {d}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2 relative z-10 p-2">
+                <div className="grid grid-cols-7 gap-2 relative z-10 p-2 lg:px-4">
                     {Array.from({ length: activeMonthData.offset }).map((_, i) => (
                         <div key={`offset-${i}`} className="aspect-square" />
                     ))}
                     {Array.from({ length: activeMonthData.days }).map((_, i) => {
                         const dayNum = i + 1;
                         const dateStr = `${activeMonth} ${dayNum}`;
-                        const event = events.find(e => e.date === dateStr);
-                        const isToday = false; // Mock
+                        const dayEvents = allEvents.filter(e => e.date === dateStr);
+                        const isSelected = selectedDateToAdd === dateStr;
 
                         return (
-                            <div 
+                            <button 
                                 key={i} 
+                                onClick={() => {
+                                    setSelectedDateToAdd(isSelected ? null : dateStr);
+                                    setNewTaskTitle('');
+                                }}
                                 className={cn(
-                                    "aspect-square rounded-2xl flex flex-col items-center justify-center text-sm font-black relative transition-all group border-2",
+                                    "aspect-square rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-sm md:text-base font-black relative transition-all group border-2 cursor-pointer",
                                     (i + activeMonthData.offset) % 7 === 0 || (i + activeMonthData.offset) % 7 === 6 ? "text-rose-400 bg-rose-50/20 border-transparent" : "text-slate-600 bg-slate-50/50 border-transparent",
-                                    event ? "bg-white border-blue shadow-lg scale-105 z-10" : "hover:border-slate-200 hover:bg-white"
+                                    isSelected ? "border-blue bg-blue-50/50 scale-105 shadow-md z-20" : dayEvents.length ? "bg-white border-blue shadow-lg scale-105 z-10 hover:scale-110" : "hover:border-slate-200 hover:bg-white"
                                 )}
                             >
                                 {dayNum}
-                                {event && (
-                                    <div className={cn("absolute bottom-2 w-1.5 h-1.5 rounded-full animate-bounce", typeColors[event.type].dot)} />
+                                {dayEvents.length > 0 && (
+                                    <div className="absolute bottom-1 md:bottom-2 flex gap-1">
+                                        {dayEvents.slice(0, 3).map((e, idx) => (
+                                            <div key={idx} className={cn("w-1.5 h-1.5 rounded-full", typeColors[e.type].dot)} />
+                                        ))}
+                                    </div>
                                 )}
-                            </div>
+                            </button>
                         );
                     })}
                 </div>
+
+                <AnimatePresence>
+                    {selectedDateToAdd && (
+                        <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-blue-50/50 p-4 md:p-6 rounded-3xl border border-blue-100 flex flex-col md:flex-row gap-4 items-center relative z-10 mx-2 lg:mx-4"
+                        >
+                            <div className="flex-1 w-full">
+                                <p className="text-[0.65rem] font-black text-slate-500 uppercase tracking-widest mb-1">Add task for {selectedDateToAdd}</p>
+                                <input 
+                                    type="text" 
+                                    placeholder="Task title..." 
+                                    value={newTaskTitle}
+                                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                                    className="w-full bg-white px-4 py-3 rounded-2xl border border-slate-200 focus:border-blue outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300"
+                                    onKeyDown={(e) => {
+                                        if(e.key === 'Enter') handleAddTask();
+                                    }}
+                                />
+                            </div>
+                            <button 
+                                onClick={handleAddTask}
+                                disabled={!newTaskTitle.trim()}
+                                className="w-full md:w-auto px-6 py-3 bg-blue text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] hover:scale-105 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2 md:mt-5"
+                            >
+                                <ListChecks className="w-4 h-4" /> Add Task
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div className="pt-6 border-t border-slate-100 space-y-4 relative z-10 px-2 lg:px-4">
                     <div className="flex items-center justify-between">
@@ -5316,8 +5603,8 @@ const ExamCalendar = () => {
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {events.filter(e => e.date.includes(activeMonth)).length > 0 ? (
-                            events.filter(e => e.date.includes(activeMonth)).map(e => (
+                        {allEvents.filter(e => e.date.includes(activeMonth)).length > 0 ? (
+                            allEvents.filter(e => e.date.includes(activeMonth)).map(e => (
                                 <div key={e.id} className={cn("p-5 rounded-3xl border flex items-center justify-between group hover:scale-[1.02] transition-all", typeColors[e.type].bg, typeColors[e.type].border)}>
                                     <div className="flex items-center gap-4">
                                         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-sm", typeColors[e.type].text)}>
@@ -6279,6 +6566,12 @@ const AdminPortalPage = () => {
 };
 
 const AppContent = () => {
+    const { user } = useApp();
+
+    if (!user) {
+        return <LoginPage />;
+    }
+
     return (
         <Layout>
             <Routes>
@@ -6312,7 +6605,6 @@ const AppContent = () => {
                 <Route path="/tools/words" element={<WordCounterPage />} />
                 <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
                 <Route path="/tools/translator" element={<TranslatorPage />} />
-                <Route path="/tools/attendance" element={<AttendanceTracker />} />
                 <Route path="/tools/flashcards" element={<FlashcardApp />} />
             </Routes>
         </Layout>
@@ -6378,18 +6670,6 @@ const AppProvider = ({ children }: any) => {
             const savedUser = localStorage.getItem('logged_user');
             if (savedUser) {
                 setUser(JSON.parse(savedUser));
-            } else {
-                // Initialize default student profile
-                const defaultUser: User = {
-                    id: 'guest_' + Math.random().toString(36).substr(2, 9),
-                    name: 'Guest Scholar',
-                    email: 'guest@aadhar.edu.np',
-                    grade: '10',
-                    streak: 5,
-                    completedChapters: []
-                };
-                setUser(defaultUser);
-                localStorage.setItem('logged_user', JSON.stringify(defaultUser));
             }
             setIsInitializing(false);
         };
