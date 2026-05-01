@@ -3254,28 +3254,18 @@ const WordCounterPage = () => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+            <div className="bg-white p-2 rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
                 <textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="Paste or type your essay here..."
-                    className="w-full h-64 p-6 outline-none resize-none text-slate-700 font-medium leading-relaxed bg-transparent"
+                    placeholder="Paste your text here for processing..."
+                    className="w-full min-h-[300px] p-8 text-slate-800 font-bold placeholder:text-slate-300 focus:outline-hidden resize-none leading-relaxed"
                 />
-                <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center">
-                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400">Real-time analysis</span>
-                    <button 
-                        onClick={() => setText('')}
-                        className="text-xs font-black uppercase tracking-wider text-rose-500 hover:text-rose-600"
-                    >
-                        Clear Text
-                    </button>
-                </div>
             </div>
         </div>
     );
 };
 
-/* ── SUBJECT DETAIL ── */
 const SubjectDetail = () => {
     const { name } = useParams();
     const navigate = useNavigate();
@@ -3283,92 +3273,83 @@ const SubjectDetail = () => {
     const Icon = config.icon;
 
     const sections = [
-        { id: 'chapters', label: 'Study Chapters', icon: Book, color: 'bg-emerald-50 text-emerald-600', count: '12 Units' },
-        { id: 'book', label: 'Digital Textbook', icon: Library, color: 'bg-cyan-50 text-cyan-600', count: 'Official PDF' },
-        { id: 'videos', label: 'Video Tutorials', icon: PlayCircle, color: 'bg-rose-50 text-rose-600', count: '45+ Videos' },
-        { id: 'pdfs', label: 'Note Archives', icon: FileText, color: 'bg-blue-50 text-blue-600', count: '10 PDFs' },
-        { id: 'notes', label: 'Shared Notes', icon: Edit3, color: 'bg-amber-50 text-amber-600', count: 'Community' },
-        { id: 'model', label: 'Model Questions', icon: ListChecks, color: 'bg-indigo-50 text-indigo-600', count: '2083 Pattern' }
+        { id: 'chapters', label: 'Study Chapters', icon: BookOpen, color: 'bg-emerald-50 text-emerald-600', count: 'Core Specification' },
+        { id: 'textbooks', label: 'Digital Library', icon: Library, color: 'bg-cyan-50 text-cyan-600', count: 'Official Books' },
+        { id: 'videos', label: 'Video Classes', icon: PlayCircle, color: 'bg-rose-50 text-rose-600', count: 'Smart Tutorials' },
+        { id: 'pdfs', label: 'Note Archive', icon: FileText, color: 'bg-blue-50 text-blue-600', count: 'Exam Materials' },
+        { id: 'model', label: 'Board Trial', icon: ListChecks, color: 'bg-indigo-50 text-indigo-600', count: '2083 Pattern' }
     ];
 
-    const handleSectionClick = (sectionId: string) => {
-        navigate(`/hub/${name}/${sectionId === 'book' ? 'textbooks' : sectionId}`);
-    };
-
     return (
-        <div className="space-y-8 animate-fade-up pb-24 text-[#020617]">
-            <header className="flex items-center justify-between px-2">
+        <div className="space-y-6 animate-fade-up pb-32 text-slate-900 px-1">
+            <header className="flex items-center justify-between">
                 <button 
                     onClick={() => navigate('/hub')} 
-                    className="w-10 h-10 md:w-12 md:h-12 bg-slate-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all z-20"
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 active:scale-95 transition-all"
                 >
-                    <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
+                    <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", `bg-${config.color}-50 text-${config.color}-600`)}>
-                    Active Subject Hub
+                    Verified Module
                 </div>
             </header>
 
-            <div className={cn("p-10 rounded-[3.5rem] text-white overflow-hidden relative shadow-2xl bg-linear-to-br", config.gradient)}>
-                <div className="relative z-10 space-y-4">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
-                        <Icon className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="space-y-1">
-                        <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none">{name}</h1>
-                        <p className="text-[0.7rem] font-black text-white/60 uppercase tracking-widest">Mastery Level: 45%</p>
-                    </div>
+            <div className={cn("p-8 rounded-[2.5rem] text-white overflow-hidden relative shadow-xl min-h-[180px] flex flex-col justify-end border-2 border-white/30 bg-linear-to-br", config.gradient)}>
+                <div className="relative z-10">
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-1">{name}</h1>
+                    <p className="text-[0.6rem] font-black text-white/70 uppercase tracking-[0.2em]">Syllabus Synchronization: Active</p>
                 </div>
-                <div className="absolute top-0 right-0 p-8 opacity-10">
-                    <Icon className="w-48 h-48 -rotate-12 translate-x-12 -translate-y-12" />
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Icon className="w-32 h-32 -rotate-12 translate-x-8 -translate-y-8" />
+                </div>
+                <div className="absolute top-4 left-4">
+                     <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
+                        <Icon className="w-5 h-5 text-white" />
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-                {sections.map(Section => (
+            <div className="grid grid-cols-1 gap-3">
+                {sections.map(section => (
                     <button 
-                        key={Section.id} 
-                        onClick={() => handleSectionClick(Section.id)}
-                        className="bg-white p-7 rounded-[2.5rem] border-2 border-slate-50 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all hover:border-blue hover:shadow-xl"
+                        key={section.id} 
+                        onClick={() => navigate(`/hub/${name}/${section.id}`)}
+                        className="bg-white p-4 px-5 rounded-[1.75rem] border border-slate-50 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all hover:border-slate-200"
                     >
-                        <div className="flex items-center gap-5">
-                            <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform", Section.color)}>
-                                <Section.icon className="w-7 h-7" />
+                        <div className="flex items-center gap-4">
+                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform", section.color)}>
+                                <section.icon className="w-6 h-6" />
                             </div>
                             <div className="text-left">
-                                <h3 className="font-black text-slate-800 text-lg tracking-tight uppercase leading-none">{Section.label}</h3>
-                                <p className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest mt-1">{Section.count}</p>
+                                <h3 className="font-black text-slate-900 text-base tracking-tight uppercase italic leading-none">{section.label}</h3>
+                                <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{section.count}</p>
                             </div>
                         </div>
-                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-blue group-hover:text-white transition-all">
-                            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 group-hover:text-slate-900 transition-all">
+                            <ChevronRight className="w-4 h-4" />
                         </div>
                     </button>
                 ))}
             </div>
             
-            <div className="mt-8">
-                <button 
-                    onClick={() => navigate(`/hub/${name}/mcq-sets`)}
-                    className={cn(
-                        "w-full p-8 rounded-[3rem] shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all text-white bg-linear-to-br",
-                        config.gradient
-                    )}
-                >
-                    <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center border border-white/20">
-                            <PenTool className="w-8 h-8 text-white" />
-                        </div>
-                        <div className="text-left">
-                            <h3 className="text-xl font-black italic tracking-tighter uppercase leading-none">MCQ's Test</h3>
-                            <p className="text-[0.65rem] font-black text-white/60 uppercase tracking-widest mt-2">Curated Exam Sets (Admin)</p>
-                        </div>
+            <button 
+                onClick={() => navigate(`/hub/${name}/mcq-sets`)}
+                className={cn(
+                    "w-full p-6 rounded-[2rem] shadow-xl flex items-center justify-between group active:scale-[0.98] transition-all text-white bg-linear-to-br",
+                    config.gradient
+                )}
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center border border-white/20">
+                        <PenTool className="w-6 h-6 text-white" />
                     </div>
-                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white group-hover:text-blue transition-all">
-                        <Zap className="w-6 h-6 text-white group-hover:text-amber-500 shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+                    <div className="text-left">
+                        <h3 className="text-lg font-black italic tracking-tighter uppercase leading-none">MCQ's Battle</h3>
+                        <p className="text-[0.55rem] font-black text-white/70 uppercase tracking-widest mt-1">Official Test Protocol</p>
                     </div>
-                </button>
-            </div>
+                </div>
+                <Zap className="w-5 h-5 text-white animate-pulse" />
+            </button>
         </div>
     );
 };
@@ -3559,7 +3540,7 @@ const MCQTestPlayer = () => {
                 <div className="space-y-6 md:space-y-8">
                     <header className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white", config.gradient)}>
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white bg-linear-to-br", config.gradient)}>
                                 {isTimerEnabled ? <Timer className="w-5 h-5 animate-pulse" /> : <ClipboardCheck className="w-5 h-5" />}
                             </div>
                             <div className="text-2xl md:text-3xl font-black italic tracking-tighter text-slate-900 tabular-nums">
@@ -3680,7 +3661,7 @@ const MCQTestPlayer = () => {
                         </div>
                         <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
                             <div 
-                                className={cn("h-full transition-all duration-1000", config.gradient)} 
+                                className={cn("h-full transition-all duration-1000 bg-linear-to-br", config.gradient)} 
                                 style={{ width: `${(score / questions.length) * 100}%` }} 
                             />
                         </div>
@@ -3697,7 +3678,7 @@ const MCQTestPlayer = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl", config.gradient)}>Retake Intelligence Test</button>
+                        <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl bg-linear-to-br", config.gradient)}>Retake Intelligence Test</button>
                         <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-linear-to-r from-rose-500 to-pink-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-rose-500/20 group flex items-center justify-center gap-3">
                             <Home className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
                             Return to Hub
@@ -3892,144 +3873,101 @@ const ProfilePage = () => {
     const { user, setUser } = useApp();
     const navigate = useNavigate();
     
+    const stats = [
+        { label: 'Total XP', value: user?.xp || 0, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
+        { label: 'Day Streak', value: user?.streak || 0, icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50' },
+        { label: 'Chapters', value: user?.completedChapters?.length || 0, icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { label: 'Rank', value: '#12', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' }
+    ];
+
+    const handleLogout = () => {
+        setUser(null);
+        localStorage.removeItem('logged_user');
+        navigate('/');
+    };
+
     return (
-        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col bg-[#F0F9FF]">
-            {/* Soft Blue Gradient Background */}
-            <div className="absolute inset-0 bg-linear-to-br from-sky-100/50 via-white to-blue-50/50" />
-            
-            {/* Header / Backdrop Area */}
-            <div className="relative pt-4 sm:pt-20 px-6 sm:px-10 pb-4 flex flex-col items-center z-10 shrink-0">
-                <div className="w-full max-w-md flex justify-between items-center mb-2 sm:mb-8">
-                    <motion.button 
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigate(-1)} 
-                        className="w-9 h-9 sm:w-12 sm:h-12 bg-white/80 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center text-slate-800 shadow-sm border border-white/50"
-                    >
-                        <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-                    </motion.button>
-                    <div className="flex flex-col items-end">
-                        <span className="text-[0.5rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#1D4ED8]">Account</span>
-                        <span className="text-[0.5rem] sm:text-[0.6rem] font-black uppercase tracking-widest text-[#EF4444]">Verified</span>
-                    </div>
+        <div className="min-h-screen bg-[#F8FAFC] pb-24 animate-fade-up">
+            <div className="relative h-48 bg-linear-to-br from-[#1D4ED8] to-[#1E40AF] overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
+                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
                 </div>
-
-                <motion.div 
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="relative"
-                >
-                    <div className="w-14 h-14 sm:w-40 sm:h-40 rounded-xl sm:rounded-[3rem] border-[3px] sm:border-[6px] border-white overflow-hidden shadow-2xl bg-white relative z-10">
-                        {/* Forced App Logo as profile pic for now as requested */}
-                        <img 
-                            src={LogoImg} 
-                            alt="App Logo" 
-                            className="w-full h-full object-cover opacity-95 p-1" 
-                            onError={(e) => {
-                                e.currentTarget.src = 'https://ui-avatars.com/api/?name=Scholar&background=random';
-                            }}
-                        />
-                    </div>
-                    <motion.div 
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: 0.5, type: 'spring' }}
-                        className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-12 sm:h-12 bg-[#EF4444] text-white rounded-md sm:rounded-2xl border-2 sm:border-4 border-white flex items-center justify-center shadow-lg z-20"
-                    >
-                        <ShieldCheck className="w-2.5 h-2.5 sm:w-6 sm:h-6" />
-                    </motion.div>
-                    <div className="absolute -inset-4 bg-white/20 blur-2xl rounded-full -z-10" />
-                </motion.div>
-
-                <div className="mt-2 sm:mt-8 text-center max-w-xs">
-                    <motion.h1 
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-lg sm:text-4xl font-black text-slate-900 tracking-tight leading-none mb-0.5 sm:mb-2"
-                    >
-                        {user?.name || 'Aadhar Scholar'}
-                    </motion.h1>
-                    <motion.p 
-                        initial={{ y: 10, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-[0.6rem] sm:text-sm font-bold text-slate-500 uppercase tracking-widest bg-slate-100/50 px-2.5 py-0.5 sm:px-4 sm:py-1.5 rounded-full inline-block"
-                    >
-                        {user?.email || 'guest@learn'}
-                    </motion.p>
-                </div>
+                <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-[#F8FAFC] to-transparent" />
+                <button onClick={() => navigate(-1)} className="absolute top-6 left-6 w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
+                    <ChevronLeft className="w-6 h-6" />
+                </button>
             </div>
-            
-            {/* Profile Content Section */}
-            <motion.div 
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-                className="relative z-20 flex-1 bg-white rounded-t-[1.5rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-4 sm:px-8 pt-3 sm:pt-6 flex flex-col min-h-0"
-            >
-                <div className="max-w-md mx-auto w-full flex-1 flex flex-col min-h-0 pb-4">
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 scroll-smooth">
-                        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-2 sm:mb-6">
-                            <motion.div 
-                                whileHover={{ y: -2 }}
-                                className="bg-blue-50/50 p-2 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-blue-100/50 flex flex-col items-center text-center"
-                            >
-                                <div className="w-7 h-7 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#1D4ED8] mb-1 sm:mb-3">
-                                    <Trophy className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
-                                </div>
-                                <span className="text-[0.45rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">XP Points</span>
-                                <span className="text-sm sm:text-xl font-black text-[#1D4ED8]">{user?.xp || 1250}</span>
-                            </motion.div>
-                            <motion.div 
-                                whileHover={{ y: -2 }}
-                                className="bg-red-50/50 p-2 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-red-100/50 flex flex-col items-center text-center"
-                            >
-                                <div className="w-7 h-7 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-2xl shadow-sm flex items-center justify-center text-[#EF4444] mb-1 sm:mb-3">
-                                    <Zap className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
-                                </div>
-                                <span className="text-[0.45rem] sm:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mb-0.5">Day Streak</span>
-                                <span className="text-sm sm:text-xl font-black text-[#EF4444]">{user?.streak || 5}</span>
-                            </motion.div>
-                        </div>
 
-                        <div className="space-y-1 sm:space-y-2">
-                            {[
-                                { label: 'Year', value: '2083 BS', icon: Calendar },
-                                { label: 'Grade', value: user?.grade || 'Class 10', icon: GraduationCap },
-                                { label: 'Status', value: 'Verified', icon: UserCheck },
-                                { label: 'Mode', value: 'High Level', icon: Lock },
-                            ].map((item, idx) => (
-                                <motion.div 
-                                    key={item.label}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.4 + (idx * 0.1) }}
-                                    className="flex items-center justify-between p-2.5 sm:p-5 bg-slate-50 border border-slate-100 rounded-xl sm:rounded-3xl group hover:bg-white hover:shadow-md transition-all"
-                                >
-                                    <div className="flex items-center gap-2 sm:gap-4">
-                                        <div className="w-6 h-6 sm:w-10 sm:h-10 bg-white rounded-lg sm:rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#1D4ED8] transition-colors shadow-sm">
-                                            <item.icon className="w-3 h-3 sm:w-5 h-5" />
-                                        </div>
-                                        <span className="text-[0.5rem] sm:text-[0.7rem] font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
-                                    </div>
-                                    <span className="text-[0.55rem] sm:text-[0.75rem] font-black text-slate-900 group-hover:text-[#1D4ED8] transition-colors">{item.value}</span>
-                                </motion.div>
-                            ))}
+            <div className="max-w-md mx-auto px-6 -mt-24 relative z-10">
+                <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 text-center border border-slate-100 mb-6">
+                    <div className="relative inline-block mb-4">
+                        <div className="w-28 h-28 rounded-[2.5rem] border-4 border-white shadow-xl overflow-hidden bg-slate-50 mx-auto">
+                            <img 
+                                src={LogoImg} 
+                                alt="Profile" 
+                                className="w-full h-full object-cover p-2"
+                                onError={(e) => {
+                                    e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + (user?.name || 'Scholar') + '&background=random';
+                                }}
+                            />
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-emerald-500 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-lg">
+                            <ShieldCheck className="w-5 h-5" />
                         </div>
                     </div>
 
-                    <div className="mt-3 pt-2 shrink-0 flex flex-col gap-2">
-                        <button className="w-full py-3 sm:py-6 bg-[#16423C] text-white rounded-xl sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.5rem] sm:text-[0.65rem] shadow-lg shadow-[#16423C]/20 active:scale-95 transition-all">
-                            Update Core Profile
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{user?.name || 'Scholar'}</h1>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">{user?.email || 'student@aadhar.edu.np'}</p>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        {stats.map((stat) => (
+                            <div key={stat.label} className={cn("p-4 rounded-3xl border border-slate-100 flex flex-col items-center", stat.bg)}>
+                                <stat.icon className={cn("w-5 h-5 mb-2", stat.color)} />
+                                <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 mb-0.5">{stat.label}</span>
+                                <span className={cn("text-lg font-black", stat.color)}>{stat.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h2 className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.3em] px-4 mb-2">Learning Profile</h2>
+                    
+                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                        {[
+                            { label: 'Academic Year', value: '2083 BS', icon: Calendar },
+                            { label: 'Current Grade', value: user?.grade || 'Class 10', icon: GraduationCap },
+                            { label: 'Account Identity', value: 'Verified Student', icon: UserCheck },
+                            { label: 'School Network', value: 'Aadhar Pathshala', icon: Globe },
+                        ].map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue group-hover:bg-blue/5 transition-all">
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
+                                </div>
+                                <span className="text-[0.75rem] font-black text-slate-900">{item.value}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex flex-col gap-3 pt-4">
+                        <button className="w-full py-5 bg-[#16423C] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-lg shadow-emerald-900/10 active:scale-95 transition-all flex items-center justify-center gap-3">
+                            <Settings className="w-4 h-4" />
+                            Update Profile
                         </button>
-                        
-                        <button onClick={() => { setUser(null); navigate('/login'); }} className="w-full py-2.5 sm:py-4 bg-white text-slate-400 rounded-xl sm:rounded-[2rem] border border-slate-100 font-black uppercase tracking-[0.2em] text-[0.45rem] sm:text-[0.6rem] hover:text-[#EF4444] transition-all">
+                        <button 
+                            onClick={handleLogout}
+                            className="w-full py-5 bg-white text-rose-500 border-2 border-rose-50 rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center gap-3"
+                        >
+                            <LogOut className="w-4 h-4" />
                             Sign Out Account
                         </button>
                     </div>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };
@@ -4051,51 +3989,52 @@ const StudyHub = () => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 onClick={() => navigate(`/hub/${name}`)}
-                className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1 transition-all text-left relative overflow-hidden"
+                className="bg-white p-4 rounded-[1.75rem] border border-slate-100 shadow-xs flex items-center gap-4 group hover:shadow-lg transition-all text-left relative overflow-hidden active:scale-[0.98]"
             >
-                <div className={cn("absolute -right-8 -top-8 w-32 h-32 bg-linear-to-br opacity-5 rounded-full blur-2xl pointer-events-none group-hover:opacity-10 group-hover:scale-150 transition-all duration-700", config.gradient)} />
-                <div className={cn("w-20 h-20 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-lg group-hover:shadow-xl group-hover:rotate-6 group-active:scale-95 transition-all duration-500 bg-linear-to-br text-white", config.gradient)}>
-                    <Icon className="w-10 h-10 drop-shadow-md" />
+                <div className={cn("w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover:rotate-3 transition-all duration-500 bg-linear-to-br text-white", config.gradient)}>
+                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
                 </div>
-                <div className="flex-1 min-w-0 pr-2">
-                    <h3 className="text-2xl font-black text-slate-800 tracking-tighter uppercase italic mb-2 group-hover:text-slate-900 transition-colors truncate">{name}</h3>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-[0.6rem] font-black uppercase tracking-widest text-slate-500 group-hover:bg-white group-hover:border-slate-200 transition-colors shrink-0">{sub.chapters.length} Units</span>
-                        <span className="px-3 py-1 rounded-lg bg-blue-50/50 border border-blue-100/50 text-[0.6rem] font-black uppercase tracking-widest text-blue-600 shrink-0">Updated</span>
+                <div className="flex-1 min-w-0 pr-1">
+                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tighter uppercase italic leading-none truncate mb-1">{name}</h3>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[0.5rem] font-bold uppercase tracking-widest text-slate-400">{sub.chapters.length} Units</span>
+                        <div className="w-1 h-1 rounded-full bg-slate-200" />
+                        <span className={cn("text-[0.45rem] font-black uppercase tracking-widest", `text-${config.color}-500`)}>Archive</span>
                     </div>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-slate-900 group-hover:border-slate-800 group-hover:shadow-lg group-hover:-rotate-45 transition-all duration-500 shrink-0">
-                    <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
-                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-900 transition-colors shrink-0" />
             </motion.button>
         );
     };
 
     return (
-        <div className="space-y-12 animate-fade-up pb-32">
-            <header className="space-y-1 px-4 md:px-2">
-                <h1 className="text-4xl sm:text-5xl md:text-6xl max-w-full font-black text-[#020617] italic tracking-tighter uppercase leading-none break-keep whitespace-nowrap">Study Hub</h1>
+        <div className="space-y-6 animate-fade-up pb-32 px-1">
+            <header className="space-y-0.5 pt-4">
+                <p className="text-[0.55rem] font-black text-blue uppercase tracking-[0.5em] italic opacity-60">Aadhar Ecosystem</p>
+                <h1 className="text-4xl md:text-5xl font-black text-black italic tracking-tighter uppercase leading-none">Learning Hub</h1>
             </header>
 
-            <div className="space-y-10">
-                <section className="space-y-6">
-                    <div className="flex items-center gap-4 px-4">
-                        <div className="h-[2px] flex-1 bg-linear-to-r from-blue/20 to-transparent" />
-                        <h2 className="text-[0.8rem] font-black text-blue uppercase tracking-[0.2em] italic">Anibarya / Compulsory Subjects</h2>
+            <div className="space-y-6">
+                <section className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest italic whitespace-nowrap">Compulsory Subjects</h2>
+                        <div className="h-px flex-1 bg-slate-100" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {Object.entries(data.subjects)
-                            .filter(([name]) => compulsory.includes(name))
-                            .map(([name, sub], i) => renderSubject(name, sub, i))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {compulsory.map((name, i) => {
+                            const sub = data.subjects[name];
+                            if (!sub) return null;
+                            return renderSubject(name, sub, i);
+                        })}
                     </div>
                 </section>
 
-                <section className="space-y-6">
-                    <div className="flex items-center gap-4 px-4">
-                        <div className="h-[2px] flex-1 bg-linear-to-r from-purple-500/20 to-transparent" />
-                        <h2 className="text-[0.7rem] font-black text-purple-500 uppercase tracking-[0.3em]">Optional Subjects</h2>
+                <section className="space-y-3">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest italic whitespace-nowrap">Optional Subjects</h2>
+                        <div className="h-px flex-1 bg-slate-100" />
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {Object.entries(data.subjects)
                             .filter(([name]) => !compulsory.includes(name))
                             .map(([name, sub], i) => renderSubject(name, sub, i))}
@@ -4111,40 +4050,46 @@ const ChapterList = () => {
     const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
 
     const dynamicChapters = liveMaterials.filter(m => m.subject === name && m.type === 'chapter');
     const allChapters = [...(sub?.chapters || []), ...dynamicChapters];
 
+    const accentBg = config.gradient.split(' ')[0].replace('from-', 'bg-');
+    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Learning Modules</h1>
+        <div className="space-y-4 animate-fade-up pb-24 text-slate-900">
+            <div className="flex items-center gap-3 px-1">
+                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all"><ArrowLeft className="w-5 h-5" /></button>
+                <div>
+                    <h1 className="text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Learning Modules</h1>
+                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Syllabus Index • {allChapters.length} Units</p>
+                </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
                 {allChapters.map((ch: any, i: number) => (
-                    <button
-                        key={ch.id}
+                    <button 
+                        key={ch.id} 
                         onClick={() => navigate(`/hub/${name}/chapters/${ch.id}`)}
-                        className="w-full bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:border-blue transition-all active:scale-95"
+                        className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 shadow-xs flex items-center justify-between group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]"
                     >
-                        <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-black text-xs border border-slate-100 group-hover:bg-blue group-hover:text-white transition-colors">
-                                {i + 1}
+                        <div className="flex items-center gap-4 min-w-0">
+                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xs shadow-md shrink-0", accentBg)}>
+                                {String(i + 1).padStart(2, '0')}
                             </div>
-                    <div className="text-left">
-                        <h2 className="font-black text-slate-800 tracking-tight leading-none mb-2 text-lg">{ch.title}</h2>
-                        <div className="flex flex-wrap gap-2">
-                             {(ch.topics || '').split(',').slice(0, 2).map((t: string) => (
-                                 <span key={t} className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">{t.trim()}</span>
-                             ))}
+                            <div className="text-left min-w-0">
+                                <h2 className="font-black text-slate-900 tracking-tight leading-tight mb-1 text-base uppercase italic">{ch.title}</h2>
+                                <div className="flex flex-wrap gap-1.5 items-center">
+                                     <span className={cn("text-[0.5rem] font-black uppercase tracking-widest px-2 py-0.5 rounded border shrink-0", accentText.replace('text-', 'bg-') + "/10", accentText, accentText.replace('text-', 'border-') + "/20")}>{ch.marks || 0} Marks</span>
+                                     <span className="w-1 h-1 rounded-full bg-slate-200" />
+                                     <p className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest truncate">{ch.topics ? ch.topics.split(',')[0] : 'General Study'}</p>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <span className="text-[0.6rem] font-black text-blue px-3 py-1 bg-blue/5 rounded-full uppercase tracking-widest">{ch.marks || 0} Marks</span>
-                            <ChevronRight className="w-5 h-5 text-slate-200 group-hover:text-blue group-hover:translate-x-1 transition-all" />
+                        <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all shrink-0">
+                            <ChevronRight className="w-4 h-4" />
                         </div>
                     </button>
                 ))}
@@ -4159,102 +4104,168 @@ const ChapterDetail = () => {
     const navigate = useNavigate();
     const sub = data.subjects[name as string] || Object.values(data.subjects)[0];
     const chapter = sub?.chapters?.find((c: any) => c.id === chapterId) || liveMaterials?.find(m => m.id === chapterId);
+    const [focusMode, setFocusMode] = useState(false);
 
-    if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Module entry not found in active registry</div>;
+    if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Entry Missing</div>;
 
     const isCompleted = user?.completedChapters?.includes(chapterId || '');
-
     const topicsList = (chapter.topics || '').split(',').filter(Boolean);
+    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+
+    const accentColor = config.gradient.split(' ')[0].replace('from-', 'bg-');
+    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+    const Icon = config.icon;
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24 text-slate-800">
-            <div className="flex items-center gap-4">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 line-clamp-1">{chapter.title}</h1>
-            </div>
+        <div className="animate-fade-up pb-32">
+            {!focusMode && (
+                <div className="space-y-6 mb-8">
+                    <div className="flex items-center justify-between px-1">
+                        <div className="flex items-center gap-3">
+                            <button 
+                                onClick={() => navigate(-1)} 
+                                className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all shadow-sm"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                            <div className="min-w-0">
+                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 block">{name} Archive</span>
+                                <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter uppercase leading-tight text-slate-900 truncate">Core Specification</h1>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setFocusMode(true)}
+                            className="flex items-center gap-2 p-2 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hover:text-slate-900 transition-all font-black text-[0.6rem] uppercase tracking-widest"
+                        >
+                            <EyeOff className="w-4 h-4" />
+                            <span className="hidden sm:inline">Focus</span>
+                        </button>
+                    </div>
 
-            <div className="bg-slate-900 p-10 rounded-[3.5rem] text-white overflow-hidden relative shadow-2xl">
-                <div className="relative z-10">
-                    <p className="text-[0.65rem] font-black uppercase text-blue border-l-2 border-blue pl-4 mb-4 tracking-[0.3em]">Knowledge Module • {chapter.marks || 0} Weightage</p>
-                    <h2 className="text-4xl font-black italic tracking-tighter leading-tight mb-6 uppercase">Target Knowledge Nodes</h2>
-                    <div className="flex flex-wrap gap-2">
-                        {topicsList.length > 0 ? topicsList.map((t: string) => (
-                            <span key={t} className="px-5 py-2 bg-white/10 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest backdrop-blur-md border border-white/10 italic">
-                                {t.trim()}
-                            </span>
-                        )) : (
-                            <span className="text-slate-500 font-black uppercase text-[0.6rem] tracking-widest">General Curriculum Mastery</span>
-                        )}
+                    <div className={cn("p-6 rounded-[2rem] text-white overflow-hidden relative shadow-xl min-h-[120px] flex flex-col justify-center border-2 border-white/20 bg-linear-to-br", config.gradient)}>
+                        <div className="relative z-10 flex items-center gap-4">
+                             <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shrink-0">
+                                <Icon className="w-7 h-7 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-[0.6rem] font-black text-white/70 uppercase tracking-widest">{name} • Module Protocol</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <Trophy className="w-3.5 h-3.5 text-white/80" />
+                                    <span className="text-[0.65rem] font-black uppercase tracking-widest">{chapter.marks || 0} Critical Marks</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Icon className="w-24 h-24 -rotate-12 translate-x-8 -translate-y-8" />
+                        </div>
+                    </div>
+
+                    <div className="px-1 space-y-4">
+                        <h2 className="text-3xl font-black italic tracking-tighter leading-tight uppercase text-slate-900">
+                             {chapter.title}
+                        </h2>
+                        
+                        <div className="flex flex-wrap gap-2">
+                            {topicsList.length > 0 ? topicsList.slice(0, 3).map((t: string, i: number) => (
+                                <div 
+                                    key={i} 
+                                    className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-2"
+                                >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                                    <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-tight italic">{t.trim()}</span>
+                                </div>
+                            )) : (
+                                 <div className="bg-slate-50 px-3 py-1.5 rounded-xl border-dashed border border-slate-200">
+                                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 italic font-mono">Full Unit Sync</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-blue/20 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
-            </div>
+            )}
 
-            <div className="p-8 sm:p-12 bg-white rounded-[3rem] border border-slate-100 shadow-xl prose prose-sm max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-headings:uppercase prose-p:font-bold prose-p:text-slate-500 leading-relaxed min-h-[300px]">
-                {chapter.file_url && chapter.file_url.toLowerCase().endsWith('.pdf') ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-                        <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center shadow-lg border border-rose-100">
-                             <FileText className="w-12 h-12" />
+            {focusMode && (
+                <div className="flex items-center justify-between mb-6 animate-fade-down bg-slate-900 p-4 rounded-2xl text-white">
+                    <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", accentColor)}>
+                             <BookOpen className="w-5 h-5" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-slate-800 uppercase italic mb-2">Rich PDF Asset Ready</h3>
-                            <p className="text-[0.7rem] text-slate-400 font-black uppercase tracking-widest mb-6 max-w-xs mx-auto">This module contains a proprietary specification document.</p>
-                            <a href={chapter.file_url} target="_blank" className="inline-flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">
+                            <p className="text-[0.5rem] font-black uppercase opacity-60">Focus Protocol Active</p>
+                            <h3 className="text-sm font-black uppercase tracking-tight italic truncate max-w-[180px]">{chapter.title}</h3>
+                        </div>
+                    </div>
+                    <button onClick={() => setFocusMode(false)} className="px-4 py-2 bg-white/10 rounded-lg text-[0.6rem] font-black uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10">Exit Focus</button>
+                </div>
+            )}
+            
+            <div className={cn("p-6 sm:p-10 bg-white border border-slate-100 shadow-xl min-h-[300px]", focusMode ? "rounded-3xl" : "rounded-[2.5rem]")}>
+                {chapter.file_url && chapter.file_url.toLowerCase().endsWith('.pdf') ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
+                        <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center shadow-lg border border-rose-100">
+                             <FileText className="w-10 h-10" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900 uppercase italic mb-1">Specification PDF Ready</h3>
+                            <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-6 max-w-[200px] mx-auto leading-relaxed">Encrypted learning module detected. Initiate transfer.</p>
+                            <a href={chapter.file_url} target="_blank" className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all">
                                 <Download className="w-4 h-4" />
-                                Initiate Transfer
+                                Download PDF
                             </a>
                         </div>
                     </div>
                 ) : (
-                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
-                        {chapter.text_content || chapter.description || chapter.contentHtml || '# Module Content Pending\nDeep-dive documentation for this unit is being synced. Please check back in a few moments for the complete curriculum roadmap.'}
-                    </Markdown>
+                    <div className="markdown-body text-black font-black prose-headings:text-black">
+                         <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                            {chapter.text_content || chapter.description || chapter.contentHtml || '# Module Content Pending\nDeep-dive documentation for this unit is being synced. Please check back in a few moments for the complete curriculum roadmap.'}
+                        </Markdown>
+                    </div>
                 )}
             </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4">
-                <button 
-                    onClick={() => navigate('/ai')}
-                    className="flex-1 bg-blue text-white p-6 rounded-[2.5rem] shadow-2xl shadow-blue/20 flex items-center justify-between group active:scale-95 transition-all"
-                >
-                    <div className="text-left">
-                        <p className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Stuck on this module?</p>
-                        <p className="text-lg font-black uppercase italic tracking-tighter">Ask Aadhar Pro</p>
-                    </div>
-                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
-                        <Zap className="w-5 h-5" />
-                    </div>
-                </button>
-                
+
+            <div className="pt-6">
                 <button 
                     onClick={() => toggleChapterComplete(chapterId || '')}
                     className={cn(
-                        "flex-1 p-6 rounded-[2.5rem] flex items-center justify-between group active:scale-95 transition-all border-2",
-                        isCompleted ? "bg-emerald-50 border-emerald-100 text-emerald-600" : "bg-white border-slate-100 text-slate-400"
+                        "w-full p-6 sm:p-8 rounded-[2.5rem] flex items-center justify-between group active:scale-95 transition-all border-4 shadow-xl relative overflow-hidden",
+                        isCompleted 
+                            ? "bg-slate-900 border-slate-800 text-white" 
+                            : "bg-white border-slate-50 text-slate-900"
                     )}
                 >
-                    <div className="text-left">
-                        <p className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-60 mb-0.5">Status</p>
-                        <p className="text-lg font-black uppercase italic tracking-tighter">
-                            {isCompleted ? 'Module Sync OK' : 'Mark Complete'}
-                        </p>
+                    <div className="text-left relative z-10">
+                        <p className={cn("text-[0.55rem] font-black uppercase tracking-widest mb-1 opacity-60", isCompleted ? "text-emerald-400" : "text-slate-400")}>Protocol Completion</p>
+                        <p className="text-lg sm:text-xl font-black uppercase italic tracking-tighter">{isCompleted ? 'Mission Accomplished' : 'Mark as Completed'}</p>
                     </div>
-                    <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center transition-transform",
-                        isCompleted ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-300 group-hover:scale-110"
-                    )}>
-                        {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <BookOpen className="w-6 h-6" />}
+                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-md relative z-10", isCompleted ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-300 group-hover:bg-slate-900 group-hover:text-white")}>
+                        {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
                     </div>
+                    {isCompleted && (
+                        <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 to-transparent pointer-events-none" />
+                    )}
                 </button>
             </div>
+            
+            {!focusMode && (
+                <div className="mt-8 flex gap-3">
+                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
+                        <MessageSquare className="w-5 h-5 text-slate-400 group-hover:text-blue transition-colors" />
+                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Discuss</span>
+                    </button>
+                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
+                        <Star className="w-5 h-5 text-slate-400 group-hover:text-amber-500 transition-colors" />
+                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Bookmark</span>
+                    </button>
+                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
+                        <Share2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
+                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Share</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
+
 
 const VideoList = () => {
     const { name } = useParams();
@@ -4348,6 +4359,7 @@ const PdfList = () => {
     const sub = data.subjects[name as string];
 
     const dynamicPdfs = liveMaterials.filter(m => m.subject === name && m.type === 'note_archive');
+    const allPdfs = [...(sub?.pdfs || []), ...dynamicPdfs];
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
@@ -4361,25 +4373,30 @@ const PdfList = () => {
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Archives</h1>
             </div>
 
-            <div className="space-y-4">
-                {/* Dynamic Content */}
-                {dynamicPdfs.length > 0 ? dynamicPdfs.map((p: any) => (
+            <div className="grid grid-cols-1 gap-4">
+                {allPdfs.length > 0 ? allPdfs.map((p: any) => (
                     <div 
                         key={p.id} 
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-blue transition-all"
+                        className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-xl hover:border-blue transition-all"
                     >
-                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-110 transition-transform">
-                            <Archive className="w-8 h-8" />
+                        <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex flex-col items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue group-hover:text-white transition-all overflow-hidden relative">
+                            <FileText className="w-8 h-8 z-10" />
+                            <span className="text-[0.45rem] font-bold uppercase mt-1 z-10">PDF</span>
+                            <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-500 group-hover:bg-white/20 transition-colors" />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1 italic">{p.title}</h3>
-                            <p className="text-[0.65rem] text-blue-400 font-bold leading-relaxed uppercase tracking-widest">Digital Archive • Vault Node</p>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1 truncate">{p.name || p.title}</h3>
+                            <p className="text-[0.6rem] text-slate-400 font-bold leading-relaxed uppercase tracking-widest line-clamp-1">{p.desc || 'Comprehensive Study Resource'}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-500 text-[0.5rem] font-black uppercase tracking-tighter">Verified</span>
+                                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-400 text-[0.5rem] font-black uppercase tracking-tighter">2.4 MB</span>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                             <button onClick={() => window.open(p.file_url || p.link_url, '_blank')} className="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-blue-100 hover:bg-blue-100">
+                        <div className="flex items-center gap-2">
+                             <button onClick={() => window.open(p.url || p.file_url || p.link_url, '_blank')} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-blue hover:text-white hover:border-blue">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={p.file_url || p.link_url} download target="_blank" className="w-12 h-12 bg-blue-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-blue-500/10 hover:bg-blue-600">
+                            <a href={p.url || p.file_url || p.link_url} download target="_blank" className="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg hover:bg-blue-600">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
@@ -4498,33 +4515,43 @@ const ModelList = () => {
     const sub = data.subjects[name as string];
 
     const dynamicModels = liveMaterials.filter(m => m.subject === name && m.type === 'model_question');
+    const allModels = [...(sub?.modelQuestions || []), ...dynamicModels];
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Model Questions</h1>
+                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Model Set Vault</h1>
             </div>
 
-            <div className="space-y-4">
-                {/* Dynamic Content */}
-                {dynamicModels.length > 0 ? dynamicModels.map((m: any) => (
+            <div className="grid grid-cols-1 gap-5">
+                {allModels.length > 0 ? allModels.map((m: any) => (
                     <div 
                         key={m.id} 
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-indigo-500 transition-all font-sans"
+                        className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-2xl hover:border-indigo-500 transition-all relative overflow-hidden"
                     >
-                        <div className="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-110 transition-transform">
-                            {m.file_url?.toLowerCase().endsWith('.png') || m.file_url?.toLowerCase().endsWith('.jpg') ? <GalleryVertical className="w-8 h-8" /> : <ClipboardCheck className="w-8 h-8" />}
+                        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                            <ShieldCheck className="w-20 h-20 rotate-12" />
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase mb-1">{m.title}</h3>
-                            <p className="text-[0.65rem] text-indigo-400 font-black leading-relaxed uppercase tracking-widest">Board Standard • 2083 Blueprint</p>
+
+                        <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-3xl flex flex-col items-center justify-center shrink-0 border border-indigo-100 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                            <ClipboardCheck className="w-8 h-8" />
+                            <span className="text-[0.4rem] font-black uppercase mt-1">SET</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                             <button onClick={() => window.open(m.file_url || m.link_url, '_blank')} className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-100">
+                        
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[0.5rem] font-black uppercase tracking-widest">Board Standard</span>
+                            </div>
+                            <h3 className="font-black text-slate-800 text-lg leading-tight uppercase truncate group-hover:text-indigo-600 transition-colors">{m.title || m.q || 'Model Question Set'}</h3>
+                            <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Blueprint 2083 • Aadhar Certified</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 relative z-10">
+                             <button onClick={() => window.open(m.file_url || m.link_url || '#', '_blank')} className="w-12 h-12 bg-white text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm">
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={m.file_url || m.link_url} download target="_blank" className="w-12 h-12 bg-indigo-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-indigo-500/10 hover:bg-indigo-600">
+                            <a href={m.file_url || m.link_url || '#'} download target="_blank" className="w-12 h-12 bg-indigo-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40">
                                 <Download className="w-5 h-5" />
                             </a>
                         </div>
@@ -4783,130 +4810,123 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
 };
 
 /** ── BOOK ILLUSTRATION COMPONENT ── */
-const BookIllustration = ({ color, subject }: { color: string, subject: string }) => {
-    const colors: Record<string, { primary: string, secondary: string, accent: string }> = {
-        blue: { primary: 'bg-blue-500', secondary: 'bg-blue-600', accent: 'bg-blue-400' },
-        purple: { primary: 'bg-purple-500', secondary: 'bg-purple-600', accent: 'bg-purple-400' },
-        red: { primary: 'bg-rose-500', secondary: 'bg-rose-600', accent: 'bg-rose-400' },
-        emerald: { primary: 'bg-emerald-500', secondary: 'bg-emerald-600', accent: 'bg-emerald-400' },
-        amber: { primary: 'bg-amber-500', secondary: 'bg-amber-600', accent: 'bg-amber-400' },
-        indigo: { primary: 'bg-indigo-500', secondary: 'bg-indigo-600', accent: 'bg-indigo-400' },
-        orange: { primary: 'bg-orange-500', secondary: 'bg-orange-600', accent: 'bg-orange-400' },
-        cyan: { primary: 'bg-cyan-500', secondary: 'bg-cyan-600', accent: 'bg-cyan-400' },
-        rose: { primary: 'bg-rose-500', secondary: 'bg-rose-600', accent: 'bg-rose-400' },
+const IsometricBook = ({ color, subject }: { color: string; subject: string }) => {
+    const coverColors: Record<string, { top: string; front: string; side: string }> = {
+        blue: { top: '#3b82f6', front: '#2563eb', side: '#1d4ed8' },
+        purple: { top: '#a855f7', front: '#9333ea', side: '#7e22ce' },
+        red: { top: '#f43f5e', front: '#e11d48', side: '#be123c' },
+        emerald: { top: '#10b981', front: '#059669', side: '#047857' },
+        amber: { top: '#f59e0b', front: '#d97706', side: '#b45309' },
+        indigo: { top: '#6366f1', front: '#4f46e5', side: '#4338ca' },
+        orange: { top: '#f97316', front: '#ea580c', side: '#c2410c' },
+        cyan: { top: '#06b6d4', front: '#0891b2', side: '#0e7490' },
+        rose: { top: '#f43f5e', front: '#e11d48', side: '#be123c' },
     };
 
-    const c = colors[color] || colors.blue;
-    const subjectConfig = SUBJECTS_CONFIG[subject as SubjectType] || { icon: BookOpen };
-    const SubjectIcon = subjectConfig.icon || BookOpen;
+    const c = coverColors[color] || coverColors.blue;
 
     return (
-        <div className="relative w-24 h-24 md:w-28 md:h-28 flex items-center justify-center transform group-hover:rotate-[-5deg] transition-transform duration-500">
-            {/* The Book Body */}
-            <div className={cn("absolute w-16 h-20 md:w-20 md:h-24 rounded-r-lg shadow-2xl relative z-20", c.primary)}>
-                {/* Spine shadow */}
-                <div className="absolute left-0 top-0 bottom-0 w-2 bg-black/10 rounded-r-sm" />
-                {/* Book Details */}
-                <div className="absolute inset-2 border border-white/20 rounded-md flex flex-col items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center mb-1">
-                        <SubjectIcon className="w-5 h-5 text-white/60" />
-                    </div>
-                    <span className="text-[0.4rem] font-black text-white/40 uppercase tracking-tighter mb-1">Vault</span>
-                    <div className="w-6 h-0.5 bg-white/30 rounded-full mb-1" />
-                    <div className="w-4 h-0.5 bg-white/20 rounded-full" />
-                </div>
-                {/* Bookmark */}
-                <div className="absolute top-0 right-3 w-3 h-6 bg-yellow-400 rounded-b-sm shadow-sm flex items-end justify-center pb-1">
-                    <div className="w-1 h-1 bg-black/10 rounded-full" />
-                </div>
-            </div>
-            {/* The Pages (Bottom layers) */}
-            <div className="absolute w-[calc(100%-4px)] h-[calc(100%-4px)] translate-x-1 translate-y-1 bg-white rounded-r-lg shadow-md z-10" />
-            <div className={cn("absolute w-16 h-20 md:w-20 md:h-24 translate-x-2 translate-y-2 rounded-r-lg shadow-lg z-0 opacity-40", c.secondary)} />
-            
-            {/* Subject Label Overlay */}
-            <div className="absolute -bottom-2 z-30 px-3 py-1 bg-white rounded-full border border-slate-100 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-               <span className="text-[0.5rem] font-black uppercase tracking-widest text-slate-400">{subject}</span>
-            </div>
+        <div className="relative w-32 h-40 transition-all duration-500 group-hover:scale-110 group-hover:-translate-y-2">
+            <svg viewBox="0 0 200 240" className="w-full h-full drop-shadow-2xl">
+                <path d="M40 80 L160 130 L160 210 L40 160 Z" fill="#F8FAFC" />
+                <path d="M160 130 L190 110 L190 190 L160 210 Z" fill="#E2E8F0" />
+                <path d="M30 75 L150 125 L185 105 L65 55 Z" fill={c.top} />
+                <path d="M30 75 L30 85 L150 135 L150 125 Z" fill={c.side} />
+                <path d="M150 135 L185 115 L185 105 L150 125 Z" fill={c.front} />
+                <path d="M50 78 L140 115" stroke="white" strokeWidth="2" strokeOpacity="0.2" />
+                <text x="75" y="95" transform="rotate(22, 75, 95)" fill="white" className="text-[14px] font-black uppercase tracking-tighter opacity-80">
+                    {subject.slice(0, 10)}
+                </text>
+            </svg>
         </div>
     );
 };
 
 const DigitalTextbookList = () => {
     const { name } = useParams();
-    const { liveMaterials } = useApp();
+    const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const [viewer, setViewer] = useState<{ isOpen: boolean; url: string; title: string }>({ isOpen: false, url: '', title: '' });
 
     const staticLink = BOOK_LINKS[name as string];
-    const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'digital_textbook');
-    const subjectConfig = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+    const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'textbook' || m.type === 'digital_textbook');
+    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+
+    const accentBg = config.gradient.split(' ')[0].replace('from-', 'bg-');
+    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+
+    const renderBookCard = (url: string, title: string, isOfficial: boolean) => {
+        const Icon = config.icon;
+        return (
+            <div 
+                key={url} 
+                className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]"
+            >
+                <div className={cn("w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-md group-hover:rotate-6 transition-all text-white border-4 border-white/20", accentBg)}>
+                    <Icon className="w-7 h-7 mb-0.5" />
+                    <div className="bg-white/20 px-1.5 py-0.5 rounded-sm">
+                        <span className="text-[0.35rem] font-black uppercase tracking-[0.2em]" style={{ fontFamily: 'monospace' }}>BOOK</span>
+                    </div>
+                </div>
+                
+                <div className="flex-1 min-w-0 px-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <span className={cn("px-2 py-0.5 rounded-md bg-slate-50 text-[0.55rem] font-black uppercase tracking-widest", isOfficial ? accentText : "text-slate-400")}>
+                            {isOfficial ? 'Council Ed.' : 'Ref Node'}
+                        </span>
+                        {isOfficial && <Zap className="w-3 h-3 text-amber-500 fill-current" />}
+                    </div>
+                    <h3 className="font-black text-black text-base leading-tight uppercase italic truncate">{title}</h3>
+                    <p className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Grade 10 • {name} Archive</p>
+                </div>
+    
+                <div className="flex items-center gap-2">
+                     <button 
+                        onClick={() => setViewer({ isOpen: true, url, title })}
+                        className="w-9 h-9 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </button>
+                    <a 
+                        href={url} 
+                        download 
+                        target="_blank" 
+                        className={cn("w-9 h-9 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md", accentBg)}
+                    >
+                        <Download className="w-4 h-4" />
+                    </a>
+                </div>
+            </div>
+        );
+    };
 
     return (
-        <div className="fixed inset-0 z-[1001] bg-slate-50 flex flex-col overflow-y-auto animate-fade-up">
-            {/* Immersive Header inspired by Dictionary */}
-            <div className="w-full max-w-7xl mx-auto px-6 py-8 md:py-16 space-y-4">
-                <div className="flex items-center gap-5">
+        <div className="fixed inset-0 z-[1001] bg-[#F8FAFC] flex flex-col overflow-y-auto animate-fade-up">
+            <div className="w-full max-w-2xl mx-auto px-4 py-8 md:py-12">
+                <div className="flex items-center gap-4 mb-8">
                     <button 
                         onClick={() => navigate(-1)} 
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
+                        className="w-12 h-12 rounded-xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
                     >
                         <ArrowLeft className="w-6 h-6" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{name} Vault</h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.2em] leading-none">Curated Educational Archive</p>
+                        <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 leading-tight">{name} Library</h1>
+                        <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Official Resource Archive • Grade X</p>
+                    </div>
+                </div>
+
+                <div className="space-y-3">
+                    {staticLink && renderBookCard(staticLink, `${name} Official Textbook`, true)}
+                    {dynamicBooks.map((b: any) => renderBookCard(b.file_url || b.link_url, b.title, false))}
+                    
+                    {(!staticLink && dynamicBooks.length === 0) && (
+                        <div className="flex flex-col items-center justify-center py-24 opacity-20">
+                            <Library className="w-16 h-16 text-slate-300 stroke-[1]" />
+                            <p className="text-[0.6rem] font-black uppercase tracking-[0.4em] mt-6 text-center">Library Empty</p>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex-1 w-full max-w-7xl mx-auto px-6 pb-32">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 md:gap-10">
-                    {/* Main Static Textbook */}
-                    {staticLink && (
-                        <button 
-                            onClick={() => setViewer({ isOpen: true, url: staticLink, title: `${name} Textbook` })}
-                            className="group relative flex flex-col items-center justify-center aspect-[4/5] bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.08)] hover:translate-y-[-5px] transition-all duration-500 overflow-hidden text-center"
-                        >
-                            <div className={`absolute inset-0 bg-linear-to-br opacity-[0.03] group-hover:opacity-[0.1] transition-opacity ${subjectConfig.gradient}`} />
-                            
-                            <BookIllustration color={subjectConfig.color} subject={name as string} />
-                            
-                            <div className="relative z-10 mt-6 px-4">
-                                <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors">Vol 1.0</h3>
-                                <p className="text-[0.55rem] font-bold text-slate-300 uppercase mt-1">Official Publication</p>
-                            </div>
-                        </button>
                     )}
-
-                    {/* Secondary Link Books */}
-                    {dynamicBooks.map((b) => (
-                        <button 
-                            key={b.id}
-                            onClick={() => setViewer({ isOpen: true, url: b.link_url || b.file_url, title: b.title })}
-                            className="group relative flex flex-col items-center justify-center aspect-[4/5] bg-white rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.08)] hover:translate-y-[-5px] transition-all duration-500 overflow-hidden text-center"
-                        >
-                            <div className="absolute inset-0 bg-linear-to-br from-indigo-500 to-purple-600 opacity-[0.03] group-hover:opacity-[0.1] transition-opacity" />
-                            
-                            <BookIllustration color="indigo" subject={b.title} />
-                            
-                            <div className="relative z-10 mt-6 px-4 w-full">
-                                <h3 className="text-[0.7rem] font-black uppercase tracking-[0.1em] text-slate-400 group-hover:text-slate-900 transition-colors line-clamp-1">{b.title}</h3>
-                                <p className="text-[0.55rem] font-bold text-slate-300 uppercase mt-1">Reference Material</p>
-                            </div>
-                        </button>
-                    ))}
                 </div>
-
-                {dynamicBooks.length === 0 && !staticLink && (
-                    <div className="flex flex-col items-center justify-center py-32 opacity-20">
-                        <BookOpen className="w-20 h-20 text-slate-300 stroke-[1]" />
-                        <p className="text-[0.7rem] font-black uppercase tracking-[0.4em] mt-8">Secure Archive Empty</p>
-                    </div>
-                )}
             </div>
 
             <BookViewer 
@@ -4918,6 +4938,7 @@ const DigitalTextbookList = () => {
         </div>
     );
 };
+
 
 /** ── SHARED TOOL HEADER ── */
 const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: string, subtitle: string, themeColor?: string, onBack: () => void }) => {
@@ -7120,11 +7141,75 @@ const useApp = () => useContext(AppContext);
 const INITIAL_DATA: AppData = {
     news: [],
     subjects: {
-        'Science': { id: 'Science', color: 'emerald', icon: 'Microscope', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'नेपाली': { id: 'नेपाली', color: 'purple', icon: 'Edit3', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'सामाजिक': { id: 'सामाजिक', color: 'amber', icon: 'Globe', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'Maths': { id: 'Maths', color: 'red', icon: 'Sigma', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
-        'English': { id: 'English', color: 'blue', icon: 'Languages', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'English': { 
+            id: 'English', color: 'blue', icon: 'Languages', 
+            chapters: [
+                { id: 'en1', title: 'Unit 1: Environment and Ecology', marks: 10, topics: 'Reading, Grammar, Writing' },
+                { id: 'en2', title: 'Unit 2: Science and Technology', marks: 12, topics: 'Innovation, Robotics, Future' }
+            ], 
+            videos: [
+                { id: 'ev1', title: 'Unit 1: Reading Comprehension', channel: 'Aadhar TV', duration: '12:45', youtubeId: 'dQw4w9WgXcQ' },
+                { id: 'ev2', title: 'Grammar: Direct and Indirect Speech', channel: 'Aadhar TV', duration: '15:20', youtubeId: 'dQw4w9WgXcQ' }
+            ], 
+            pdfs: [
+                { id: 'ep1', name: 'English Unit 1 Guide', desc: 'Comprehensive guide for unit 1', url: '#' },
+                { id: 'ep2', name: 'Grammar Practice Set', desc: 'Important grammar questions', url: '#' }
+            ], 
+            modelQuestions: [
+                { id: 'em1', q: 'What is the passive form of "He writes a letter"?' }
+            ] 
+        },
+        'नेपाली': { 
+            id: 'नेपाली', color: 'purple', icon: 'Edit3', 
+            chapters: [
+                { id: 'ne1', title: 'पाठ १: मेरो देश', marks: 8, topics: 'कविता, निबन्ध, व्याकरण' },
+                { id: 'ne2', title: 'पाठ २: आमा', marks: 10, topics: 'कथा, चरित्र चित्रण' }
+            ], 
+            videos: [
+                { id: 'nv1', title: 'पाठ १: मेरो देश व्याख्या', channel: 'Aadhar TV', duration: '10:30', youtubeId: 'dQw4w9WgXcQ' }
+            ], 
+            pdfs: [
+                { id: 'np1', name: 'नेपाली पाठ १ नोट', desc: 'पढ्न सजिलो नोट', url: '#' }
+            ], 
+            modelQuestions: [] 
+        },
+        'Maths': { 
+            id: 'Maths', color: 'red', icon: 'Sigma', 
+            chapters: [
+                { id: 'ma1', title: 'Chapter 1: Sets', marks: 5, topics: 'Venn Diagram, Union, Intersection' },
+                { id: 'ma2', title: 'Chapter 2: Profit and Loss', marks: 8, topics: 'CP, SP, Discount, VAT' }
+            ], 
+            videos: [
+                { id: 'mv1', title: 'Sets: Venn Diagram Logic', channel: 'Aadhar TV', duration: '18:40', youtubeId: 'dQw4w9WgXcQ' }
+            ], 
+            pdfs: [
+                { id: 'mp1', name: 'Maths Formula Sheet', desc: 'All formulas in one place', url: '#' }
+            ], 
+            modelQuestions: [] 
+        },
+        'Science': { 
+            id: 'Science', color: 'emerald', icon: 'Microscope', 
+            chapters: [
+                { id: 'sc1', title: 'Chapter 1: Force', marks: 10, topics: 'Gravity, Newton\'s Law, Weight' },
+                { id: 'sc2', title: 'Chapter 2: Pressure', marks: 8, topics: 'Liquid Pressure, Atmosphere' }
+            ], 
+            videos: [
+                { id: 'sv1', title: 'Force and Gravitation explained', channel: 'Aadhar TV', duration: '20:15', youtubeId: 'dQw4w9WgXcQ' }
+            ], 
+            pdfs: [
+                { id: 'sp1', name: 'Science Units and Formulas', desc: 'Handy science resource', url: '#' }
+            ], 
+            modelQuestions: [] 
+        },
+        'सामाजिक': { 
+            id: 'सामाजिक', color: 'amber', icon: 'Globe', 
+            chapters: [
+                { id: 'sa1', title: 'एकाइ १: हामी र हाम्रो समाज', marks: 7, topics: 'समाज, विकास, परिवर्तन' }
+            ], 
+            videos: [], 
+            pdfs: [], 
+            modelQuestions: [] 
+        },
         'Optional Maths': { id: 'Optional Maths', color: 'indigo', icon: 'Binary', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Account': { id: 'Account', color: 'orange', icon: 'ListChecks', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Computer': { id: 'Computer', color: 'cyan', icon: 'Monitor', chapters: [], videos: [], pdfs: [], modelQuestions: [] }
