@@ -12,12 +12,13 @@ import {
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, RotateCw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
-  Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff,
+  Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff, FileCode,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
-  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive,
+  BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive, Loader2,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
-  BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers
+  BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
+  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -202,16 +203,16 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
 // ════════════════════════════════════════════
 
 const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient: string }> = {
-  'English': { color: 'blue', icon: Languages, gradient: 'from-blue-500 to-indigo-600' },
-  'नेपाली': { color: 'purple', icon: Edit3, gradient: 'from-purple-500 to-pink-600' },
-  'Maths': { color: 'red', icon: Sigma, gradient: 'from-rose-500 to-orange-600' },
-  'Science': { color: 'emerald', icon: Microscope, gradient: 'from-emerald-500 to-teal-600' },
-  'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber-500 to-orange-500' },
-  'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo-600 to-violet-700' },
-  'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange-500 to-yellow-600' },
-  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-600' },
-  'Economics': { color: 'emerald', icon: TrendingUp, gradient: 'from-emerald-600 to-green-700' },
-  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose-500 to-red-600' }
+  'English': { color: 'blue', icon: Languages, gradient: 'from-blue to-indigo' },
+  'नेपाली': { color: 'purple', icon: Edit3, gradient: 'from-purple to-pink' },
+  'Maths': { color: 'red', icon: Sigma, gradient: 'from-red to-orange' },
+  'Science': { color: 'emerald', icon: Microscope, gradient: 'from-emerald to-teal' },
+  'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber to-orange' },
+  'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo to-violet' },
+  'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange to-yellow' },
+  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan to-blue' },
+  'Economics': { color: 'emerald', icon: TrendingUp, gradient: 'from-emerald to-teal' },
+  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose to-red' }
 };
 
 const BOOK_LINKS: Record<string, string> = {
@@ -254,9 +255,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       window.location.href = '/';
   };
 
+  const isAdminMode = location.pathname.startsWith('/admin-portal');
+
   return (
-    <div className={cn("min-h-screen", location.pathname === '/profile' ? 'bg-[#F8FAFC]' : 'bg-[#F8FAFC]')}>
-        <header className="fixed top-0 w-full z-[1000] bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 py-4">
+    <div className="min-h-screen bg-[#F8FAFC]">
+      {!isAdminMode && (
+        <header className="fixed top-0 w-full z-[1000] backdrop-blur-md border-b px-6 py-4 bg-white/80 border-slate-100">
           <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
             <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
               <Logo size="sm" />
@@ -276,12 +280,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
         </header>
+      )}
 
-      <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen pt-24">
+      <main className={cn("max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen", !isAdminMode && "pt-24")}>
         {children}
       </main>
 
-      {location.pathname !== '/profile' && (
+      {!isAdminMode && location.pathname !== '/profile' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
           <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
             {navItems.map((item) => {
@@ -1803,6 +1808,8 @@ const GPACalculator = () => {
         return initial;
     });
 
+    const [view, setView] = useState<'input' | 'result'>('input');
+
     const getGradeInfo = (percentage: number) => {
         if (percentage >= 90) return { gp: 4.0, grade: 'A+', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
         if (percentage >= 80) return { gp: 3.6, grade: 'A', color: 'text-green-600 bg-green-50 border-green-200' };
@@ -1836,20 +1843,87 @@ const GPACalculator = () => {
         return 'from-slate-400 to-slate-600 shadow-slate-500/30';
     };
 
-    return (
-        <div className="space-y-6 animate-fade-up">
-            <div className={cn("p-10 md:p-14 rounded-[3.5rem] md:rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 bg-linear-to-br", getGpaColor(gpa))}>
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-overlay pointer-events-none" />
-                <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -ml-10 -mb-10 mix-blend-overlay pointer-events-none" />
-                <p className="text-[0.6rem] md:text-[0.7rem] font-black uppercase tracking-[0.4em] mb-3 opacity-80 relative z-10 flex items-center justify-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Final Grade Point Average
-                </p>
-                <h1 className="text-8xl md:text-9xl font-black italic tracking-tighter mb-6 relative z-10 drop-shadow-lg">{gpa.toFixed(2)}</h1>
-                <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/20 rounded-full text-[0.65rem] md:text-xs font-black uppercase tracking-widest backdrop-blur-md border border-white/20 relative z-10 shadow-inner">
-                    <Trophy className="w-3.5 h-3.5 text-amber-300" /> SEE {new Date().getFullYear() + 57} Standard
+    if (view === 'result') {
+        const totalMarks = [...compulsory, ...optional].reduce((acc, s) => acc + marks[s.name].theory + marks[s.name].practical, 0);
+        const maxMarks = [...compulsory, ...optional].length * 100;
+        const overallPercentage = (totalMarks / maxMarks) * 100;
+
+        return (
+            <div className="space-y-6 animate-fade-up">
+                <button onClick={() => setView('input')} className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 hover:text-slate-900 active:scale-90 transition-all mb-4">
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+
+                <div className={cn("p-10 md:p-14 rounded-[3.5rem] md:rounded-[4rem] text-white text-center shadow-2xl relative overflow-hidden transition-all duration-700 bg-linear-to-br", getGpaColor(gpa))}>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 mix-blend-overlay pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-2xl -ml-10 -mb-10 mix-blend-overlay pointer-events-none" />
+                    <p className="text-[0.6rem] md:text-[0.7rem] font-black uppercase tracking-[0.4em] mb-3 opacity-80 relative z-10 flex items-center justify-center gap-2">
+                        <Sparkles className="w-4 h-4" /> Final Grade Point Average
+                    </p>
+                    <h1 className="text-8xl md:text-9xl font-black italic tracking-tighter mb-6 relative z-10 drop-shadow-lg">{gpa.toFixed(2)}</h1>
+                    <div className="inline-flex items-center gap-2 px-5 py-2 bg-white/20 rounded-full text-[0.65rem] md:text-xs font-black uppercase tracking-widest backdrop-blur-md border border-white/20 relative z-10 shadow-inner">
+                        <Trophy className="w-3.5 h-3.5 text-amber-300" /> SEE {new Date().getFullYear() + 57} Standard
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-md text-center">
+                        <h4 className="text-[0.6rem] uppercase font-black tracking-[0.2em] text-slate-400 mb-2">Total Marks</h4>
+                        <p className="text-4xl text-slate-800 font-black italic tracking-tighter"><span className="text-blue-500">{totalMarks}</span> <span className="text-xl text-slate-300">/ {maxMarks}</span></p>
+                    </div>
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-md text-center">
+                        <h4 className="text-[0.6rem] uppercase font-black tracking-[0.2em] text-slate-400 mb-2">Overall Perf</h4>
+                        <p className="text-4xl text-slate-800 font-black italic tracking-tighter"><span className="text-amber-500">{overallPercentage.toFixed(1)}</span><span className="text-xl text-slate-300">%</span></p>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden shadow-slate-200/50">
+                    <div className="bg-[#020617] px-8 py-5 flex justify-between items-center">
+                        <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-emerald-400" /> Subject Summary
+                        </h3>
+                    </div>
+                    <div className="p-4 space-y-2">
+                        {[...compulsory, ...optional].map((s, i) => {
+                            const { theory, practical } = marks[s.name];
+                            const percentage = theory + practical;
+                            const { grade, color } = getGradeInfo(percentage);
+                            return (
+                                <div key={s.name} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-[2rem] border border-slate-100 items-center">
+                                    <div className="flex items-center gap-4 w-full sm:w-auto mb-4 sm:mb-0">
+                                        <div className={cn(
+                                            "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2",
+                                            i < compulsory.length 
+                                                ? "bg-blue-100 text-blue-600 border-blue-200" 
+                                                : "bg-purple-100 text-purple-600 border-purple-200"
+                                        )}>
+                                            {s.name.charAt(0)}
+                                        </div>
+                                        <div className="text-left w-full">
+                                            <h4 className="font-bold text-slate-900 leading-none mb-1">{s.name}</h4>
+                                            <div className="flex items-center gap-2 w-full justify-between sm:justify-start">
+                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-tight">
+                                                    {i < compulsory.length ? 'Compulsory' : 'Optional'}
+                                                </p>
+                                                <span className="w-1 h-1 bg-slate-200 rounded-full hidden sm:block" />
+                                                <p className={cn("text-[0.55rem] font-black uppercase tracking-widest", percentage > 0 ? "text-emerald-500" : "text-slate-400")}>{percentage}% (T: {theory}, P: {practical})</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={cn("px-6 py-2 rounded-xl font-black text-sm border shadow-sm w-full sm:w-auto text-center shrink-0", color)}>
+                                        Grade {grade}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </div>
+        );
+    }
 
+    return (
+        <div className="space-y-6 animate-fade-up pb-32">
             <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden shadow-slate-200/50">
                 <div className="bg-[#020617] px-8 py-5 flex justify-between items-center">
                     <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
@@ -1865,14 +1939,13 @@ const GPACalculator = () => {
                     {[...compulsory, ...optional].map((s, i) => {
                         const { theory, practical } = marks[s.name];
                         const percentage = theory + practical;
-                        const { grade, color } = getGradeInfo(percentage);
                         return (
-                            <div key={s.name} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all relative z-10 gap-4">
+                            <div key={s.name} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 md:p-5 bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200 transition-all relative z-10 gap-4 group focus-within:ring-2 focus-within:ring-amber-200">
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2",
+                                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border-2 transition-transform group-focus-within:scale-110",
                                         i < compulsory.length 
-                                            ? "bg-blue-50 text-blue border-blue-100" 
+                                            ? "bg-blue-50 text-blue-600 border-blue-100" 
                                             : "bg-purple-50 text-purple-600 border-purple-100"
                                     )}>
                                         {s.name.charAt(0)}
@@ -1883,20 +1956,13 @@ const GPACalculator = () => {
                                             <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-tight">
                                                 {i < compulsory.length ? 'Compulsory' : 'Optional'}
                                             </p>
-                                            <span className="w-1 h-1 bg-slate-200 rounded-full" />
-                                            <p className={cn("text-[0.55rem] font-black uppercase tracking-widest", percentage > 0 ? "text-emerald-500" : "text-slate-400")}>{percentage}%</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4 sm:ml-auto">
-                                    {percentage > 0 && (
-                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border-2 shadow-sm", color)}>
-                                            {grade}
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
-                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20 transition-all relative group">
+                                    <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100 w-full justify-between">
+                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all relative">
                                             <span className="text-[0.5rem] font-black text-slate-300 absolute -top-2 left-2 bg-white px-1">TH</span>
                                             <input 
                                                 type="number" 
@@ -1908,11 +1974,11 @@ const GPACalculator = () => {
                                                     const val = parseInt(e.target.value);
                                                     setMarks({...marks, [s.name]: { ...marks[s.name], theory: isNaN(val) ? 0 : Math.min(75, Math.max(0, val)) }});
                                                 }}
-                                                className="w-10 text-center font-black text-slate-800 outline-none text-sm md:text-base bg-transparent p-0 placeholder:text-slate-200"
+                                                className="w-14 text-center font-black text-slate-800 outline-none text-base bg-transparent p-0 placeholder:text-slate-200"
                                             />
                                         </div>
                                         <span className="text-slate-300 font-bold px-1">+</span>
-                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-blue focus-within:ring-2 focus-within:ring-blue/20 transition-all relative group">
+                                        <div className="flex items-center rounded-xl bg-white px-3 py-2 shadow-sm border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all relative">
                                             <span className="text-[0.5rem] font-black text-slate-300 absolute -top-2 left-2 bg-white px-1">PR</span>
                                             <input 
                                                 type="number" 
@@ -1924,7 +1990,7 @@ const GPACalculator = () => {
                                                     const val = parseInt(e.target.value);
                                                     setMarks({...marks, [s.name]: { ...marks[s.name], practical: isNaN(val) ? 0 : Math.min(25, Math.max(0, val)) }});
                                                 }}
-                                                className="w-10 text-center font-black text-slate-800 outline-none text-sm md:text-base bg-transparent p-0 placeholder:text-slate-200"
+                                                className="w-14 text-center font-black text-slate-800 outline-none text-base bg-transparent p-0 placeholder:text-slate-200"
                                             />
                                         </div>
                                     </div>
@@ -1934,6 +2000,16 @@ const GPACalculator = () => {
                     })}
                 </div>
             </div>
+
+            <button 
+                onClick={() => setView('result')}
+                className="w-full bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl flex items-center justify-center gap-4 group active:scale-95 transition-all"
+            >
+                <span className="text-xl font-black italic uppercase tracking-tighter">Calculate Result</span>
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-500 transition-all">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+            </button>
         </div>
     );
 };
@@ -2000,7 +2076,7 @@ const HomePage = () => {
     }, []);
 
     return (
-        <div className="space-y-6 pb-20 px-1">
+        <div className="space-y-6 pb-20 px-1 text-slate-800">
             {/* Welcome Banner - Rectangular and Large like Subject Hub */}
             <AnimatePresence mode="wait">
                 <motion.div 
@@ -2024,18 +2100,18 @@ const HomePage = () => {
 
             {/* Summary Stats */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                    <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 mb-2 shadow-inner">
+                <div className="p-5 rounded-[2rem] shadow-sm border flex flex-col items-center bg-white border-slate-100">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-inner bg-amber-50 text-amber-500">
                         <Trophy className="w-5 h-5" />
                     </div>
-                    <div className="text-xl font-black text-slate-800 leading-none tabular-nums">{user?.xp || 0}</div>
+                    <div className="text-xl font-black leading-none tabular-nums text-slate-800">{user?.xp || 0}</div>
                     <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">{user?.email ? 'Academic Mastery' : 'Academic Standing'}</div>
                 </div>
-                <div className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col items-center">
-                    <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-rose-500 mb-2 shadow-inner">
+                <div className="p-5 rounded-[2rem] shadow-sm border flex flex-col items-center bg-white border-slate-100">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-inner bg-rose-50 text-rose-500">
                         <Flame className="w-5 h-5" />
                     </div>
-                    <div className="text-xl font-black text-slate-800 leading-none tabular-nums">{user?.streak || 1}</div>
+                    <div className="text-xl font-black leading-none tabular-nums text-slate-800">{user?.streak || 1}</div>
                     <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Active Day Streak</div>
                 </div>
             </div>
@@ -2044,10 +2120,10 @@ const HomePage = () => {
             <div className="space-y-4 pt-2">
                 <div className="flex items-center justify-between px-2">
                     <div className="flex items-center gap-2">
-                        <div className="bg-blue-100 text-blue-600 p-2 rounded-xl"><ToolLayout className="w-4 h-4" /></div>
-                        <h2 className="text-xl font-black text-slate-800 tracking-tight italic">Quick Tools</h2>
+                        <div className="p-2 rounded-xl bg-blue-100 text-blue-600"><ToolLayout className="w-4 h-4" /></div>
+                        <h2 className="text-xl font-black tracking-tight italic text-slate-800">Quick Tools</h2>
                     </div>
-                    <Link to="/tools" className="text-blue-600 font-black text-[0.65rem] uppercase tracking-[0.2em] hover:underline">Full Toolkit</Link>
+                    <Link to="/tools" className="font-black text-[0.65rem] uppercase tracking-[0.2em] hover:underline text-blue-600">Full Toolkit</Link>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
@@ -2059,10 +2135,10 @@ const HomePage = () => {
                         <Link 
                             key={t.id} 
                             to={t.path} 
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-[0_8px_20px_rgba(0,0,0,0.03)] flex flex-col items-center justify-center gap-4 hover:shadow-xl hover:border-blue/20 transition-all active:scale-95 text-center min-h-[140px]"
+                            className="p-6 rounded-[2.5rem] border flex flex-col items-center justify-center gap-4 transition-all active:scale-95 text-center min-h-[140px] group bg-white border-slate-100 shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-blue/20"
                         >
                             <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform shrink-0 shadow-sm",
+                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform shrink-0 shadow-sm group-hover:scale-110",
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
                                 t.color === 'orange' ? "bg-orange-50 text-orange-600" :
@@ -2071,7 +2147,7 @@ const HomePage = () => {
                             )}>
                                 <t.icon className="w-7 h-7" />
                             </div>
-                            <h3 className="font-black text-slate-800 text-[0.8rem] tracking-tighter uppercase italic">{t.label}</h3>
+                            <h3 className="font-black text-[0.8rem] tracking-tighter uppercase italic text-slate-800">{t.label}</h3>
                         </Link>
                     ))}
                 </div>
@@ -2337,7 +2413,7 @@ const NewsPage = () => {
     const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
     const [activeTab, setActiveTab] = useState('All');
 
-    useEffect(() => { fetchLiveNews(); }, []);
+    useEffect(() => { fetchLiveNews && fetchLiveNews(); }, []);
 
     const categories = [
         { id: 'All', icon: Globe, color: 'bg-slate-100 text-slate-600', active: 'bg-linear-to-r from-slate-800 to-slate-900 text-white' },
@@ -3357,7 +3433,7 @@ const SubjectDetail = () => {
 /* ── MCQ SET SELECTION ── */
 const MCQTestSelection = () => {
     const { name } = useParams();
-    const { liveMaterials } = useApp();
+    const { liveMaterials, liveMcqs } = useApp();
     const navigate = useNavigate();
     const [useTimer, setUseTimer] = useState(true);
     const [questionCount, setQuestionCount] = useState(30);
@@ -3376,7 +3452,14 @@ const MCQTestSelection = () => {
         })
         .filter(Boolean);
 
-    const sets = [...staticSets, ...dynamicSets];
+    const adminSets = liveMcqs
+        .filter(m => m.subject === name)
+        .map(m => ({
+            setName: m.title,
+            questions: m.questions || []
+        }));
+
+    const sets = [...staticSets, ...dynamicSets, ...adminSets];
 
     return (
         <div className="space-y-10 animate-fade-up pb-24">
@@ -3887,7 +3970,7 @@ const ProfilePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] pb-24 animate-fade-up">
+        <div className="min-h-screen pb-24 animate-fade-up bg-[#F8FAFC]">
             <div className="relative h-48 bg-linear-to-br from-[#1D4ED8] to-[#1E40AF] overflow-hidden">
                 <div className="absolute inset-0 opacity-10">
                     <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
@@ -3917,12 +4000,12 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{user?.name || 'Scholar'}</h1>
+                    <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">{user?.email || 'student@aadhar.edu.np'}</p>
 
                     <div className="grid grid-cols-2 gap-3">
                         {stats.map((stat) => (
-                            <div key={stat.label} className={cn("p-4 rounded-3xl border border-slate-100 flex flex-col items-center", stat.bg)}>
+                            <div key={stat.label} className={cn("p-4 rounded-3xl border flex flex-col items-center bg-slate-50 border-slate-100", stat.bg)}>
                                 <stat.icon className={cn("w-5 h-5 mb-2", stat.color)} />
                                 <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 mb-0.5">{stat.label}</span>
                                 <span className={cn("text-lg font-black", stat.color)}>{stat.value}</span>
@@ -3934,16 +4017,16 @@ const ProfilePage = () => {
                 <div className="space-y-4">
                     <h2 className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.3em] px-4 mb-2">Learning Profile</h2>
                     
-                    <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="rounded-[2rem] border shadow-sm overflow-hidden bg-white border-slate-100">
                         {[
                             { label: 'Academic Year', value: '2083 BS', icon: Calendar },
                             { label: 'Current Grade', value: user?.grade || 'Class 10', icon: GraduationCap },
                             { label: 'Account Identity', value: 'Verified Student', icon: UserCheck },
                             { label: 'School Network', value: 'Aadhar Pathshala', icon: Globe },
                         ].map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 group">
+                            <div key={idx} className="flex items-center justify-between p-5 transition-colors border-b last:border-0 group border-slate-50 hover:bg-slate-50">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue group-hover:bg-blue/5 transition-all">
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 group-hover:text-blue group-hover:bg-blue/5">
                                         <item.icon className="w-5 h-5" />
                                     </div>
                                     <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
@@ -3954,6 +4037,13 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="flex flex-col gap-3 pt-4">
+                        <button 
+                            onClick={() => navigate('/admin-portal')} 
+                            className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
+                        >
+                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                            Admin Dashboard
+                        </button>
                         <button className="w-full py-5 bg-[#16423C] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-lg shadow-emerald-900/10 active:scale-95 transition-all flex items-center justify-center gap-3">
                             <Settings className="w-4 h-4" />
                             Update Profile
@@ -4071,7 +4161,7 @@ const ChapterList = () => {
             <div className="grid grid-cols-1 gap-3">
                 {allChapters.map((ch: any, i: number) => (
                     <button 
-                        key={ch.id} 
+                        key={`${ch.id}-${i}`} 
                         onClick={() => navigate(`/hub/${name}/chapters/${ch.id}`)}
                         className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 shadow-xs flex items-center justify-between group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]"
                     >
@@ -4105,6 +4195,7 @@ const ChapterDetail = () => {
     const sub = data.subjects[name as string] || Object.values(data.subjects)[0];
     const chapter = sub?.chapters?.find((c: any) => c.id === chapterId) || liveMaterials?.find(m => m.id === chapterId);
     const [focusMode, setFocusMode] = useState(false);
+    const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '', docxUrl: '' });
 
     if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Entry Missing</div>;
 
@@ -4208,10 +4299,21 @@ const ChapterDetail = () => {
                         <div>
                             <h3 className="text-lg font-black text-slate-900 uppercase italic mb-1">Specification PDF Ready</h3>
                             <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-6 max-w-[200px] mx-auto leading-relaxed">Encrypted learning module detected. Initiate transfer.</p>
-                            <a href={chapter.file_url} target="_blank" className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all">
+                            <a href={chapter.file_url} target="_blank" onClick={(e) => {
+                                if (chapter.file_url?.toLowerCase().endsWith('.pdf')) {
+                                    e.preventDefault();
+                                    setViewer({ isOpen: true, url: chapter.file_url!, title: chapter.title, docxUrl: chapter.file_url_docx || '' });
+                                }
+                            }} className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all">
                                 <Download className="w-4 h-4" />
-                                Download PDF
+                                {chapter.file_url_docx ? 'View / Download Options' : 'View PDF'}
                             </a>
+                            {chapter.file_url_docx && (
+                                <a href={chapter.file_url_docx} download className="inline-flex items-center gap-3 px-8 py-4 ml-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all no-underline">
+                                    <FileCode className="w-4 h-4" />
+                                    Download Word
+                                </a>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -4262,6 +4364,14 @@ const ChapterDetail = () => {
                     </button>
                 </div>
             )}
+
+            <BookViewer 
+                isOpen={viewer.isOpen} 
+                onClose={() => setViewer({ ...viewer, isOpen: false })} 
+                url={viewer.url} 
+                title={viewer.title} 
+                docxUrl={viewer.docxUrl}
+            />
         </div>
     );
 };
@@ -4357,12 +4467,20 @@ const PdfList = () => {
     const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+    const [viewer, setViewer] = useState<{ isOpen: boolean; url: string; title: string, docxUrl?: string }>({ isOpen: false, url: '', title: '' });
+    const [selectionModal, setSelectionModal] = useState<any>(null);
 
     const dynamicPdfs = liveMaterials.filter(m => m.subject === name && m.type === 'note_archive');
     const allPdfs = [...(sub?.pdfs || []), ...dynamicPdfs];
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
+            <StudyPdfViewer 
+                isOpen={viewer.isOpen} 
+                onClose={() => setViewer({ ...viewer, isOpen: false })} 
+                url={viewer.url} 
+                title={viewer.title} 
+            />
             <div className="flex items-center gap-4">
                 <button 
                     onClick={() => navigate(-1)} 
@@ -4374,14 +4492,14 @@ const PdfList = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {allPdfs.length > 0 ? allPdfs.map((p: any) => (
+                {allPdfs.length > 0 ? allPdfs.map((p: any, i: number) => (
                     <div 
-                        key={p.id} 
+                        key={`${p.id}-${i}`} 
                         className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-5 group hover:shadow-xl hover:border-blue transition-all"
                     >
                         <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex flex-col items-center justify-center shrink-0 border border-blue-100 group-hover:bg-blue group-hover:text-white transition-all overflow-hidden relative">
                             <FileText className="w-8 h-8 z-10" />
-                            <span className="text-[0.45rem] font-bold uppercase mt-1 z-10">PDF</span>
+                            <span className="text-[0.45rem] font-bold uppercase mt-1 z-10">ARCHIVE</span>
                             <div className="absolute inset-x-0 bottom-0 h-1 bg-blue-500 group-hover:bg-white/20 transition-colors" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -4389,16 +4507,28 @@ const PdfList = () => {
                             <p className="text-[0.6rem] text-slate-400 font-bold leading-relaxed uppercase tracking-widest line-clamp-1">{p.desc || 'Comprehensive Study Resource'}</p>
                             <div className="flex items-center gap-2 mt-2">
                                 <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-500 text-[0.5rem] font-black uppercase tracking-tighter">Verified</span>
-                                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-400 text-[0.5rem] font-black uppercase tracking-tighter">2.4 MB</span>
+                                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-400 text-[0.5rem] font-black uppercase tracking-tighter">Node 4.2</span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                             <button onClick={() => window.open(p.url || p.file_url || p.link_url, '_blank')} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-blue hover:text-white hover:border-blue">
+                             {p.file_url_docx && (
+                                <a 
+                                    href={p.file_url_docx}
+                                    download
+                                    className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-600 hover:text-white"
+                                >
+                                    <FileCode className="w-5 h-5" />
+                                </a>
+                            )}
+                             <button 
+                                onClick={() => {
+                                    const pdf = p.url || p.file_url || p.link_url || '#';
+                                    if (pdf !== '#') setViewer({ isOpen: true, url: pdf, title: p.name || p.title });
+                                }} 
+                                className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all hover:scale-105 shadow-md"
+                            >
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={p.url || p.file_url || p.link_url} download target="_blank" className="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-lg hover:bg-blue-600">
-                                <Download className="w-5 h-5" />
-                            </a>
                         </div>
                     </div>
                 )) : (
@@ -4440,8 +4570,8 @@ const NoteList = () => {
 
             <div className="space-y-6">
                 {/* SHARED MARKDOWN NOTES */}
-                {sharedNotes.map((n: any) => (
-                    <div key={n.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group">
+                {sharedNotes.map((n: any, i: number) => (
+                    <div key={`${n.id}-${i}`} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col group">
                         <div className="bg-slate-900 p-6 flex justify-between items-center">
                             <h3 className="text-white font-black uppercase text-sm tracking-widest truncate flex-1">{n.title}</h3>
                             <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
@@ -4473,9 +4603,9 @@ const NoteList = () => {
                 ))}
 
                 {/* SIMPLE FILE NOTES */}
-                {simpleNotes.map((n: any) => (
+                {simpleNotes.map((n: any, i: number) => (
                     <div 
-                        key={n.id} 
+                        key={`${n.id}-${i}`} 
                         className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-xl hover:border-emerald-500 transition-all"
                     >
                         <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-110 transition-transform">
@@ -4508,26 +4638,108 @@ const NoteList = () => {
     );
 };
 
+const StudyPdfViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
+    if (!isOpen || !url) return null;
+    
+    // Convert Google Drive view URLs to preview URLs for embedding
+    const getPreviewUrl = (raw: string) => {
+        if (!raw) return '';
+        if (raw.includes('drive.google.com/file/d/')) {
+            const id = raw.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+            if (id) return `https://drive.google.com/file/d/${id}/preview`;
+        }
+        if (raw.toLowerCase().endsWith('.pdf')) {
+            return `https://docs.google.com/gview?url=${encodeURIComponent(raw)}&embedded=true`;
+        }
+        return raw;
+    };
+    
+    const embedUrl = getPreviewUrl(url);
+
+    return (
+        <AnimatePresence>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[5000] bg-slate-950/90 backdrop-blur-xl flex flex-col font-sans"
+            >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-slate-900/50">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/20 rounded-xl flex items-center justify-center border border-indigo-500/30">
+                            <FileText className="w-5 h-5 text-indigo-400" />
+                        </div>
+                        <div>
+                            <h2 className="text-white font-black uppercase italic tracking-tight">{title || 'Document Viewer'}</h2>
+                            <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest">Protected Study Material</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <a 
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="bg-white/5 hover:bg-white/10 text-white p-3 rounded-xl transition-colors border border-white/10 flex items-center gap-2"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                            <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Open Original</span>
+                        </a>
+                        <button 
+                            onClick={onClose}
+                            className="bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white p-3 rounded-xl transition-all border border-rose-500/20 active:scale-95"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+                
+                <div className="flex-1 w-full max-w-5xl mx-auto p-4 md:p-6 lg:p-8 relative">
+                    <div className="absolute inset-0 flex items-center justify-center -z-10">
+                        <div className="flex flex-col items-center opacity-50">
+                            <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-4" />
+                            <p className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-400">Loading Document Stream</p>
+                        </div>
+                    </div>
+                    <iframe 
+                        src={embedUrl}
+                        className="w-full h-full rounded-[2rem] bg-white shadow-2xl border border-white/10"
+                        allow="autoplay"
+                    />
+                </div>
+            </motion.div>
+        </AnimatePresence>
+    );
+};
+
 const ModelList = () => {
     const { name } = useParams();
     const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const sub = data.subjects[name as string];
+    const [viewer, setViewer] = useState<{ isOpen: boolean; url: string; title: string, docxUrl?: string }>({ isOpen: false, url: '', title: '' });
+    const [selectionModal, setSelectionModal] = useState<any>(null);
 
     const dynamicModels = liveMaterials.filter(m => m.subject === name && m.type === 'model_question');
     const allModels = [...(sub?.modelQuestions || []), ...dynamicModels];
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
+             <StudyPdfViewer 
+                isOpen={viewer.isOpen} 
+                onClose={() => setViewer({ ...viewer, isOpen: false })} 
+                url={viewer.url} 
+                title={viewer.title} 
+            />
             <div className="flex items-center gap-3">
                 <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Model Set Vault</h1>
             </div>
 
             <div className="grid grid-cols-1 gap-5">
-                {allModels.length > 0 ? allModels.map((m: any) => (
+                {allModels.length > 0 ? allModels.map((m: any, i: number) => (
                     <div 
-                        key={m.id} 
+                        key={`${m.id}-${i}`} 
                         className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:shadow-2xl hover:border-indigo-500 transition-all relative overflow-hidden"
                     >
                         <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
@@ -4548,12 +4760,24 @@ const ModelList = () => {
                         </div>
 
                         <div className="flex items-center gap-2 relative z-10">
-                             <button onClick={() => window.open(m.file_url || m.link_url || '#', '_blank')} className="w-12 h-12 bg-white text-slate-400 rounded-2xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white hover:border-slate-900 shadow-sm">
+                            {m.file_url_docx && (
+                                <a 
+                                    href={m.file_url_docx}
+                                    download
+                                    className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex flex-col items-center justify-center active:scale-90 transition-all border border-blue-100 hover:bg-blue-600 hover:text-white shadow-sm"
+                                >
+                                    <FileCode className="w-5 h-5" />
+                                </a>
+                            )}
+                            <button 
+                                onClick={() => {
+                                    const pdf = m.file_url || m.url || m.link_url || '#';
+                                    if (pdf !== '#') setViewer({ isOpen: true, url: pdf, title: m.title || m.q || 'Model Set' });
+                                }} 
+                                className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex flex-col items-center justify-center active:scale-90 transition-all shadow-xl hover:shadow-2xl hover:scale-105"
+                            >
                                 <Eye className="w-5 h-5" />
                             </button>
-                            <a href={m.file_url || m.link_url || '#'} download target="_blank" className="w-12 h-12 bg-indigo-500 text-white rounded-2xl flex items-center justify-center active:scale-90 transition-all shadow-xl shadow-indigo-500/20 hover:shadow-indigo-500/40">
-                                <Download className="w-5 h-5" />
-                            </a>
                         </div>
                     </div>
                 )) : (
@@ -4591,11 +4815,12 @@ const getPreviewUrl = (url: string) => {
     return url;
 };
 
-const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
+const BookViewer = ({ isOpen, onClose, url, title, docxUrl }: { isOpen: boolean; onClose: () => void; url: string; title: string; docxUrl?: string }) => {
     const [numPages, setNumPages] = useState<number | null>(null);
     const [loadError, setLoadError] = useState(false);
     const [downloadProgress, setDownloadProgress] = useState(0);
     const [pdfData, setPdfData] = useState<Uint8Array | null>(null);
+    const [showDownloadOptions, setShowDownloadOptions] = useState(false);
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
         setNumPages(numPages);
@@ -4702,12 +4927,35 @@ const BookViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose:
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-3">
-                        <button 
-                            onClick={() => window.open(url, '_blank')}
-                            className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center hover:bg-slate-100 hover:text-slate-900 transition-all border border-slate-100 active:scale-95 shadow-sm"
-                        >
-                            <ExternalLink className="w-5 h-5 md:w-6 md:h-6" />
-                        </button>
+                        <div className="relative">
+                            <button 
+                                onClick={() => docxUrl ? setShowDownloadOptions(!showDownloadOptions) : window.open(url, '_blank')}
+                                className="w-10 h-10 md:w-12 md:h-12 bg-blue-600 text-white rounded-xl flex items-center justify-center hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95"
+                            >
+                                <Download className="w-5 h-5 md:w-6 md:h-6" />
+                            </button>
+                            
+                            {showDownloadOptions && docxUrl && (
+                                <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-[130] animate-fade-down">
+                                    <button 
+                                        onClick={() => { window.open(url, '_blank'); setShowDownloadOptions(false); }}
+                                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                    >
+                                        <FileText className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-xs font-black uppercase text-slate-700">PDF Version</span>
+                                    </button>
+                                    <a 
+                                        href={docxUrl}
+                                        download
+                                        onClick={() => setShowDownloadOptions(false)}
+                                        className="w-full text-left px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-3 no-underline"
+                                    >
+                                        <FileCode className="w-4 h-4 text-blue-500" />
+                                        <span className="text-xs font-black uppercase text-slate-700">Word Version</span>
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                         <button 
                             onClick={onClose}
                             className="w-10 h-10 md:w-12 md:h-12 bg-rose-50 text-rose-500 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all border border-rose-100 active:scale-95 group shadow-sm"
@@ -4847,6 +5095,7 @@ const DigitalTextbookList = () => {
     const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
     const [viewer, setViewer] = useState<{ isOpen: boolean; url: string; title: string }>({ isOpen: false, url: '', title: '' });
+    const [selectionModal, setSelectionModal] = useState<any>(null);
 
     const staticLink = BOOK_LINKS[name as string];
     const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'textbook' || m.type === 'digital_textbook');
@@ -4855,35 +5104,50 @@ const DigitalTextbookList = () => {
     const accentBg = config.gradient.split(' ')[0].replace('from-', 'bg-');
     const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
 
-    const renderBookCard = (url: string, title: string, isOfficial: boolean) => {
+    const renderBookCard = (url: string, title: string, isOfficial: boolean, docxUrl?: string) => {
         const Icon = config.icon;
+        const bgPale = `bg-${config.color}-pale`;
         return (
             <div 
                 key={url} 
-                className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]"
+                className={cn(
+                    "p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]",
+                    bgPale
+                )}
             >
                 <div className={cn("w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-md group-hover:rotate-6 transition-all text-white border-4 border-white/20", accentBg)}>
                     <Icon className="w-7 h-7 mb-0.5" />
-                    <div className="bg-white/20 px-1.5 py-0.5 rounded-sm">
-                        <span className="text-[0.35rem] font-black uppercase tracking-[0.2em]" style={{ fontFamily: 'monospace' }}>BOOK</span>
+                    <div className="bg-white/20 px-1.5 py-0.5 rounded-sm text-center">
+                        <span className="text-[0.4rem] font-black uppercase tracking-[0.2em]" style={{ fontFamily: 'monospace' }}>BOOK</span>
                     </div>
                 </div>
                 
                 <div className="flex-1 min-w-0 px-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                        <span className={cn("px-2 py-0.5 rounded-md bg-slate-50 text-[0.55rem] font-black uppercase tracking-widest", isOfficial ? accentText : "text-slate-400")}>
+                        <span className={cn("px-2 py-0.5 rounded-md bg-white text-[0.55rem] font-black uppercase tracking-widest shadow-xs", isOfficial ? accentText : "text-slate-400")}>
                             {isOfficial ? 'Council Ed.' : 'Ref Node'}
                         </span>
                         {isOfficial && <Zap className="w-3 h-3 text-amber-500 fill-current" />}
                     </div>
-                    <h3 className="font-black text-black text-base leading-tight uppercase italic truncate">{title}</h3>
-                    <p className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Grade 10 • {name} Archive</p>
+                    <h3 className="font-black text-slate-900 text-base leading-tight uppercase italic truncate">{title}</h3>
+                    <p className="text-[0.55rem] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Grade 10 • {name}</p>
                 </div>
     
                 <div className="flex items-center gap-2">
+                    {docxUrl && (
+                        <a 
+                            href={docxUrl}
+                            download
+                            className="w-10 h-10 bg-white text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white shadow-xs"
+                        >
+                            <FileCode className="w-4 h-4" />
+                        </a>
+                    )}
                      <button 
-                        onClick={() => setViewer({ isOpen: true, url, title })}
-                        className="w-9 h-9 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white"
+                        onClick={() => {
+                            setViewer({ isOpen: true, url, title });
+                        }}
+                        className="w-10 h-10 bg-white text-slate-400 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-slate-100 hover:bg-slate-900 hover:text-white shadow-xs"
                     >
                         <Eye className="w-4 h-4" />
                     </button>
@@ -4891,7 +5155,7 @@ const DigitalTextbookList = () => {
                         href={url} 
                         download 
                         target="_blank" 
-                        className={cn("w-9 h-9 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md", accentBg)}
+                        className={cn("w-10 h-10 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md", accentBg)}
                     >
                         <Download className="w-4 h-4" />
                     </a>
@@ -6016,148 +6280,49 @@ const UnitConverterPage = () => {
         </div>
     );
 };
-const PRESET_COLORS = ['#0f172a', '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#ffffff'];
-const PRESET_BRUSHES = [2, 5, 10, 20];
-
-const DrawingPad = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [color, setColor] = useState('#0f172a');
-    const [brushSize, setBrushSize] = useState(3);
+const RichTextEditor = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => {
+    const editorRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        
-        if (value && value.startsWith('data:image')) {
-            const img = new Image();
-            img.onload = () => {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            };
-            img.src = value;
-        } else if (value === '' || !value) {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (editorRef.current && editorRef.current.innerHTML !== value) {
+            editorRef.current.innerHTML = value;
         }
     }, [value]);
 
-    const startDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
-        setIsDrawing(true);
-        draw(e);
-        if (canvasRef.current) {
-            canvasRef.current.setPointerCapture(e.pointerId);
-        }
-    };
-
-    const stopDrawing = (e: React.PointerEvent<HTMLCanvasElement>) => {
-        setIsDrawing(false);
-        if (canvasRef.current) {
-            canvasRef.current.releasePointerCapture(e.pointerId);
-            canvasRef.current.getContext('2d')?.beginPath();
-            onChange(canvasRef.current.toDataURL('image/png'));
-        }
-    };
-
-    const draw = (e: React.PointerEvent<HTMLCanvasElement>) => {
-        if (!isDrawing || !canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const x = (e.clientX - rect.left) * scaleX;
-        const y = (e.clientY - rect.top) * scaleY;
-
-        ctx.lineWidth = brushSize;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = color;
-
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-    };
-
-    const clearCanvas = () => {
-        if (!canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        onChange(canvas.toDataURL('image/png'));
-    };
-
-    const downloadImage = () => {
-        if (!canvasRef.current) return;
-        const dataUrl = canvasRef.current.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = `Aadhar_Drawing_${Date.now()}.png`;
-        link.href = dataUrl;
-        link.click();
+    const applyFormat = (command: string, value?: string) => {
+        if (!editorRef.current) return;
+        document.execCommand(command, false, value);
+        onChange(editorRef.current.innerHTML);
+        editorRef.current.focus();
     };
 
     return (
-        <div className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex flex-col sm:flex-row gap-4 items-center justify-between shadow-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                    {PRESET_COLORS.map(c => (
-                        <button 
-                            key={c}
-                            onClick={() => setColor(c)}
-                            style={{ backgroundColor: c }}
-                            className={`w-8 h-8 rounded-full border-2 transition-transform ${color === c ? 'scale-125 border-slate-300 shadow-md' : 'border-transparent hover:scale-110'} ${c === '#ffffff' ? 'border-slate-200' : ''}`}
-                            title={c === '#ffffff' ? 'Eraser' : c}
-                        />
-                    ))}
-                    <div className="w-px h-8 bg-slate-200 mx-1" />
-                    <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-8 h-8 rounded-full cursor-pointer bg-transparent border-none overflow-hidden" title="Custom Color" />
-                </div>
+        <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-2xl shadow-inner border border-slate-200">
+                <button type="button" onClick={() => applyFormat('bold')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif font-bold active:scale-95">B</button>
+                <button type="button" onClick={() => applyFormat('italic')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif italic active:scale-95">I</button>
+                <button type="button" onClick={() => applyFormat('underline')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif underline active:scale-95">U</button>
                 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-1 bg-white p-1 rounded-xl shadow-inner border border-slate-100">
-                        {PRESET_BRUSHES.map(s => (
-                            <button
-                                key={s}
-                                onClick={() => setBrushSize(s)}
-                                className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${brushSize === s ? 'bg-amber-100 text-amber-600' : 'text-slate-400 hover:bg-slate-50'}`}
-                            >
-                                <div className="bg-current rounded-full" style={{ width: Math.max(s/2, 2), height: Math.max(s/2, 2) }} />
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                <div className="w-px h-6 bg-slate-300 mx-2" />
+                
+                <button type="button" onClick={() => applyFormat('justifyLeft')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors active:scale-95"><AlignLeft className="w-4 h-4" /></button>
+                <button type="button" onClick={() => applyFormat('justifyCenter')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors active:scale-95"><div className="w-4 h-4 flex flex-col justify-between items-center"><div className="w-full h-0.5 bg-current rounded"/><div className="w-2/3 h-0.5 bg-current rounded"/><div className="w-full h-0.5 bg-current rounded"/></div></button>
+                
+                <div className="w-px h-6 bg-slate-300 mx-2" />
 
-                <div className="flex gap-2">
-                    <button onClick={downloadImage} className="p-3 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95" title="Save Image">
-                        <Save className="w-4 h-4" /> Save
-                    </button>
-                    <button onClick={clearCanvas} className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest active:scale-95" title="Clear Canvas">
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                </div>
+                <button type="button" onClick={() => applyFormat('foreColor', '#ef4444')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-red-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#3b82f6')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-blue-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#10b981')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-emerald-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#f59e0b')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-amber-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#8b5cf6')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-purple-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#1e293b')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-slate-800" /></button>
             </div>
-            <div className="w-full aspect-[4/3] sm:aspect-video rounded-[2.5rem] overflow-hidden border-2 border-amber-200 shadow-inner bg-white relative group">
-                <div className="absolute top-4 right-4 bg-slate-900/50 text-white px-3 py-1 rounded-full text-[0.6rem] font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    {color === '#ffffff' ? 'Eraser Mode' : 'Drawing Mode'}
-                </div>
-                <canvas
-                    ref={canvasRef}
-                    width={800}
-                    height={600}
-                    className="w-full h-full object-contain cursor-crosshair touch-none"
-                    onPointerDown={startDrawing}
-                    onPointerMove={draw}
-                    onPointerUp={stopDrawing}
-                    onPointerOut={stopDrawing}
-                />
-            </div>
+            <div 
+                ref={editorRef}
+                contentEditable
+                className="w-full min-h-[400px] bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 text-slate-700 font-medium leading-relaxed outline-none focus:bg-white focus:border-amber-200 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner overflow-y-auto"
+                onInput={(e) => onChange(e.currentTarget.innerHTML)}
+            />
         </div>
     );
 };
@@ -6173,7 +6338,6 @@ const NotePadPage = () => {
     const [mode, setMode] = useState<'editor' | 'library'>('library');
     const [tag, setTag] = useState('General');
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [composeType, setComposeType] = useState<'text' | 'draw'>('text'); // New state for draw/text
 
     const MAX_NOTES = 50;
 
@@ -6219,8 +6383,6 @@ const NotePadPage = () => {
         setContent(note.content);
         setTag(note.category || 'General');
         setEditingId(note.id);
-        const isDrawing = note.content && typeof note.content === 'string' && note.content.startsWith('data:image');
-        setComposeType(isDrawing ? 'draw' : 'text');
         setMode('editor');
     };
 
@@ -6283,21 +6445,7 @@ const NotePadPage = () => {
                             
                             <div className="relative z-10 space-y-6">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                                     <div className="flex bg-slate-100 p-1 rounded-2xl w-max shadow-inner">
-                                        <button 
-                                            onClick={() => setComposeType('text')}
-                                            className={cn("px-6 py-2.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all flex items-center gap-2", composeType === 'text' ? "bg-white text-blue-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
-                                        >
-                                            <FileText className="w-4 h-4" /> Write
-                                        </button>
-                                        <button 
-                                            onClick={() => setComposeType('draw')}
-                                            className={cn("px-6 py-2.5 rounded-xl text-[0.6rem] font-black uppercase tracking-widest transition-all flex items-center gap-2", composeType === 'draw' ? "bg-white text-purple-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
-                                        >
-                                            <Edit3 className="w-4 h-4" /> Draw
-                                        </button>
-                                    </div>
-                                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar border border-slate-100 shadow-inner">
+                                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar border border-slate-100 shadow-inner w-full">
                                         {tags.map(t => (
                                             <button 
                                                 key={t} 
@@ -6322,17 +6470,7 @@ const NotePadPage = () => {
                                     />
                                 </div>
 
-                                {composeType === 'text' ? (
-                                    <textarea 
-                                        value={content}
-                                        onChange={e => setContent(e.target.value)}
-                                        placeholder="Unload your knowledge matrix here..."
-                                        rows={12}
-                                        className="w-full bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 text-slate-700 font-bold leading-relaxed resize-none outline-none focus:bg-white focus:border-amber-200 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner"
-                                    />
-                                ) : (
-                                    <DrawingPad value={content} onChange={setContent} />
-                                )}
+                                <RichTextEditor value={content} onChange={setContent} />
                             </div>
                         </div>
 
@@ -6367,7 +6505,6 @@ const NotePadPage = () => {
                         )}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {notes.map((n, i) => {
-                                const isDrawing = n.content?.startsWith('data:image');
                                 return (
                                 <motion.div 
                                     key={n.id} 
@@ -6392,12 +6529,15 @@ const NotePadPage = () => {
                                             </button>
                                         </div>
 
-                                        {isDrawing ? (
+                                        {n.content && typeof n.content === 'string' && n.content.startsWith('data:image') ? (
                                             <div className="flex-1 w-full bg-slate-50 rounded-2xl mb-6 flex items-center justify-center p-2 border border-slate-100 min-h-[150px]">
                                                 <img src={n.content} alt={n.title} className="w-full h-full object-contain filter saturate-[0.8] group-hover:saturate-100 transition-all" />
                                             </div>
                                         ) : (
-                                            <p className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-4 mb-6 bg-slate-50 p-5 rounded-2xl flex-1 border border-slate-100 shadow-inner group-hover:bg-white transition-colors">{n.content}</p>
+                                            <div 
+                                                className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-4 mb-6 bg-slate-50 p-5 rounded-2xl flex-1 border border-slate-100 shadow-inner group-hover:bg-white transition-colors"
+                                                dangerouslySetInnerHTML={{ __html: n.content }} 
+                                            />
                                         )}
                                         
                                         <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
@@ -6547,6 +6687,7 @@ const ToastContainer = ({ toasts }: { toasts: any[] }) => (
 
 /* ── ADMIN ANALYTICS ── */
 const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
+    const isDarkMode = true;
     const data = [
         { name: 'Study Hub', value: liveMaterials.length },
         { name: 'Broadcasts', value: liveNews.length },
@@ -6568,33 +6709,33 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
     return (
         <div className="space-y-10 animate-fade-up">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                <div className={cn("p-8 rounded-[3rem] border shadow-xl relative overflow-hidden group transition-colors", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100")}>
+                    <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform", isDarkMode ? "bg-blue-500/10" : "bg-blue-50")} />
                     <Users className="w-10 h-10 text-blue-500 mb-4 relative z-10" />
                     <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Active Nodes</h4>
-                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">1,248</p>
+                    <p className={cn("text-4xl font-black mt-1 relative z-10", isDarkMode ? "text-white" : "text-slate-900")}>1,248</p>
                     <div className="mt-4 flex items-center gap-2 text-emerald-500 font-bold text-xs relative z-10 uppercase tracking-widest">
                         <TrendingUp className="w-4 h-4" />
                         <span>+12% this week</span>
                     </div>
                 </div>
                 
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                <div className={cn("p-8 rounded-[3rem] border shadow-xl relative overflow-hidden group transition-colors", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100")}>
+                    <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform", isDarkMode ? "bg-rose-500/10" : "bg-rose-50")} />
                     <Zap className="w-10 h-10 text-rose-500 mb-4 relative z-10" />
                     <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Sync Operations</h4>
-                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">8,902</p>
+                    <p className={cn("text-4xl font-black mt-1 relative z-10", isDarkMode ? "text-white" : "text-slate-900")}>8,902</p>
                     <div className="mt-4 flex items-center gap-2 text-rose-500 font-bold text-xs relative z-10 uppercase tracking-widest">
                         <Activity className="w-4 h-4" />
                         <span>Real-time Stream OK</span>
                     </div>
                 </div>
 
-                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                <div className={cn("p-8 rounded-[3rem] border shadow-xl relative overflow-hidden group transition-colors", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100")}>
+                    <div className={cn("absolute top-0 right-0 w-32 h-32 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform", isDarkMode ? "bg-emerald-500/10" : "bg-emerald-50")} />
                     <Database className="w-10 h-10 text-emerald-500 mb-4 relative z-10" />
                     <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest relative z-10">Vault Storage</h4>
-                    <p className="text-4xl font-black text-slate-900 mt-1 relative z-10">1.2 GB</p>
+                    <p className={cn("text-4xl font-black mt-1 relative z-10", isDarkMode ? "text-white" : "text-slate-900")}>1.2 GB</p>
                     <div className="mt-4 flex items-center gap-2 text-blue-500 font-bold text-xs relative z-10 uppercase tracking-widest">
                         <Monitor className="w-4 h-4" />
                         <span>42% utilized</span>
@@ -6603,9 +6744,9 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-2xl space-y-6">
+                <div className={cn("p-10 rounded-[4rem] border shadow-2xl space-y-6 transition-colors", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100")}>
                     <div className="flex items-center justify-between px-2">
-                        <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900">Network Traffic</h3>
+                        <h3 className={cn("text-2xl font-black italic tracking-tighter uppercase transition-colors", isDarkMode ? "text-white" : "text-slate-900")}>Network Traffic</h3>
                         <div className="flex items-center gap-4">
                              <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 bg-blue-500 rounded-full" />
@@ -6644,8 +6785,8 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
                     </div>
                 </div>
 
-                <div className="bg-white p-10 rounded-[4rem] border border-slate-100 shadow-2xl flex flex-col items-center justify-center space-y-6">
-                    <h3 className="text-2xl font-black italic tracking-tighter uppercase text-slate-900 w-full text-left px-2">Knowledge Matrix</h3>
+                <div className={cn("p-10 rounded-[4rem] border shadow-2xl flex flex-col items-center justify-center space-y-6 transition-colors", isDarkMode ? "bg-slate-900 border-slate-800" : "bg-white border-slate-100")}>
+                    <h3 className={cn("text-2xl font-black italic tracking-tighter uppercase w-full text-left px-2 transition-colors", isDarkMode ? "text-white" : "text-slate-900")}>Knowledge Matrix</h3>
                     <div className="h-[300px] w-full relative">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -6667,7 +6808,7 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                             <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Total Nodes</span>
-                            <span className="text-3xl font-black text-slate-900">{liveMaterials.length + liveNews.length + liveNotices.length}</span>
+                            <span className={cn("text-3xl font-black transition-colors", isDarkMode ? "text-white" : "text-slate-900")}>{liveMaterials.length + liveNews.length + liveNotices.length}</span>
                         </div>
                     </div>
                     <div className="flex gap-6 pt-4">
@@ -6698,19 +6839,1004 @@ const AdminAnalytics = ({ liveMaterials, liveNews, liveNotices }: any) => {
 };
 
 const AdminPortalPage = () => {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] p-8 text-center space-y-6">
-            <div className="w-24 h-24 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 shadow-inner">
-                <ShieldCheck className="w-12 h-12" />
+    const navigate = useNavigate();
+    const { 
+        data, liveNews, addNews, deleteNews, 
+        liveNotices, addNotice, deleteNotice,
+        liveMaterials, addMaterial, deleteMaterial,
+        liveMcqs, addMcqSet, deleteMcqSet,
+        addChapter, deleteChapter
+    } = useApp();
+    const [activeTab, setActiveTab] = useState('Dashboard');
+    const isDarkMode = true; // Match app theme
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    // Derived stats
+    const totalChapters = (Object.values(data.subjects) as any[]).reduce((acc: number, sub: any) => acc + (sub.chapters?.length || 0), 0);
+    const totalPdfs = (Object.values(data.subjects) as any[]).reduce((acc: number, sub: any) => acc + (sub.pdfs?.length || 0), 0);
+    const totalVideos = (Object.values(data.subjects) as any[]).reduce((acc: number, sub: any) => acc + (sub.videos?.length || 0), 0);
+
+    const userActivityData = [
+        { name: 'Mon', active: 2400, new: 400 },
+        { name: 'Tue', active: 1398, new: 300 },
+        { name: 'Wed', active: 9800, new: 2000 },
+        { name: 'Thu', active: 3908, new: 2780 },
+        { name: 'Fri', active: 4800, new: 1890 },
+        { name: 'Sat', active: 3800, new: 2390 },
+        { name: 'Sun', active: 4300, new: 3490 },
+    ];
+
+    const menuItems = [
+        { name: 'Dashboard', icon: LayoutDashboard },
+        { name: 'Chapters', icon: BookOpen },
+        { name: 'Books', icon: Book },
+        { name: 'Videos', icon: Video },
+        { name: 'Note Archives', icon: Archive },
+        { name: 'Model Questions', icon: FileQuestion },
+        { name: 'MCQs', icon: ListChecks },
+        { name: 'News', icon: Newspaper },
+        { name: 'Notice', icon: BellRing },
+        { name: 'Users', icon: Users },
+        { name: 'Support', icon: MessageSquareQuote },
+        { name: 'System Logs', icon: Database },
+        { name: 'Settings', icon: Settings },
+    ];
+
+    const mockUsers = [
+        { id: '1', name: 'Subash Gautam', email: 'subash@aadhar.edu.np', xp: 4500, grade: 'Class 12', joinDate: '2025-01-10' },
+        { id: '2', name: 'Scholar Doe', email: 'scholar@edu.np', xp: 2100, grade: 'Class 10', joinDate: '2025-02-15' },
+        { id: '3', name: 'Nita Sharma', email: 'nita@edu.np', xp: 3200, grade: 'Class 11', joinDate: '2025-01-20' },
+    ];
+
+    const mockFeedback = [
+        { id: 'f1', user: 'Scholar Doe', subject: 'Bug Report', content: 'The MCQ timer is too fast on Science quiz.', status: 'open' },
+        { id: 'f2', user: 'Subash Gautam', subject: 'Feature Request', content: 'Dark mode for main app would be nice!', status: 'closed' },
+    ];
+
+    const contentData = [
+        { name: 'PDFs', value: totalPdfs, color: '#8884d8' },
+        { name: 'YouTube', value: totalVideos, color: '#ff4d4d' },
+        { name: 'Chapters', value: totalChapters, color: '#00C49F' },
+        { name: 'News', value: liveNews.length, color: '#FFBB28' },
+    ];
+
+    const recentActivities = [
+        { type: 'pdf', title: 'Grade 10 Maths Set Theory.pdf', time: '2 mins ago', icon: FileText, color: 'text-blue-400' },
+        { type: 'video', title: 'Science: Chemical Bonding Lecture', time: '15 mins ago', icon: Video, color: 'text-red-400' },
+        { type: 'note', title: 'English Grammar Summary', time: '1 hour ago', icon: PenTool, color: 'text-emerald-400' },
+        { type: 'user', title: 'System Notice: Maintenance tomorrow', time: '3 hours ago', icon: Bell, color: 'text-amber-400' },
+    ];
+
+    const [editingChapter, setEditingChapter] = useState<{ subId: SubjectType, chapter: Chapter } | null>(null);
+    const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
+    const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ title: '', marks: 5, topics: '' });
+    const [selectedSub, setSelectedSub] = useState<SubjectType>('Science');
+    const [selectedManagerSubject, setSelectedManagerSubject] = useState<SubjectType | null>(null);
+    const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+    const [resourceForm, setResourceForm] = useState({
+        title: '',
+        content: '',
+        subject: 'Science' as string,
+        file_url: '',
+        file_url_docx: '',
+        mcq_json: ''
+    });
+
+    const handleResourceSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const resId = Math.random().toString(36).substr(2, 9);
+        const newItem = {
+            id: resId,
+            ...resourceForm,
+            type: activeTab === 'News' ? 'news' :
+                  activeTab === 'Notice' ? 'notice' :
+                  activeTab === 'Books' ? 'textbook' :
+                  activeTab === 'Videos' ? 'video' :
+                  activeTab === 'Note Archives' ? 'note_archive' :
+                  activeTab === 'Model Questions' ? 'model_question' :
+                  activeTab === 'MCQs' ? 'mcq' : 'other',
+            created_at: new Date().toISOString()
+        };
+
+        if (activeTab === 'News') addNews(newItem);
+        else if (activeTab === 'Notice') addNotice(newItem);
+        else if (activeTab === 'MCQs') addMcqSet(newItem);
+        else addMaterial(newItem);
+
+        setIsResourceModalOpen(false);
+        setResourceForm({
+            title: '',
+            content: '',
+            subject: selectedManagerSubject || 'Science',
+            file_url: '',
+            file_url_docx: '',
+            mcq_json: ''
+        });
+    };
+
+    const handleChapterSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const targetSub = selectedManagerSubject || selectedSub;
+        if (!chapterForm.title || !targetSub) return;
+        
+        if (editingChapter) {
+            deleteChapter(editingChapter.subId, editingChapter.chapter.id);
+            addChapter(targetSub, { ...chapterForm, id: editingChapter.chapter.id } as Chapter);
+        } else {
+            addChapter(targetSub, { 
+                ...chapterForm, 
+                id: Math.random().toString(36).substr(2, 9) 
+            } as Chapter);
+        }
+        
+        setIsChapterModalOpen(false);
+        setEditingChapter(null);
+        setChapterForm({ title: '', marks: 5, topics: '' });
+    };
+
+    const renderDashboard = () => (
+        <div className="space-y-8 animate-fade-up">
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {[
+                    { label: 'Total Users', value: '12.5k', growth: '+12.5%', icon: Users, color: 'indigo' },
+                    { label: 'Active Chapters', value: totalChapters, growth: '+8%', icon: BookOpen, color: 'purple' },
+                    { label: 'Cloud PDFs', value: totalPdfs, growth: '+25', icon: FileText, color: 'blue' },
+                    { label: 'Video Nodes', value: totalVideos, growth: '+5', icon: Youtube, color: 'rose' },
+                ].map((stat: any, i) => (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        key={i} 
+                        className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-5 md:p-6 rounded-[2rem] hover:border-slate-700 transition-all group"
+                    >
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", `bg-${stat.color}-500/10 text-${stat.color}-400`)}>
+                            <stat.icon className="w-5 h-5" />
+                        </div>
+                        <h3 className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</h3>
+                        <div className="flex items-center justify-between">
+                            <span className="text-2xl font-black text-white italic tracking-tighter">{stat.value as React.ReactNode}</span>
+                            <span className={cn("text-[0.6rem] font-black px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800", stat.growth.toString().startsWith('+') ? 'text-emerald-400' : 'text-slate-400')}>
+                                {stat.growth}
+                            </span>
+                        </div>
+                    </motion.div>
+                ))}
             </div>
-            <h1 className="text-4xl font-black uppercase tracking-tighter italic text-slate-800">Admin Engine Offline</h1>
-            <p className="text-slate-500 font-bold max-w-sm uppercase tracking-widest text-xs leading-relaxed">The backend management system is currently undergoing a full reconstruction. Direct database management is suspended.</p>
-            <Link to="/" className="px-10 py-4 bg-slate-900 text-white rounded-[2rem] font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl active:scale-95">Back to Home</Link>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+                {/* User Activity Analytics */}
+                <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-6 md:p-10 rounded-[2.5rem] flex flex-col">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                        <div>
+                            <h3 className="text-sm font-black text-white uppercase tracking-widest italic mb-1">User Activity Protocol</h3>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Real-time session throughput analytics</p>
+                        </div>
+                        <select className="bg-slate-950 border border-slate-800 text-[0.6rem] font-black uppercase tracking-widest rounded-xl px-4 py-2 text-slate-400 focus:outline-none focus:border-indigo-500/50">
+                            <option>Last 7 Cycles</option>
+                            <option>Last 30 Cycles</option>
+                        </select>
+                    </div>
+                    <div className="h-48 sm:h-72 w-full mt-auto">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={userActivityData}>
+                                <defs>
+                                    <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                                <XAxis 
+                                    dataKey="name" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 900 }} 
+                                    dy={10}
+                                />
+                                <YAxis hide />
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: '#0f172a', 
+                                        border: '1px solid #1e293b', 
+                                        borderRadius: '16px',
+                                        fontSize: '10px',
+                                        fontFamily: 'monospace'
+                                    }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="active" 
+                                    stroke="#6366f1" 
+                                    strokeWidth={3}
+                                    fillOpacity={1} 
+                                    fill="url(#colorActive)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Content Matrix Wrapper */}
+                <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-[2.5rem] flex flex-col text-center">
+                    <h3 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">Content Matrix</h3>
+                    <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest mb-8">Resource distribution by sector</p>
+                    
+                    <div className="h-48 sm:h-56 w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={contentData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={50}
+                                    outerRadius={70}
+                                    paddingAngle={8}
+                                    dataKey="value"
+                                >
+                                    {contentData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                    ))}
+                                </Pie>
+                                <Tooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: '#0f172a', 
+                                        border: '1px solid #1e293b', 
+                                        borderRadius: '12px',
+                                        fontSize: '10px',
+                                        fontFamily: 'monospace'
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-xl font-black text-white italic">{totalChapters + totalPdfs + totalVideos}</span>
+                            <span className="text-[0.4rem] font-black text-slate-500 uppercase tracking-widest">Total</span>
+                        </div>
+                    </div>
+
+                    <div className="mt-6 grid grid-cols-2 gap-2">
+                        {contentData.map((item, i) => (
+                            <div key={`${item.name}-${i}`} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/20 border border-slate-800/30">
+                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+                                <span className="text-[0.5rem] font-black text-slate-400 uppercase truncate">{item.name}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Broadcast System - New Feature */}
+            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shadow-inner">
+                        <Megaphone className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Global Broadcast</h3>
+                        <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Push live update to all scholar nodes</p>
+                    </div>
+                </div>
+                <div className="flex-1 max-w-lg w-full flex gap-3">
+                    <input 
+                        type="text" 
+                        placeholder="Type urgent transmission..." 
+                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                    />
+                    <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-[0.65rem] tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20">Transmit</button>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderChapters = () => {
+        const subId = selectedManagerSubject || 'Science';
+        const sub = data.subjects[subId];
+        
+        return (
+            <div className="space-y-6 animate-fade-up">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => setSelectedManagerSubject(null)}
+                        className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-all", isDarkMode ? "bg-slate-900 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-200 shadow-sm")}
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Manage {subId} Chapters</h2>
+                        <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Curriculum Roadmap Protocol</p>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => {
+                        setEditingChapter(null);
+                        setChapterForm({ title: '', marks: 5, topics: '' });
+                        setIsChapterModalOpen(true);
+                    }}
+                    className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest shadow-lg"
+                >
+                    New Chapter
+                </button>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+                <div className={cn("backdrop-blur-xl border rounded-[2rem] overflow-hidden", isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-100 shadow-sm")}>
+                    <div className={cn("p-6 border-b flex items-center justify-between", isDarkMode ? "border-slate-800 bg-slate-950/20" : "border-slate-100 bg-slate-50/50")}>
+                        <div className="flex items-center gap-3">
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", SUBJECTS_CONFIG[subId as SubjectType].gradient.split(' ')[0].replace('from-', 'bg-').replace('emerald', 'emerald-500').replace('purple', 'purple-500').replace('blue', 'blue-500').replace('orange', 'orange-500').replace('red', 'red-500').replace('cyan', 'cyan-500').replace('rose', 'rose-500').replace('amber', 'amber-500').replace('indigo', 'indigo-500') + "/20", SUBJECTS_CONFIG[subId as SubjectType].gradient.split(' ')[0].replace('from-', 'text-').replace('emerald', 'emerald-500').replace('purple', 'purple-500').replace('blue', 'blue-500').replace('orange', 'orange-500').replace('red', 'red-500').replace('cyan', 'cyan-500').replace('rose', 'rose-500').replace('amber', 'amber-500').replace('indigo', 'indigo-500'))}>
+                                <BookOpen className="w-5 h-5" />
+                            </div>
+                            <h3 className={cn("text-sm font-black uppercase italic", isDarkMode ? "text-white" : "text-slate-900")}>{subId}</h3>
+                        </div>
+                        <span className={cn("text-[0.6rem] font-black p-2 rounded-lg uppercase", isDarkMode ? "bg-slate-950 text-slate-500" : "bg-slate-100 text-slate-400")}>{sub.chapters?.length || 0} Modules</span>
+                    </div>
+                    <div className="p-4 space-y-2">
+                        {sub.chapters?.map((chap: Chapter, i: number) => (
+                            <div key={`${chap.id}-${i}`} className={cn("flex items-center justify-between p-4 rounded-xl border transition-all group", isDarkMode ? "bg-slate-950/20 border-slate-800/50 hover:border-slate-700" : "bg-white border-slate-50 hover:border-indigo-100 hover:bg-slate-50/30 shadow-xs")}>
+                                <div className="flex flex-col">
+                                    <span className={cn("text-[0.7rem] font-black uppercase", isDarkMode ? "text-slate-200" : "text-slate-800")}>{chap.title}</span>
+                                    <span className="text-[0.55rem] font-bold text-slate-500 uppercase tracking-widest">{chap.topics}</span>
+                                </div>
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button 
+                                        onClick={() => {
+                                            setEditingChapter({ subId: subId as SubjectType, chapter: chap });
+                                            setChapterForm({ title: chap.title, marks: chap.marks, topics: chap.topics });
+                                            setSelectedSub(subId as SubjectType);
+                                            setIsChapterModalOpen(true);
+                                        }}
+                                        className={cn("p-2 rounded-lg transition-colors", isDarkMode ? "bg-slate-900 text-slate-400 hover:text-indigo-400" : "bg-slate-50 text-slate-300 hover:text-indigo-600")}
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button 
+                                        onClick={() => deleteChapter(subId as SubjectType, chap.id)}
+                                        className={cn("p-2 rounded-lg transition-colors", isDarkMode ? "bg-slate-900 text-slate-400 hover:text-rose-400" : "bg-slate-50 text-slate-300 hover:text-rose-500")}
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                        {(!sub.chapters || sub.chapters.length === 0) && (
+                            <div className="py-12 text-center">
+                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">No chapters synthesized for this shard.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Chapter Modal */}
+            <AnimatePresence>
+                {isChapterModalOpen && (
+                    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                            onClick={() => setIsChapterModalOpen(false)}
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-600/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                            
+                            <h2 className="text-xl font-black text-white italic uppercase tracking-tighter mb-8 bg-linear-to-r from-white to-slate-500 bg-clip-text text-transparent">
+                                {editingChapter ? 'Optimize Core Module' : 'Synthesize New Module'}
+                            </h2>
+
+                            <form onSubmit={handleChapterSubmit} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Subject Shard</label>
+                                    <select 
+                                        value={selectedSub}
+                                        onChange={(e) => setSelectedSub(e.target.value as SubjectType)}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                    >
+                                        {Object.values(data.subjects).map((s: any) => <option key={s.id} value={s.id}>{s.id}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Module Designation</label>
+                                    <input 
+                                        type="text"
+                                        placeholder="e.g., Quantum Mechanics"
+                                        value={chapterForm.title}
+                                        onChange={(e) => setChapterForm({ ...chapterForm, title: e.target.value })}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Weightage (Marks)</label>
+                                        <input 
+                                            type="number"
+                                            value={chapterForm.marks}
+                                            onChange={(e) => setChapterForm({ ...chapterForm, marks: Number(e.target.value) })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Complexity Index</label>
+                                        <div className="flex items-center gap-2 h-full pt-2">
+                                            {[1, 2, 3].map(i => (
+                                                <div key={i} className={cn("flex-1 h-1.5 rounded-full", i <= 2 ? 'bg-indigo-500' : 'bg-slate-800')} />
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Topics Neural Map</label>
+                                    <textarea 
+                                        placeholder="e.g., Atoms, Molecules, Radiation..."
+                                        value={chapterForm.topics}
+                                        onChange={(e) => setChapterForm({ ...chapterForm, topics: e.target.value })}
+                                        rows={3}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 resize-none"
+                                    />
+                                </div>
+
+                                <div className="flex gap-4 pt-4">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsChapterModalOpen(false)}
+                                        className={cn("flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[0.6rem] border transition-all", isDarkMode ? "bg-slate-950 text-slate-500 border-slate-800 hover:text-white" : "bg-slate-50 text-slate-400 border-slate-100 hover:text-slate-900")}
+                                    >
+                                        Abort
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all"
+                                    >
+                                        {editingChapter ? 'Commit Changes' : 'Initialize Module'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+    };
+
+    const renderResourceManager = (title: string, items: any[], icon: any) => {
+        const Icon = icon;
+        const filteredItems = items.filter(m => m.subject === selectedManagerSubject);
+        
+        return (
+            <div className="space-y-6 animate-fade-up">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setSelectedManagerSubject(null)}
+                            className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-all", isDarkMode ? "bg-slate-900 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-200 shadow-sm")}
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>{selectedManagerSubject} • {title}</h2>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Managing specialized archive segment</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            setResourceForm({ title: '', content: '', subject: selectedManagerSubject || 'Science', file_url: '', file_url_docx: '', mcq_json: '' });
+                            setIsResourceModalOpen(true);
+                        }}
+                        className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all"
+                    >
+                        Sync New {title.slice(0, -1)}
+                    </button>
+                </div>
+                <div className="space-y-4">
+                    {filteredItems.length === 0 && (
+                        <div className={cn("p-20 text-center rounded-[3rem] border border-dashed", isDarkMode ? "bg-slate-900/20 border-slate-800/50" : "bg-white border-slate-200")}>
+                             <Archive className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em] italic">No active nodes in this sector.</p>
+                        </div>
+                    )}
+                    {filteredItems.map((n: any, i: number) => (
+                        <div key={`${n.id}-${i}`} className={cn("p-6 backdrop-blur-xl border rounded-[2.5rem] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group", isDarkMode ? "bg-slate-900/40 border-slate-800 hover:border-slate-700" : "bg-white border-slate-100 hover:border-indigo-100 shadow-sm")}>
+                            <div className="flex items-start gap-5">
+                                <div className={cn("w-14 h-14 rounded-2xl border flex flex-col items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-all", isDarkMode ? "bg-slate-950 border-slate-800 text-indigo-400" : "bg-slate-50 border-slate-100 text-indigo-600")}>
+                                    <Icon className="w-6 h-6 mb-0.5" />
+                                    <span className="text-[0.4rem] font-black opacity-50 uppercase tracking-widest">{n.type === 'video' ? 'VID' : 'PDF'}</span>
+                                </div>
+                                <div>
+                                    <h3 className={cn("text-[0.8rem] font-black uppercase italic mb-1.5 tracking-tight", isDarkMode ? "text-white" : "text-slate-800")}>{n.title || n.text || "Segment Unit"}</h3>
+                                    {(n.content || n.text) && <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">{n.content || n.text}</p>}
+                                    <div className="flex items-center gap-3 mt-3">
+                                        <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border", isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-100")}>
+                                            <Calendar className="w-3 h-3 text-slate-400" />
+                                            <span className="text-[0.55rem] font-black uppercase tracking-widest text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button 
+                                    className={cn("p-3 rounded-xl border transition-colors", isDarkMode ? "bg-slate-950 text-slate-500 hover:text-white border-slate-800" : "bg-slate-50 text-slate-300 hover:text-slate-900 border-slate-100")}
+                                >
+                                    <Edit3 className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        if (activeTab === 'News') deleteNews(n.id);
+                                        else if (activeTab === 'Notice') deleteNotice(n.id);
+                                        else if (activeTab === 'MCQs') deleteMcqSet(n.id);
+                                        else deleteMaterial(n.id);
+                                    }}
+                                    className={cn("p-3 rounded-xl border transition-colors", isDarkMode ? "bg-slate-950 text-slate-500 hover:text-rose-400 border-slate-800" : "bg-slate-50 text-slate-300 hover:text-rose-500 border-slate-100")}
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const renderSubjectSelector = () => (
+        <div className="space-y-8 animate-fade-up">
+            <div className="flex flex-col gap-2">
+                <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Global Archive Sector</h2>
+                <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Select specialized shard for {activeTab} protocol</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {(Object.keys(data.subjects) as SubjectType[]).map((subId) => {
+                    const cfg = SUBJECTS_CONFIG[subId] || SUBJECTS_CONFIG['English'];
+                    const subData = data.subjects[subId];
+                    const itemCount = activeTab === 'Chapters' ? (subData.chapters?.length || 0) : 
+                                     activeTab === 'Videos' ? (subData.videos?.length || 0) :
+                                     liveMaterials.filter(m => m.subject === subId && 
+                                        (activeTab === 'Books' ? m.type === 'textbook' :
+                                         activeTab === 'Note Archives' ? m.type === 'note_archive' :
+                                         activeTab === 'Model Questions' ? m.type === 'model_question' : false)
+                                     ).length;
+
+                    return (
+                        <button
+                            key={subId}
+                            onClick={() => setSelectedManagerSubject(subId)}
+                            className={cn("backdrop-blur-xl border p-8 rounded-[2.5rem] transition-all group text-left relative overflow-hidden", isDarkMode ? "bg-slate-900/40 border-slate-800 hover:border-indigo-500" : "bg-white border-slate-100 shadow-sm hover:border-indigo-500 hover:shadow-lg")}
+                        >
+                            <div className={cn("absolute top-0 right-0 w-32 h-32 blur-3xl opacity-5 -translate-y-1/2 translate-x-1/2", `bg-${cfg.color}-500`)} />
+                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-lg bg-linear-to-br text-white", cfg.gradient)}>
+                                <cfg.icon className="w-6 h-6" />
+                            </div>
+                            <h3 className={cn("text-lg font-black uppercase italic mb-1", isDarkMode ? "text-white" : "text-slate-900")}>{subId}</h3>
+                            <p className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">{itemCount} Active Units</p>
+                            <div className="mt-6 flex items-center gap-2 group-hover:gap-3 transition-all duration-500">
+                                <span className={cn("text-[0.6rem] font-black uppercase tracking-[0.25em]", `text-${cfg.color}-500`)}>Initialize Segment</span>
+                                <ArrowRight className={cn("w-3.5 h-3.5", `text-${cfg.color}-500`)} />
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    return (
+        <div className={cn("flex h-screen overflow-hidden font-sans transition-colors", isDarkMode ? "bg-slate-950 text-white" : "bg-[#F8FAFC] text-slate-900")}>
+            {/* Resource Modal */}
+            <AnimatePresence>
+                {isResourceModalOpen && (
+                    <div className="fixed inset-0 z-[3000] flex items-center justify-center p-4 text-slate-300">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+                            onClick={() => setIsResourceModalOpen(false)}
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
+                            <h2 className="text-xl font-black text-white italic uppercase tracking-tighter mb-8 bg-linear-to-r from-white to-slate-500 bg-clip-text text-transparent">
+                                Add {activeTab?.slice(0, -1)}
+                            </h2>
+                            <form onSubmit={handleResourceSubmit} className="space-y-6 text-left">
+                                {['Books', 'Videos', 'Note Archives', 'Model Questions', 'MCQs'].includes(activeTab) && (
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Subject Shard</label>
+                                        <select 
+                                            value={resourceForm.subject}
+                                            onChange={(e) => setResourceForm({ ...resourceForm, subject: e.target.value })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 outline-none"
+                                        >
+                                            {Object.keys(data.subjects).map(s => <option key={s} value={s}>{s}</option>)}
+                                        </select>
+                                    </div>
+                                )}
+                                <div className="space-y-2">
+                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Title / Header</label>
+                                    <input 
+                                        type="text"
+                                        placeholder="Enter unit descriptor..."
+                                        value={resourceForm.title}
+                                        onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                        required
+                                    />
+                                </div>
+                                {activeTab === 'MCQs' ? (
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Questions (JSON Array)</label>
+                                        <textarea 
+                                            placeholder='[{"question": "...", "options": ["...", "..."], "correct": 0}]'
+                                            value={resourceForm.mcq_json}
+                                            onChange={(e) => setResourceForm({ ...resourceForm, mcq_json: e.target.value })}
+                                            rows={6}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 resize-none font-mono"
+                                            required
+                                        />
+                                    </div>
+                                ) : activeTab === 'Videos' ? (
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">YouTube Link</label>
+                                        <input 
+                                            type="text"
+                                            placeholder="https://youtube.com/watch?v=..."
+                                            value={resourceForm.file_url}
+                                            onChange={(e) => setResourceForm({ ...resourceForm, file_url: e.target.value })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                            required
+                                        />
+                                    </div>
+                                ) : (activeTab === 'News' || activeTab === 'Notice') ? (
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Content Stream</label>
+                                        <textarea 
+                                            placeholder="Write detailed information..."
+                                            value={resourceForm.content}
+                                            onChange={(e) => setResourceForm({ ...resourceForm, content: e.target.value })}
+                                            rows={4}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 resize-none"
+                                            required
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        <div className="space-y-2">
+                                            <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">
+                                                {['Note Archives', 'Model Questions'].includes(activeTab) ? 'Select PDF File' : 'Primary Path (PDF URL)'}
+                                            </label>
+                                            {['Note Archives', 'Model Questions'].includes(activeTab) ? (
+                                                <input 
+                                                    type="file"
+                                                    accept=".pdf"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                setResourceForm({ ...resourceForm, file_url: reader.result as string });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-[0.6rem] file:font-black file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                                                    required
+                                                />
+                                            ) : (
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Drive link, PDF URL, etc..."
+                                                    value={resourceForm.file_url}
+                                                    onChange={(e) => setResourceForm({ ...resourceForm, file_url: e.target.value })}
+                                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                                />
+                                            )}
+                                        </div>
+                                        {['Note Archives', 'Model Questions'].includes(activeTab) && (
+                                            <div className="space-y-2">
+                                                <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Select WORD File (Optional)</label>
+                                                <input 
+                                                    type="file"
+                                                    accept=".doc,.docx"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                setResourceForm({ ...resourceForm, file_url_docx: reader.result as string });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-[0.6rem] file:font-black file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                <div className="flex gap-4 pt-4">
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setIsResourceModalOpen(false)}
+                                        className="flex-1 py-4 bg-slate-950 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[0.6rem] border border-slate-800 hover:text-white transition-all shadow-lg shadow-black/40 outline-none"
+                                    >
+                                        Abort
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all active:scale-95 outline-none"
+                                    >
+                                        Commit Res.
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        {/* Sidebar for Desktop */}
+            <aside className={cn(
+                "fixed inset-y-0 left-0 z-50 w-72 bg-slate-950/50 backdrop-blur-3xl border-r border-slate-800 transition-transform lg:relative lg:translate-x-0 pt-8 flex flex-col",
+                isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            )}>
+                <button 
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="absolute top-4 right-4 lg:hidden p-2 text-slate-500 hover:text-white"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+
+                <div className="px-8 mb-12">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-linear-to-tr from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <span className="text-white font-black text-xl italic">A</span>
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-white italic tracking-tighter leading-none">AADHAR</h2>
+                            <p className="text-[0.55rem] font-black text-slate-500 uppercase tracking-[0.4em]">Pathshala Admin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <nav className="flex-1 overflow-y-auto px-4 space-y-2 custom-scrollbar">
+                    {menuItems.map((item) => (
+                        <button
+                            key={item.name}
+                            onClick={() => {
+                                setActiveTab(item.name);
+                                if (window.innerWidth < 1024) setIsSidebarOpen(false);
+                            }}
+                            className={cn(
+                                "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all group relative",
+                                activeTab === item.name 
+                                    ? "bg-indigo-600/10 text-indigo-400" 
+                                    : "hover:bg-slate-900/50 text-slate-500 hover:text-slate-300"
+                            )}
+                        >
+                            <div className="flex items-center gap-3 relative z-10">
+                                <item.icon className={cn(
+                                    "w-5 h-5 transition-transform group-hover:scale-110",
+                                    activeTab === item.name ? "text-indigo-500" : "text-slate-600"
+                                )} />
+                                <span className="text-[0.7rem] font-black uppercase tracking-widest italic">{item.name}</span>
+                            </div>
+                            {activeTab === item.name && (
+                                <motion.div 
+                                    layoutId="active-tab"
+                                    className="absolute inset-0 border border-indigo-500/30 rounded-2xl bg-indigo-500/5"
+                                />
+                            )}
+                        </button>
+                    ))}
+                </nav>
+
+                <div className="p-6">
+                    <button 
+                        onClick={() => navigate('/')}
+                        className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-2xl font-black uppercase tracking-widest text-[0.65rem] border border-slate-800 transition-all flex items-center justify-center gap-2"
+                    >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Exit Terminal
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Overlay */}
+            {isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
+
+            {/* Main Content */}
+            <main className={cn("flex-1 overflow-y-auto flex flex-col transition-colors", isDarkMode ? "bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617]" : "bg-[#F8FAFC]")}>
+                {/* Navbar */}
+                <header className={cn("h-20 backdrop-blur-md border-b flex items-center justify-between px-6 md:px-8 sticky top-0 z-40 transition-colors", isDarkMode ? "bg-slate-950/20 border-slate-800/50" : "bg-white/80 border-slate-200")}>
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setIsSidebarOpen(true)}
+                            className="lg:hidden p-2 text-slate-400 hover:text-white"
+                        >
+                            <ToolLayout className="w-6 h-6" />
+                        </button>
+                        <div className="relative hidden md:block md:w-96 group">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                            <input 
+                                type="text" 
+                                placeholder="Search system resources..."
+                                className={cn("w-full border rounded-2xl py-2.5 pl-12 pr-4 text-sm font-bold focus:outline-none focus:border-indigo-500/50 transition-all", isDarkMode ? "bg-slate-900/50 border-slate-800 text-slate-300" : "bg-slate-50 border-slate-200 text-slate-700")}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 md:gap-6">
+                        <div className="flex items-center gap-1 md:gap-2">
+                            <button className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all relative", isDarkMode ? "hover:bg-slate-900 text-slate-500" : "hover:bg-slate-100 text-slate-400")}>
+                                <BellRing className="w-5 h-5" />
+                                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full" />
+                            </button>
+                        </div>
+
+                        <div className={cn("h-8 w-px hidden sm:block", isDarkMode ? "bg-slate-800" : "bg-slate-200")} />
+
+                        <div className="flex items-center gap-3">
+                            <div className="text-right hidden sm:block">
+                                <p className={cn("text-xs font-black uppercase italic", isDarkMode ? "text-white" : "text-slate-900")}>Administrator</p>
+                                <p className="text-[0.6rem] font-bold text-indigo-400 uppercase tracking-widest">Master Root</p>
+                            </div>
+                            <div className="w-10 h-10 sm:w-11 sm:h-11 bg-linear-to-tr from-indigo-500/20 to-purple-500/20 p-0.5 rounded-xl border border-indigo-500/30">
+                                <div className={cn("w-full h-full rounded-[10px] flex items-center justify-center overflow-hidden", isDarkMode ? "bg-slate-900" : "bg-white")}>
+                                    <img src="https://ui-avatars.com/api/?name=Admin&background=random" alt="Admin" className="w-full h-full object-cover" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className={cn("text-2xl md:text-3xl font-black uppercase tracking-tighter italic leading-none mb-1", isDarkMode ? "text-white" : "text-slate-900")}>{activeTab}</h1>
+                            <p className="text-[0.6rem] md:text-[0.65rem] font-black text-slate-500 uppercase tracking-[0.4em]">Aadhar Neural Terminal • v2.0-Alpha</p>
+                        </div>
+                        <div className="hidden sm:flex gap-3">
+                            <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-lg shadow-indigo-600/20 flex items-center gap-2 hover:bg-indigo-500 transition-all">
+                                <Plus className="w-4 h-4" />
+                                New Operation
+                            </button>
+                        </div>
+                    </div>
+
+                    {activeTab === 'Dashboard' && renderDashboard()}
+                    {activeTab === 'News' && renderResourceManager('Live News Stream', liveNews, Newspaper)}
+                    {activeTab === 'Notice' && renderResourceManager('Official Notices', liveNotices, BellRing)}
+                    {activeTab === 'Chapters' && (selectedManagerSubject ? renderChapters() : renderSubjectSelector())}
+                    {activeTab === 'Books' && (selectedManagerSubject ? renderResourceManager('Digital Bookshelf', liveMaterials.filter(m => m.type === 'textbook'), Book) : renderSubjectSelector())}
+                    {activeTab === 'Videos' && (selectedManagerSubject ? renderResourceManager('Video Lectures', liveMaterials.filter(m => m.type === 'video'), Video) : renderSubjectSelector())}
+                    {activeTab === 'Note Archives' && (selectedManagerSubject ? renderResourceManager('Study Note Repository', liveMaterials.filter(m => m.type === 'note_archive'), Archive) : renderSubjectSelector())}
+                    {activeTab === 'Model Questions' && (selectedManagerSubject ? renderResourceManager('Model Question Sets', liveMaterials.filter(m => m.type === 'model_question'), FileQuestion) : renderSubjectSelector())}
+                    {activeTab === 'MCQs' && (selectedManagerSubject ? renderResourceManager('MCQ Assessment Nodes', liveMcqs, ListChecks) : renderSubjectSelector())}
+                    {activeTab === 'Feedback' && (
+                        <div className="space-y-6 animate-fade-up">
+                            <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Scholars Voice</h2>
+                            <div className="grid grid-cols-1 gap-4">
+                                {mockFeedback.map((f, i) => (
+                                    <div key={`${f.id}-${i}`} className={cn("p-6 border rounded-[2rem] flex items-center justify-between", isDarkMode ? "bg-slate-900/40 border-slate-800 text-white" : "bg-white border-slate-100 shadow-sm text-slate-900")}>
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-[0.55rem] font-black text-indigo-500 uppercase tracking-widest">{f.subject}</span>
+                                                <span className="text-[0.55rem] text-slate-300">•</span>
+                                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">{f.user}</span>
+                                            </div>
+                                            <p className={cn("text-xs font-medium", isDarkMode ? "text-white" : "text-slate-700")}>{f.content}</p>
+                                        </div>
+                                        <button className="text-[0.6rem] font-black uppercase text-slate-400 hover:text-indigo-600 transition-all">Resolve</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'Users' && (
+                        <div className="space-y-6 animate-fade-up">
+                            <div className="flex items-center justify-between">
+                                <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Scholar Database</h2>
+                                <button className={cn("px-6 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest border transition-all", isDarkMode ? "bg-white/5 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-200 shadow-sm hover:text-slate-900")}>Export CSV</button>
+                            </div>
+                            <div className={cn("rounded-[2.5rem] border overflow-hidden", isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-100 shadow-sm")}>
+                                <table className="w-full text-left">
+                                    <thead className={cn("border-b", isDarkMode ? "bg-slate-950/50 border-slate-800" : "bg-slate-50 border-slate-100")}>
+                                        <tr>
+                                            <th className="px-6 py-4 text-[0.6rem] font-black uppercase text-slate-500 tracking-widest text-[#1D4ED8]">Scholar</th>
+                                            <th className="px-6 py-4 text-[0.6rem] font-black uppercase text-slate-500 tracking-widest">Grade</th>
+                                            <th className="px-6 py-4 text-[0.6rem] font-black uppercase text-slate-500 tracking-widest text-[#EF4444]">XP</th>
+                                            <th className="px-6 py-4 text-[0.6rem] font-black uppercase text-slate-500 tracking-widest">Join Date</th>
+                                            <th className="px-6 py-4 text-[0.6rem] font-black uppercase text-slate-500 tracking-widest">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className={cn("divide-y", isDarkMode ? "divide-slate-800/50" : "divide-slate-50")}>
+                                        {mockUsers.map(u => (
+                                            <tr key={u.id} className={cn("transition-colors", isDarkMode ? "hover:bg-slate-800/20" : "hover:bg-slate-50/50")}>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-600 font-black">
+                                                            {u.name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <div className={cn("text-sm font-black italic", isDarkMode ? "text-white" : "text-slate-900")}>{u.name}</div>
+                                                            <div className="text-[0.6rem] text-slate-500">{u.email}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-xs font-bold text-slate-500">{u.grade}</td>
+                                                <td className="px-6 py-4 text-xs font-black text-indigo-600">{u.xp}</td>
+                                                <td className="px-6 py-4 text-xs font-bold text-slate-400">{u.joinDate}</td>
+                                                <td className="px-6 py-4">
+                                                    <button className="text-[0.6rem] font-black uppercase tracking-widest text-indigo-600 hover:underline">Manage</button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'Support' && (
+                        <div className="space-y-6 animate-fade-up">
+                            <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Support & Feedback</h2>
+                            <div className="grid grid-cols-1 gap-4">
+                                {mockFeedback.map(f => (
+                                    <div key={f.id} className={cn("p-6 border rounded-[2rem] flex items-center justify-between", isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-100 shadow-sm")}>
+                                        <div className="flex items-start gap-4">
+                                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isDarkMode ? "bg-slate-800 text-slate-400" : "bg-slate-50 text-slate-400")}>
+                                                <MessageSquareQuote className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <h3 className={cn("text-[0.7rem] font-black uppercase italic", isDarkMode ? "text-white" : "text-slate-900")}>{f.subject}</h3>
+                                                    <span className={cn("text-[0.5rem] font-black px-2 py-0.5 rounded border uppercase tracking-widest", f.status === 'open' ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5')}>
+                                                        {f.status}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mb-2 max-w-lg">{f.content}</p>
+                                                <div className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Scholar: {f.user}</div>
+                                            </div>
+                                        </div>
+                                        <button className={cn("px-4 py-2 rounded-xl text-[0.6rem] font-black uppercase tracking-widest hover:text-indigo-600 transition-colors border", isDarkMode ? "bg-slate-950 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-100 shadow-sm")}>Resolve</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'System Logs' && (
+                        <div className={cn("p-12 text-center rounded-[3rem] border", isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-100 shadow-sm")}>
+                             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-200">
+                                <Database className="w-10 h-10" />
+                             </div>
+                             <h2 className={cn("text-xl font-black uppercase italic mb-2", isDarkMode ? "text-white" : "text-slate-900")}>System Diagnostics</h2>
+                             <p className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-widest italic">Logs streaming suspended due to high traffic</p>
+                         </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 };
 
-const ImageCard = ({ img, onClick }: { img: any, onClick: () => void }) => {
+const OldImageCard = ({ img, onClick }: { img: any, onClick: () => void }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     return (
         <div 
@@ -6732,7 +7858,7 @@ const ImageCard = ({ img, onClick }: { img: any, onClick: () => void }) => {
     );
 };
 
-const PicturesPage = () => {
+const OldPicturesPage = () => {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [images, setImages] = useState<any[]>([]);
@@ -6904,7 +8030,7 @@ const PicturesPage = () => {
             
             <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
                 {images.map((img, idx) => (
-                    <ImageCard key={`${img.id}-${idx}`} img={img} onClick={() => openImage(img)} />
+                    <NewImageCard key={`${img.id}-${idx}`} img={img} onClick={() => openImage(img)} onDownload={handleDownload} onLike={() => {}} />
                 ))}
             </div>
 
@@ -7052,7 +8178,7 @@ const PicturesPage = () => {
                                                 animate={{ opacity: 1, scale: 1 }}
                                                 transition={{ delay: idx * 0.05 }}
                                             >
-                                                <ImageCard 
+                                                <OldImageCard 
                                                     img={img} 
                                                     onClick={() => {
                                                         const modalScroll = document.getElementById('pictures-modal');
@@ -7073,6 +8199,317 @@ const PicturesPage = () => {
     );
 };
 
+const NewImageCard = ({ img, onClick, onDownload, onLike }: { img: any, onClick: () => void, onDownload: (url:string, id:string) => void, onLike: () => void }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+    return (
+        <div className="w-full break-inside-avoid rounded-3xl overflow-hidden relative group bg-slate-100 shadow-sm inline-block mb-6 border border-slate-200 hover:shadow-xl transition-all duration-500">
+            {!isLoaded && (
+                <div className="w-full h-64 animate-pulse bg-gradient-to-br from-slate-200 to-slate-100" />
+            )}
+            <img 
+                src={img.webformatURL} 
+                alt="Search result" 
+                onLoad={() => setIsLoaded(true)}
+                className={`w-full h-auto transform group-hover:scale-105 transition-all duration-700 block cursor-pointer ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                loading="lazy" 
+                onClick={onClick}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            
+            <div className="absolute bottom-0 left-0 w-full p-4 flex justify-between items-end opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
+                <div className="flex flex-col">
+                    <span className="text-white text-xs font-black uppercase tracking-widest bg-black/50 px-2 py-1 rounded backdrop-blur-md w-fit mb-1">{img.user}</span>
+                    <span className="text-white/80 text-[0.6rem] font-bold uppercase tracking-wider line-clamp-1">{img.tags}</span>
+                </div>
+                <div className="flex gap-2">
+                     <button onClick={(e) => { e.stopPropagation(); onLike(); }} className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-rose-500 hover:scale-110 active:scale-95 transition-all shadow-lg pointer-events-auto">
+                        <Heart className="w-4 h-4" />
+                     </button>
+                     <button onClick={(e) => { e.stopPropagation(); onDownload(img.largeImageURL, img.id); }} className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all shadow-lg pointer-events-auto">
+                        <Download className="w-4 h-4" />
+                     </button>
+                </div>
+            </div>
+
+            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-y-4 group-hover:translate-y-0">
+                <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="px-4 py-2 bg-black/40 backdrop-blur-md text-white rounded-xl text-[0.65rem] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-colors pointer-events-auto">
+                    Expand
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const PicturesPage = () => {
+    const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [images, setImages] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
+    const [isHD, setIsHD] = useState(false);
+    
+    const [selectedImage, setSelectedImage] = useState<any | null>(null);
+    const [isZoomed, setIsZoomed] = useState(false);
+
+    const API_KEY = '55653734-9bcb53c51c27b0c301beab7dc';
+    const DEFAULT_QUERY = 'education learning student study';
+
+    const CATEGORIES = ['All', 'Science', 'Mathematics', 'Literature', 'History', 'Technology', 'Art'];
+
+    const fetchImages = async (searchQuery: string, pageNum: number, category: string, isNewSearch: boolean = false) => {
+        if (!window.navigator.onLine) {
+            setLoading(false); setLoadingMore(false); return;
+        }
+        if (isNewSearch) { setLoading(true); setImages([]); } 
+        else { setLoadingMore(true); }
+        
+        try {
+            let currentQ = searchQuery.trim();
+            if (category !== 'All') {
+                currentQ = currentQ ? `${currentQ} ${category}` : category;
+            }
+            if (!currentQ) currentQ = DEFAULT_QUERY;
+
+            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(currentQ)}&image_type=photo&per_page=30&page=${pageNum}&safesearch=true`);
+            const data = await res.json();
+            
+            if (data.hits && data.hits.length > 0) {
+                setImages(prev => isNewSearch ? data.hits : [...prev, ...data.hits]);
+                setHasMore(data.hits.length === 30);
+            } else {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Failed to fetch images", error);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchImages(query, 1, activeCategory, true);
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setHasMore(true);
+        fetchImages(query, 1, activeCategory, true);
+    };
+
+    const handleCategoryClick = (cat: string) => {
+        setActiveCategory(cat);
+        setPage(1);
+        setHasMore(true);
+        fetchImages(query, 1, cat, true);
+    };
+
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchImages(query, nextPage, activeCategory, false);
+        }
+    }, [loadingMore, hasMore, page, query, activeCategory]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) loadMore();
+        }, { threshold: 0.1 });
+        const sentinel = document.getElementById('sentinel-new');
+        if (sentinel) observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, loadMore]);
+
+    const handleDownload = async (url: string, id: string) => {
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `Aadhar_Image_${id}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            window.open(url, '_blank');
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        alert("Link copied to clipboard!");
+    };
+
+    return (
+        <div className="space-y-6 pb-24 relative">
+            {/* Header & Search UI */}
+            <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none" />
+                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
+                
+                <div className="relative z-10">
+                    <div className="flex items-center gap-4 mb-8">
+                        <button onClick={() => navigate('/tools')} className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all active:scale-95 border border-white/10">
+                            <ArrowLeft className="w-6 h-6" />
+                        </button>
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-white shadow-sm leading-none">Visual Engine</h1>
+                            <p className="text-[0.65rem] font-bold text-blue-300 uppercase tracking-[0.2em] mt-1 shadow-sm">High-Resolution Reference Library</p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSearch} className="mb-6 flex gap-3">
+                        <div className="flex-1 bg-white/10 p-2 rounded-3xl backdrop-blur-md border border-white/10 flex items-center shadow-inner focus-within:bg-white/20 transition-all relative">
+                            <Search className="w-6 h-6 text-white/50 ml-4 absolute pointer-events-none" />
+                            <input 
+                                value={query}
+                                onChange={e => setQuery(e.target.value)}
+                                placeholder="Search the visual database..."
+                                className="w-full bg-transparent p-4 pl-12 text-lg text-white placeholder:text-white/40 outline-none font-bold italic tracking-tight"
+                            />
+                        </div>
+                        <button type="submit" className="px-8 py-4 bg-blue-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-blue-400 active:scale-95 transition-all shadow-lg flex items-center gap-2">
+                            Search <ArrowRight className="w-5 h-5 hidden sm:block" />
+                        </button>
+                    </form>
+
+                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
+                        {CATEGORIES.map(cat => (
+                            <button
+                                key={cat}
+                                onClick={() => handleCategoryClick(cat)}
+                                className={cn(
+                                    "px-5 py-2.5 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest whitespace-nowrap transition-all border shrink-0 backdrop-blur-sm",
+                                    activeCategory === cat 
+                                        ? "bg-white text-slate-900 border-white shadow-lg" 
+                                        : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+                                )}
+                            >
+                                {cat}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Results */}
+            {loading && images.length === 0 ? (
+                <div className="w-full h-[40vh] flex items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+                </div>
+            ) : (
+                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+                    {images.map((img, idx) => (
+                        <NewImageCard 
+                            key={`${img.id}-${idx}`} 
+                            img={img} 
+                            onClick={() => setSelectedImage(img)} 
+                            onDownload={handleDownload}
+                            onLike={() => { /* Store in local storage optionally */ }}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {hasMore && images.length > 0 && (
+                <div id="sentinel-new" className="h-20 w-full flex items-center justify-center pb-20">
+                    <div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin" />
+                </div>
+            )}
+
+            {/* Expanded Modal */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-slate-900/95 backdrop-blur-xl"
+                    >
+                        <button onClick={() => { setSelectedImage(null); setIsZoomed(false); }} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all border border-white/10 z-50">
+                            <X className="w-6 h-6" />
+                        </button>
+                        
+                        <div className="w-full max-w-6xl h-full max-h-[90vh] bg-slate-900 rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+                            {/* Image Area */}
+                            <div className="flex-1 h-full bg-black/50 relative flex items-center justify-center overflow-hidden p-4 group">
+                                <img 
+                                    src={isHD ? selectedImage.largeImageURL : selectedImage.webformatURL} 
+                                    alt="Expanded"
+                                    className={cn(
+                                        "max-w-full max-h-full object-contain transition-all duration-500",
+                                        isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in group-hover:scale-105"
+                                    )}
+                                    onClick={() => setIsZoomed(!isZoomed)}
+                                />
+                                <div className="absolute bottom-4 left-0 w-full flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-white/50 text-xs font-black uppercase tracking-widest pointer-events-none">
+                                        {isZoomed ? 'Click to minimize' : 'Click to zoom'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info & action side panel */}
+                            <div className="w-full md:w-80 h-auto md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-white/10 p-8 flex flex-col overflow-y-auto custom-scrollbar shrink-0 gap-6">
+                                <div>
+                                    <h3 className="text-2xl font-black text-white italic capitalize leading-tight mb-2">{selectedImage.tags.split(',')[0]}</h3>
+                                    <p className="text-xs text-white/50 font-bold tracking-widest uppercase">By {selectedImage.user}</p>
+                                </div>
+
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                                    <span className="text-[0.65rem] font-black tracking-widest uppercase text-white/70 flex items-center gap-2"><ImageIcon className="w-4 h-4"/> HD Quality</span>
+                                    <button 
+                                        onClick={() => setIsHD(!isHD)} 
+                                        className={cn("w-12 h-6 rounded-full transition-colors relative flex items-center", isHD ? "bg-emerald-500" : "bg-white/20")}
+                                    >
+                                        <div className={cn("w-4 h-4 rounded-full bg-white absolute transition-all", isHD ? "left-7" : "left-1")} />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                     <button onClick={() => copyToClipboard(selectedImage.pageURL)} className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group">
+                                         <Copy className="w-6 h-6 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
+                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">Copy URL</span>
+                                     </button>
+                                     <button className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group">
+                                         <Heart className="w-6 h-6 text-rose-400 mb-2 group-hover:scale-110 transition-transform" />
+                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">{selectedImage.likes} Likes</span>
+                                     </button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl border border-white/10">
+                                         <span className="text-white font-black text-xl mb-1">{selectedImage.views}</span>
+                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/40">Views</span>
+                                     </div>
+                                     <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl border border-white/10">
+                                         <span className="text-white font-black text-xl mb-1">{selectedImage.downloads}</span>
+                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/40">Downloads</span>
+                                     </div>
+                                </div>
+
+                                <div className="mt-auto pt-6 flex flex-col gap-3">
+                                     <button onClick={() => handleDownload(isHD ? selectedImage.largeImageURL : selectedImage.webformatURL, selectedImage.id)} className="w-full py-4 bg-blue-500 hover:bg-blue-400 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
+                                         <Download className="w-4 h-4" /> Download Asset
+                                     </button>
+                                     <p className="text-[0.5rem] font-black text-white/30 tracking-widest uppercase text-center leading-relaxed">
+                                         Provided by Pixabay API. Free for commercial use. No attribution required.
+                                     </p>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 const AppContent = () => {
     const { user } = useApp();
 
@@ -7220,24 +8657,66 @@ const INITIAL_DATA: AppData = {
 
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
-    const [data] = useState<AppData>(INITIAL_DATA);
+    const [data, setData] = useState<AppData>(() => {
+        const saved = localStorage.getItem('aadhar_app_data');
+        return saved ? JSON.parse(saved) : INITIAL_DATA;
+    });
     const [isOnline, setIsOnline] = useState(window.navigator.onLine);
     const [liveNews, setLiveNews] = useState<any[]>([
-        { id: '1', title: 'Welcome to Aadhar Desk', content: 'Our new platform is now live. Explore study materials and interactive tests.', category: 'general', created_at: new Date().toISOString() },
-        { id: '2', title: 'Exam Guidelines 2083', content: 'Important updates regarding the upcoming board examinations.', category: 'exam', created_at: new Date().toISOString() }
+        { id: '1', title: 'Welcome to Aadhar Desk', content: 'Our new platform is now live. Explore study materials and interactive tests.', category: 'news', created_at: new Date().toISOString() },
+        { id: '2', title: 'Exam Guidelines 2083', content: 'Important updates regarding the upcoming board examinations.', category: 'news', created_at: new Date().toISOString() }
+    ]);
+    const [liveNotices, setLiveNotices] = useState<any[]>([
+        { id: 'n1', text: 'SEE Exam Form deadline extended to Chaitra 5 for all districts.', created_at: new Date().toISOString() }
     ]);
     const [liveMaterials, setLiveMaterials] = useState<any[]>([
         { id: 'm1', subject: 'Science', type: 'model_question', title: 'Science Board Model 2083', file_url: '#', created_at: new Date().toISOString() },
-        { id: 'm2', subject: 'Maths', type: 'note', title: 'Calculus Cheat Sheet', text_content: '### Derivatives\n- d/dx(sin x) = cos x\n- d/dx(cos x) = -sin x', created_at: new Date().toISOString() }
+        { id: 'm2', subject: 'Maths', type: 'note_archive', title: 'Calculus Cheat Sheet', file_url: '#', created_at: new Date().toISOString() },
+        { id: 'm3', subject: 'English', type: 'textbook', title: 'English Core Textbook', file_url: '#', created_at: new Date().toISOString() }
     ]);
-    const [liveNotices, setLiveNotices] = useState<any[]>([
-        { id: 'n1', text: 'Pre-board results will be published on Sunday.', type: 'info', created_at: new Date().toISOString() }
-    ]);
+    const [liveMcqs, setLiveMcqs] = useState<any[]>([]);
     const [isInitializing, setIsInitializing] = useState(true);
 
-    const fetchLiveNews = async () => {};
-    const fetchLiveMaterials = async () => {};
-    const fetchLiveNotices = async () => {};
+    useEffect(() => {
+        localStorage.setItem('aadhar_app_data', JSON.stringify(data));
+    }, [data]);
+
+    const updateData = (newData: AppData) => setData(newData);
+
+    const addChapter = (subjectId: SubjectType, chapter: Chapter) => {
+        setData(prev => {
+            const subjects = { ...prev.subjects };
+            if (subjects[subjectId]) {
+                subjects[subjectId].chapters = [...(subjects[subjectId].chapters || []), chapter];
+            }
+            return { ...prev, subjects };
+        });
+    };
+
+    const deleteChapter = (subjectId: SubjectType, chapterId: string) => {
+        setData(prev => {
+            const subjects = { ...prev.subjects };
+            if (subjects[subjectId]) {
+                subjects[subjectId].chapters = (subjects[subjectId].chapters || []).filter(c => c.id !== chapterId);
+            }
+            return { ...prev, subjects };
+        });
+    };
+
+    const addNews = (item: any) => setLiveNews(prev => [item, ...prev]);
+    const deleteNews = (id: string) => setLiveNews(prev => prev.filter(n => n.id !== id));
+    
+    const addNotice = (item: any) => setLiveNotices(prev => [item, ...prev]);
+    const deleteNotice = (id: string) => setLiveNotices(prev => prev.filter(n => n.id !== id));
+
+    const addMaterial = (item: any) => setLiveMaterials(prev => [item, ...prev]);
+    const deleteMaterial = (id: string) => setLiveMaterials(prev => prev.filter(m => m.id !== id));
+
+    const addMcqSet = (item: any) => setLiveMcqs(prev => [item, ...prev]);
+    const deleteMcqSet = (id: string) => setLiveMcqs(prev => prev.filter(m => m.id !== id));
+
+    const [isMcqModalOpen, setIsMcqModalOpen] = useState(false);
+    const [mcqJson, setMcqJson] = useState('');
 
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
@@ -7330,11 +8809,18 @@ const AppProvider = ({ children }: any) => {
         );
     }
 
+    const fetchLiveNews = async () => {};
+    const fetchLiveMaterials = async () => {};
+
     return (
         <AppContext.Provider value={{ 
-            user, setUser, data, 
-            liveNews, liveMaterials, liveNotices, 
-            fetchLiveNews, fetchLiveMaterials, fetchLiveNotices, 
+            user, setUser, data, setData, updateData,
+            addChapter, deleteChapter,
+            liveNews, liveMaterials, liveNotices, liveMcqs,
+            setLiveNews, addNews, deleteNews, fetchLiveNews,
+            addNotice, deleteNotice,
+            addMaterial, deleteMaterial, fetchLiveMaterials,
+            addMcqSet, deleteMcqSet,
             addTestResult, toggleChapterComplete,
             isInitializing, isOnline
         }}>

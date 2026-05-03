@@ -6,6 +6,10 @@ export interface Chapter {
   topics?: string;
   marks?: number;
   contentHtml?: string;
+  file_url?: string;
+  file_url_docx?: string;
+  text_content?: string;
+  description?: string;
 }
 
 export interface Video {
@@ -14,19 +18,29 @@ export interface Video {
   channel: string;
   youtubeId: string;
   duration: string;
+  file_url?: string;
+  link_url?: string;
 }
 
 export interface PDF {
   id: string;
-  name: string;
-  desc: string;
-  url: string;
+  name?: string;
+  title?: string;
+  desc?: string;
+  url?: string;
+  file_url?: string;
+  file_url_docx?: string;
+  link_url?: string;
 }
 
 export interface ModelQuestion {
   id: string;
-  q: string;
+  q?: string;
+  title?: string;
   answerHtml?: string;
+  file_url?: string;
+  file_url_docx?: string;
+  link_url?: string;
 }
 
 export interface SubjectData {
