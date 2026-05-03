@@ -282,9 +282,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         </header>
       )}
 
-      <main className={cn("max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen", !isAdminMode && "pt-24")}>
-        {children}
-      </main>
+      {isAdminMode ? (
+        children
+      ) : (
+        <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen pt-24">
+          {children}
+        </main>
+      )}
 
       {!isAdminMode && location.pathname !== '/profile' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
@@ -4462,6 +4466,71 @@ const VideoList = () => {
     );
 };
 
+const DownloadOptionsDropdown = ({ pdfUrl, docxUrl, fileName }: { pdfUrl?: string, docxUrl?: string, fileName: string }) => {
+    const [open, setOpen] = useState(false);
+    
+    if(!pdfUrl && !docxUrl) return null;
+
+    if(pdfUrl && !docxUrl) {
+         return (
+             <a 
+                 href={pdfUrl} 
+                 download={fileName} 
+                 className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-600 hover:text-white"
+                 title="Download PDF"
+             >
+                 <Download className="w-5 h-5" />
+             </a>
+         );
+    }
+
+    if(!pdfUrl && docxUrl) {
+         return (
+             <a 
+                 href={docxUrl} 
+                 download={fileName} 
+                 className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-600 hover:text-white"
+                 title="Download Word Document"
+             >
+                 <Download className="w-5 h-5" />
+             </a>
+         );
+    }
+
+    return (
+        <div className="relative">
+            <button 
+                onClick={() => setOpen(!open)} 
+                className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-600 hover:text-white"
+                title="Download Options"
+            >
+                <Download className="w-5 h-5" />
+            </button>
+            {open && (
+                <>
+                    <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                    <div className="absolute top-12 right-0 bg-white shadow-xl rounded-xl border border-slate-100 p-2 z-50 w-48 flex flex-col gap-1">
+                        <a 
+                            href={pdfUrl} 
+                            download={`${fileName}.pdf`}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-bold text-slate-700 transition-colors"
+                        >
+                            <FileText className="w-4 h-4 text-rose-500" /> Download PDF
+                        </a>
+                        <a 
+                            href={docxUrl} 
+                            download={`${fileName}.docx`}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 rounded-lg text-sm font-bold text-slate-700 transition-colors"
+                        >
+                            <FileCode className="w-4 h-4 text-blue-500" /> Download Word
+                        </a>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
 const PdfList = () => {
     const { name } = useParams();
     const { data, liveMaterials } = useApp();
@@ -4511,15 +4580,11 @@ const PdfList = () => {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                             {p.file_url_docx && (
-                                <a 
-                                    href={p.file_url_docx}
-                                    download
-                                    className="w-10 h-10 bg-indigo-50 text-indigo-500 rounded-xl flex items-center justify-center active:scale-90 transition-all border border-indigo-100 hover:bg-indigo-600 hover:text-white"
-                                >
-                                    <FileCode className="w-5 h-5" />
-                                </a>
-                            )}
+                            <DownloadOptionsDropdown 
+                                pdfUrl={(p.url || p.file_url || p.link_url) !== '#' ? (p.url || p.file_url || p.link_url) : undefined}
+                                docxUrl={p.file_url_docx}
+                                fileName={p.name || p.title || 'Archive'}
+                            />
                              <button 
                                 onClick={() => {
                                     const pdf = p.url || p.file_url || p.link_url || '#';
@@ -4641,15 +4706,12 @@ const NoteList = () => {
 const StudyPdfViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onClose: () => void; url: string; title: string }) => {
     if (!isOpen || !url) return null;
     
-    // Convert Google Drive view URLs to preview URLs for embedding
+    // Pass Google Drive view URLs to preview URLs for embedding
     const getPreviewUrl = (raw: string) => {
         if (!raw) return '';
         if (raw.includes('drive.google.com/file/d/')) {
             const id = raw.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
             if (id) return `https://drive.google.com/file/d/${id}/preview`;
-        }
-        if (raw.toLowerCase().endsWith('.pdf')) {
-            return `https://docs.google.com/gview?url=${encodeURIComponent(raw)}&embedded=true`;
         }
         return raw;
     };
@@ -4760,15 +4822,11 @@ const ModelList = () => {
                         </div>
 
                         <div className="flex items-center gap-2 relative z-10">
-                            {m.file_url_docx && (
-                                <a 
-                                    href={m.file_url_docx}
-                                    download
-                                    className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex flex-col items-center justify-center active:scale-90 transition-all border border-blue-100 hover:bg-blue-600 hover:text-white shadow-sm"
-                                >
-                                    <FileCode className="w-5 h-5" />
-                                </a>
-                            )}
+                            <DownloadOptionsDropdown 
+                                pdfUrl={(m.url || m.file_url || m.link_url) !== '#' ? (m.url || m.file_url || m.link_url) : undefined}
+                                docxUrl={m.file_url_docx}
+                                fileName={m.title || m.q || 'Model Set'}
+                            />
                             <button 
                                 onClick={() => {
                                     const pdf = m.file_url || m.url || m.link_url || '#';
@@ -8588,13 +8646,8 @@ const INITIAL_DATA: AppData = {
                 { id: 'ev1', title: 'Unit 1: Reading Comprehension', channel: 'Aadhar TV', duration: '12:45', youtubeId: 'dQw4w9WgXcQ' },
                 { id: 'ev2', title: 'Grammar: Direct and Indirect Speech', channel: 'Aadhar TV', duration: '15:20', youtubeId: 'dQw4w9WgXcQ' }
             ], 
-            pdfs: [
-                { id: 'ep1', name: 'English Unit 1 Guide', desc: 'Comprehensive guide for unit 1', url: '#' },
-                { id: 'ep2', name: 'Grammar Practice Set', desc: 'Important grammar questions', url: '#' }
-            ], 
-            modelQuestions: [
-                { id: 'em1', q: 'What is the passive form of "He writes a letter"?' }
-            ] 
+            pdfs: [], 
+            modelQuestions: [] 
         },
         'नेपाली': { 
             id: 'नेपाली', color: 'purple', icon: 'Edit3', 
@@ -8605,9 +8658,7 @@ const INITIAL_DATA: AppData = {
             videos: [
                 { id: 'nv1', title: 'पाठ १: मेरो देश व्याख्या', channel: 'Aadhar TV', duration: '10:30', youtubeId: 'dQw4w9WgXcQ' }
             ], 
-            pdfs: [
-                { id: 'np1', name: 'नेपाली पाठ १ नोट', desc: 'पढ्न सजिलो नोट', url: '#' }
-            ], 
+            pdfs: [], 
             modelQuestions: [] 
         },
         'Maths': { 
@@ -8619,9 +8670,7 @@ const INITIAL_DATA: AppData = {
             videos: [
                 { id: 'mv1', title: 'Sets: Venn Diagram Logic', channel: 'Aadhar TV', duration: '18:40', youtubeId: 'dQw4w9WgXcQ' }
             ], 
-            pdfs: [
-                { id: 'mp1', name: 'Maths Formula Sheet', desc: 'All formulas in one place', url: '#' }
-            ], 
+            pdfs: [], 
             modelQuestions: [] 
         },
         'Science': { 
@@ -8633,9 +8682,7 @@ const INITIAL_DATA: AppData = {
             videos: [
                 { id: 'sv1', title: 'Force and Gravitation explained', channel: 'Aadhar TV', duration: '20:15', youtubeId: 'dQw4w9WgXcQ' }
             ], 
-            pdfs: [
-                { id: 'sp1', name: 'Science Units and Formulas', desc: 'Handy science resource', url: '#' }
-            ], 
+            pdfs: [], 
             modelQuestions: [] 
         },
         'सामाजिक': { 
