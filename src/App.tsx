@@ -3598,7 +3598,7 @@ const MCQTestSelection = () => {
                             className={cn(
                                 "flex-1 py-3 rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
                                 questionCount === c 
-                                    ? cn("text-white border-transparent bg-linear-to-br shadow-lg", config.gradient, brand.shadow)
+                                    ? cn("text-white border-transparent bg-linear-to-br shadow-lg", config.gradient, getBrandColors(config.color).shadow)
                                     : "bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-200"
                             )}
                         >
