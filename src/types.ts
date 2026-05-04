@@ -5,11 +5,14 @@ export interface Chapter {
   title: string;
   topics?: string;
   marks?: number;
+  hideMarks?: boolean;
+  contentType?: 'Note' | 'Answer' | 'Sub Topic';
   contentHtml?: string;
   file_url?: string;
   file_url_docx?: string;
   text_content?: string;
   description?: string;
+  notes?: string;
 }
 
 export interface Video {

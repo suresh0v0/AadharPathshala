@@ -8,17 +8,18 @@ import {
   ChevronRight, ArrowLeft, Send, Sparkles, Trophy, 
   History, Calculator, User as UserIcon,
   PlayCircle, FileText,
-  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, Activity, Monitor,
+  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, TrendingDown, Activity, Monitor,
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
   Bot, Coffee, Pause, Play, RotateCcw, RotateCw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff, FileCode,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
-  Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock,
+  Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock, Shield,
+  StickyNote, Circle,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive, Loader2,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
-  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube
+  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -203,16 +204,32 @@ const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) =>
 // ════════════════════════════════════════════
 
 const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient: string }> = {
-  'English': { color: 'blue', icon: Languages, gradient: 'from-blue to-indigo' },
-  'नेपाली': { color: 'purple', icon: Edit3, gradient: 'from-purple to-pink' },
-  'Maths': { color: 'red', icon: Sigma, gradient: 'from-red to-orange' },
-  'Science': { color: 'emerald', icon: Microscope, gradient: 'from-emerald to-teal' },
-  'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber to-orange' },
-  'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo to-violet' },
-  'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange to-yellow' },
-  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan to-blue' },
-  'Economics': { color: 'emerald', icon: TrendingUp, gradient: 'from-emerald to-teal' },
-  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose to-red' }
+  'English': { color: 'blue', icon: Languages, gradient: 'from-blue-500 to-indigo-500' },
+  'नेपाली': { color: 'purple', icon: Edit3, gradient: 'from-purple-500 to-pink-500' },
+  'Maths': { color: 'red', icon: Sigma, gradient: 'from-red-500 to-orange-500' },
+  'Science': { color: 'emerald', icon: Microscope, gradient: 'from-emerald-500 to-teal-500' },
+  'सामाजिक': { color: 'amber', icon: Globe, gradient: 'from-amber-500 to-orange-500' },
+  'Optional Maths': { color: 'indigo', icon: Binary, gradient: 'from-indigo-500 to-violet-500' },
+  'Account': { color: 'orange', icon: ListChecks, gradient: 'from-orange-500 to-yellow-500' },
+  'Computer': { color: 'cyan', icon: Monitor, gradient: 'from-cyan-500 to-blue-500' },
+  'Economics': { color: 'emerald', icon: TrendingUp, gradient: 'from-emerald-500 to-teal-500' },
+  'Health': { color: 'rose', icon: Activity, gradient: 'from-rose-500 to-red-500' }
+};
+
+const getBrandColors = (color: string) => {
+    switch(color) {
+        case 'blue': return { bg: 'bg-blue-600', text: 'text-blue-600', paleBg: 'bg-blue-50', paleText: 'text-blue-600', solidBg: 'bg-blue-500', shadow: 'shadow-blue-500/20' };
+        case 'purple': return { bg: 'bg-purple-600', text: 'text-purple-600', paleBg: 'bg-purple-50', paleText: 'text-purple-600', solidBg: 'bg-purple-500', shadow: 'shadow-purple-500/20' };
+        case 'red': return { bg: 'bg-red-600', text: 'text-red-600', paleBg: 'bg-red-50', paleText: 'text-red-600', solidBg: 'bg-red-500', shadow: 'shadow-red-500/20' };
+        case 'emerald': return { bg: 'bg-emerald-600', text: 'text-emerald-600', paleBg: 'bg-emerald-50', paleText: 'text-emerald-600', solidBg: 'bg-emerald-500', shadow: 'shadow-emerald-500/20' };
+        case 'amber': return { bg: 'bg-amber-600', text: 'text-amber-600', paleBg: 'bg-amber-50', paleText: 'text-amber-600', solidBg: 'bg-amber-500', shadow: 'shadow-amber-500/20' };
+        case 'indigo': return { bg: 'bg-indigo-600', text: 'text-indigo-600', paleBg: 'bg-indigo-50', paleText: 'text-indigo-600', solidBg: 'bg-indigo-500', shadow: 'shadow-indigo-500/20' };
+        case 'orange': return { bg: 'bg-orange-600', text: 'text-orange-600', paleBg: 'bg-orange-50', paleText: 'text-orange-600', solidBg: 'bg-orange-500', shadow: 'shadow-orange-500/20' };
+        case 'cyan': return { bg: 'bg-cyan-600', text: 'text-cyan-600', paleBg: 'bg-cyan-50', paleText: 'text-cyan-600', solidBg: 'bg-cyan-500', shadow: 'shadow-cyan-500/20' };
+        case 'rose': return { bg: 'bg-rose-600', text: 'text-rose-600', paleBg: 'bg-rose-50', paleText: 'text-rose-600', solidBg: 'bg-rose-500', shadow: 'shadow-rose-500/20' };
+        case 'teal': return { bg: 'bg-teal-600', text: 'text-teal-600', paleBg: 'bg-teal-50', paleText: 'text-teal-600', solidBg: 'bg-teal-500', shadow: 'shadow-teal-500/20' };
+        default: return { bg: 'bg-slate-600', text: 'text-slate-600', paleBg: 'bg-slate-50', paleText: 'text-slate-600', solidBg: 'bg-slate-500', shadow: 'shadow-slate-500/20' };
+    }
 };
 
 const BOOK_LINKS: Record<string, string> = {
@@ -2018,24 +2035,38 @@ const GPACalculator = () => {
     );
 };
 
-const CalculatorSuite = () => {
+const ToolHeader = ({ title, subtitle, icon: Icon }: { title: string; subtitle: string; icon?: any }) => {
     const navigate = useNavigate();
+    return (
+        <header className="flex items-center gap-4 mb-8 text-left">
+            <button 
+                onClick={() => navigate(-1)} 
+                className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all hover:scale-105 active:scale-95"
+            >
+                <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div className="flex flex-col">
+                <div className="flex items-center gap-3">
+                    <h1 className="text-2xl md:text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{title}</h1>
+                    {Icon && <Icon className="w-6 h-6 text-indigo-500 shrink-0 hidden sm:block" />}
+                </div>
+                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">{subtitle}</p>
+            </div>
+        </header>
+    );
+};
+
+const CalculatorSuite = () => {
     const [searchParams] = useSearchParams();
     const [tab, setTab] = useState<'gpa' | 'standard'>((searchParams.get('tab') as any) || 'gpa');
 
     return (
         <div className="space-y-6 pb-24">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-linear-to-br from-blue to-indigo rounded-2xl flex items-center justify-center shadow-lg">
-                        <Calculator className="text-white w-6 h-6" />
-                    </div>
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Aadhar Desk</h1>
-                </div>
-                <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 active:scale-90 transition-all">
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-            </div>
+            <ToolHeader 
+                title="Aadhar Desk" 
+                subtitle="High-Precision Mathematical Tools" 
+                icon={Calculator} 
+            />
 
             <div className="flex p-2 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-slate-200 shadow-xl max-w-sm mx-auto">
                 <button 
@@ -2131,10 +2162,10 @@ const HomePage = () => {
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
+                        { id: 'todo', label: 'Task Stream', icon: ClipboardList, path: '/tools/todo', color: 'indigo' },
+                        { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'purple' },
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
                         { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, path: '/tools/nepali-dictionary', color: 'amber' },
-                        { id: 'pictures', label: 'Pictures', icon: ImageIcon, path: '/tools/pictures', color: 'pink' },
-                        { id: 'notepad', label: 'Notepad', icon: Edit3, path: '/tools/notes', color: 'orange' },
                     ].map((t) => (
                         <Link 
                             key={t.id} 
@@ -2347,11 +2378,7 @@ const AadharToolkit = () => {
 const NoticeBoard = () => {
     const { liveNotices } = useApp();
     const [currentIndex, setCurrentIndex] = useState(0);
-    const staticNotices = [
-        { id: '1', type: 'alert', text: 'SEE Exam Form deadline extended to Chaitra 5 for all districts.' },
-        { id: '2', type: 'info', text: 'New Model Question Sets for Optional Maths 2083 uploaded to the Hub.' },
-        { id: '3', type: 'update', text: 'Aadhar Pro AI now supports high-speed Nepali script interaction.' }
-    ];
+    const staticNotices = [];
 
     const displayNotices = (liveNotices && liveNotices.length > 0) ? liveNotices : staticNotices;
 
@@ -2767,17 +2794,9 @@ const PeriodicTablePage = () => {
 
     return (
         <div className="space-y-8 animate-fade-up pb-24 overflow-hidden min-h-screen">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Periodic Realm</h1>
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Chemical Intelligence Hub</p>
-                    </div>
-                </div>
+            <ToolHeader title="Periodic Realm" subtitle="Chemical Intelligence Hub" icon={Beaker} />
 
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 -mt-4">
                 <div className="flex items-center gap-2 bg-white p-1 rounded-2xl border border-slate-100 shadow-sm self-start">
                     <button 
                         onClick={() => setView('modern')}
@@ -2794,7 +2813,7 @@ const PeriodicTablePage = () => {
                     <span className="text-[0.65rem] font-bold text-slate-400 w-12 text-center">{Math.round(zoom * 100)}%</span>
                     <button onClick={() => handleZoom(0.1)} className="w-10 h-10 flex items-center justify-center text-slate-600 hover:bg-slate-50 rounded-xl transition-all"><Search className="w-4 h-4" />+</button>
                 </div>
-            </header>
+            </div>
 
             {/* MAIN TABLE AREA */}
             <div className="relative overflow-x-auto bg-slate-950 p-6 md:p-16 rounded-[2.5rem] md:rounded-[4rem] border-[8px] md:border-[12px] border-slate-900 shadow-2xl min-h-[400px] md:min-h-[600px] scrollbar-hide">
@@ -2954,7 +2973,19 @@ const PeriodicTablePage = () => {
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-[0.65rem] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{selectedElement.c.replace('-', ' ')} Model</p>
-                                        <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{selectedElement.name}</h2>
+                                        <div className="flex items-center gap-3">
+                                            <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{selectedElement.name}</h2>
+                                            <button 
+                                                onClick={() => {
+                                                    const utterance = new SpeechSynthesisUtterance(selectedElement.name);
+                                                    window.speechSynthesis.speak(utterance);
+                                                }}
+                                                className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-indigo-50 hover:text-indigo-500 transition-colors shadow-sm ml-2 active:scale-95"
+                                                title="Pronounce"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                                            </button>
+                                        </div>
                                         <div className="flex gap-2 pt-2">
                                             <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Atomic: {selectedElement.n}</span>
                                             <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Mass: {selectedElement.m}</span>
@@ -2969,28 +3000,80 @@ const PeriodicTablePage = () => {
                             {/* FIRST 20 DETAILS */}
                             {elementDetails[selectedElement.n] ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up">
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue"><Sigma className="w-5 h-5" /></div>
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                        <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">K</div>
+                                        <div className="flex items-center gap-3 relative z-10">
+                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-500"><Sigma className="w-5 h-5" /></div>
                                             <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Configuration</p>
                                         </div>
-                                        <p className="text-3xl font-black text-slate-800 italic tracking-tighter font-mono">{elementDetails[selectedElement.n].ec}</p>
-                                        <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase">Stable arrangement of orbiting electrons.</p>
+                                        <div className="flex justify-between items-center gap-4 relative z-10">
+                                            <div>
+                                                <p className="text-3xl font-black text-slate-800 italic tracking-tighter font-mono">{elementDetails[selectedElement.n].ec}</p>
+                                                <div className="flex gap-1 mt-2">
+                                                    {elementDetails[selectedElement.n].ec.split(',').map((_: any, i: number) => (
+                                                        <span key={i} className="text-[0.55rem] font-black text-white bg-slate-800 px-1.5 py-0.5 rounded-md uppercase">
+                                                            {['K', 'L', 'M', 'N', 'O'][i]} Shell
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            {/* Bohr Model visualizer */}
+                                            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center -mr-2">
+                                                <div className="w-3 h-3 rounded-full bg-rose-500 z-10 shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
+                                                {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number, arr: any[]) => {
+                                                    const radius = 16 + (i * 12);
+                                                    const dots = parseInt(shell.trim());
+                                                    return (
+                                                        <div key={i} className="absolute inset-0 flex items-center justify-center animate-[spin_60s_linear_infinite]" style={{ width: '100%', height: '100%', animationDirection: i % 2 === 0 ? 'normal' : 'reverse', animationDuration: `${20 + i * 15}s` }}>
+                                                            <div className="absolute rounded-full border border-slate-300 pointer-events-none" style={{ width: radius * 2, height: radius * 2 }} />
+                                                            {Array.from({ length: dots }).map((_, j) => (
+                                                                <div 
+                                                                    key={j} 
+                                                                    className="absolute w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.8)]"
+                                                                    style={{ 
+                                                                        transform: `rotate(${(360 / dots) * j}deg) translateY(-${radius}px)` 
+                                                                    }}
+                                                                    title={`${['K', 'L', 'M', 'N', 'O'][i]} Shell Electron`}
+                                                                />
+                                                            ))}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500"><Zap className="w-5 h-5" /></div>
-                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Valency</p>
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                                        <div className="space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500"><Zap className="w-5 h-5" /></div>
+                                                <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Properties</p>
+                                            </div>
+                                            <div className="flex items-end gap-3">
+                                                <p className="text-3xl font-black text-slate-800 italic tracking-tighter">{elementDetails[selectedElement.n].v}</p>
+                                                <p className="text-[0.65rem] font-bold text-slate-400 leading-relaxed uppercase pb-1">Valency</p>
+                                            </div>
                                         </div>
-                                        <p className="text-3xl font-black text-slate-800 italic tracking-tighter">{elementDetails[selectedElement.n].v}</p>
-                                        <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase">Combining capacity of the atom.</p>
+                                        <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">State</p>
+                                                <p className="text-sm font-bold text-slate-700">{['H','N','O','F','Cl','He','Ne','Ar','Kr','Xe','Rn'].includes(selectedElement.s) ? 'Gas' : ['Hg','Br'].includes(selectedElement.s) ? 'Liquid' : 'Solid'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">Group / Period</p>
+                                                <p className="text-sm font-bold text-slate-700">{selectedElement.x} / {selectedElement.y}</p>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500"><Activity className="w-5 h-5" /></div>
-                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Nucleus Data</p>
+                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-3 relative overflow-hidden group">
+                                        <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">N</div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500"><Activity className="w-5 h-5" /></div>
+                                                <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Nucleus Data</p>
+                                            </div>
+                                            <span className="text-[0.55rem] font-black bg-emerald-100 text-emerald-600 px-2 py-1 rounded-md uppercase tracking-widest">{selectedElement.n === 1 ? '3 Isotopes' : 'Isotopes'}</span>
                                         </div>
                                         <div className="flex justify-between items-end border-b border-slate-200 pb-2">
                                             <span className="text-[0.6rem] font-black text-emerald-600 uppercase tracking-widest">Protons</span>
@@ -3003,6 +3086,30 @@ const PeriodicTablePage = () => {
                                         <div className="flex justify-between items-end">
                                             <span className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest">Electrons</span>
                                             <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].e}</span>
+                                        </div>
+                                        <div className="pt-2 mt-2 border-t border-slate-200">
+                                            <details className="group/details">
+                                                <summary className="text-[0.65rem] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-emerald-600 transition-colors flex items-center gap-1">
+                                                    View Known Isotopes <ChevronRight className="w-3 h-3 group-open/details:rotate-90 transition-transform" />
+                                                </summary>
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {selectedElement.n === 1 ? (
+                                                        <>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Protium [¹H]</span>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Deuterium [²H]</span>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Tritium [³H]</span>
+                                                        </>
+                                                    ) : selectedElement.n === 6 ? (
+                                                        <>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-12</span>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-13</span>
+                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-rose-200 px-2.5 py-1 rounded-lg text-rose-700">Carbon-14 (Radioactive)</span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Standard isotopic mix</span>
+                                                    )}
+                                                </div>
+                                            </details>
                                         </div>
                                     </div>
 
@@ -3093,14 +3200,11 @@ const NepaliDictionaryPage = () => {
 
     return (
         <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <ToolHeader 
-                title="नेपाली शब्दकोश" 
-                subtitle="Nepali Lexicon Matrix" 
-                themeColor="amber" 
-                onBack={() => navigate(-1)} 
-            />
+            <div className="w-full max-w-[620px] px-6 py-6">
+                <ToolHeader title="नेपाली शब्दकोश" subtitle="Nepali Lexicon Matrix" icon={BookOpen} />
+            </div>
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-20 space-y-6">
+            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-10 space-y-6">
                 {!result && !loading && (
                     <div className="space-y-8">
                         <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-6 border border-white">
@@ -3212,7 +3316,6 @@ const NepaliDictionaryPage = () => {
 
 /* ── FLASHCARDS APP ── */
 const FlashcardApp = () => {
-    const navigate = useNavigate();
     const [index, setIndex] = useState(0);
     const [flipped, setFlipped] = useState(false);
 
@@ -3237,15 +3340,7 @@ const FlashcardApp = () => {
 
     return (
         <div className="space-y-10 animate-fade-up pb-24">
-            <header className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
-                    <ArrowLeft className="w-6 h-6" />
-                </button>
-                <div>
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Flashcards</h1>
-                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Active Recall Desk</p>
-                </div>
-            </header>
+            <ToolHeader title="Flashcards" subtitle="Active Recall Desk" icon={LayoutGrid} />
 
             <div className="flex flex-col items-center gap-8">
                 <div 
@@ -3314,10 +3409,7 @@ const WordCounterPage = () => {
 
     return (
         <div className="space-y-8 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Word Counter</h1>
-            </div>
+            <ToolHeader title="Lexical Engine" subtitle="Real-time Semantic Analytics" icon={Type} />
 
             <div className="grid grid-cols-3 gap-4">
                 <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] text-center shadow-xs">
@@ -3349,8 +3441,10 @@ const WordCounterPage = () => {
 const SubjectDetail = () => {
     const { name } = useParams();
     const navigate = useNavigate();
-    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+    const decodedName = decodeURIComponent(name || '');
+    const config = SUBJECTS_CONFIG[decodedName as SubjectType] || SUBJECTS_CONFIG['English'];
     const Icon = config.icon;
+    const brand = getBrandColors(config.color);
 
     const sections = [
         { id: 'chapters', label: 'Study Chapters', icon: BookOpen, color: 'bg-emerald-50 text-emerald-600', count: 'Core Specification' },
@@ -3369,14 +3463,14 @@ const SubjectDetail = () => {
                 >
                     <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", `bg-${config.color}-50 text-${config.color}-600`)}>
+                <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", brand.paleBg, brand.text)}>
                     Verified Module
                 </div>
             </header>
 
             <div className={cn("p-8 rounded-[2.5rem] text-white overflow-hidden relative shadow-xl min-h-[180px] flex flex-col justify-end border-2 border-white/30 bg-linear-to-br", config.gradient)}>
                 <div className="relative z-10">
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-1">{name}</h1>
+                    <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-1">{decodedName}</h1>
                     <p className="text-[0.6rem] font-black text-white/70 uppercase tracking-[0.2em]">Syllabus Synchronization: Active</p>
                 </div>
                 <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -3504,7 +3598,7 @@ const MCQTestSelection = () => {
                             className={cn(
                                 "flex-1 py-3 rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
                                 questionCount === c 
-                                    ? `text-white border-transparent bg-linear-to-br ${config.gradient} shadow-lg shadow-${config.color}-500/20` 
+                                    ? cn("text-white border-transparent bg-linear-to-br shadow-lg", config.gradient, brand.shadow)
                                     : "bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-200"
                             )}
                         >
@@ -4076,6 +4170,7 @@ const StudyHub = () => {
     const renderSubject = (name: string, sub: any, i: number) => {
         const config = SUBJECTS_CONFIG[name as SubjectType] || { color: 'slate', icon: BookOpen, gradient: 'from-slate-500 to-slate-700' };
         const Icon = config.icon;
+        const brand = getBrandColors(config.color);
         return (
             <motion.button
                 key={name}
@@ -4093,7 +4188,7 @@ const StudyHub = () => {
                     <div className="flex items-center gap-1.5">
                         <span className="text-[0.5rem] font-bold uppercase tracking-widest text-slate-400">{sub.chapters.length} Units</span>
                         <div className="w-1 h-1 rounded-full bg-slate-200" />
-                        <span className={cn("text-[0.45rem] font-black uppercase tracking-widest", `text-${config.color}-500`)}>Archive</span>
+                        <span className={cn("text-[0.45rem] font-black uppercase tracking-widest", brand.text)}>Archive</span>
                     </div>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-900 transition-colors shrink-0" />
@@ -4143,51 +4238,135 @@ const ChapterList = () => {
     const { name } = useParams();
     const { data, liveMaterials } = useApp();
     const navigate = useNavigate();
-    const sub = data.subjects[name as string];
-    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
+    const decodedName = decodeURIComponent(name || '');
+    const sub = data.subjects[decodedName];
+    const config = SUBJECTS_CONFIG[decodedName as SubjectType] || SUBJECTS_CONFIG['English'];
 
-    const dynamicChapters = liveMaterials.filter(m => m.subject === name && m.type === 'chapter');
+    const dynamicChapters = liveMaterials.filter(m => m.subject === decodedName && m.type === 'chapter');
     const allChapters = [...(sub?.chapters || []), ...dynamicChapters];
 
-    const accentBg = config.gradient.split(' ')[0].replace('from-', 'bg-');
-    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+    const brand = getBrandColors(config.color);
+    const accentBg = brand.bg;
+    const accentText = brand.text;
+
+    const container = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1
+            }
+        }
+    };
+
+    const item = {
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0 }
+    };
+
+    const toNepaliDigits = (num: number) => {
+        const nepalidigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+        return String(num).split('').map(digit => nepalidigits[parseInt(digit)] || digit).join('');
+    };
+
+    const displayNum = (i: number) => {
+        const num = i + 1;
+        const formatted = String(num).padStart(2, '0');
+        if (decodedName === 'नेपाली' || decodedName === 'सामाजिक') {
+            return toNepaliDigits(num).padStart(2, '०');
+        }
+        return formatted;
+    };
 
     return (
-        <div className="space-y-4 animate-fade-up pb-24 text-slate-900">
-            <div className="flex items-center gap-3 px-1">
-                <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all"><ArrowLeft className="w-5 h-5" /></button>
-                <div>
-                    <h1 className="text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Learning Modules</h1>
-                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Syllabus Index • {allChapters.length} Units</p>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3">
-                {allChapters.map((ch: any, i: number) => (
+        <div className="space-y-8 animate-fade-up pb-32">
+            <header className="flex flex-col gap-2 px-1">
+                <div className="flex items-center gap-3">
                     <button 
-                        key={`${ch.id}-${i}`} 
-                        onClick={() => navigate(`/hub/${name}/chapters/${ch.id}`)}
-                        className="w-full bg-white p-4 rounded-[2rem] border border-slate-100 shadow-xs flex items-center justify-between group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]"
+                        onClick={() => navigate(-1)} 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center bg-white border border-slate-100 text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
                     >
-                        <div className="flex items-center gap-4 min-w-0">
-                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-xs shadow-md shrink-0", accentBg)}>
-                                {String(i + 1).padStart(2, '0')}
-                            </div>
-                            <div className="text-left min-w-0">
-                                <h2 className="font-black text-slate-900 tracking-tight leading-tight mb-1 text-base uppercase italic">{ch.title}</h2>
-                                <div className="flex flex-wrap gap-1.5 items-center">
-                                     <span className={cn("text-[0.5rem] font-black uppercase tracking-widest px-2 py-0.5 rounded border shrink-0", accentText.replace('text-', 'bg-') + "/10", accentText, accentText.replace('text-', 'border-') + "/20")}>{ch.marks || 0} Marks</span>
-                                     <span className="w-1 h-1 rounded-full bg-slate-200" />
-                                     <p className="text-[0.55rem] text-slate-400 font-bold uppercase tracking-widest truncate">{ch.topics ? ch.topics.split(',')[0] : 'General Study'}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all shrink-0">
-                            <ChevronRight className="w-4 h-4" />
-                        </div>
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
-                ))}
-            </div>
+                    <span className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-[0.4em] mb-1">Unit Repository</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">
+                        Module <span className={accentText}>Vault</span>
+                    </h1>
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm shrink-0">
+                        <Archive className="w-6 h-6" />
+                    </div>
+                </div>
+            </header>
+
+            <motion.div 
+                variants={container}
+                initial="hidden"
+                animate="show"
+                className="space-y-4"
+            >
+                {allChapters.map((ch: any, i: number) => {
+                    const topics = ch.topics ? ch.topics.split(',').filter(Boolean) : [];
+                    return (
+                        <motion.button 
+                            variants={item}
+                            key={`${ch.id}-${i}`}
+                            onClick={() => navigate(`/hub/${name}/chapters/${ch.id}`)}
+                            className={cn(
+                                "bg-white p-5 rounded-3xl border-2 shadow-sm hover:shadow-xl transition-all text-left flex items-center gap-5 group relative overflow-hidden active:scale-[0.98]",
+                                "border-slate-50 hover:border-slate-100"
+                            )}
+                        >
+                            <div className={cn("absolute top-0 right-0 w-24 h-24 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rounded-full -mr-12 -mt-12 bg-current pointer-events-none", accentText)} />
+                            
+                            <div className={cn("w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-white font-black shadow-lg shrink-0 relative z-10 transition-transform group-hover:scale-110", accentBg)}>
+                                <span className="text-[0.5rem] uppercase tracking-widest opacity-60 leading-none mb-0.5">Unit</span>
+                                <span className="text-xl leading-none italic">{displayNum(i)}</span>
+                            </div>
+
+                            <div className="flex-1 min-w-0 relative z-10">
+                                <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                                    {ch.contentType && (
+                                        <span className={cn(
+                                            "px-2 py-0.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest border",
+                                            ch.contentType === 'Answer' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                            ch.contentType === 'Sub Topic' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                            "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                        )}>
+                                            {ch.contentType}
+                                        </span>
+                                    )}
+                                    {ch.marks && ch.marks !== "0" && !ch.hideMarks && (
+                                        <span className="px-2 py-0.5 bg-slate-900 text-white rounded-lg text-[0.55rem] font-black uppercase tracking-widest border border-slate-800">
+                                            {ch.marks} Marks
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic leading-tight truncate">
+                                    {ch.title}
+                                </h2>
+                            </div>
+
+                            <div className="flex items-center justify-center w-10 h-10 bg-slate-50 rounded-xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all shrink-0">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </motion.button>
+                    );
+                })}
+
+                {allChapters.length === 0 && (
+                    <div className="py-24 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-50 space-y-6">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto text-slate-200">
+                            <BookOpen className="w-10 h-10" />
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-xl font-black text-slate-300 uppercase italic tracking-widest leading-none">Curriculum Null</p>
+                            <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest">Awaiting Module Synchronization from Admin</p>
+                        </div>
+                    </div>
+                )}
+            </motion.div>
         </div>
     );
 };
@@ -4196,178 +4375,206 @@ const ChapterDetail = () => {
     const { name, chapterId } = useParams();
     const { data, liveMaterials, user, toggleChapterComplete } = useApp();
     const navigate = useNavigate();
-    const sub = data.subjects[name as string] || Object.values(data.subjects)[0];
+    const sub = data.subjects[decodeURIComponent(name || '')] || Object.values(data.subjects)[0];
     const chapter = sub?.chapters?.find((c: any) => c.id === chapterId) || liveMaterials?.find(m => m.id === chapterId);
-    const [focusMode, setFocusMode] = useState(false);
     const [viewer, setViewer] = useState({ isOpen: false, url: '', title: '', docxUrl: '' });
 
     if (!chapter) return <div className="p-10 text-center font-black uppercase text-slate-400">Entry Missing</div>;
 
     const isCompleted = user?.completedChapters?.includes(chapterId || '');
     const topicsList = (chapter.topics || '').split(',').filter(Boolean);
-    const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
-
-    const accentColor = config.gradient.split(' ')[0].replace('from-', 'bg-');
-    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+    const config = SUBJECTS_CONFIG[decodeURIComponent(name || '') as SubjectType] || SUBJECTS_CONFIG['English'];
     const Icon = config.icon;
+
+    const brand = getBrandColors(config.color);
+    const accentBg = brand.bg;
+    const accentText = brand.text;
+
+    // Marks handling
+    const marksValue = chapter.marks || 0;
+    const hideMarks = chapter.hideMarks || false;
 
     return (
         <div className="animate-fade-up pb-32">
-            {!focusMode && (
-                <div className="space-y-6 mb-8">
-                    <div className="flex items-center justify-between px-1">
-                        <div className="flex items-center gap-3">
-                            <button 
-                                onClick={() => navigate(-1)} 
-                                className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 active:scale-95 transition-all shadow-sm"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                            <div className="min-w-0">
-                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 block">{name} Archive</span>
-                                <h1 className="text-xl sm:text-2xl font-black italic tracking-tighter uppercase leading-tight text-slate-900 truncate">Core Specification</h1>
-                            </div>
+            <header className="mb-8 space-y-6 px-4 sm:px-0">
+                <div className="flex items-center justify-between px-1">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="w-11 h-11 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all shadow-sm active:scale-95"
+                    >
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end">
+                            <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest leading-none">Status</span>
+                            <span className="text-[0.7rem] font-bold text-emerald-500 uppercase tracking-tighter">Verified Module</span>
                         </div>
-                        <button 
-                            onClick={() => setFocusMode(true)}
-                            className="flex items-center gap-2 p-2 bg-slate-50 text-slate-400 rounded-xl border border-slate-100 hover:text-slate-900 transition-all font-black text-[0.6rem] uppercase tracking-widest"
-                        >
-                            <EyeOff className="w-4 h-4" />
-                            <span className="hidden sm:inline">Focus</span>
-                        </button>
-                    </div>
-
-                    <div className={cn("p-6 rounded-[2rem] text-white overflow-hidden relative shadow-xl min-h-[120px] flex flex-col justify-center border-2 border-white/20 bg-linear-to-br", config.gradient)}>
-                        <div className="relative z-10 flex items-center gap-4">
-                             <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shrink-0">
-                                <Icon className="w-7 h-7 text-white" />
-                            </div>
-                            <div>
-                                <p className="text-[0.6rem] font-black text-white/70 uppercase tracking-widest">{name} • Module Protocol</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <Trophy className="w-3.5 h-3.5 text-white/80" />
-                                    <span className="text-[0.65rem] font-black uppercase tracking-widest">{chapter.marks || 0} Critical Marks</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <Icon className="w-24 h-24 -rotate-12 translate-x-8 -translate-y-8" />
-                        </div>
-                    </div>
-
-                    <div className="px-1 space-y-4">
-                        <h2 className="text-3xl font-black italic tracking-tighter leading-tight uppercase text-slate-900">
-                             {chapter.title}
-                        </h2>
-                        
-                        <div className="flex flex-wrap gap-2">
-                            {topicsList.length > 0 ? topicsList.slice(0, 3).map((t: string, i: number) => (
-                                <div 
-                                    key={i} 
-                                    className="bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-xl flex items-center gap-2"
-                                >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                                    <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-tight italic">{t.trim()}</span>
-                                </div>
-                            )) : (
-                                 <div className="bg-slate-50 px-3 py-1.5 rounded-xl border-dashed border border-slate-200">
-                                    <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 italic font-mono">Full Unit Sync</span>
-                                </div>
-                            )}
-                        </div>
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                 </div>
-            )}
 
-            {focusMode && (
-                <div className="flex items-center justify-between mb-6 animate-fade-down bg-slate-900 p-4 rounded-2xl text-white">
-                    <div className="flex items-center gap-3">
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", accentColor)}>
-                             <BookOpen className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <p className="text-[0.5rem] font-black uppercase opacity-60">Focus Protocol Active</p>
-                            <h3 className="text-sm font-black uppercase tracking-tight italic truncate max-w-[180px]">{chapter.title}</h3>
-                        </div>
-                    </div>
-                    <button onClick={() => setFocusMode(false)} className="px-4 py-2 bg-white/10 rounded-lg text-[0.6rem] font-black uppercase tracking-widest hover:bg-white/20 transition-all border border-white/10">Exit Focus</button>
-                </div>
-            )}
-            
-            <div className={cn("p-6 sm:p-10 bg-white border border-slate-100 shadow-xl min-h-[300px]", focusMode ? "rounded-3xl" : "rounded-[2.5rem]")}>
-                {chapter.file_url && chapter.file_url.toLowerCase().endsWith('.pdf') ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center space-y-6">
-                        <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center shadow-lg border border-rose-100">
-                             <FileText className="w-10 h-10" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase italic mb-1">Specification PDF Ready</h3>
-                            <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mb-6 max-w-[200px] mx-auto leading-relaxed">Encrypted learning module detected. Initiate transfer.</p>
-                            <a href={chapter.file_url} target="_blank" onClick={(e) => {
-                                if (chapter.file_url?.toLowerCase().endsWith('.pdf')) {
-                                    e.preventDefault();
-                                    setViewer({ isOpen: true, url: chapter.file_url!, title: chapter.title, docxUrl: chapter.file_url_docx || '' });
-                                }
-                            }} className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all">
-                                <Download className="w-4 h-4" />
-                                {chapter.file_url_docx ? 'View / Download Options' : 'View PDF'}
-                            </a>
-                            {chapter.file_url_docx && (
-                                <a href={chapter.file_url_docx} download className="inline-flex items-center gap-3 px-8 py-4 ml-3 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] shadow-xl active:scale-95 transition-all no-underline">
-                                    <FileCode className="w-4 h-4" />
-                                    Download Word
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                ) : (
-                    <div className="markdown-body text-black font-black prose-headings:text-black">
-                         <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
-                            {chapter.text_content || chapter.description || chapter.contentHtml || '# Module Content Pending\nDeep-dive documentation for this unit is being synced. Please check back in a few moments for the complete curriculum roadmap.'}
-                        </Markdown>
-                    </div>
-                )}
-            </div>
-
-            <div className="pt-6">
-                <button 
-                    onClick={() => toggleChapterComplete(chapterId || '')}
-                    className={cn(
-                        "w-full p-6 sm:p-8 rounded-[2.5rem] flex items-center justify-between group active:scale-95 transition-all border-4 shadow-xl relative overflow-hidden",
-                        isCompleted 
-                            ? "bg-slate-900 border-slate-800 text-white" 
-                            : "bg-white border-slate-50 text-slate-900"
-                    )}
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={cn("p-8 md:p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl min-h-[220px] flex flex-col justify-end border-4 border-white/20 bg-linear-to-br", config.gradient)}
                 >
-                    <div className="text-left relative z-10">
-                        <p className={cn("text-[0.55rem] font-black uppercase tracking-widest mb-1 opacity-60", isCompleted ? "text-emerald-400" : "text-slate-400")}>Protocol Completion</p>
-                        <p className="text-lg sm:text-xl font-black uppercase italic tracking-tighter">{isCompleted ? 'Mission Accomplished' : 'Mark as Completed'}</p>
+                    <div className="absolute top-0 right-0 p-12 opacity-10">
+                        <Icon className="w-48 h-48 -rotate-12 translate-x-12 -translate-y-12" />
                     </div>
-                    <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-md relative z-10", isCompleted ? "bg-emerald-500 text-white" : "bg-slate-50 text-slate-300 group-hover:bg-slate-900 group-hover:text-white")}>
-                        {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <CheckCircle className="w-6 h-6" />}
+                    <div className="relative z-10 space-y-4">
+                        <div className="flex items-center gap-3">
+                            <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[0.65rem] font-black uppercase tracking-widest border border-white/10">
+                                {decodeURIComponent(name || '')} Curriculum Node
+                            </span>
+                        </div>
+                        <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none max-w-2xl drop-shadow-lg">
+                            {chapter.title}
+                        </h1>
                     </div>
-                    {isCompleted && (
-                        <div className="absolute inset-0 bg-linear-to-r from-emerald-500/10 to-transparent pointer-events-none" />
+                    
+                    {!hideMarks && marksValue !== 0 && (
+                        <div className="absolute bottom-6 right-8 md:bottom-10 md:right-12 z-10">
+                            <div className="px-5 py-2.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1.5rem] flex flex-col items-end shadow-xl">
+                                <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-80 mb-0.5">Board Weightage</span>
+                                <span className="text-xl font-black italic tracking-tighter uppercase leading-none">
+                                    {marksValue} Marks
+                                </span>
+                            </div>
+                        </div>
                     )}
-                </button>
-            </div>
-            
-            {!focusMode && (
-                <div className="mt-8 flex gap-3">
-                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
-                        <MessageSquare className="w-5 h-5 text-slate-400 group-hover:text-blue transition-colors" />
-                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Discuss</span>
-                    </button>
-                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
-                        <Star className="w-5 h-5 text-slate-400 group-hover:text-amber-500 transition-colors" />
-                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Bookmark</span>
-                    </button>
-                    <button className="flex-1 p-5 bg-white border border-slate-100 rounded-[1.5rem] flex flex-col items-center gap-1 group active:scale-95 transition-all">
-                        <Share2 className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 transition-colors" />
-                        <span className="text-[0.55rem] font-black uppercase text-slate-400 group-hover:text-slate-900 transition-colors">Share</span>
-                    </button>
+                </motion.div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start px-4 sm:px-0">
+                    {/* Content Section */}
+                    <div className="lg:col-span-8 space-y-8">
+                        <div className="bg-white p-8 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl min-h-[500px]">
+                            {chapter.file_url?.toLowerCase().endsWith('.pdf') ? (
+                                <div className="flex flex-col items-center justify-center py-24 text-center space-y-8">
+                                    <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center shadow-lg border border-indigo-100">
+                                        <FileCode className="w-12 h-12" />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">Digital Asset Ready</h3>
+                                        <p className="text-[0.7rem] text-slate-400 font-black uppercase tracking-widest max-w-sm mx-auto leading-relaxed">
+                                            This learning module contains attached reference materials. Initialize view layer to interact.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setViewer({ isOpen: true, url: chapter.file_url!, title: chapter.title, docxUrl: chapter.file_url_docx || '' })}
+                                        className="inline-flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[1.75rem] font-black uppercase tracking-widest text-[0.7rem] shadow-2xl shadow-slate-900/20 active:scale-95 transition-all"
+                                    >
+                                        <Eye className="w-5 h-5" /> Open Material Center
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="markdown-body text-slate-800 font-medium prose-headings:text-slate-900 prose-strong:text-indigo-600 prose-p:leading-relaxed text-lg">
+                                     <div className="mb-10 border-b border-slate-100 pb-6">
+                                        <div className="flex flex-col gap-1 mb-4">
+                                            <div className={cn(
+                                                "px-4 py-1.5 rounded-xl inline-flex self-start text-[0.65rem] font-black uppercase tracking-widest border shadow-sm",
+                                                chapter.contentType === 'Answer' ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                                                chapter.contentType === 'Sub Topic' ? "bg-amber-50 text-amber-600 border-amber-100" :
+                                                "bg-indigo-50 text-indigo-600 border-indigo-100"
+                                            )}>
+                                                {chapter.contentType || 'Curriculum Notes'}
+                                            </div>
+                                        </div>
+                                        <h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none mb-2">
+                                            {chapter.contentType === 'Sub Topic' ? 'Topic Deep-Dive' : 
+                                             chapter.contentType === 'Answer' ? 'Solution Repository' : 
+                                             'Authenticated Notes'}
+                                        </h2>
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-slate-300 animate-pulse" />
+                                            <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">Active Content Synchronization</p>
+                                        </div>
+                                    </div>
+                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                                        {chapter.notes || chapter.text_content || chapter.description || chapter.contentHtml || '# Module Synchronization Error\nDeep-dive documentation for this unit is being synced. Please check back in a few moments for the complete curriculum roadmap.'}
+                                    </Markdown>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Extra Note Cards */}
+                        {liveMaterials.filter(m => (m.subject === name) && (m.type === 'note' || m.type === 'shared_note') && (m.title?.toLowerCase().includes(chapter.title.toLowerCase()))).map((material, idx) => (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                key={material.id}
+                                className="bg-white border-2 border-slate-50 p-10 rounded-[3.5rem] shadow-xl relative overflow-hidden group"
+                            >
+                                <div className="absolute top-0 right-0 p-8 opacity-5 text-indigo-400"><StickyNote className="w-16 h-16 rotate-12" /></div>
+                                <div className="relative z-10">
+                                    <span className="inline-flex items-center px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[0.65rem] font-black uppercase tracking-widest mb-6 border border-emerald-100">
+                                        Module Supplement #{idx + 1}
+                                    </span>
+                                    <h3 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-6">{material.title}</h3>
+                                    <div className="markdown-body text-slate-700 font-medium text-lg leading-relaxed">
+                                        <Markdown>{material.text_content || material.content || ''}</Markdown>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Sidebar / Roadmap */}
+                    <div className="lg:col-span-4 space-y-6">
+                        {topicsList.length > 0 && (
+                            <div className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-2xl relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-1000" />
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] italic mb-8 border-b border-slate-50 pb-5 flex items-center gap-3">
+                                    <Target className="w-5 h-5 text-indigo-500" /> Syllabus Roadmap
+                                </h3>
+                                <div className="space-y-8 relative z-10">
+                                    {topicsList.map((t, idx) => (
+                                        <motion.div 
+                                            initial={{ opacity: 0, x: -10 }}
+                                            whileInView={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.1 }}
+                                            key={idx} 
+                                            className="flex gap-6 group/item"
+                                        >
+                                            <div className="flex flex-col items-center">
+                                                <div className={cn("w-4 h-4 rounded-full shrink-0 mt-1.5 border-2 border-white shadow-md transition-all group-hover/item:scale-125", idx === 0 ? accentBg : "bg-slate-200")} />
+                                                {idx !== topicsList.length - 1 && <div className="w-0.5 flex-1 bg-slate-100 my-2" />}
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest opacity-60">Objective {idx + 1}</p>
+                                                <p className="text-sm font-black uppercase italic tracking-tight text-slate-700 leading-tight group-hover/item:text-indigo-600 transition-colors cursor-default">
+                                                    {t.trim()}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-900 p-8 rounded-[3rem] border-4 border-slate-800 shadow-2xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 group-hover:scale-125 transition-transform duration-700" />
+                            <div className="relative z-10 space-y-6">
+                                <div className="space-y-1">
+                                    <p className="text-[0.6rem] font-black text-indigo-400 uppercase tracking-widest italic">Module Finalization</p>
+                                    <h4 className="text-xl font-black text-white uppercase italic tracking-tighter">Mark Completion</h4>
+                                </div>
+                                <button 
+                                    onClick={() => toggleChapterComplete(chapterId || '')}
+                                    className={cn(
+                                        "w-full py-5 rounded-2xl font-black uppercase tracking-widest text-[0.7rem] transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95",
+                                        isCompleted 
+                                            ? "bg-emerald-500 text-white shadow-emerald-500/20" 
+                                            : "bg-white text-slate-900 hover:bg-slate-100"
+                                    )}
+                                >
+                                    {isCompleted ? <Check className="w-5 h-5 stroke-[4px]" /> : <Circle className="w-5 h-5" />}
+                                    {isCompleted ? "Unit Synchronized" : "Confirm Mastery"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            )}
 
             <BookViewer 
                 isOpen={viewer.isOpen} 
@@ -4614,22 +4821,19 @@ const NoteList = () => {
     const navigate = useNavigate();
 
     const sharedNotes = [
-        { 
-            id: 'master-1', 
-            title: 'SEE Board Exam Blueprint', 
-            subject: name, 
-            type: 'shared_note', 
-            text_content: '### Exam Preparation Guide\n1. Focus on high weightage chapters\n2. Practice past year questions\n3. Review experimental diagrams\n4. Manage time effectively during exams\n5. Master diagram-based questions in Science\n6. Focus on Grammar and Creative Writing for English', 
-            created_at: new Date().toISOString() 
-        },
         ...liveMaterials.filter((m: any) => m.subject === name && m.type === 'shared_note')
     ];
     const simpleNotes = liveMaterials.filter((m: any) => m.subject === name && m.type === 'note');
 
     return (
         <div className="space-y-6 animate-fade-up pb-24 text-[#020617]">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-white border border-slate-100 rounded-xl shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Note Repository</h1>
             </div>
 
@@ -4709,11 +4913,13 @@ const StudyPdfViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onCl
     // Pass Google Drive view URLs to preview URLs for embedding
     const getPreviewUrl = (raw: string) => {
         if (!raw) return '';
+        // Try to detect google drive links and transform them
         if (raw.includes('drive.google.com/file/d/')) {
             const id = raw.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1];
             if (id) return `https://drive.google.com/file/d/${id}/preview`;
         }
-        return raw;
+        // Always try to use gview for PDFs / general URL embedding
+        return `https://docs.google.com/gview?url=${encodeURIComponent(raw)}&embedded=true`;
     };
     
     const embedUrl = getPreviewUrl(url);
@@ -4742,10 +4948,10 @@ const StudyPdfViewer = ({ isOpen, onClose, url, title }: { isOpen: boolean; onCl
                             href={url}
                             target="_blank"
                             rel="noreferrer"
-                            className="bg-white/5 hover:bg-white/10 text-white p-3 rounded-xl transition-colors border border-white/10 flex items-center gap-2"
+                            className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all border border-white/20 flex items-center gap-2"
                         >
                             <ExternalLink className="w-4 h-4" />
-                            <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Open Original</span>
+                            <span className="text-[0.6rem] font-bold uppercase tracking-wider">Open in new tab if preview fails</span>
                         </a>
                         <button 
                             onClick={onClose}
@@ -4793,8 +4999,13 @@ const ModelList = () => {
                 url={viewer.url} 
                 title={viewer.title} 
             />
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
+            <div className="flex items-center gap-4">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-white border border-slate-100 rounded-xl shadow-sm flex items-center justify-center text-slate-400 hover:text-slate-900 active:scale-95 transition-all z-20"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
                 <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Model Set Vault</h1>
             </div>
 
@@ -5158,22 +5369,21 @@ const DigitalTextbookList = () => {
     const staticLink = BOOK_LINKS[name as string];
     const dynamicBooks = liveMaterials.filter(m => m.subject === name && m.type === 'textbook' || m.type === 'digital_textbook');
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
-
-    const accentBg = config.gradient.split(' ')[0].replace('from-', 'bg-');
-    const accentText = config.gradient.split(' ')[0].replace('from-', 'text-');
+    const brand = getBrandColors(config.color);
 
     const renderBookCard = (url: string, title: string, isOfficial: boolean, docxUrl?: string) => {
         const Icon = config.icon;
-        const bgPale = `bg-${config.color}-pale`;
         return (
             <div 
                 key={url} 
                 className={cn(
-                    "p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 group hover:shadow-lg hover:border-slate-200 transition-all active:scale-[0.98]",
-                    bgPale
+                    "p-4 rounded-[2rem] border border-slate-100 flex items-center gap-4 group transition-all active:scale-[0.98]",
+                    brand.paleBg,
+                    brand.shadow,
+                    "shadow-sm hover:shadow-lg hover:border-slate-200"
                 )}
             >
-                <div className={cn("w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-md group-hover:rotate-6 transition-all text-white border-4 border-white/20", accentBg)}>
+                <div className={cn("w-16 h-16 rounded-2xl flex flex-col items-center justify-center shrink-0 shadow-md group-hover:rotate-6 transition-all text-white border-4 border-white/20", brand.solidBg)}>
                     <Icon className="w-7 h-7 mb-0.5" />
                     <div className="bg-white/20 px-1.5 py-0.5 rounded-sm text-center">
                         <span className="text-[0.4rem] font-black uppercase tracking-[0.2em]" style={{ fontFamily: 'monospace' }}>BOOK</span>
@@ -5182,7 +5392,7 @@ const DigitalTextbookList = () => {
                 
                 <div className="flex-1 min-w-0 px-1">
                     <div className="flex items-center gap-2 mb-0.5">
-                        <span className={cn("px-2 py-0.5 rounded-md bg-white text-[0.55rem] font-black uppercase tracking-widest shadow-xs", isOfficial ? accentText : "text-slate-400")}>
+                        <span className={cn("px-2 py-0.5 rounded-md bg-white text-[0.55rem] font-black uppercase tracking-widest shadow-xs", isOfficial ? brand.text : "text-slate-400")}>
                             {isOfficial ? 'Council Ed.' : 'Ref Node'}
                         </span>
                         {isOfficial && <Zap className="w-3 h-3 text-amber-500 fill-current" />}
@@ -5213,7 +5423,7 @@ const DigitalTextbookList = () => {
                         href={url} 
                         download 
                         target="_blank" 
-                        className={cn("w-10 h-10 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md", accentBg)}
+                        className={cn("w-10 h-10 text-white rounded-xl flex items-center justify-center active:scale-90 transition-all shadow-md", brand.solidBg)}
                     >
                         <Download className="w-4 h-4" />
                     </a>
@@ -5262,44 +5472,6 @@ const DigitalTextbookList = () => {
 };
 
 
-/** ── SHARED TOOL HEADER ── */
-const ToolHeader = ({ title, subtitle, themeColor = "blue", onBack }: { title: string, subtitle: string, themeColor?: string, onBack: () => void }) => {
-    const { user } = useApp();
-    return (
-        <div className="w-full bg-white pt-6 pb-24 md:pb-32 px-6 flex flex-col items-center relative overflow-hidden border-b border-slate-100">
-             <div className="w-full max-w-[620px] relative z-20">
-                <div className="flex items-center justify-between mb-6 md:mb-10">
-                    <div className="flex items-center gap-4">
-                        <button 
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onBack();
-                            }} 
-                            className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-slate-800 transition-all z-[100] shadow-lg active:scale-95"
-                        >
-                            <ArrowLeft className="w-5 h-5 md:w-6 md:h-6" />
-                        </button>
-                        <Logo size="sm" />
-                    </div>
-                    <Link to="/profile" className="w-10 h-10 md:w-12 md:h-12 bg-slate-50 rounded-xl md:rounded-2xl border border-slate-100 overflow-hidden flex items-center justify-center">
-                        {user?.photoURL ? (
-                            <img src={user.photoURL} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                            <UserIcon className="w-5 h-5 md:w-6 md:h-6 text-slate-400" />
-                        )}
-                    </Link>
-                </div>
-
-                <div className="flex flex-col items-center">
-                    <h1 className={cn("text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none", `text-${themeColor}-600`)}>{title}</h1>
-                    <p className="text-[0.55rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">{subtitle}</p>
-                </div>
-            </div>
-            <div className={cn("absolute bottom-0 left-0 right-0 h-24", `bg-gradient-to-t from-${themeColor}-50/50 to-transparent`)} />
-        </div>
-    );
-};
 
 /* ── TRANSLATOR TOOL ── */
 const TranslatorPage = () => {
@@ -5358,14 +5530,11 @@ const TranslatorPage = () => {
 
     return (
         <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <ToolHeader 
-                title="AI Translator" 
-                subtitle="Linguistic Precision V.2" 
-                themeColor="blue" 
-                onBack={() => navigate('/tools')} 
-            />
+            <div className="w-full max-w-[800px] px-6 py-6">
+                <ToolHeader title="AI Translator" subtitle="Linguistic Precision V.2" icon={Languages} />
+            </div>
 
-            <div className="w-full max-w-[800px] relative z-20 px-6 mt-[-60px] space-y-6">
+            <div className="w-full max-w-[800px] relative z-20 px-6 mt-[-20px] space-y-6">
                 <div className="bg-white p-6 md:p-8 rounded-[3rem] shadow-2xl space-y-6 border border-white relative overflow-hidden">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-2 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
                         <div className="flex-1 text-center bg-white py-3 px-6 rounded-2xl shadow-sm text-lg font-black text-slate-800 uppercase tracking-tighter w-full">
@@ -5510,14 +5679,11 @@ const DictionaryPage = () => {
 
     return (
         <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <ToolHeader 
-                title="Dictionary Hub" 
-                subtitle="Universal Semantic Research" 
-                themeColor="rose" 
-                onBack={() => navigate(-1)} 
-            />
+            <div className="w-full max-w-[620px] px-6 py-6">
+                <ToolHeader title="Dictionary Hub" subtitle="Universal Semantic Research" icon={BookOpen} />
+            </div>
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-20 space-y-6">
+            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-10 space-y-6">
                 {!result && !loading && (
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
 
@@ -5707,18 +5873,7 @@ const StudyTimer = () => {
 
     return (
         <div className="space-y-6 animate-fade-up pb-32">
-            <header className="flex items-center gap-4 text-left">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all hover:scale-105 active:scale-95"
-                >
-                    <ArrowLeft className="w-6 h-6" />
-                </button>
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Focus Mind</h1>
-                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Science-Based Productivity</p>
-                </div>
-            </header>
+            <ToolHeader title="Focus Mind" subtitle="Science-Based Productivity" icon={Target} />
 
             <div className="relative flex flex-col items-center justify-center pt-8 pb-12">
                 {/* Mode Selector Capsules */}
@@ -5873,13 +6028,7 @@ const ExamCalendar = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const defaultEvents = [
-        { id: '1', title: 'SEE Form Deadline', date: 'Chaitra 5', type: 'deadline' },
-        { id: '2', title: 'Physics Mock Test', date: 'Baisakh 12', type: 'mock' },
-        { id: '3', title: 'District Level Exam', date: 'Jestha 20', type: 'exam' },
-        { id: '4', title: 'Math Mock Test', date: 'Baisakh 18', type: 'mock' },
-        { id: '5', title: 'Revision Week Starts', date: 'Falgun 10', type: 'event' }
-    ];
+    const defaultEvents: any[] = [];
 
     const months2083 = [
         { name: 'Baisakh', days: 31, offset: 2 },
@@ -5897,18 +6046,38 @@ const ExamCalendar = () => {
     ];
 
     const [activeMonth, setActiveMonth] = useState('Baisakh');
-    const [customTasks, setCustomTasks] = useState<{ id: string, title: string, date: string, type: string }[]>([]);
-    const [selectedDateToAdd, setSelectedDateToAdd] = useState<string | null>(null);
+    const [customTasks, setCustomTasks] = useState<{ id: string, title: string, date: string, type: 'exam' | 'deadline' | 'mock' | 'event' }[]>([]);
+    const [selectedDate, setSelectedDate] = useState<string | null>('Baisakh 4');
     const [newTaskTitle, setNewTaskTitle] = useState('');
+    const [newTaskType, setNewTaskType] = useState<'exam' | 'deadline' | 'mock' | 'event'>('event');
+    const [showAddModal, setShowAddModal] = useState(false);
+
+    useEffect(() => {
+        const local = localStorage.getItem('calendar_events_v3');
+        if (local) {
+            setCustomTasks(JSON.parse(local));
+        } else {
+            const oldLocal = localStorage.getItem('calendar_events_v2');
+            if (oldLocal) {
+                setCustomTasks(JSON.parse(oldLocal));
+                localStorage.setItem('calendar_events_v3', oldLocal);
+            }
+        }
+    }, []);
+
+    const saveEvents = (events: any[]) => {
+        setCustomTasks(events);
+        localStorage.setItem('calendar_events_v3', JSON.stringify(events));
+    };
 
     const activeMonthData = months2083.find(m => m.name === activeMonth)!;
     const allEvents = [...defaultEvents, ...customTasks];
 
-    const typeColors: Record<string, { bg: string, text: string, border: string, dot: string }> = {
-        'deadline': { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-100', dot: 'bg-rose-500' },
-        'mock': { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-100', dot: 'bg-indigo-500' },
-        'exam': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-100', dot: 'bg-amber-500' },
-        'event': { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-100', dot: 'bg-emerald-500' }
+    const typeColors: Record<string, { bg: string, text: string, border: string, dot: string, icon: any }> = {
+        'deadline': { bg: 'bg-rose-50', text: 'text-rose-600', border: 'border-rose-200', dot: 'bg-rose-500', icon: Clock },
+        'mock': { bg: 'bg-indigo-50', text: 'text-indigo-600', border: 'border-indigo-200', dot: 'bg-indigo-500', icon: GraduationCap },
+        'exam': { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', dot: 'bg-amber-500', icon: BookOpen },
+        'event': { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', dot: 'bg-emerald-500', icon: Star }
     };
 
     const handlePrevMonth = () => {
@@ -5922,180 +6091,262 @@ const ExamCalendar = () => {
     };
 
     const handleAddTask = () => {
-        if (newTaskTitle.trim() && selectedDateToAdd) {
-            setCustomTasks([...customTasks, { id: 't' + Date.now().toString(), title: newTaskTitle, date: selectedDateToAdd, type: 'event' }]);
-            setSelectedDateToAdd(null);
+        if (newTaskTitle.trim() && selectedDate) {
+            const newEvent = { id: 'evt_' + Date.now(), title: newTaskTitle, date: selectedDate, type: newTaskType };
+            saveEvents([...customTasks, newEvent]);
             setNewTaskTitle('');
+            setShowAddModal(false);
         }
     };
 
+    const handleDeleteTask = (id: string) => {
+        saveEvents(customTasks.filter(t => t.id !== id));
+    };
+
+    const selectedDateEvents = selectedDate ? allEvents.filter(e => e.date === selectedDate) : [];
+    const todayStr = 'Baisakh 4';
+
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <header className="flex items-center gap-4">
-                <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:scale-105 active:scale-95 transition-all">
-                    <ArrowLeft className="w-6 h-6" />
+        <div className="min-h-screen bg-slate-50 flex flex-col relative pb-32 overflow-hidden">
+            {/* Header */}
+            <header className="pt-6 pb-4 px-6 sticky top-0 bg-slate-50/90 backdrop-blur-md z-30 flex items-center justify-between">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 shadow-sm active:scale-95 transition-transform shrink-0"
+                >
+                    <ArrowLeft className="w-5 h-5" />
                 </button>
-                <div className="space-y-0.5">
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Board Cal. 2083</h1>
-                    <div className="flex items-center gap-2">
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Universal Exam Schedule</p>
-                        <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                        <span className="text-[0.6rem] font-black text-blue uppercase tabular-nums flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                        </span>
-                    </div>
+                <div className="flex flex-col items-center flex-1 pr-10">
+                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase italic flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-rose-500" /> Agenda
+                    </h1>
                 </div>
             </header>
 
-            <div className="bg-white p-4 md:p-8 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-8 overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-slate-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50 pointer-events-none" />
+            <div className="px-4 md:px-6 flex-1 flex flex-col pt-2 max-w-lg mx-auto w-full gap-5">
                 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10 px-2 lg:px-4">
-                    <div className="space-y-2">
-                        <p className="text-[0.55rem] font-black text-slate-300 uppercase tracking-[0.3em]">Active period</p>
-                        <div className="flex items-center gap-3">
-                            <button 
-                                onClick={handlePrevMonth} 
-                                disabled={activeMonth === months2083[0].name}
-                                className="w-10 h-10 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-blue hover:bg-slate-100 disabled:opacity-50 transition-all"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
+                {/* Calendar View */}
+                <div className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                    <div className="flex items-center justify-between mb-6">
+                        <button 
+                            onClick={handlePrevMonth} 
+                            disabled={activeMonth === months2083[0].name}
+                            className="w-10 h-10 flex items-center justify-center rounded-[1rem] bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all active:scale-95 shrink-0 border border-slate-100"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="relative flex-1 flex justify-center">
                             <select 
                                 value={activeMonth}
                                 onChange={(e) => setActiveMonth(e.target.value)}
-                                className="bg-transparent border-none text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-800 outline-none cursor-pointer hover:text-blue transition-colors appearance-none min-w-[150px] text-center"
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             >
                                 {months2083.map(m => (
                                     <option key={m.name} value={m.name}>{m.name} 2083</option>
                                 ))}
                             </select>
-                            <button 
-                                onClick={handleNextMonth} 
-                                disabled={activeMonth === months2083[months2083.length - 1].name}
-                                className="w-10 h-10 flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 hover:text-blue hover:bg-slate-100 disabled:opacity-50 transition-all"
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <span className="text-[1.3rem] font-black italic uppercase tracking-tighter text-slate-800 whitespace-nowrap">
+                                    {activeMonth} <span className="opacity-40">2083</span>
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-slate-400 rotate-90 shrink-0" />
+                            </div>
                         </div>
+
+                        <button 
+                            onClick={handleNextMonth} 
+                            disabled={activeMonth === months2083[months2083.length - 1].name}
+                            className="w-10 h-10 flex items-center justify-center rounded-[1rem] bg-slate-50 text-slate-400 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-30 transition-all active:scale-95 shrink-0 border border-slate-100"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
                     </div>
-                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+
+                    <div className="grid grid-cols-7 gap-1 md:gap-2 mb-2">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                            <div key={i} className={cn("w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-black text-[0.65rem] md:text-xs", i === 0 || i === 6 ? "text-rose-500" : "text-slate-400")}>
+                            <div key={i} className={cn("text-center font-black text-[0.65rem] py-2", i === 6 ? "text-rose-400" : "text-slate-400")}>
                                 {d}
                             </div>
                         ))}
                     </div>
-                </div>
 
-                <div className="grid grid-cols-7 gap-2 relative z-10 p-2 lg:px-4">
-                    {Array.from({ length: activeMonthData.offset }).map((_, i) => (
-                        <div key={`offset-${i}`} className="aspect-square" />
-                    ))}
-                    {Array.from({ length: activeMonthData.days }).map((_, i) => {
-                        const dayNum = i + 1;
-                        const dateStr = `${activeMonth} ${dayNum}`;
-                        const dayEvents = allEvents.filter(e => e.date === dateStr);
-                        const isSelected = selectedDateToAdd === dateStr;
+                    <div className="grid grid-cols-7 gap-1 md:gap-2">
+                        {Array.from({ length: activeMonthData.offset }).map((_, i) => (
+                            <div key={`offset-${i}`} className="opacity-0 pointer-events-none aspect-square" />
+                        ))}
+                        {Array.from({ length: activeMonthData.days }).map((_, i) => {
+                            const dayNum = i + 1;
+                            const dateStr = `${activeMonth} ${dayNum}`;
+                            const dayEvents = allEvents.filter(e => e.date === dateStr);
+                            const isSelected = selectedDate === dateStr;
+                            const isToday = todayStr === dateStr;
+                            const isSat = (dayNum + activeMonthData.offset - 1) % 7 === 6;
 
-                        return (
-                            <button 
-                                key={i} 
-                                onClick={() => {
-                                    setSelectedDateToAdd(isSelected ? null : dateStr);
-                                    setNewTaskTitle('');
-                                }}
-                                className={cn(
-                                    "aspect-square rounded-xl md:rounded-2xl flex flex-col items-center justify-center text-sm md:text-base font-black relative transition-all group border-2 cursor-pointer",
-                                    (i + activeMonthData.offset) % 7 === 0 || (i + activeMonthData.offset) % 7 === 6 ? "text-rose-400 bg-rose-50/20 border-transparent" : "text-slate-600 bg-slate-50/50 border-transparent",
-                                    isSelected ? "border-blue bg-blue-50/50 scale-105 shadow-md z-20" : dayEvents.length ? "bg-white border-blue shadow-lg scale-105 z-10 hover:scale-110" : "hover:border-slate-200 hover:bg-white"
-                                )}
-                            >
-                                {dayNum}
-                                {dayEvents.length > 0 && (
-                                    <div className="absolute bottom-1 md:bottom-2 flex gap-1">
-                                        {dayEvents.slice(0, 3).map((e, idx) => (
-                                            <div key={idx} className={cn("w-1.5 h-1.5 rounded-full", typeColors[e.type].dot)} />
-                                        ))}
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <AnimatePresence>
-                    {selectedDateToAdd && (
-                        <motion.div 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="bg-blue-50/50 p-4 md:p-6 rounded-3xl border border-blue-100 flex flex-col md:flex-row gap-4 items-center relative z-10 mx-2 lg:mx-4"
-                        >
-                            <div className="flex-1 w-full">
-                                <p className="text-[0.65rem] font-black text-slate-500 uppercase tracking-widest mb-1">Add task for {selectedDateToAdd}</p>
-                                <input 
-                                    type="text" 
-                                    placeholder="Task title..." 
-                                    value={newTaskTitle}
-                                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                                    className="w-full bg-white px-4 py-3 rounded-2xl border border-slate-200 focus:border-blue outline-none text-sm font-bold text-slate-800 placeholder:text-slate-300"
-                                    onKeyDown={(e) => {
-                                        if(e.key === 'Enter') handleAddTask();
-                                    }}
-                                />
-                            </div>
-                            <button 
-                                onClick={handleAddTask}
-                                disabled={!newTaskTitle.trim()}
-                                className="w-full md:w-auto px-6 py-3 bg-blue text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] hover:scale-105 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 mt-2 md:mt-5"
-                            >
-                                <ListChecks className="w-4 h-4" /> Add Task
-                            </button>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
-                <div className="pt-6 border-t border-slate-100 space-y-4 relative z-10 px-2 lg:px-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">Scheduled Actions</h3>
-                        <div className="flex gap-2">
-                            {Object.entries(typeColors).map(([type, color]) => (
-                                <div key={type} className="flex items-center gap-1.5">
-                                    <div className={cn("w-2 h-2 rounded-full", color.dot)} />
-                                    <span className="text-[0.5rem] font-black text-slate-300 uppercase">{type}</span>
-                                </div>
-                            ))}
-                        </div>
+                            return (
+                                <button 
+                                    key={i} 
+                                    onClick={() => setSelectedDate(dateStr)}
+                                    className={cn(
+                                        "aspect-square rounded-[1rem] flex flex-col items-center justify-center relative transition-all group overflow-hidden border-2 outline-none",
+                                        isSelected ? "bg-slate-900 text-white border-slate-900 scale-[1.05] shadow-lg z-10" : 
+                                        isToday ? "bg-indigo-50 border-indigo-200 text-indigo-600" :
+                                        "bg-transparent border-transparent hover:border-slate-100 text-slate-700",
+                                        isSat && !isSelected && !isToday && "text-rose-500"
+                                    )}
+                                >
+                                    <span className={cn("font-bold text-sm leading-none", isSelected ? "text-white" : "")}>{dayNum}</span>
+                                    {dayEvents.length > 0 && (
+                                        <div className="flex gap-0.5 mt-1">
+                                            {dayEvents.slice(0, 3).map((e, idx) => (
+                                                <div key={idx} className={cn("w-1 h-1 rounded-full border border-white/30", typeColors[e.type].dot)} />
+                                            ))}
+                                            {dayEvents.length > 3 && <div className="w-1 h-1 rounded-full bg-slate-300" />}
+                                        </div>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {allEvents.filter(e => e.date.includes(activeMonth)).length > 0 ? (
-                            allEvents.filter(e => e.date.includes(activeMonth)).map(e => (
-                                <div key={e.id} className={cn("p-5 rounded-3xl border flex items-center justify-between group hover:scale-[1.02] transition-all", typeColors[e.type].bg, typeColors[e.type].border)}>
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center bg-white shadow-sm", typeColors[e.type].text)}>
-                                            <Calendar className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="font-black text-slate-800 text-sm leading-tight uppercase tracking-tighter italic">{e.title}</p>
-                                            <p className={cn("text-[0.55rem] font-black uppercase tracking-widest mt-0.5", typeColors[e.type].text)}>{e.date} • {e.type}</p>
-                                        </div>
-                                    </div>
-                                    <button className="w-8 h-8 rounded-lg bg-white/50 text-slate-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Bell className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="col-span-full py-10 flex flex-col items-center gap-4 text-center">
-                                <SearchX className="w-10 h-10 text-slate-200" />
-                                <p className="text-[0.65rem] font-black text-slate-300 uppercase tracking-widest">No milestones in {activeMonth}</p>
-                            </div>
+                </div>
+
+                {/* Selected Day View */}
+                <div className="flex flex-col flex-1 pb-10">
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <div className="flex-1">
+                            <h3 className="font-black text-xl text-slate-800 tracking-tight italic uppercase">
+                                {selectedDate ? selectedDate : "Select a Date"}
+                            </h3>
+                            {selectedDate === todayStr && <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Today</p>}
+                        </div>
+                        {selectedDate && (
+                            <button 
+                                onClick={() => setShowAddModal(true)}
+                                className="px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-black uppercase text-[0.65rem] tracking-widest border border-indigo-100 flex items-center gap-2 active:scale-95 transition-transform shadow-sm"
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Log Event
+                            </button>
                         )}
+                    </div>
+
+                    <div className="space-y-3">
+                        <AnimatePresence mode="popLayout">
+                            {selectedDate && selectedDateEvents.length > 0 ? (
+                                selectedDateEvents.map(evt => (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        key={evt.id}
+                                        className={cn("p-4 rounded-[1.75rem] border relative group flex items-start gap-4 shadow-sm", typeColors[evt.type].bg, typeColors[evt.type].border)}
+                                    >
+                                        <div className={cn("w-10 h-10 rounded-[1rem] flex items-center justify-center shrink-0 bg-white shadow-sm border border-black/5", typeColors[evt.type].text)}>
+                                            {React.createElement(typeColors[evt.type].icon, { className: "w-5 h-5" })}
+                                        </div>
+                                        <div className="flex-1 min-w-0 pt-0.5">
+                                            <p className={cn("text-[0.55rem] font-black uppercase tracking-widest mb-1", typeColors[evt.type].text)}>
+                                                {evt.type}
+                                            </p>
+                                            <p className="font-bold text-slate-800 text-sm leading-snug pr-8">{evt.title}</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleDeleteTask(evt.id)}
+                                            className="w-10 h-10 rounded-[1rem] bg-white/60 text-rose-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm border border-rose-100/50 hover:bg-rose-50 absolute right-2 top-1/2 -translate-y-1/2 active:scale-90"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-10 text-slate-400 bg-white rounded-[2rem] border border-slate-100 border-dashed">
+                                    <Coffee className="w-10 h-10 opacity-20 mb-3" />
+                                    <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Clear Agenda</p>
+                                    <p className="text-[0.65rem] font-medium mt-1">No milestones on this date.</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 </div>
             </div>
+
+            {/* Quick Add FAB globally */}
+            <div className="fixed bottom-6 right-6 z-40">
+                 {selectedDate && (
+                    <button 
+                        onClick={() => setShowAddModal(true)}
+                        className="w-16 h-16 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-slate-900/30"
+                    >
+                        <Plus className="w-8 h-8" />
+                    </button>
+                 )}
+            </div>
+
+            {/* Add Event Bottom Sheet */}
+            <AnimatePresence>
+                {showAddModal && selectedDate && (
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+                            onClick={() => setShowAddModal(false)}
+                        />
+                        <motion.div 
+                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-50 p-6 shadow-2xl flex flex-col max-h-[90vh] pb-8 max-w-2xl mx-auto"
+                        >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <div className="text-center mb-6">
+                                <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter">New Milestone</h2>
+                                <p className="text-[0.65rem] font-bold text-indigo-500 uppercase tracking-widest mt-1 bg-indigo-50 inline-block px-3 py-1 rounded-full">{selectedDate}</p>
+                            </div>
+                            
+                            <div className="bg-slate-50 rounded-[2rem] p-3 border border-slate-100 mb-6 flex-1 overflow-y-auto w-full">
+                                <div className="p-2 space-y-5">
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 pl-1">Event Title</label>
+                                        <input 
+                                            type="text" 
+                                            autoFocus
+                                            value={newTaskTitle}
+                                            onChange={e => setNewTaskTitle(e.target.value)}
+                                            placeholder="E.g., Science Final Prep"
+                                            className="w-full bg-white border border-slate-200/60 rounded-2xl px-5 py-4 font-bold text-slate-800 outline-none focus:border-indigo-400 transition-all placeholder:text-slate-300 shadow-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-3 pt-2">
+                                        <label className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 pl-1">Classification</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(['exam', 'deadline', 'mock', 'event'] as const).map(t => (
+                                                <button
+                                                    key={t}
+                                                    onClick={() => setNewTaskType(t)}
+                                                    className={cn(
+                                                        "flex-1 py-3.5 rounded-2xl text-[0.65rem] font-bold uppercase tracking-widest transition-all border flex items-center justify-center gap-2",
+                                                        newTaskType === t ? typeColors[t].bg + " " + typeColors[t].border + " " + typeColors[t].text + " shadow-sm" : "bg-white border-slate-200/60 text-slate-500 hover:bg-slate-100"
+                                                    )}
+                                                >
+                                                    {React.createElement(typeColors[t].icon, { className: "w-4 h-4" })}
+                                                    <span className="hidden sm:inline">{t}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={handleAddTask}
+                                disabled={!newTaskTitle.trim()}
+                                className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-[0.75rem] disabled:opacity-50 active:scale-95 transition-all mb-safe shadow-xl shadow-slate-900/20"
+                            >
+                                Schedule Event
+                            </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -6106,95 +6357,83 @@ const FormulaBankPage = () => {
 
     const formulasList: Record<'Maths' | 'Opt. Maths' | 'Science', any[]> = {
         'Maths': [
+            { subheading: 'Algebraic Identities' },
             { title: '(a+b)²', formula: '(a+b)^2 = a^2 + 2ab + b^2' },
             { title: '(a-b)²', formula: '(a-b)^2 = a^2 - 2ab + b^2' },
             { title: 'a² - b²', formula: 'a^2 - b^2 = (a-b)(a+b)' },
-            { title: '(a+b)³', formula: '(a+b)^3 = a^3 + 3a^2b + 3ab^2 + b^3' },
             { title: 'a³ + b³', formula: 'a^3 + b^3 = (a+b)(a^2 - ab + b^2)' },
             { title: 'a³ - b³', formula: 'a^3 - b^3 = (a-b)(a^2 + ab + b^2)' },
-            { title: 'Quadratic Equation Roots', formula: 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}' },
-            { title: 'Product Law of Indices', formula: 'a^m \\times a^n = a^{m+n}' },
-            { title: 'Quotient Law of Indices', formula: '\\frac{a^m}{a^n} = a^{m-n}' },
-            { title: 'Power Law of Indices', formula: '(a^m)^n = a^{mn}' },
+            { title: 'Quadratic Roots', formula: 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}' },
+            { subheading: 'Commercial Arithmetic' },
             { title: 'Simple Interest', formula: 'I = \\frac{P \\times T \\times R}{100}' },
-            { title: 'Amount', formula: 'A = P + I = P\\left(1 + \\frac{TR}{100}\\right)' },
             { title: 'Compound Interest (Yearly)', formula: 'C.I. = P\\left[\\left(1 + \\frac{R}{100}\\right)^T - 1\\right]' },
             { title: 'Compound Amount (Yearly)', formula: 'C.A. = P\\left(1 + \\frac{R}{100}\\right)^T' },
-            { title: 'Compound Interest (Half-Yearly)', formula: 'C.I. = P\\left[\\left(1 + \\frac{R}{200}\\right)^{2T} - 1\\right]' },
             { title: 'Population Growth', formula: 'P_t = P_0\\left(1 + \\frac{R}{100}\\right)^T' },
-            { title: 'Depreciation', formula: 'D = V_0\\left(1 - \\frac{R}{100}\\right)^T' },
-            { title: 'Area of Triangle (Base & Height)', formula: 'A = \\frac{1}{2} b h' },
+            { title: 'Depreciation', formula: 'V_t = V_0\\left(1 - \\frac{R}{100}\\right)^T' },
+            { title: 'VAT Calculation', formula: 'VAT\\ Amount = VAT\\% \\text{ of } SP' },
+            { subheading: 'Mensuration' },
+            { title: 'Area of Scalene (Heron\'s)', formula: 'A = \\sqrt{s(s-a)(s-b)(s-c)}' },
             { title: 'Area of Equilateral Triangle', formula: 'A = \\frac{\\sqrt{3}}{4} a^2' },
-            { title: 'Area of Scalene Triangle (Heron\'s)', formula: 'A = \\sqrt{s(s-a)(s-b)(s-c)}' },
             { title: 'Area of Isosceles Triangle', formula: 'A = \\frac{b}{4} \\sqrt{4a^2 - b^2}' },
-            { title: 'Curved Surface Area of Cylinder', formula: 'C.S.A. = 2\\pi rh' },
-            { title: 'Total Surface Area of Cylinder', formula: 'T.S.A. = 2\\pi r(r + h)' },
+            { title: 'TSA of Cylinder', formula: 'T.S.A. = 2\\pi r(r + h)' },
             { title: 'Volume of Cylinder', formula: 'V = \\pi r^2 h' },
+            { title: 'TSA of Cone', formula: 'T.S.A. = \\pi r(r + l)' },
             { title: 'Volume of Cone', formula: 'V = \\frac{1}{3} \\pi r^2 h' },
-            { title: 'Curved Surface Area of Cone', formula: 'C.S.A. = \\pi rl' },
-            { title: 'Total Surface Area of Cone', formula: 'T.S.A. = \\pi r(r + l)' },
-            { title: 'Volume of Sphere', formula: 'V = \\frac{4}{3} \\pi r^3' },
             { title: 'Surface Area of Sphere', formula: 'S.A. = 4\\pi r^2' },
-            { title: 'Volume of Hemisphere', formula: 'V = \\frac{2}{3} \\pi r^3' },
-            { title: 'Total Surface Area of Hemisphere', formula: 'T.S.A. = 3\\pi r^2' },
-            { title: 'Mean (Ungrouped)', formula: '\\overline{X} = \\frac{\\sum x}{N}' },
+            { title: 'Volume of Sphere', formula: 'V = \\frac{4}{3} \\pi r^3' },
+            { title: 'Volume of Pyramid', formula: 'V = \\frac{1}{3} A h' },
+            { subheading: 'Statistics' },
             { title: 'Mean (Grouped)', formula: '\\overline{X} = \\frac{\\sum fx}{N}' },
-            { title: 'Median (Continuous Series)', formula: 'M_d = L + \\frac{\\frac{N}{2} - c.f.}{f} \\times i' },
-            { title: 'Mode (Continuous Series)', formula: 'M_o = L + \\frac{f_1 - f_0}{2f_1 - f_0 - f_2} \\times i' }
+            { title: 'Median (Continuous)', formula: 'M_d = L + \\frac{\\frac{N}{2} - c.f.}{f} \\times i' },
+            { title: 'Quartile 1 (Q1)', formula: 'Q_1 = L + \\frac{\\frac{N}{4} - c.f.}{f} \\times i' },
+            { title: 'Quartile 3 (Q3)', formula: 'Q_3 = L + \\frac{\\frac{3N}{4} - c.f.}{f} \\times i' }
         ],
         'Opt. Maths': [
-            { title: 'Distance between two points', formula: 'd = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}' },
-            { title: 'Mid-point Formula', formula: 'M(x, y) = \\left(\\frac{x_1 + x_2}{2}, \\frac{y_1 + y_2}{2}\\right)' },
-            { title: 'Section Formula (Internal)', formula: '(x, y) = \\left(\\frac{m_1x_2 + m_2x_1}{m_1 + m_2}, \\frac{m_1y_2 + m_2y_1}{m_1 + m_2}\\right)' },
-            { title: 'Section Formula (External)', formula: '(x, y) = \\left(\\frac{m_1x_2 - m_2x_1}{m_1 - m_2}, \\frac{m_1y_2 - m_2y_1}{m_1 - m_2}\\right)' },
-            { title: 'Slope of a Line', formula: 'm = \\frac{y_2 - y_1}{x_2 - x_1}' },
-            { title: 'Equation of straight line (Slope-intercept)', formula: 'y = mx + c' },
-            { title: 'Equation of straight line (Point-slope)', formula: 'y - y_1 = m(x - x_1)' },
+            { subheading: 'Trigonometry' },
+            { title: 'Multiple Angle: Sin 2A', formula: '\\sin 2A = 2\\sin A\\cos A = \\frac{2\\tan A}{1+\\tan^2 A}' },
+            { title: 'Multiple Angle: Cos 2A', formula: '\\cos 2A = \\cos^2 A - \\sin^2 A = 1 - 2\\sin^2 A' },
+            { title: 'Multiple Angle: Tan 2A', formula: '\\tan 2A = \\frac{2\\tan A}{1-\\tan^2 A}' },
+            { title: 'Sin 3A', formula: '\\sin 3A = 3\\sin A - 4\\sin^3 A' },
+            { title: 'Transformation: 2 SinA CosB', formula: '\\sin(A+B) + \\sin(A-B)' },
+            { title: 'Trig Sum: SinC + SinD', formula: '2\\sin\\frac{C+D}{2}\\cos\\frac{C-D}{2}' },
+            { subheading: 'Coordinate Geometry' },
+            { title: 'Internal Division', formula: '(x, y) = \\left(\\frac{m_1x_2 + m_2x_1}{m_1+m_2}, \\frac{m_1y_2 + m_2y_1}{m_1+m_2}\\right)' },
+            { title: 'Slope of Line', formula: 'm = \\frac{y_2 - y_1}{x_2 - x_1} = -\\frac{A}{B}' },
             { title: 'Angle between two lines', formula: '\\tan\\theta = \\pm \\frac{m_1 - m_2}{1 + m_1m_2}' },
-            { title: 'Sine Rule', formula: '\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}' },
-            { title: 'Cosine Rule (for cos C)', formula: '\\cos C = \\frac{a^2 + b^2 - c^2}{2ab}' },
-            { title: 'Sin(A+B)', formula: '\\sin(A+B) = \\sin A\\cos B + \\cos A\\sin B' },
-            { title: 'Cos(A+B)', formula: '\\cos(A+B) = \\cos A\\cos B - \\sin A\\sin B' },
-            { title: 'Tan(A+B)', formula: '\\tan(A+B) = \\frac{\\tan A + \\tan B}{1 - \\tan A\\tan B}' },
-            { title: 'Sin 2A', formula: '\\sin 2A = 2\\sin A\\cos A = \\frac{2\\tan A}{1 + \\tan^2 A}' },
-            { title: 'Cos 2A', formula: '\\cos 2A = \\cos^2 A - \\sin^2 A = 1 - 2\\sin^2 A = 2\\cos^2 A - 1' },
-            { title: 'Tan 2A', formula: '\\tan 2A = \\frac{2\\tan A}{1 - \\tan^2 A}' },
+            { title: 'Perpendicular condition', formula: 'm_1 \\times m_2 = -1' },
+            { title: 'Equation of Circle', formula: '(x-h)^2 + (y-k)^2 = r^2' },
+            { subheading: 'Vectors & Transformation' },
+            { title: 'Magnitude of Vector', formula: '|\\vec{v}| = \\sqrt{x^2 + y^2}' },
             { title: 'Dot Product', formula: '\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos\\theta' },
-            { title: 'Magnitude of Vector', formula: '|\\vec{v}| = \\sqrt{x^2 + y^2}' }
+            { title: 'Matrix Determinant', formula: '|A| = ad - bc' },
+            { title: 'Matrix Inverse', formula: 'A^{-1} = \\frac{1}{|A|} \\begin{pmatrix} d & -b \\\\ -c & a \\end{pmatrix}' }
         ],
         'Science': [
-            { title: 'Newton\'s Law of Gravitation', formula: 'F = G\\frac{m_1 m_2}{d^2}' },
-            { title: 'Acceleration Due to Gravity', formula: 'g = \\frac{GM}{R^2}' },
+            { subheading: 'Physics' },
+            { title: 'Gravitational Force', formula: 'F = G\\frac{m_1 m_2}{d^2}' },
+            { title: 'Gravity at Surface', formula: 'g = \\frac{GM}{R^2}' },
             { title: 'Liquid Pressure', formula: 'P = \\rho g h' },
-            { title: 'Upthrust', formula: 'U = v \\rho g' },
-            { title: 'Heat Equation', formula: 'Q = ms\\Delta\\theta' },
+            { title: 'Upthrust (Archimedes)', formula: 'U = V \\rho g' },
+            { title: 'Heat Capacity', formula: 'Q = ms\\Delta\\theta' },
             { title: 'Lens Formula', formula: '\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}' },
-            { title: 'Power of Lens', formula: 'P = \\frac{1}{f} \\text{ (in meters)}' },
             { title: 'Ohm\'s Law', formula: 'V = IR' },
-            { title: 'Power (Electricity)', formula: 'P = VI = I^2 R = \\frac{V^2}{R}' },
-            { title: 'Energy (Electricity)', formula: 'E = Pt = Vit' },
-            { title: 'Transformer Formula', formula: '\\frac{N_p}{N_s} = \\frac{V_p}{V_s} = \\frac{I_s}{I_p}' },
-            { title: 'Kinetic Energy', formula: 'KE = \\frac{1}{2}mv^2' },
-            { title: 'Potential Energy', formula: 'PE = mgh' },
-            { title: 'Wave Velocity', formula: 'v = f \\lambda' }
+            { title: 'Electrical Power', formula: 'P = VI = I^2 R' },
+            { title: 'Transformer Rule', formula: '\\frac{N_p}{N_s} = \\frac{V_p}{V_s}' }
         ]
     };
 
     return (
         <div className="space-y-8 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-600 transition-colors"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Formula Bank</h1>
-            </div>
+            <ToolHeader title="Formula Vault" subtitle="Theoretical Reference Base" icon={Sigma} />
 
-            <div className="flex bg-slate-100 p-2 rounded-[2rem] shadow-inner mb-6">
+            <div className="flex bg-white p-1.5 rounded-full border border-slate-200 shadow-sm mb-10 max-w-lg mx-auto">
                 {(Object.keys(formulasList) as ('Maths' | 'Opt. Maths' | 'Science')[]).map(subj => (
                     <button 
                         key={subj}
                         onClick={() => setActiveSubject(subj)}
                         className={cn(
-                            "flex-1 py-3 px-4 rounded-[1.5rem] font-black text-[0.65rem] md:text-sm uppercase tracking-widest transition-all",
-                            activeSubject === subj ? "bg-white text-blue shadow-lg" : "text-slate-400 hover:text-slate-600"
+                            "flex-1 py-3 px-4 rounded-full font-black text-[0.65rem] md:text-xs uppercase tracking-widest transition-all",
+                            activeSubject === subj ? "bg-slate-900 text-white shadow-md" : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
                         )}
                     >
                         {subj}
@@ -6202,17 +6441,35 @@ const FormulaBankPage = () => {
                 ))}
             </div>
 
-            <div className="space-y-4">
-                {formulasList[activeSubject].map(f => (
-                    <div key={f.title} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm group hover:border-blue transition-all">
-                        <span className="text-[0.6rem] font-black text-blue uppercase tracking-widest mb-2 block">{activeSubject}</span>
-                        <h3 className="font-black text-xl text-slate-900 mb-4">{f.title}</h3>
-                        <div className="bg-slate-900 text-white p-6 rounded-2xl font-mono text-lg overflow-x-auto shadow-inner prose prose-invert prose-p:my-0 max-w-none">
-                            <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
-                                {`$$\n${f.formula}\n$$`}
-                            </Markdown>
+            <div className="columns-1 md:columns-2 gap-6 space-y-6">
+                {formulasList[activeSubject].map((f, i) => f.subheading ? (
+                    <div key={`sub-${i}`} className="break-inside-avoid pt-6 pb-2">
+                        <div className="flex items-center gap-4">
+                            <div className="h-px bg-slate-200 flex-1" />
+                            <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em]">{f.subheading}</h2>
+                            <div className="h-px bg-slate-200 flex-1" />
                         </div>
                     </div>
+                ) : (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.01 }}
+                        key={f.title} 
+                        className="break-inside-avoid bg-white rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all mb-6 relative overflow-hidden group flex flex-col"
+                    >
+                        <div className="p-6 border-b border-slate-50 bg-slate-50/50">
+                            <h3 className="font-black text-sm text-slate-700 tracking-tight leading-none group-hover:text-indigo-600 transition-colors uppercase">{f.title}</h3>
+                        </div>
+                        <div className="p-6 md:p-8 bg-white flex items-center justify-center min-h-[120px] relative overflow-x-auto">
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '16px 16px' }} />
+                            <div className="transform scale-100 group-hover:scale-105 transition-transform duration-500">
+                                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                                    {`$$\n${f.formula}\n$$`}
+                                </Markdown>
+                            </div>
+                        </div>
+                    </motion.div>
                 ))}
             </div>
         </div>
@@ -6284,10 +6541,7 @@ const UnitConverterPage = () => {
 
     return (
         <div className="space-y-8 animate-fade-up pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Smart Converter</h1>
-            </div>
+            <ToolHeader title="Smart Converter" subtitle="Metric Dimensional Shift" icon={Box} />
 
             <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
                 <div className="grid grid-cols-4 gap-2">
@@ -6347,19 +6601,30 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (v: stri
         }
     }, [value]);
 
+    const [activeFormats, setActiveFormats] = useState<Record<string, any>>({});
+
     const applyFormat = (command: string, value?: string) => {
         if (!editorRef.current) return;
         document.execCommand(command, false, value);
         onChange(editorRef.current.innerHTML);
         editorRef.current.focus();
+
+        // Update active states
+        const newActiveFormats = { ...activeFormats };
+        if (command === 'bold') newActiveFormats.bold = !activeFormats.bold;
+        else if (command === 'italic') newActiveFormats.italic = !activeFormats.italic;
+        else if (command === 'underline') newActiveFormats.underline = !activeFormats.underline;
+        else if (command === 'foreColor') newActiveFormats.foreColor = value;
+        
+        setActiveFormats(newActiveFormats);
     };
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-2 bg-slate-100 p-2 rounded-2xl shadow-inner border border-slate-200">
-                <button type="button" onClick={() => applyFormat('bold')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif font-bold active:scale-95">B</button>
-                <button type="button" onClick={() => applyFormat('italic')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif italic active:scale-95">I</button>
-                <button type="button" onClick={() => applyFormat('underline')} className="w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif underline active:scale-95">U</button>
+                <button type="button" onClick={() => applyFormat('bold')} className={cn("w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif font-bold active:scale-95", activeFormats.bold && "bg-slate-800 text-white")}>B</button>
+                <button type="button" onClick={() => applyFormat('italic')} className={cn("w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif italic active:scale-95", activeFormats.italic && "bg-slate-800 text-white")}>I</button>
+                <button type="button" onClick={() => applyFormat('underline')} className={cn("w-10 h-10 flex flex-col items-center justify-center bg-white rounded-xl shadow-sm text-slate-700 hover:text-blue-600 transition-colors font-serif underline active:scale-95", activeFormats.underline && "bg-slate-800 text-white")}>U</button>
                 
                 <div className="w-px h-6 bg-slate-300 mx-2" />
                 
@@ -6368,12 +6633,12 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (v: stri
                 
                 <div className="w-px h-6 bg-slate-300 mx-2" />
 
-                <button type="button" onClick={() => applyFormat('foreColor', '#ef4444')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-red-500" /></button>
-                <button type="button" onClick={() => applyFormat('foreColor', '#3b82f6')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-blue-500" /></button>
-                <button type="button" onClick={() => applyFormat('foreColor', '#10b981')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-emerald-500" /></button>
-                <button type="button" onClick={() => applyFormat('foreColor', '#f59e0b')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-amber-500" /></button>
-                <button type="button" onClick={() => applyFormat('foreColor', '#8b5cf6')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-purple-500" /></button>
-                <button type="button" onClick={() => applyFormat('foreColor', '#1e293b')} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95"><div className="w-4 h-4 rounded-full bg-slate-800" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#ef4444')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#ef4444' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-red-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#3b82f6')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#3b82f6' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-blue-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#10b981')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#10b981' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-emerald-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#f59e0b')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#f59e0b' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-amber-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#8b5cf6')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#8b5cf6' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-purple-500" /></button>
+                <button type="button" onClick={() => applyFormat('foreColor', '#1e293b')} className={cn("w-10 h-10 flex items-center justify-center bg-white rounded-xl shadow-sm active:scale-95", activeFormats.foreColor === '#1e293b' && "bg-slate-800")}><div className="w-4 h-4 rounded-full bg-slate-800" /></button>
             </div>
             <div 
                 ref={editorRef}
@@ -6464,17 +6729,9 @@ const NotePadPage = () => {
 
     return (
         <div className="space-y-10 animate-fade-up pb-32 max-w-4xl mx-auto px-4 md:px-0">
-            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <button onClick={() => navigate(-1)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm active:scale-95 transition-all">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">Smart Mind Log</h1>
-                        <p className="text-[0.6rem] font-black text-amber-500 uppercase tracking-widest mt-1">Thought Capture Engine</p>
-                    </div>
-                </div>
-                <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-inner">
+            <ToolHeader title="Smart Mind Log" subtitle="Thought Capture Engine" icon={Edit3} />
+
+            <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-inner mt-[-20px]">
                     <button 
                         onClick={() => setMode('library')}
                         className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none", mode === 'library' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
@@ -6488,8 +6745,7 @@ const NotePadPage = () => {
                         Compose
                     </button>
                 </div>
-            </header>
-
+            
             <AnimatePresence mode="wait">
                 {mode === 'editor' ? (
                     <motion.div 
@@ -6619,79 +6875,256 @@ const NotePadPage = () => {
 
 const TodoListPage = () => {
     const navigate = useNavigate();
-    const { user } = useApp();
-    const [tasks, setTasks] = useState<{id: string, text: string, done: boolean}[]>([]);
+    const [tasks, setTasks] = useState<{id: string, text: string, done: boolean, priority: 'low' | 'medium' | 'high', category: string}[]>([]);
     const [newTask, setNewTask] = useState("");
     const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
+    const [activePriority, setActivePriority] = useState<'low' | 'medium' | 'high'>('medium');
+    const [activeCategory, setActiveCategory] = useState('Study');
+    const [showAddMenu, setShowAddMenu] = useState(false);
+
+    const categories = ['Study', 'Personal', 'School', 'Project'];
 
     useEffect(() => {
-        const local = localStorage.getItem('tasks_local');
-        if (local) setTasks(JSON.parse(local));
+        const local = localStorage.getItem('tasks_local_v3');
+        if (local) {
+            setTasks(JSON.parse(local));
+        } else {
+            const oldLocal = localStorage.getItem('tasks_local_v2');
+            if (oldLocal) {
+                setTasks(JSON.parse(oldLocal));
+                localStorage.setItem('tasks_local_v3', oldLocal);
+            }
+        }
         setIsLoading(false);
     }, []);
 
+    const saveTasks = (newTasks: any[]) => {
+        setTasks(newTasks);
+        localStorage.setItem('tasks_local_v3', JSON.stringify(newTasks));
+    };
+
     const addTask = () => {
         if (!newTask.trim()) return;
-        const task = { id: 'task_' + Date.now(), text: newTask, done: false };
-        const newList = [task, ...tasks];
-        setTasks(newList);
-        localStorage.setItem('tasks_local', JSON.stringify(newList));
+        const task = { 
+            id: 'task_' + Date.now(), 
+            text: newTask, 
+            done: false, 
+            priority: activePriority,
+            category: activeCategory
+        };
+        saveTasks([task, ...tasks]);
         setNewTask("");
+        setShowAddMenu(false);
     };
 
     const toggleStatus = (id: string) => {
-        const newList = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-        setTasks(newList);
-        localStorage.setItem('tasks_local', JSON.stringify(newList));
+        saveTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
     };
 
     const deleteStatus = (id: string) => {
-        const newList = tasks.filter(t => t.id !== id);
-        setTasks(newList);
-        localStorage.setItem('tasks_local', JSON.stringify(newList));
+        saveTasks(tasks.filter(t => t.id !== id));
+    };
+
+    const filteredTasks = tasks.filter(t => {
+        if (filter === 'pending') return !t.done;
+        if (filter === 'completed') return t.done;
+        return true;
+    });
+
+    const getPriorityColor = (p: string) => {
+        switch(p) {
+            case 'high': return 'text-rose-500 bg-rose-50 border-rose-100';
+            case 'medium': return 'text-amber-500 bg-amber-50 border-amber-100';
+            case 'low': return 'text-blue-500 bg-blue-50 border-blue-100';
+            default: return 'text-slate-500 bg-slate-50 border-slate-100';
+        }
     };
 
     return (
-        <div className="space-y-6 pb-24">
-            <div className="flex items-center gap-3">
-                <button onClick={() => navigate('/tools')} className="text-slate-400"><ArrowLeft className="w-6 h-6" /></button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">To-Do List</h1>
-            </div>
+        <div className="min-h-screen bg-slate-50 flex flex-col relative pb-32">
+            {/* Header */}
+            <header className="pt-6 pb-4 px-6 sticky top-0 bg-slate-50/90 backdrop-blur-md z-30 flex items-center justify-between">
+                <button 
+                    onClick={() => navigate(-1)} 
+                    className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 shadow-sm active:scale-95 transition-transform shrink-0"
+                >
+                    <ArrowLeft className="w-5 h-5" />
+                </button>
+                <div className="flex flex-col items-center flex-1 pr-10">
+                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase italic flex items-center gap-2">
+                        <ListChecks className="w-5 h-5 text-indigo-500" /> Tasks
+                    </h1>
+                </div>
+            </header>
 
-            <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-xl max-w-lg mx-auto">
-                <div className="flex gap-2 mb-6">
-                    <input 
-                        value={newTask}
-                        onChange={e => setNewTask(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addTask()}
-                        placeholder="What needs to be done?"
-                        className="flex-1 bg-slate-50 border border-slate-100 px-4 py-3 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue transition-all"
-                    />
-                    <button onClick={addTask} className="bg-blue text-white px-5 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 transition-colors">Add</button>
+            <div className="px-5 flex-1 flex flex-col pt-2 max-w-2xl mx-auto w-full">
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover:scale-110 transition-transform"><CheckCircle2 className="w-16 h-16" /></div>
+                        <span className="text-3xl font-black text-slate-800 relative z-10">{tasks.filter(t => !t.done).length}</span>
+                        <span className="text-[0.6rem] font-bold uppercase tracking-widest text-slate-400 mt-1 relative z-10 flex items-center gap-1"><Circle className="w-2.5 h-2.5" /> Pending</span>
+                    </div>
+                    <div className="bg-slate-900 p-4 rounded-[2rem] shadow-xl flex flex-col relative overflow-hidden text-white group">
+                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Trophy className="w-16 h-16" /></div>
+                        <span className="text-3xl font-black relative z-10">{tasks.filter(t => t.done).length}</span>
+                        <span className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-300 mt-1 relative z-10 flex items-center gap-1"><CheckCircle2 className="w-2.5 h-2.5" /> Completed</span>
+                    </div>
                 </div>
 
-                <div className="space-y-3">
-                    {tasks.map(t => (
-                        <div key={t.id} className={cn("flex items-center justify-between p-4 rounded-xl border transition-all", t.done ? "bg-slate-50 border-transparent opacity-60" : "bg-white border-slate-100 shadow-sm")}>
-                            <div className="flex items-center gap-3 cursor-pointer flex-1" onClick={() => toggleStatus(t.id)}>
-                                <div className={cn("w-6 h-6 rounded-md flex items-center justify-center transition-colors shadow-sm", t.done ? "bg-emerald-500 text-white" : "bg-white border-2 border-slate-200")}>
-                                    {t.done && <ListChecks className="w-4 h-4" />}
-                                </div>
-                                <span className={cn("font-bold text-sm", t.done ? "line-through text-slate-400" : "text-slate-700")}>{t.text}</span>
-                            </div>
-                            <button onClick={() => deleteStatus(t.id)} className="text-slate-300 hover:text-rose-500 transition-colors ml-2">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
+                {/* Filters */}
+                <div className="flex bg-slate-200/50 p-1.5 rounded-2xl mb-6">
+                    {(['all', 'pending', 'completed'] as const).map(f => (
+                        <button
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className={cn(
+                                "flex-1 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all",
+                                filter === f ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            )}
+                        >
+                            {f}
+                        </button>
                     ))}
-                    {tasks.length === 0 && !isLoading && (
-                        <p className="text-center text-slate-400 font-bold py-8 text-sm">All caught up! 🎉</p>
-                    )}
-                    {isLoading && (
-                        <p className="text-center text-slate-400 font-bold py-8 text-sm">Loading tasks...</p>
-                    )}
+                </div>
+
+                {/* Task List */}
+                <div className="space-y-3 flex-1 pb-10">
+                    <AnimatePresence mode="popLayout">
+                        {filteredTasks.length > 0 ? filteredTasks.map(t => (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                                key={t.id}
+                                className={cn(
+                                    "p-4 rounded-[2rem] border transition-all flex items-start gap-4 group",
+                                    t.done ? "bg-slate-50 border-slate-200/60 opacity-60" : "bg-white border-slate-100 shadow-[0_4px_15px_rgba(0,0,0,0.02)]"
+                                )}
+                            >
+                                <button 
+                                    onClick={() => toggleStatus(t.id)}
+                                    className={cn(
+                                        "w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all mt-0.5",
+                                        t.done ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 text-transparent hover:border-emerald-400"
+                                    )}
+                                >
+                                    <Check className={cn("w-4 h-4 transition-transform", t.done ? "scale-100" : "scale-50 opacity-0")} />
+                                </button>
+                                
+                                <div className="flex-1 min-w-0 flex flex-col gap-1.5" onClick={() => toggleStatus(t.id)}>
+                                    <p className={cn(
+                                        "font-bold transition-all break-words leading-snug cursor-pointer",
+                                        t.done ? "line-through text-slate-400 text-sm" : "text-slate-800 text-base"
+                                    )}>
+                                        {t.text}
+                                    </p>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className={cn("px-2 py-0.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest border", getPriorityColor(t.priority))}>
+                                            {t.priority}
+                                        </span>
+                                        <span className="text-[0.55rem] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200/50">{t.category}</span>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={() => deleteStatus(t.id)}
+                                    className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </motion.div>
+                        )) : !isLoading && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-[3rem] border border-slate-100 border-dashed">
+                                <ListChecks className="w-16 h-16 opacity-30 mb-4" />
+                                <p className="text-lg font-black italic text-slate-700 uppercase tracking-tighter">Inbox Zero</p>
+                                <p className="text-[0.65rem] font-bold uppercase tracking-widest mt-1">No tasks found in this view.</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
+
+            {/* Quick Add FAB */}
+            <div className="fixed bottom-6 right-6 z-40">
+                <button 
+                    onClick={() => setShowAddMenu(true)}
+                    className="w-16 h-16 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-slate-900/30"
+                >
+                    <Plus className="w-8 h-8" />
+                </button>
+            </div>
+
+            {/* Add Task Bottom Sheet */}
+            <AnimatePresence>
+                {showAddMenu && (
+                    <>
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
+                            onClick={() => setShowAddMenu(false)}
+                        />
+                        <motion.div 
+                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-50 p-6 shadow-2xl flex flex-col max-h-[90vh] pb-8 max-w-2xl mx-auto"
+                        >
+                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                            <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter mb-4 text-center">New Task</h2>
+                            
+                            <div className="bg-slate-50 rounded-[2rem] p-2 border border-slate-100 mb-6 flex-1 overflow-y-auto">
+                                <textarea 
+                                    autoFocus
+                                    value={newTask}
+                                    onChange={e => setNewTask(e.target.value)}
+                                    placeholder="I need to..."
+                                    className="w-full bg-transparent p-5 min-h-[120px] outline-none text-slate-800 font-bold resize-none placeholder:text-slate-400 text-lg md:text-xl"
+                                />
+                                
+                                <div className="p-3 space-y-4">
+                                    <div className="flex flex-col gap-3">
+                                        <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-widest pl-1">Priority Level</span>
+                                        <div className="flex gap-2">
+                                            {(['low', 'medium', 'high'] as const).map(p => (
+                                                <button 
+                                                    key={p} onClick={() => setActivePriority(p)}
+                                                    className={cn("flex-1 py-3 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest transition-all", activePriority === p ? getPriorityColor(p) + " shadow-sm" : "bg-white text-slate-500 border border-slate-200/60 hover:bg-slate-100")}
+                                                >
+                                                    {p}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 pt-2">
+                                        <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-widest pl-1">Topic Category</span>
+                                        <div className="flex gap-2 flex-wrap">
+                                            {categories.map(c => (
+                                                <button 
+                                                    key={c} onClick={() => setActiveCategory(c)}
+                                                    className={cn("px-4 py-2.5 rounded-xl text-[0.65rem] font-bold uppercase tracking-widest transition-all border", activeCategory === c ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-white border-slate-200/60 text-slate-500 hover:bg-slate-100")}
+                                                >
+                                                    {c}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={addTask}
+                                disabled={!newTask.trim()}
+                                className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-[0.75rem] disabled:opacity-50 active:scale-95 transition-all mb-safe shadow-xl shadow-slate-900/20"
+                            >
+                                Commit Task
+                            </button>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -6903,7 +7336,7 @@ const AdminPortalPage = () => {
         liveNotices, addNotice, deleteNotice,
         liveMaterials, addMaterial, deleteMaterial,
         liveMcqs, addMcqSet, deleteMcqSet,
-        addChapter, deleteChapter
+        addChapter, deleteChapter, updateData
     } = useApp();
     const [activeTab, setActiveTab] = useState('Dashboard');
     const isDarkMode = true; // Match app theme
@@ -6967,7 +7400,13 @@ const AdminPortalPage = () => {
 
     const [editingChapter, setEditingChapter] = useState<{ subId: SubjectType, chapter: Chapter } | null>(null);
     const [isChapterModalOpen, setIsChapterModalOpen] = useState(false);
-    const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ title: '', marks: 5, topics: '' });
+    const [chapterForm, setChapterForm] = useState<Partial<Chapter>>({ 
+        title: '', 
+        marks: 5, 
+        topics: '', 
+        notes: '',
+        hideMarks: false
+    });
     const [selectedSub, setSelectedSub] = useState<SubjectType>('Science');
     const [selectedManagerSubject, setSelectedManagerSubject] = useState<SubjectType | null>(null);
     const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
@@ -7002,14 +7441,15 @@ const AdminPortalPage = () => {
         else addMaterial(newItem);
 
         setIsResourceModalOpen(false);
-        setResourceForm({
+        // Reset form but keep selected subject
+        setResourceForm(prev => ({
+            ...prev,
             title: '',
             content: '',
-            subject: selectedManagerSubject || 'Science',
             file_url: '',
             file_url_docx: '',
             mcq_json: ''
-        });
+        }));
     };
 
     const handleChapterSubmit = (e: React.FormEvent) => {
@@ -7017,172 +7457,301 @@ const AdminPortalPage = () => {
         const targetSub = selectedManagerSubject || selectedSub;
         if (!chapterForm.title || !targetSub) return;
         
-        if (editingChapter) {
-            deleteChapter(editingChapter.subId, editingChapter.chapter.id);
-            addChapter(targetSub, { ...chapterForm, id: editingChapter.chapter.id } as Chapter);
-        } else {
-            addChapter(targetSub, { 
-                ...chapterForm, 
-                id: Math.random().toString(36).substr(2, 9) 
-            } as Chapter);
+        const isEditing = !!editingChapter;
+        const chapterId = isEditing ? editingChapter.chapter.id : Math.random().toString(36).substring(2, 9);
+        const finalChapter = { 
+            ...chapterForm, 
+            id: chapterId,
+            updatedAt: new Date().toISOString() 
+        } as Chapter;
+
+        let updatedSubjects = { ...data.subjects };
+        if (updatedSubjects[targetSub]) {
+            const chapters = [...(updatedSubjects[targetSub].chapters || [])];
+            const index = chapters.findIndex(c => c.id === chapterId);
+            
+            if (index !== -1) {
+                chapters[index] = finalChapter;
+            } else if (!isEditing) {
+                chapters.push(finalChapter);
+            }
+            
+            updatedSubjects[targetSub] = {
+                ...updatedSubjects[targetSub],
+                chapters
+            };
         }
+        updateData({ ...data, subjects: updatedSubjects });
         
         setIsChapterModalOpen(false);
         setEditingChapter(null);
-        setChapterForm({ title: '', marks: 5, topics: '' });
+        setChapterForm({ title: '', marks: 5, topics: '', notes: '', hideMarks: false, contentType: 'Note' });
     };
 
     const renderDashboard = () => (
-        <div className="space-y-8 animate-fade-up">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div className="space-y-10 animate-fade-up px-1">
+            {/* Dynamic Welcome Heading */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                >
+                    <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none mb-2">
+                        System <span className="text-indigo-400">Zenith</span>
+                    </h2>
+                    <p className="text-[0.65rem] font-bold text-slate-500 uppercase tracking-[0.4em]">ADMINISTRATION NEURAL LINK ACTIVE</p>
+                </motion.div>
+                
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex flex-col items-end mr-4">
+                        <span className="text-[0.55rem] font-black text-slate-500 uppercase">Synchronized with</span>
+                        <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Mainframe Cloud</span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shadow-inner">
+                        <Zap className="w-6 h-6 animate-pulse" />
+                    </div>
+                </div>
+            </div>
+
+            {/* Enhanced Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                    { label: 'Total Users', value: '12.5k', growth: '+12.5%', icon: Users, color: 'indigo' },
-                    { label: 'Active Chapters', value: totalChapters, growth: '+8%', icon: BookOpen, color: 'purple' },
-                    { label: 'Cloud PDFs', value: totalPdfs, growth: '+25', icon: FileText, color: 'blue' },
-                    { label: 'Video Nodes', value: totalVideos, growth: '+5', icon: Youtube, color: 'rose' },
+                    { label: 'Scholar Nodes', value: '12.5k', change: '+12%', icon: Users, color: 'blue', detail: 'Active Registrations' },
+                    { label: 'Curriculum Units', value: totalChapters, change: '+5', icon: BookOpen, color: 'indigo', detail: 'Across all subjects' },
+                    { label: 'Cloud Assets', value: totalPdfs, change: 'Sync: OK', icon: FileText, color: 'emerald', detail: 'PDF Specifications' },
+                    { label: 'Neural Feeds', value: liveNews.length, change: 'Latest', icon: Newspaper, color: 'rose', detail: 'Live Announcements' },
                 ].map((stat: any, i) => (
                     <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
                         key={i} 
-                        className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-5 md:p-6 rounded-[2rem] hover:border-slate-700 transition-all group"
+                        className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-6 rounded-[2.5rem] hover:border-white/10 transition-all group relative overflow-hidden shadow-2xl"
                     >
-                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", `bg-${stat.color}-500/10 text-${stat.color}-400`)}>
-                            <stat.icon className="w-5 h-5" />
+                        <div className={cn("absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 -mr-8 -mt-8", `bg-${stat.color}-500`)} />
+                        
+                        <div className="flex items-start justify-between mb-6">
+                            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg", `bg-${stat.color}-500/20 text-${stat.color}-400`)}>
+                                <stat.icon className="w-6 h-6" />
+                            </div>
+                            <div className={cn("text-[0.6rem] font-black px-2 py-1 rounded-lg bg-white/5 border border-white/10 uppercase tracking-widest", stat.change.toString().includes('+') ? 'text-emerald-400' : 'text-slate-400')}>
+                                {stat.change}
+                            </div>
                         </div>
-                        <h3 className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</h3>
-                        <div className="flex items-center justify-between">
-                            <span className="text-2xl font-black text-white italic tracking-tighter">{stat.value as React.ReactNode}</span>
-                            <span className={cn("text-[0.6rem] font-black px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800", stat.growth.toString().startsWith('+') ? 'text-emerald-400' : 'text-slate-400')}>
-                                {stat.growth}
-                            </span>
+                        
+                        <div>
+                            <h3 className="text-[0.55rem] font-black text-slate-500 uppercase tracking-widest mb-1">{stat.label}</h3>
+                            <div className="flex items-baseline gap-2">
+                                <span className="text-3xl font-black text-white italic tracking-tighter">{stat.value as React.ReactNode}</span>
+                            </div>
+                            <p className="text-[0.5rem] font-bold text-slate-600 uppercase tracking-widest mt-2">{stat.detail}</p>
                         </div>
                     </motion.div>
                 ))}
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* User Activity Analytics */}
-                <div className="lg:col-span-2 bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-6 md:p-10 rounded-[2.5rem] flex flex-col">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-                        <div>
-                            <h3 className="text-sm font-black text-white uppercase tracking-widest italic mb-1">User Activity Protocol</h3>
-                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Real-time session throughput analytics</p>
+            <div className="grid lg:grid-cols-3 gap-8">
+                {/* Traffic Analytics */}
+                <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-8 md:p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-600/5 blur-[100px] pointer-events-none" />
+                    <div className="relative z-10 flex flex-col h-full">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
+                            <div>
+                                <h3 className="text-xl font-black text-white uppercase tracking-tighter italic mb-1">Knowledge Flux</h3>
+                                <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Global engagement metrics across time nodes</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <span className="px-3 py-1 bg-white/5 rounded-lg text-[0.55rem] font-black text-slate-400 uppercase border border-white/5">Weekly Phase</span>
+                            </div>
                         </div>
-                        <select className="bg-slate-950 border border-slate-800 text-[0.6rem] font-black uppercase tracking-widest rounded-xl px-4 py-2 text-slate-400 focus:outline-none focus:border-indigo-500/50">
-                            <option>Last 7 Cycles</option>
-                            <option>Last 30 Cycles</option>
-                        </select>
-                    </div>
-                    <div className="h-48 sm:h-72 w-full mt-auto">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={userActivityData}>
-                                <defs>
-                                    <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                                <XAxis 
-                                    dataKey="name" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fontSize: 10, fill: '#64748b', fontWeight: 900 }} 
-                                    dy={10}
-                                />
-                                <YAxis hide />
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: '#0f172a', 
-                                        border: '1px solid #1e293b', 
-                                        borderRadius: '16px',
-                                        fontSize: '10px',
-                                        fontFamily: 'monospace'
-                                    }}
-                                />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="active" 
-                                    stroke="#6366f1" 
-                                    strokeWidth={3}
-                                    fillOpacity={1} 
-                                    fill="url(#colorActive)" 
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
+                        
+                        <div className="h-64 sm:h-80 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={userActivityData}>
+                                    <defs>
+                                        <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#818cf8" stopOpacity={0.4}/>
+                                            <stop offset="95%" stopColor="#818cf8" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis 
+                                        dataKey="name" 
+                                        axisLine={false} 
+                                        tickLine={false} 
+                                        tick={{ fontSize: 10, fill: '#64748b', fontWeight: 900 }} 
+                                        dy={10}
+                                    />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '16px', fontSize: '10px' }}
+                                    />
+                                    <Area 
+                                        type="monotone" 
+                                        dataKey="active" 
+                                        stroke="#818cf8" 
+                                        strokeWidth={4}
+                                        fillOpacity={1} 
+                                        fill="url(#colorActive)" 
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
 
-                {/* Content Matrix Wrapper */}
-                <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-[2.5rem] flex flex-col text-center">
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest italic mb-2">Content Matrix</h3>
-                    <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest mb-8">Resource distribution by sector</p>
-                    
-                    <div className="h-48 sm:h-56 w-full relative">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={contentData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={70}
-                                    paddingAngle={8}
-                                    dataKey="value"
-                                >
-                                    {contentData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                                    ))}
-                                </Pie>
-                                <Tooltip 
-                                    contentStyle={{ 
-                                        backgroundColor: '#0f172a', 
-                                        border: '1px solid #1e293b', 
-                                        borderRadius: '12px',
-                                        fontSize: '10px',
-                                        fontFamily: 'monospace'
-                                    }}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <span className="text-xl font-black text-white italic">{totalChapters + totalPdfs + totalVideos}</span>
-                            <span className="text-[0.4rem] font-black text-slate-500 uppercase tracking-widest">Total</span>
+                {/* System Integrity & Distribution */}
+                <div className="flex flex-col gap-6">
+                    <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-8 rounded-[3rem] shadow-2xl flex-1 flex flex-col text-center">
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest italic mb-6">Asset Distribution</h3>
+                        <div className="h-48 relative">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie
+                                        data={contentData}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={55}
+                                        outerRadius={75}
+                                        paddingAngle={10}
+                                        dataKey="value"
+                                    >
+                                        {contentData.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span className="text-2xl font-black text-white italic">{totalChapters + totalPdfs + totalVideos}</span>
+                                <span className="text-[0.4rem] font-black text-slate-500 uppercase tracking-widest">Assets</span>
+                            </div>
+                        </div>
+                        <div className="mt-8 grid grid-cols-2 gap-3">
+                            {contentData.map((item, i) => (
+                                <div key={i} className="flex items-center gap-2 p-2.5 rounded-2xl bg-white/5 border border-white/5">
+                                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }} />
+                                    <span className="text-[0.55rem] font-black text-slate-400 uppercase truncate">{item.name}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
-                    <div className="mt-6 grid grid-cols-2 gap-2">
-                        {contentData.map((item, i) => (
-                            <div key={`${item.name}-${i}`} className="flex items-center gap-2 p-2 rounded-xl bg-slate-950/20 border border-slate-800/30">
-                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
-                                <span className="text-[0.5rem] font-black text-slate-400 uppercase truncate">{item.name}</span>
+                    <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-[3rem] shadow-2xl text-white relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+                        <div className="relative z-10 space-y-4">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/20 rounded-xl"><ShieldCheck className="w-5 h-5 text-white" /></div>
+                                <span className="text-[0.6rem] font-black uppercase tracking-widest">System Health</span>
                             </div>
-                        ))}
+                            <h4 className="text-lg font-black uppercase italic tracking-tighter">Infrastructure Nominal</h4>
+                            <div className="h-1.5 w-full bg-white/20 rounded-full overflow-hidden">
+                                <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: '98%' }}
+                                    className="h-full bg-emerald-400"
+                                />
+                            </div>
+                            <p className="text-[0.5rem] font-bold text-white/60 uppercase tracking-widest">All content gateways are operational.</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Broadcast System - New Feature */}
-            <div className="bg-slate-900/40 backdrop-blur-xl border border-slate-800 p-8 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shadow-inner">
-                        <Megaphone className="w-6 h-6" />
+            {/* Quick Actions Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                    { label: 'Deploy Module', icon: PlusSquare, action: () => { setActiveTab('Chapters'); setIsChapterModalOpen(true); }, color: 'indigo' },
+                    { label: 'Global Alert', icon: Megaphone, action: () => {}, color: 'rose' },
+                    { label: 'Audit Logs', icon: Database, action: () => setActiveTab('System Logs'), color: 'amber' },
+                    { label: 'Cloud Sync', icon: Server, action: () => {}, color: 'emerald' },
+                ].map((act, i) => (
+                    <motion.button 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        key={i}
+                        onClick={act.action}
+                        className={cn("p-5 rounded-[2rem] bg-white/5 border border-white/5 flex flex-col items-center gap-3 transition-all hover:bg-white/10 hover:border-white/20 group", `text-${act.color}-400`)}
+                    >
+                        <act.icon className="w-6 h-6" />
+                        <span className="text-[0.55rem] font-black text-white uppercase tracking-widest">{act.label}</span>
+                    </motion.button>
+                ))}
+            </div>
+
+            {/* Enhanced Activity Stream & System Health */}
+            <div className="grid lg:grid-cols-2 gap-8">
+                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-8 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-1">Live Feed</h3>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Real-time system event telemetry</p>
+                        </div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                     </div>
-                    <div>
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest italic">Global Broadcast</h3>
-                        <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Push live update to all scholar nodes</p>
+                    <div className="space-y-4">
+                        {[
+                            { event: 'Content Sync', desc: 'Chapter "Molecule Structures" updated in Science', time: '2m ago', icon: RotateCw, color: 'text-indigo-400' },
+                            { event: 'New Shard', desc: 'Added 12.5MB PDF to Mathematics archive', time: '12m ago', icon: Database, color: 'text-blue-400' },
+                            { event: 'Security Alert', desc: 'Multi-factor auth sequence initialized from Root', time: '45m ago', icon: Shield, color: 'text-amber-400' },
+                            { event: 'Traffic Surge', desc: '14.2k requests detected from Regional Hub-01', time: '1h ago', icon: BarChart3, color: 'text-rose-400' },
+                        ].map((log, i) => (
+                            <motion.div 
+                                initial={{ opacity: 0, x: -10 }}
+                                whileInView={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                key={i} 
+                                className="flex items-start gap-5 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-default group"
+                            >
+                                <div className={cn("w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0", log.color)}>
+                                    <log.icon className="w-5 h-5" />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[0.65rem] font-black text-white uppercase tracking-widest">{log.event}</span>
+                                        <span className="text-[0.6rem] font-bold text-slate-500">{log.time}</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 font-medium">{log.desc}</p>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
-                <div className="flex-1 max-w-lg w-full flex gap-3">
-                    <input 
-                        type="text" 
-                        placeholder="Type urgent transmission..." 
-                        className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
-                    />
-                    <button className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-black uppercase text-[0.65rem] tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20">Transmit</button>
+
+                <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-8 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                    <div className="flex items-center justify-between mb-8">
+                        <div>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-1">Active Clusters</h3>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Regional node engagement monitoring</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        {[
+                            { hub: 'Kathmandu-01', load: '82%', users: 420, trend: 'up' },
+                            { hub: 'Pokhara-04', load: '45%', users: 185, trend: 'down' },
+                            { hub: 'Lalitpur-02', load: '68%', users: 310, trend: 'up' },
+                            { hub: 'Bhaktapur-03', load: '22%', users: 95, trend: 'up' },
+                        ].map((hub, i) => (
+                            <div key={i} className="p-5 rounded-3xl bg-white/5 border border-white/5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">{hub.hub}</span>
+                                    {hub.trend === 'up' ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> : <TrendingDown className="w-3.5 h-3.5 text-rose-400" />}
+                                </div>
+                                <div className="flex items-baseline justify-between">
+                                    <span className="text-2xl font-black text-white italic">{hub.load}</span>
+                                    <span className="text-[0.55rem] font-black text-indigo-400 uppercase">{hub.users} Active</span>
+                                </div>
+                                <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                                    <div className="h-full bg-indigo-500" style={{ width: hub.load }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-8 p-6 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Zap className="w-5 h-5 text-indigo-400" />
+                            <span className="text-[0.6rem] font-black text-white uppercase tracking-[0.2em]">Cluster Load Optimizer</span>
+                        </div>
+                        <span className="px-3 py-1 bg-indigo-600 rounded-lg text-[0.55rem] font-black text-white uppercase tracking-widest">Auto-Scale ON</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -7193,78 +7762,98 @@ const AdminPortalPage = () => {
         const sub = data.subjects[subId];
         
         return (
-            <div className="space-y-6 animate-fade-up">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={() => setSelectedManagerSubject(null)}
-                        className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-all", isDarkMode ? "bg-slate-900 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-200 shadow-sm")}
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div>
-                        <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>Manage {subId} Chapters</h2>
-                        <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Curriculum Roadmap Protocol</p>
-                    </div>
-                </div>
-                <button 
-                    onClick={() => {
-                        setEditingChapter(null);
-                        setChapterForm({ title: '', marks: 5, topics: '' });
-                        setIsChapterModalOpen(true);
-                    }}
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-black text-[0.65rem] uppercase tracking-widest shadow-lg"
-                >
-                    New Chapter
-                </button>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-                <div className={cn("backdrop-blur-xl border rounded-[2rem] overflow-hidden", isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-100 shadow-sm")}>
-                    <div className={cn("p-6 border-b flex items-center justify-between", isDarkMode ? "border-slate-800 bg-slate-950/20" : "border-slate-100 bg-slate-50/50")}>
-                        <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", SUBJECTS_CONFIG[subId as SubjectType].gradient.split(' ')[0].replace('from-', 'bg-').replace('emerald', 'emerald-500').replace('purple', 'purple-500').replace('blue', 'blue-500').replace('orange', 'orange-500').replace('red', 'red-500').replace('cyan', 'cyan-500').replace('rose', 'rose-500').replace('amber', 'amber-500').replace('indigo', 'indigo-500') + "/20", SUBJECTS_CONFIG[subId as SubjectType].gradient.split(' ')[0].replace('from-', 'text-').replace('emerald', 'emerald-500').replace('purple', 'purple-500').replace('blue', 'blue-500').replace('orange', 'orange-500').replace('red', 'red-500').replace('cyan', 'cyan-500').replace('rose', 'rose-500').replace('amber', 'amber-500').replace('indigo', 'indigo-500'))}>
-                                <BookOpen className="w-5 h-5" />
-                            </div>
-                            <h3 className={cn("text-sm font-black uppercase italic", isDarkMode ? "text-white" : "text-slate-900")}>{subId}</h3>
+            <div className="space-y-6 animate-fade-up px-1 pb-32">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => setSelectedManagerSubject(null)}
+                            className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg"
+                        >
+                            <ArrowLeft className="w-6 h-6" />
+                        </button>
+                        <div>
+                            <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-white leading-none mb-1 line-clamp-1">
+                                <span className="text-indigo-400">{subId}</span> Unit Vault
+                            </h2>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Resource Management Stream</p>
                         </div>
-                        <span className={cn("text-[0.6rem] font-black p-2 rounded-lg uppercase", isDarkMode ? "bg-slate-950 text-slate-500" : "bg-slate-100 text-slate-400")}>{sub.chapters?.length || 0} Modules</span>
                     </div>
-                    <div className="p-4 space-y-2">
-                        {sub.chapters?.map((chap: Chapter, i: number) => (
-                            <div key={`${chap.id}-${i}`} className={cn("flex items-center justify-between p-4 rounded-xl border transition-all group", isDarkMode ? "bg-slate-950/20 border-slate-800/50 hover:border-slate-700" : "bg-white border-slate-50 hover:border-indigo-100 hover:bg-slate-50/30 shadow-xs")}>
-                                <div className="flex flex-col">
-                                    <span className={cn("text-[0.7rem] font-black uppercase", isDarkMode ? "text-slate-200" : "text-slate-800")}>{chap.title}</span>
-                                    <span className="text-[0.55rem] font-bold text-slate-500 uppercase tracking-widest">{chap.topics}</span>
-                                </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                        onClick={() => {
+                            setEditingChapter(null);
+                            setChapterForm({ title: '', marks: 5, topics: '', notes: '', hideMarks: false, contentType: 'Note' });
+                            setIsChapterModalOpen(true);
+                        }}
+                        className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-4 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
+                    >
+                        <Plus className="w-5 h-5" /> Initialize Shard
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {sub.chapters?.map((chap: Chapter, i: number) => (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            key={`${chap.id}-${i}`}
+                            className={cn(
+                                "p-6 rounded-[2.5rem] group relative bg-slate-950 border transition-all flex flex-col justify-between min-h-[200px]",
+                                chap.contentType === 'Answer' ? "border-emerald-500/20 hover:border-emerald-500/40" :
+                                chap.contentType === 'Sub Topic' ? "border-amber-500/20 hover:border-amber-500/40" :
+                                "border-slate-800 hover:border-indigo-500/30"
+                            )}
+                        >
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <span className={cn(
+                                    "px-3 py-1 rounded-full text-[0.55rem] font-black uppercase tracking-widest border whitespace-nowrap",
+                                    chap.contentType === 'Answer' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
+                                    chap.contentType === 'Sub Topic' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                    "bg-indigo-500/10 text-indigo-400 border-indigo-500/20"
+                                )}>
+                                    {chap.contentType || 'Unit'} {i + 1}
+                                </span>
+                                <div className="flex gap-2">
                                     <button 
                                         onClick={() => {
                                             setEditingChapter({ subId: subId as SubjectType, chapter: chap });
-                                            setChapterForm({ title: chap.title, marks: chap.marks, topics: chap.topics });
+                                            setChapterForm({ ...chap });
                                             setSelectedSub(subId as SubjectType);
                                             setIsChapterModalOpen(true);
                                         }}
-                                        className={cn("p-2 rounded-lg transition-colors", isDarkMode ? "bg-slate-900 text-slate-400 hover:text-indigo-400" : "bg-slate-50 text-slate-300 hover:text-indigo-600")}
+                                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-white flex items-center justify-center transition-all"
                                     >
-                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <Edit3 className="w-4 h-4" />
                                     </button>
                                     <button 
-                                        onClick={() => deleteChapter(subId as SubjectType, chap.id)}
-                                        className={cn("p-2 rounded-lg transition-colors", isDarkMode ? "bg-slate-900 text-slate-400 hover:text-rose-400" : "bg-slate-50 text-slate-300 hover:text-rose-500")}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            deleteChapter(subId as SubjectType, chap.id);
+                                        }}
+                                        className="w-9 h-9 rounded-xl bg-white/5 border border-white/5 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
-                        ))}
-                        {(!sub.chapters || sub.chapters.length === 0) && (
-                            <div className="py-12 text-center">
-                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">No chapters synthesized for this shard.</p>
+                            <h3 className="text-xl font-black text-white uppercase italic tracking-tighter mb-4 group-hover:text-indigo-400 transition-colors leading-tight line-clamp-2">
+                                {chap.title}
+                            </h3>
+                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-white/5">
+                                <span className="text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">{chap.marks || 0} Marks</span>
+                                {chap.hideMarks && <Shield className="w-3.5 h-3.5 text-amber-500 opacity-50" />}
                             </div>
-                        )}
-                    </div>
+                        </motion.div>
+                    ))}
+                    {(!sub.chapters || sub.chapters.length === 0) && (
+                        <div className="col-span-full py-32 text-center bg-slate-900/20 border-4 border-dashed border-slate-800 rounded-[4rem]">
+                            <div className="w-20 h-20 bg-slate-900 border border-slate-800 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-600">
+                                <Archive className="w-10 h-10" />
+                            </div>
+                            <p className="text-xl font-black text-slate-500 uppercase italic tracking-[0.2em]">Curriculum Database Empty</p>
+                            <p className="text-[0.65rem] font-bold text-slate-700 uppercase tracking-widest mt-2">Initialize modules to begin synchronization</p>
+                        </div>
+                    )}
                 </div>
-            </div>
 
             {/* Chapter Modal */}
             <AnimatePresence>
@@ -7301,15 +7890,29 @@ const AdminPortalPage = () => {
                                     </select>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Module Designation</label>
-                                    <input 
-                                        type="text"
-                                        placeholder="e.g., Quantum Mechanics"
-                                        value={chapterForm.title}
-                                        onChange={(e) => setChapterForm({ ...chapterForm, title: e.target.value })}
-                                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
-                                    />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Module Designation</label>
+                                        <input 
+                                            type="text"
+                                            placeholder="e.g., Quantum Mechanics"
+                                            value={chapterForm.title}
+                                            onChange={(e) => setChapterForm({ ...chapterForm, title: e.target.value })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Content Categorization</label>
+                                        <select 
+                                            value={chapterForm.contentType || 'Note'}
+                                            onChange={(e) => setChapterForm({ ...chapterForm, contentType: e.target.value as any })}
+                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50"
+                                        >
+                                            <option value="Note">Notes</option>
+                                            <option value="Answer">Answers</option>
+                                            <option value="Sub Topic">Sub Topics</option>
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
@@ -7333,6 +7936,13 @@ const AdminPortalPage = () => {
                                 </div>
 
                                 <div className="space-y-2">
+                                    <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Module Notes</label>
+                                    <RichTextEditor 
+                                        value={chapterForm.notes || ''}
+                                        onChange={(v) => setChapterForm({ ...chapterForm, notes: v })}
+                                    />
+                                </div>
+                                <div className="space-y-2">
                                     <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Topics Neural Map</label>
                                     <textarea 
                                         placeholder="e.g., Atoms, Molecules, Radiation..."
@@ -7343,19 +7953,22 @@ const AdminPortalPage = () => {
                                     />
                                 </div>
 
+                                <div className="flex items-center gap-4 p-4 bg-slate-950/40 rounded-2xl border border-slate-800/80 group/toggle cursor-pointer" onClick={() => setChapterForm({ ...chapterForm, hideMarks: !chapterForm.hideMarks })}>
+                                    <div className={cn("w-12 h-6 rounded-full transition-all relative shrink-0", chapterForm.hideMarks ? 'bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'bg-slate-800')}>
+                                        <div className={cn("absolute top-1 w-4 h-4 rounded-full bg-white transition-all shadow-md", chapterForm.hideMarks ? 'left-7 px-1' : 'left-1')} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[0.65rem] font-black text-white uppercase tracking-widest leading-none mb-1 group-hover/toggle:text-amber-400 transition-colors">Stealth Protocol</span>
+                                        <span className="text-[0.55rem] font-bold text-slate-500 uppercase">Hide Weightage Marks from UI</span>
+                                    </div>
+                                </div>
+
                                 <div className="flex gap-4 pt-4">
                                     <button 
-                                        type="button" 
-                                        onClick={() => setIsChapterModalOpen(false)}
-                                        className={cn("flex-1 py-4 rounded-2xl font-black uppercase tracking-widest text-[0.6rem] border transition-all", isDarkMode ? "bg-slate-950 text-slate-500 border-slate-800 hover:text-white" : "bg-slate-50 text-slate-400 border-slate-100 hover:text-slate-900")}
-                                    >
-                                        Abort
-                                    </button>
-                                    <button 
                                         type="submit"
-                                        className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all"
+                                        className="w-full py-5 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-2xl shadow-indigo-500/40 hover:shadow-indigo-500/60 transition-all active:scale-95 outline-none"
                                     >
-                                        {editingChapter ? 'Commit Changes' : 'Initialize Module'}
+                                        {editingChapter ? 'Authorize Synchronization' : 'Initialize Shard'}
                                     </button>
                                 </div>
                             </form>
@@ -7372,18 +7985,20 @@ const AdminPortalPage = () => {
         const filteredItems = items.filter(m => m.subject === selectedManagerSubject);
         
         return (
-            <div className="space-y-6 animate-fade-up">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
+            <div className="space-y-8 animate-fade-up px-1 pb-32">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex items-center gap-5">
                         <button 
                             onClick={() => setSelectedManagerSubject(null)}
-                            className={cn("w-10 h-10 rounded-xl flex items-center justify-center border transition-all", isDarkMode ? "bg-slate-900 text-slate-400 border-slate-800" : "bg-white text-slate-400 border-slate-200 shadow-sm")}
+                            className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition-all active:scale-95 shadow-lg"
                         >
-                            <ArrowLeft className="w-5 h-5" />
+                            <ArrowLeft className="w-6 h-6" />
                         </button>
                         <div>
-                            <h2 className={cn("text-2xl font-black italic uppercase tracking-tighter", isDarkMode ? "text-white" : "text-slate-900")}>{selectedManagerSubject} • {title}</h2>
-                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-widest">Managing specialized archive segment</p>
+                            <h2 className="text-3xl font-black italic uppercase tracking-tighter text-white leading-none mb-1">
+                                <span className="text-indigo-400">{selectedManagerSubject}</span> • {title}
+                            </h2>
+                            <p className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.4em]">Resource Synchronization Protocol</p>
                         </div>
                     </div>
                     <button 
@@ -7391,55 +8006,77 @@ const AdminPortalPage = () => {
                             setResourceForm({ title: '', content: '', subject: selectedManagerSubject || 'Science', file_url: '', file_url_docx: '', mcq_json: '' });
                             setIsResourceModalOpen(true);
                         }}
-                        className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all"
+                        className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest shadow-xl shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
                     >
-                        Sync New {title.slice(0, -1)}
+                        <Zap className="w-5 h-5" /> Integrate Data
                     </button>
                 </div>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredItems.length === 0 && (
-                        <div className={cn("p-20 text-center rounded-[3rem] border border-dashed", isDarkMode ? "bg-slate-900/20 border-slate-800/50" : "bg-white border-slate-200")}>
-                             <Archive className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                             <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.3em] italic">No active nodes in this sector.</p>
+                        <div className="col-span-full py-32 text-center bg-slate-900/20 border-4 border-dashed border-slate-800 rounded-[4rem]">
+                             <Archive className="w-16 h-16 text-slate-600 mx-auto mb-6 opacity-40" />
+                             <p className="text-xl font-black text-slate-500 uppercase italic tracking-[0.2em]">Sector Offline</p>
+                             <p className="text-[0.65rem] font-bold text-slate-700 uppercase tracking-widest mt-2">No active assets in this subject matrix</p>
                         </div>
                     )}
                     {filteredItems.map((n: any, i: number) => (
-                        <div key={`${n.id}-${i}`} className={cn("p-6 backdrop-blur-xl border rounded-[2.5rem] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all group", isDarkMode ? "bg-slate-900/40 border-slate-800 hover:border-slate-700" : "bg-white border-slate-100 hover:border-indigo-100 shadow-sm")}>
-                            <div className="flex items-start gap-5">
-                                <div className={cn("w-14 h-14 rounded-2xl border flex flex-col items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition-all", isDarkMode ? "bg-slate-950 border-slate-800 text-indigo-400" : "bg-slate-50 border-slate-100 text-indigo-600")}>
-                                    <Icon className="w-6 h-6 mb-0.5" />
-                                    <span className="text-[0.4rem] font-black opacity-50 uppercase tracking-widest">{n.type === 'video' ? 'VID' : 'PDF'}</span>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: i * 0.05 }}
+                            key={`${n.id}-${i}`} 
+                            className="bg-slate-900/60 backdrop-blur-2xl border border-white/5 p-7 rounded-[3rem] group relative overflow-hidden flex flex-col justify-between hover:border-indigo-500/30 transition-all shadow-2xl"
+                        >
+                            <div className="flex items-start justify-between mb-6">
+                                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                                    <Icon className="w-6 h-6" />
                                 </div>
-                                <div>
-                                    <h3 className={cn("text-[0.8rem] font-black uppercase italic mb-1.5 tracking-tight", isDarkMode ? "text-white" : "text-slate-800")}>{n.title || n.text || "Segment Unit"}</h3>
-                                    {(n.content || n.text) && <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">{n.content || n.text}</p>}
-                                    <div className="flex items-center gap-3 mt-3">
-                                        <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg border", isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-100")}>
-                                            <Calendar className="w-3 h-3 text-slate-400" />
-                                            <span className="text-[0.55rem] font-black uppercase tracking-widest text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
-                                        </div>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={() => {
+                                            if (activeTab === 'News') deleteNews(n.id);
+                                            else if (activeTab === 'Notice') deleteNotice(n.id);
+                                            else if (activeTab === 'MCQs') deleteMcqSet(n.id);
+                                            else deleteMaterial(n.id);
+                                        }}
+                                        className="w-11 h-11 rounded-2xl bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center shadow-lg border border-rose-500/10"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <h3 className="text-xl font-black text-white uppercase italic tracking-tighter leading-tight line-clamp-2">
+                                    {n.title || n.text || "Segment Unit"}
+                                </h3>
+                                
+                                <div className="flex items-center gap-3">
+                                    <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5 flex items-center gap-2">
+                                        <Calendar className="w-3 h-3 text-slate-500" />
+                                        <span className="text-[0.55rem] font-black text-slate-500 uppercase tracking-widest">
+                                            {new Date(n.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                    </div>
+                                    <div className="px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+                                        <span className="text-[0.55rem] font-black text-indigo-400 uppercase tracking-widest leading-none">
+                                            {n.type === 'note_archive' ? 'Notes' : n.type === 'model_question' ? 'Exam' : n.type}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button 
-                                    className={cn("p-3 rounded-xl border transition-colors", isDarkMode ? "bg-slate-950 text-slate-500 hover:text-white border-slate-800" : "bg-slate-50 text-slate-300 hover:text-slate-900 border-slate-100")}
+
+                            <div className="mt-8 flex gap-3">
+                                <a 
+                                    href={n.file_url} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl text-[0.65rem] font-black uppercase tracking-widest flex items-center justify-center gap-2 border border-white/10 transition-all active:scale-95 shadow-xl"
                                 >
-                                    <Edit3 className="w-4 h-4" />
-                                </button>
-                                <button 
-                                    onClick={() => {
-                                        if (activeTab === 'News') deleteNews(n.id);
-                                        else if (activeTab === 'Notice') deleteNotice(n.id);
-                                        else if (activeTab === 'MCQs') deleteMcqSet(n.id);
-                                        else deleteMaterial(n.id);
-                                    }}
-                                    className={cn("p-3 rounded-xl border transition-colors", isDarkMode ? "bg-slate-950 text-slate-500 hover:text-rose-400 border-slate-800" : "bg-slate-50 text-slate-300 hover:text-rose-500 border-slate-100")}
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                                    <Eye className="w-4 h-4" /> View Node
+                                </a>
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
             </div>
@@ -7488,7 +8125,7 @@ const AdminPortalPage = () => {
     );
 
     return (
-        <div className={cn("flex h-screen overflow-hidden font-sans transition-colors", isDarkMode ? "bg-slate-950 text-white" : "bg-[#F8FAFC] text-slate-900")}>
+        <div className={cn("flex min-h-screen font-sans transition-colors", isDarkMode ? "bg-slate-950 text-white" : "bg-[#F8FAFC] text-slate-900")}>
             {/* Resource Modal */}
             <AnimatePresence>
                 {isResourceModalOpen && (
@@ -7627,17 +8264,10 @@ const AdminPortalPage = () => {
                                 )}
                                 <div className="flex gap-4 pt-4">
                                     <button 
-                                        type="button" 
-                                        onClick={() => setIsResourceModalOpen(false)}
-                                        className="flex-1 py-4 bg-slate-950 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-[0.6rem] border border-slate-800 hover:text-white transition-all shadow-lg shadow-black/40 outline-none"
-                                    >
-                                        Abort
-                                    </button>
-                                    <button 
                                         type="submit"
-                                        className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-indigo-600/20 hover:bg-indigo-500 transition-all active:scale-95 outline-none"
+                                        className="w-full py-5 bg-linear-to-r from-indigo-600 to-purple-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-2xl shadow-indigo-500/40 hover:shadow-indigo-500/60 transition-all active:scale-95 outline-none"
                                     >
-                                        Commit Res.
+                                        Execute Synchronization
                                     </button>
                                 </div>
                             </form>
@@ -7721,7 +8351,7 @@ const AdminPortalPage = () => {
             )}
 
             {/* Main Content */}
-            <main className={cn("flex-1 overflow-y-auto flex flex-col transition-colors", isDarkMode ? "bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617]" : "bg-[#F8FAFC]")}>
+            <main className={cn("flex-1 overflow-y-auto flex flex-col transition-colors min-h-screen", isDarkMode ? "bg-linear-to-br from-[#020617] via-[#0f172a] to-[#020617]" : "bg-[#F8FAFC]")}>
                 {/* Navbar */}
                 <header className={cn("h-20 backdrop-blur-md border-b flex items-center justify-between px-6 md:px-8 sticky top-0 z-40 transition-colors", isDarkMode ? "bg-slate-950/20 border-slate-800/50" : "bg-white/80 border-slate-200")}>
                     <div className="flex items-center gap-4">
@@ -7742,6 +8372,9 @@ const AdminPortalPage = () => {
                     </div>
 
                     <div className="flex items-center gap-4 md:gap-6">
+                        <button onClick={() => navigate('/')} className={cn("px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all", isDarkMode ? "bg-slate-800 text-white hover:bg-slate-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}>
+                            Exit Dashboard
+                        </button>
                         <div className="flex items-center gap-1 md:gap-2">
                             <button className={cn("w-10 h-10 rounded-xl flex items-center justify-center transition-all relative", isDarkMode ? "hover:bg-slate-900 text-slate-500" : "hover:bg-slate-100 text-slate-400")}>
                                 <BellRing className="w-5 h-5" />
@@ -7765,7 +8398,7 @@ const AdminPortalPage = () => {
                     </div>
                 </header>
 
-                <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full">
+                <div className="p-6 md:p-8 space-y-8 w-full">
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className={cn("text-2xl md:text-3xl font-black uppercase tracking-tighter italic leading-none mb-1", isDarkMode ? "text-white" : "text-slate-900")}>{activeTab}</h1>
@@ -8407,21 +9040,9 @@ const PicturesPage = () => {
 
     return (
         <div className="space-y-6 pb-24 relative">
-            {/* Header & Search UI */}
+            <ToolHeader title="Visual Engine" subtitle="High-Resolution Reference Library" icon={ImageIcon} />
+            
             <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 pointer-events-none" />
-                <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none" />
-                
-                <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-8">
-                        <button onClick={() => navigate('/tools')} className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white hover:bg-white hover:text-slate-900 transition-all active:scale-95 border border-white/10">
-                            <ArrowLeft className="w-6 h-6" />
-                        </button>
-                        <div>
-                            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase text-white shadow-sm leading-none">Visual Engine</h1>
-                            <p className="text-[0.65rem] font-bold text-blue-300 uppercase tracking-[0.2em] mt-1 shadow-sm">High-Resolution Reference Library</p>
-                        </div>
-                    </div>
 
                     <form onSubmit={handleSearch} className="mb-6 flex gap-3">
                         <div className="flex-1 bg-white/10 p-2 rounded-3xl backdrop-blur-md border border-white/10 flex items-center shadow-inner focus-within:bg-white/20 transition-all relative">
@@ -8455,7 +9076,6 @@ const PicturesPage = () => {
                         ))}
                     </div>
                 </div>
-            </div>
 
             {/* Results */}
             {loading && images.length === 0 ? (
@@ -8636,64 +9256,11 @@ const useApp = () => useContext(AppContext);
 const INITIAL_DATA: AppData = {
     news: [],
     subjects: {
-        'English': { 
-            id: 'English', color: 'blue', icon: 'Languages', 
-            chapters: [
-                { id: 'en1', title: 'Unit 1: Environment and Ecology', marks: 10, topics: 'Reading, Grammar, Writing' },
-                { id: 'en2', title: 'Unit 2: Science and Technology', marks: 12, topics: 'Innovation, Robotics, Future' }
-            ], 
-            videos: [
-                { id: 'ev1', title: 'Unit 1: Reading Comprehension', channel: 'Aadhar TV', duration: '12:45', youtubeId: 'dQw4w9WgXcQ' },
-                { id: 'ev2', title: 'Grammar: Direct and Indirect Speech', channel: 'Aadhar TV', duration: '15:20', youtubeId: 'dQw4w9WgXcQ' }
-            ], 
-            pdfs: [], 
-            modelQuestions: [] 
-        },
-        'नेपाली': { 
-            id: 'नेपाली', color: 'purple', icon: 'Edit3', 
-            chapters: [
-                { id: 'ne1', title: 'पाठ १: मेरो देश', marks: 8, topics: 'कविता, निबन्ध, व्याकरण' },
-                { id: 'ne2', title: 'पाठ २: आमा', marks: 10, topics: 'कथा, चरित्र चित्रण' }
-            ], 
-            videos: [
-                { id: 'nv1', title: 'पाठ १: मेरो देश व्याख्या', channel: 'Aadhar TV', duration: '10:30', youtubeId: 'dQw4w9WgXcQ' }
-            ], 
-            pdfs: [], 
-            modelQuestions: [] 
-        },
-        'Maths': { 
-            id: 'Maths', color: 'red', icon: 'Sigma', 
-            chapters: [
-                { id: 'ma1', title: 'Chapter 1: Sets', marks: 5, topics: 'Venn Diagram, Union, Intersection' },
-                { id: 'ma2', title: 'Chapter 2: Profit and Loss', marks: 8, topics: 'CP, SP, Discount, VAT' }
-            ], 
-            videos: [
-                { id: 'mv1', title: 'Sets: Venn Diagram Logic', channel: 'Aadhar TV', duration: '18:40', youtubeId: 'dQw4w9WgXcQ' }
-            ], 
-            pdfs: [], 
-            modelQuestions: [] 
-        },
-        'Science': { 
-            id: 'Science', color: 'emerald', icon: 'Microscope', 
-            chapters: [
-                { id: 'sc1', title: 'Chapter 1: Force', marks: 10, topics: 'Gravity, Newton\'s Law, Weight' },
-                { id: 'sc2', title: 'Chapter 2: Pressure', marks: 8, topics: 'Liquid Pressure, Atmosphere' }
-            ], 
-            videos: [
-                { id: 'sv1', title: 'Force and Gravitation explained', channel: 'Aadhar TV', duration: '20:15', youtubeId: 'dQw4w9WgXcQ' }
-            ], 
-            pdfs: [], 
-            modelQuestions: [] 
-        },
-        'सामाजिक': { 
-            id: 'सामाजिक', color: 'amber', icon: 'Globe', 
-            chapters: [
-                { id: 'sa1', title: 'एकाइ १: हामी र हाम्रो समाज', marks: 7, topics: 'समाज, विकास, परिवर्तन' }
-            ], 
-            videos: [], 
-            pdfs: [], 
-            modelQuestions: [] 
-        },
+        'English': { id: 'English', color: 'blue', icon: 'Languages', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'नेपाली': { id: 'नेपाली', color: 'purple', icon: 'Edit3', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'Maths': { id: 'Maths', color: 'red', icon: 'Sigma', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'Science': { id: 'Science', color: 'emerald', icon: 'Microscope', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
+        'सामाजिक': { id: 'सामाजिक', color: 'amber', icon: 'Globe', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Optional Maths': { id: 'Optional Maths', color: 'indigo', icon: 'Binary', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Account': { id: 'Account', color: 'orange', icon: 'ListChecks', chapters: [], videos: [], pdfs: [], modelQuestions: [] },
         'Computer': { id: 'Computer', color: 'cyan', icon: 'Monitor', chapters: [], videos: [], pdfs: [], modelQuestions: [] }
@@ -8705,27 +9272,18 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data, setData] = useState<AppData>(() => {
-        const saved = localStorage.getItem('aadhar_app_data');
+        const saved = localStorage.getItem('aadhar_app_data_v3');
         return saved ? JSON.parse(saved) : INITIAL_DATA;
     });
     const [isOnline, setIsOnline] = useState(window.navigator.onLine);
-    const [liveNews, setLiveNews] = useState<any[]>([
-        { id: '1', title: 'Welcome to Aadhar Desk', content: 'Our new platform is now live. Explore study materials and interactive tests.', category: 'news', created_at: new Date().toISOString() },
-        { id: '2', title: 'Exam Guidelines 2083', content: 'Important updates regarding the upcoming board examinations.', category: 'news', created_at: new Date().toISOString() }
-    ]);
-    const [liveNotices, setLiveNotices] = useState<any[]>([
-        { id: 'n1', text: 'SEE Exam Form deadline extended to Chaitra 5 for all districts.', created_at: new Date().toISOString() }
-    ]);
-    const [liveMaterials, setLiveMaterials] = useState<any[]>([
-        { id: 'm1', subject: 'Science', type: 'model_question', title: 'Science Board Model 2083', file_url: '#', created_at: new Date().toISOString() },
-        { id: 'm2', subject: 'Maths', type: 'note_archive', title: 'Calculus Cheat Sheet', file_url: '#', created_at: new Date().toISOString() },
-        { id: 'm3', subject: 'English', type: 'textbook', title: 'English Core Textbook', file_url: '#', created_at: new Date().toISOString() }
-    ]);
+    const [liveNews, setLiveNews] = useState<any[]>([]);
+    const [liveNotices, setLiveNotices] = useState<any[]>([]);
+    const [liveMaterials, setLiveMaterials] = useState<any[]>([]);
     const [liveMcqs, setLiveMcqs] = useState<any[]>([]);
     const [isInitializing, setIsInitializing] = useState(true);
 
     useEffect(() => {
-        localStorage.setItem('aadhar_app_data', JSON.stringify(data));
+        localStorage.setItem('aadhar_app_data_v3', JSON.stringify(data));
     }, [data]);
 
     const updateData = (newData: AppData) => setData(newData);
@@ -8741,10 +9299,11 @@ const AppProvider = ({ children }: any) => {
     };
 
     const deleteChapter = (subjectId: SubjectType, chapterId: string) => {
+        if (!subjectId || !chapterId) return;
         setData(prev => {
             const subjects = { ...prev.subjects };
-            if (subjects[subjectId]) {
-                subjects[subjectId].chapters = (subjects[subjectId].chapters || []).filter(c => c.id !== chapterId);
+            if (subjects[subjectId] && subjects[subjectId].chapters) {
+                subjects[subjectId].chapters = subjects[subjectId].chapters.filter(c => c.id !== chapterId);
             }
             return { ...prev, subjects };
         });
