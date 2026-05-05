@@ -35,6 +35,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
+import { supabase } from './supabaseClient';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
@@ -267,9 +268,8 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/news', icon: Newspaper, label: 'News' },
   ];
 
-  const handleLogout = () => {
-      localStorage.removeItem('logged_user');
-      window.location.href = '/';
+  const handleLogout = async () => {
+      await supabase.auth.signOut();
   };
 
   const isAdminMode = location.pathname.startsWith('/admin-portal');
@@ -3885,21 +3885,90 @@ const LoginPage = () => {
     const { setUser } = useApp();
     const navigate = useNavigate();
     const [view, setView] = useState<'login' | 'signup'>('login');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
     
-    const handleLogin = (isGuest: boolean = true) => {
-        const defaultUser: User = {
-            id: 'u_' + Math.random().toString(36).substr(2, 9),
-            name: isGuest ? 'Guest Scholar' : 'Aadhar Student',
-            email: isGuest ? 'guest@aadhar.edu.np' : 'student@aadhar.edu.np',
-            grade: '10',
-            streak: 5,
-            completedChapters: [],
-            xp: 1250,
-            photoURL: isGuest ? undefined : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
-        };
-        setUser(defaultUser);
-        localStorage.setItem('logged_user', JSON.stringify(defaultUser));
-        navigate('/');
+    const handleAuth = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        setError(null);
+        
+        if (!email || !password) {
+            setError("Email and password are required");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (view === 'signup') {
+                if (password !== confirmPassword) {
+                    throw new Error("Passwords do not match");
+                }
+                const { data, error: signupError } = await supabase.auth.signUp({
+                    email,
+                    password,
+                });
+                if (signupError) throw signupError;
+                
+                if (data.user) {
+                    const newUser: User = {
+                        id: data.user.id,
+                        name: email.split('@')[0],
+                        email: email,
+                        grade: '10',
+                        streak: 1,
+                        completedChapters: [],
+                        xp: 100,
+                    };
+                    setUser(newUser);
+                    localStorage.setItem('logged_user', JSON.stringify(newUser));
+                    navigate('/');
+                } else {
+                    setError("Check your email for the confirmation link!");
+                }
+            } else {
+                const { data, error: signinError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+                if (signinError) throw signinError;
+                
+                if (data.user) {
+                    const loggedUser: User = {
+                        id: data.user.id,
+                        name: data.user.user_metadata?.full_name || email.split('@')[0],
+                        email: data.user.email || email,
+                        grade: '10',
+                        streak: 5,
+                        completedChapters: [],
+                        xp: 1250,
+                    };
+                    setUser(loggedUser);
+                    localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+                    navigate('/');
+                }
+            }
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin,
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message);
+        }
     };
 
     return (
@@ -3965,11 +4034,22 @@ const LoginPage = () => {
                             transition={{ delay: 0.6 }}
                             className="space-y-3 sm:space-y-4"
                         >
+                            {error && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-xs font-black"
+                                >
+                                    {error}
+                                </motion.div>
+                            )}
                             <div className="relative">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Languages className="w-5 h-5" /></span>
                                 <input 
-                                    type="text" 
+                                    type="email" 
                                     placeholder="Email" 
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
                                 />
                             </div>
@@ -3978,6 +4058,8 @@ const LoginPage = () => {
                                 <input 
                                     type="password" 
                                     placeholder="Password" 
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
                                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
                                 />
                             </div>
@@ -3987,6 +4069,8 @@ const LoginPage = () => {
                                     <input 
                                         type="password" 
                                         placeholder="Confirm Password" 
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
                                         className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
                                     />
                                 </div>
@@ -4003,10 +4087,18 @@ const LoginPage = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.7 }}
-                            onClick={() => handleLogin(false)}
-                            className="w-full py-5 sm:py-6 bg-[#16423C] text-white rounded-[1.5rem] sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.65rem] sm:text-xs shadow-xl shadow-[#16423C]/20 active:scale-95 transition-all"
+                            onClick={() => handleAuth()}
+                            disabled={loading}
+                            className="w-full py-5 sm:py-6 bg-[#16423C] text-white rounded-[1.5rem] sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.65rem] sm:text-xs shadow-xl shadow-[#16423C]/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
                         >
-                            {view === 'login' ? 'Login' : 'Sign Up'}
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    {view === 'login' ? 'Logging in...' : 'Signing up...'}
+                                </span>
+                            ) : (
+                                view === 'login' ? 'Login' : 'Sign Up'
+                            )}
                         </motion.button>
 
                         <motion.div 
@@ -4025,19 +4117,14 @@ const LoginPage = () => {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.9 }}
-                            className="flex justify-center gap-4 sm:gap-6"
+                            className="flex justify-center"
                         >
-                            <button className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90">
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6"><path fill="#f0f0f0" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0z"/><path fill="#1877F2" d="M14.5 12h-2.5v9h-3v-9h-2V9.5h2V8c0-1.5 1-3.5 3.5-3.5h2.5v3h-1.5c-.83 0-1 .417-1 1v1h3l-.5 2.5z"/></svg>
-                            </button>
-                            <button className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90">
-                                <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067C3.186 21.302 7.275 24 12 24c3.11 0 5.924-1.006 8.054-2.813l-4.014-3.174z"/><path fill="#4285F4" d="M23.49 12.275c0-.868-.079-1.53-.236-2.25H12v4.526h6.488c-.133.864-.813 2.146-2.054 2.997l4.013 3.174c2.338-2.157 3.682-5.335 3.682-8.447z"/><path fill="#FBBC05" d="M5.277 14.268a7.12 7.12 0 000-4.503L1.24 6.65a11.962 11.962 0 000 10.7l4.037-3.082z"/></svg>
-                            </button>
                             <button 
-                                onClick={() => handleLogin(true)}
-                                className="w-12 h-12 sm:w-14 sm:h-14 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center shadow-sm hover:shadow-md transition-all active:scale-90 group"
+                                onClick={handleGoogleLogin}
+                                className="w-full sm:max-w-xs h-14 sm:h-16 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all active:scale-95 group"
                             >
-                                <UserIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 group-hover:text-[#1D4ED8] transition-colors" />
+                                <svg viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067C3.186 21.302 7.275 24 12 24c3.11 0 5.924-1.006 8.054-2.813l-4.014-3.174z"/><path fill="#4285F4" d="M23.49 12.275c0-.868-.079-1.53-.236-2.25H12v4.526h6.488c-.133.864-.813 2.146-2.054 2.997l4.013 3.174c2.338-2.157 3.682-5.335 3.682-8.447z"/><path fill="#FBBC05" d="M5.277 14.268a7.12 7.12 0 000-4.503L1.24 6.65a11.962 11.962 0 000 10.7l4.037-3.082z"/></svg>
+                                <span className="text-slate-600 font-black uppercase tracking-widest text-[0.65rem] sm:text-xs">Continue with Google</span>
                             </button>
                         </motion.div>
                     </div>
@@ -4059,9 +4146,8 @@ const ProfilePage = () => {
         { label: 'Rank', value: '#12', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' }
     ];
 
-    const handleLogout = () => {
-        setUser(null);
-        localStorage.removeItem('logged_user');
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
         navigate('/');
     };
 
@@ -9329,18 +9415,31 @@ const AppProvider = ({ children }: any) => {
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
 
-        const init = async () => {
-            const savedUser = localStorage.getItem('logged_user');
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
+        // Supabase Auth Listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChanged((_event, session) => {
+            if (session?.user) {
+                const loggedUser: User = {
+                    id: session.user.id,
+                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Aadhar Student',
+                    email: session.user.email || '',
+                    grade: '10',
+                    streak: 5,
+                    completedChapters: [],
+                    xp: 1250,
+                };
+                setUser(loggedUser);
+                localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+            } else {
+                setUser(null);
+                localStorage.removeItem('logged_user');
             }
             setIsInitializing(false);
-        };
-        init();
+        });
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
+            subscription.unsubscribe();
         };
     }, []);
 
