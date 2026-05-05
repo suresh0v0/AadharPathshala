@@ -5,6 +5,6 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "npm install --force"
+  "installCommand": "npm install --legacy-peer-deps"
 }
 
