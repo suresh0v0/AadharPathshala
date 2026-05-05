@@ -9356,8 +9356,13 @@ const INITIAL_DATA: AppData = {
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
     const [data, setData] = useState<AppData>(() => {
-        const saved = localStorage.getItem('aadhar_app_data_v3');
-        return saved ? JSON.parse(saved) : INITIAL_DATA;
+        try {
+            const saved = localStorage.getItem('aadhar_app_data_v3');
+            return saved ? JSON.parse(saved) : INITIAL_DATA;
+        } catch (e) {
+            console.error("Error loading app data from localStorage:", e);
+            return INITIAL_DATA;
+        }
     });
     const [isOnline, setIsOnline] = useState(window.navigator.onLine);
     const [liveNews, setLiveNews] = useState<any[]>([]);
@@ -9416,30 +9421,42 @@ const AppProvider = ({ children }: any) => {
         window.addEventListener('offline', handleOffline);
 
         // Supabase Auth Listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChanged((_event, session) => {
-            if (session?.user) {
-                const loggedUser: User = {
-                    id: session.user.id,
-                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Aadhar Student',
-                    email: session.user.email || '',
-                    grade: '10',
-                    streak: 5,
-                    completedChapters: [],
-                    xp: 1250,
-                };
-                setUser(loggedUser);
-                localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+        let subscription: any;
+        try {
+            if (supabase?.auth) {
+                const res = supabase.auth.onAuthStateChange((_event, session) => {
+                    if (session?.user) {
+                        const loggedUser: User = {
+                            id: session.user.id,
+                            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Aadhar Student',
+                            email: session.user.email || '',
+                            grade: '10',
+                            streak: 5,
+                            completedChapters: [],
+                            xp: 1250,
+                        };
+                        setUser(loggedUser);
+                        localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+                    } else {
+                        setUser(null);
+                        localStorage.removeItem('logged_user');
+                    }
+                    setIsInitializing(false);
+                });
+                subscription = res.data?.subscription;
             } else {
-                setUser(null);
-                localStorage.removeItem('logged_user');
+                console.error("Supabase auth not found");
+                setIsInitializing(false);
             }
+        } catch (err) {
+            console.error("Supabase onAuthStateChange error:", err);
             setIsInitializing(false);
-        });
+        }
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            subscription.unsubscribe();
+            if (subscription) subscription.unsubscribe();
         };
     }, []);
 
