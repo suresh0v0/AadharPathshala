@@ -54,6 +54,9 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       emptyOutDir: true,
+      rollupOptions: {
+        external: ['react-is'],
+      },
     },
     define: {
       'import.meta.env.VITE_CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
