@@ -3889,11 +3889,13 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     
     const handleAuth = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         setError(null);
+        setSuccessMessage(null);
         
         if (!email || !password) {
             setError("Email and password are required");
@@ -3912,9 +3914,9 @@ const LoginPage = () => {
                 });
                 if (signupError) throw signupError;
                 
-                if (data.user) {
+                if (data.session) {
                     const newUser: User = {
-                        id: data.user.id,
+                        id: data.user!.id,
                         name: email.split('@')[0],
                         email: email,
                         grade: '10',
@@ -3926,7 +3928,9 @@ const LoginPage = () => {
                     localStorage.setItem('logged_user', JSON.stringify(newUser));
                     navigate('/');
                 } else {
-                    setError("Check your email for the confirmation link!");
+                    setSuccessMessage("Account created! Please check your email to verify your account before logging in.");
+                    setView('login');
+                    setPassword('');
                 }
             } else {
                 const { data, error: signinError } = await supabase.auth.signInWithPassword({
@@ -4020,7 +4024,14 @@ const LoginPage = () => {
                     >
                         <h2 className="text-2xl sm:text-3xl font-black text-slate-900">{view === 'login' ? 'Login' : 'Sign Up'}</h2>
                         {view === 'signup' && (
-                            <button onClick={() => setView('login')} className="flex items-center gap-2 text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors">
+                            <button 
+                                onClick={() => {
+                                    setView('login');
+                                    setError(null);
+                                    setSuccessMessage(null);
+                                }} 
+                                className="flex items-center gap-2 text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                            >
                                 <ChevronLeft className="w-4 h-4" />
                                 Back to login
                             </button>
@@ -4041,6 +4052,15 @@ const LoginPage = () => {
                                     className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-xs font-black"
                                 >
                                     {error}
+                                </motion.div>
+                            )}
+                            {successMessage && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-3 rounded-2xl text-xs font-black"
+                                >
+                                    {successMessage}
                                 </motion.div>
                             )}
                             <div className="relative">
@@ -4077,7 +4097,16 @@ const LoginPage = () => {
                             )}
                             {view === 'login' && (
                                 <div className="flex justify-between items-center px-2">
-                                    <button onClick={() => setView('signup')} className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600">New here? Sign Up</button>
+                                    <button 
+                                        onClick={() => {
+                                            setView('signup');
+                                            setError(null);
+                                            setSuccessMessage(null);
+                                        }} 
+                                        className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600"
+                                    >
+                                        New here? Sign Up
+                                    </button>
                                     <button className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-[#1D4ED8]">Forgot Password?</button>
                                 </div>
                             )}
@@ -9273,7 +9302,16 @@ const PicturesPage = () => {
     );
 };
 const AppContent = () => {
-    const { user } = useApp();
+    const { user, isInitializing } = useApp();
+
+    if (isInitializing) {
+        return (
+            <div className="fixed inset-0 flex flex-col items-center justify-center bg-[#F0F9FF] z-[4000]">
+                <Loader2 className="w-12 h-12 text-[#16423C] animate-spin mb-4" />
+                <p className="text-slate-600 font-black uppercase tracking-widest text-xs animate-pulse">Initializing Aadhar...</p>
+            </div>
+        );
+    }
 
     if (!user) {
         return <LoginPage />;
@@ -9421,10 +9459,13 @@ const AppProvider = ({ children }: any) => {
         window.addEventListener('offline', handleOffline);
 
         // Supabase Auth Listener
-        let subscription: any;
-        try {
-            if (supabase?.auth) {
-                const res = supabase.auth.onAuthStateChange((_event, session) => {
+        let authSubscription: any;
+        
+        const initAuth = async () => {
+            try {
+                if (supabase?.auth) {
+                    // 1. Check initial session
+                    const { data: { session } } = await supabase.auth.getSession();
                     if (session?.user) {
                         const loggedUser: User = {
                             id: session.user.id,
@@ -9441,22 +9482,48 @@ const AppProvider = ({ children }: any) => {
                         setUser(null);
                         localStorage.removeItem('logged_user');
                     }
+
+                    // 2. Set up listener for subsequent changes
+                    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+                        if (session?.user) {
+                            const loggedUser: User = {
+                                id: session.user.id,
+                                name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Aadhar Student',
+                                email: session.user.email || '',
+                                grade: '10',
+                                streak: 5,
+                                completedChapters: [],
+                                xp: 1250,
+                            };
+                            setUser(loggedUser);
+                            localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+                        } else {
+                            setUser(null);
+                            localStorage.removeItem('logged_user');
+                        }
+                        setIsInitializing(false);
+                    });
+                    authSubscription = subscription;
+                } else {
+                    console.error("Supabase auth not found");
                     setIsInitializing(false);
-                });
-                subscription = res.data?.subscription;
-            } else {
-                console.error("Supabase auth not found");
+                }
+            } catch (err) {
+                console.error("Auth initialization error:", err);
+                setIsInitializing(false);
+            } finally {
+                // Ensure isInitializing is false if we finished the session check but no user was found
+                // Note: the onAuthStateChange might fire immediately, but let's be safe.
                 setIsInitializing(false);
             }
-        } catch (err) {
-            console.error("Supabase onAuthStateChange error:", err);
-            setIsInitializing(false);
-        }
+        };
+
+        initAuth();
 
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            if (subscription) subscription.unsubscribe();
+            if (authSubscription) authSubscription.unsubscribe();
         };
     }, []);
 
