@@ -16,6 +16,7 @@ export default defineConfig(({ mode }) => {
   const groqKey = process.env.VITE_GROQ_API_KEY || env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || env.GROQ_API_KEY || "";
 
   return {
+    base: '/',
     plugins: [
       react(), 
       tailwindcss(),
@@ -54,6 +55,9 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       emptyOutDir: true,
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
     },
     optimizeDeps: {
       include: ['react-is', 'recharts'],
@@ -66,6 +70,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
+        'react-is': 'react-is',
       },
     },
     server: {

@@ -27,7 +27,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // Set worker for react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -417,9 +417,7 @@ const MockTest = () => {
             
             // GROQ (ACHAR) for questions - Force Groq as requested
             // @ts-ignore
-            const viteGroqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-            const processGroqKey = (typeof process !== 'undefined' && process.env ? process.env.GROQ_API_KEY : "") || viteGroqKey;
-            const groqKey = processGroqKey || viteGroqKey;
+            const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
             
             if (!groqKey) throw new Error("GROQ_API_KEY is not configured. Please add it to Secrets.");
             
