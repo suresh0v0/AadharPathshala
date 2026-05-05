@@ -26,8 +26,14 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-// Set worker for react-pdf
-pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
+// Set worker for react-pdf (safer loading)
+try {
+    if (pdfjs?.GlobalWorkerOptions) {
+        pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
+    }
+} catch (e) {
+    console.error("PDF.js worker initialization error:", e);
+}
 import Markdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -3962,16 +3968,18 @@ const LoginPage = () => {
     };
 
     const handleGoogleLogin = async () => {
+        setError(null);
+        setSuccessMessage(null);
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { error: oauthError } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
                     redirectTo: window.location.origin,
                 }
             });
-            if (error) throw error;
+            if (oauthError) throw oauthError;
         } catch (err: any) {
-            setError(err.message);
+            setError(err.message || 'Failed to initialize Google login');
         }
     };
 
@@ -9505,11 +9513,18 @@ const AppProvider = ({ children }: any) => {
                     });
                     authSubscription = subscription;
                 } else {
-                    console.error("Supabase auth not found");
+                    console.error("Supabase auth not found or could not be initialized");
                     setIsInitializing(false);
                 }
             } catch (err) {
-                console.error("Auth initialization error:", err);
+                const errorMessage = err instanceof Error ? err.message : String(err);
+                console.error("Auth initialization network error:", errorMessage);
+                
+                // Special handling for "Failed to fetch" which is often a network/CORS/Blocked error
+                if (errorMessage.includes("Failed to fetch")) {
+                   console.warn("Supabase network request failed. This may be due to incorrect project URL, network blockage, or project suspension.");
+                }
+                
                 setIsInitializing(false);
             } finally {
                 // Ensure isInitializing is false if we finished the session check but no user was found
