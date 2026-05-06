@@ -195,7 +195,11 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const handleLogout = async () => {
+    try {
       await supabase.auth.signOut();
+    } catch (e) {
+      console.error("Logout failed:", e);
+    }
   };
 
   const isAdminMode = location.pathname.startsWith('/admin-portal');
@@ -1226,7 +1230,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                 {m.role === 'ai' && (
                                     <div className="mt-6 flex items-center justify-between pt-6 border-t border-slate-50">
                                         <div className="flex gap-2">
-                                            <button onClick={() => { navigator.clipboard.writeText(m.text); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-inner">
+                                            <button onClick={() => { navigator.clipboard.writeText(m.text).catch(err => console.error("Clipboard error:", err)); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-inner">
                                                 <Copy className="w-4 h-4" />
                                             </button>
                                             <button className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-emerald-600 hover:bg-emerald-50 transition-all shadow-inner">
@@ -4149,8 +4153,13 @@ const ProfilePage = () => {
     ];
 
     const handleLogout = async () => {
-        await supabase.auth.signOut();
-        navigate('/');
+        try {
+            await supabase.auth.signOut();
+            navigate('/');
+        } catch (e) {
+            console.error("Portal logout failed:", e);
+            navigate('/');
+        }
     };
 
     return (
@@ -5601,7 +5610,7 @@ const TranslatorPage = () => {
 
     const copyToClipboard = (content: string) => {
         if (!content) return;
-        navigator.clipboard.writeText(content);
+        navigator.clipboard.writeText(content).catch(err => console.error("Clipboard error:", err));
     };
 
     const clearAll = () => {
@@ -5672,7 +5681,7 @@ const TranslatorPage = () => {
                                     <button onClick={() => speakText(translated, targetLang)} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors">
                                         <Volume2 className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => { navigator.clipboard.writeText(translated); }} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors">
+                                    <button onClick={() => { navigator.clipboard.writeText(translated).catch(err => console.error("Clipboard error:", err)); }} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors">
                                         <Copy className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -8748,7 +8757,14 @@ const OldPicturesPage = () => {
     };
 
     useEffect(() => {
-        fetchImages(query, 1, true);
+        const load = async () => {
+            try {
+                await fetchImages(query, 1, true);
+            } catch (e) {
+                console.error("Initial fetchImages failure:", e);
+            }
+        };
+        load();
         // eslint-disable-next-line
     }, []);
 
@@ -8953,7 +8969,7 @@ const OldPicturesPage = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
                                 <button 
                                     onClick={() => {
-                                        navigator.clipboard.writeText(selectedImage.largeImageURL);
+                                        navigator.clipboard.writeText(selectedImage.largeImageURL).catch(err => console.error("Clipboard error:", err));
                                         alert("Direct link copied to clipboard!");
                                     }}
                                     className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 group hover:bg-white hover:border-blue-500 hover:shadow-xl transition-all"
@@ -9130,7 +9146,14 @@ const PicturesPage = () => {
     };
 
     useEffect(() => {
-        fetchImages(query, 1, activeCategory, true);
+        const load = async () => {
+            try {
+                await fetchImages(query, 1, activeCategory, true);
+            } catch (e) {
+                console.error("Initial fetchImages failure:", e);
+            }
+        };
+        load();
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -9182,7 +9205,7 @@ const PicturesPage = () => {
     };
 
     const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
+        navigator.clipboard.writeText(text).catch(err => console.error("Clipboard error:", err));
         alert("Link copied to clipboard!");
     };
 

@@ -21,7 +21,10 @@ window.addEventListener('error', (event) => {
 });
 
 window.addEventListener('unhandledrejection', (event) => {
-    console.error('Unhandled Promise Rejection:', event.reason);
+    const reason = event.reason;
+    const message = reason instanceof Error ? reason.message : String(reason);
+    const stack = reason instanceof Error ? reason.stack : '';
+    console.error('Unhandled Promise Rejection:', message, stack);
 });
 
 createRoot(document.getElementById('root')!).render(
