@@ -1,15 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-import Groq from "groq-sdk";
-
-// Gemini Setup
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
-// Helpers to get environment variables safely
-const getViteKey = (key: string) => {
-    // @ts-ignore
-    return import.meta.env[key] || "";
-};
-
 /**
  * AI Providers configuration
  */
@@ -18,90 +6,61 @@ export const PROVIDERS = {
         id: 'gyanu',
         name: 'Gyanu',
         provider: 'Gemini',
-        model: 'gemini-3-flash-preview',
-        color: 'indigo'
+        model: 'gemini-2.0-flash',
+        color: 'indigo',
+        theme: 'from-indigo-500 to-blue-600',
+        textColor: 'text-indigo-600'
     },
     MOMO: {
         id: 'momo',
         name: 'Momo',
         provider: 'Cerebras',
         model: 'llama-3.3-70b',
-        baseURL: "https://api.cerebras.ai/v1",
-        color: 'purple'
+        color: 'rose',
+        theme: 'from-rose-500 to-pink-600',
+        textColor: 'text-rose-600'
     },
     AACHAR: {
         id: 'aachar',
         name: 'Aachar',
         provider: 'Groq',
         model: 'llama-3.3-70b-versatile',
-        color: 'emerald'
+        color: 'emerald',
+        theme: 'from-emerald-500 to-teal-600',
+        textColor: 'text-emerald-600'
     },
     MANGO: {
         id: 'mango',
         name: 'Mango',
         provider: 'SambaNova',
         model: 'Meta-Llama-3.3-70B-Instruct',
-        baseURL: "https://api.sambanova.ai/v1",
-        color: 'orange'
+        color: 'orange',
+        theme: 'from-orange-500 to-amber-600',
+        textColor: 'text-orange-600'
     }
 };
 
 /**
- * Unified response generator
+ * Unified response generator via Express Backend
  */
 export const getAIResponse = async (tutorId: string, prompt: string, systemInstruction: string) => {
     try {
-        switch (tutorId) {
-            case PROVIDERS.GYANU.id: {
-                const result = await genAI.models.generateContent({
-                    model: PROVIDERS.GYANU.model,
-                    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                    config: {
-                        systemInstruction
-                    }
-                });
-                return result.text;
-            }
+        const response = await fetch("/api/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tutorId, prompt, systemInstruction })
+        });
 
-            case PROVIDERS.MOMO.id: {
-                const apiKey = getViteKey('VITE_CEREBRAS_API_KEY');
-                if (!apiKey) throw new Error("Cerebras API Key missing");
-                const client = new Groq({ apiKey, baseURL: PROVIDERS.MOMO.baseURL, dangerouslyAllowBrowser: true });
-                const res = await client.chat.completions.create({
-                    messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
-                    model: PROVIDERS.MOMO.model
-                });
-                return res.choices[0]?.message?.content || "";
-            }
-
-            case PROVIDERS.AACHAR.id: {
-                const apiKey = getViteKey('VITE_GROQ_API_KEY');
-                if (!apiKey) throw new Error("Groq API Key missing");
-                const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-                const res = await client.chat.completions.create({
-                    messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
-                    model: PROVIDERS.AACHAR.model
-                });
-                return res.choices[0]?.message?.content || "";
-            }
-
-            case PROVIDERS.MANGO.id: {
-                const apiKey = getViteKey('VITE_SAMBANOVA_API_KEY');
-                if (!apiKey) throw new Error("SambaNova API Key missing");
-                const client = new Groq({ apiKey, baseURL: PROVIDERS.MANGO.baseURL, dangerouslyAllowBrowser: true });
-                const res = await client.chat.completions.create({
-                    messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
-                    model: PROVIDERS.MANGO.model
-                });
-                return res.choices[0]?.message?.content || "";
-            }
-
-            default:
-                throw new Error("Unknown provider");
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || "Server error");
         }
+
+        const data = await response.json();
+        return data.text;
     } catch (error: any) {
-        console.error(`AI Error (${tutorId}):`, error);
-        throw new Error(error.message || "Failed to get AI response");
+        console.error(`AI Service Error (${tutorId}):`, error);
+        throw new Error(error.message || "Failed to communicate with AI server");
     }
 };
 
@@ -110,17 +69,26 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
  */
 export const getAIJSONResponse = async (prompt: string, systemInstruction: string) => {
     try {
-        const result = await genAI.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            config: {
+        const response = await fetch("/api/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                tutorId: 'gyanu', 
+                prompt, 
                 systemInstruction,
-                responseMimeType: "application/json"
-            }
+                isJson: true 
+            })
         });
-        return JSON.parse(result.text || "{}");
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || "Server error");
+        }
+
+        const data = await response.json();
+        return data.text;
     } catch (error) {
-        console.error("Gemini JSON Error:", error);
+        console.error("AI JSON Error:", error);
         throw error;
     }
 };
