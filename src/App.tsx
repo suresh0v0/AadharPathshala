@@ -42,13 +42,13 @@ import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
 import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes, getUserProfile } from './supabaseClient';
+import { generateAIResponse, generateJSONResponse, startAIChat } from './services/geminiService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   AreaChart, Area, PieChart, Pie, Cell, LineChart, Line
 } from 'recharts';
-import Groq from "groq-sdk";
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 
 const LogoImg = "https://res.cloudinary.com/dtyjlnjjf/image/upload/f_auto,q_auto/9931_fogzow";
@@ -117,47 +117,6 @@ const Logo = ({ className = "", size = "md" }: { className?: string, size?: 'sm'
 
 
 /**
- * Cerebras AI - Main Brain for MOMO
- */
-const callCerebrasForMomo = async (messages: any[], isJson: boolean = false) => {
-    if (!window.navigator.onLine) {
-        throw new Error("Network Disconnected. Our AI systems require an active connection to process your request. Please check your internet and try again.");
-    }
-    // @ts-ignore
-    const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
-
-    if (!apiKey) throw new Error("API key is not configured. Please add VITE_CEREBRAS_API_KEY to your environment variables.");
-
-    const formattedMessages = messages.map(m => ({
-        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-    }));
-
-    try {
-        const client = new Groq({ apiKey, baseURL: "https://api.cerebras.ai/v1", dangerouslyAllowBrowser: true });
-        const response = await client.chat.completions.create({
-            model: "llama-3.3-70b",
-            messages: formattedMessages as any,
-            response_format: isJson ? { type: "json_object" } : undefined
-        });
-        return response.choices[0]?.message?.content || "";
-    } catch (err: any) {
-        console.warn("Cerebras failed, falling back to reliable Groq LLaMA 70B", err);
-        // @ts-ignore
-        const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-        if (!groqKey) throw new Error(`Cerebras failed: ${err.message}. (No Groq fallback available)`);
-        
-        const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-        const response = await backupClient.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: formattedMessages as any,
-            response_format: isJson ? { type: "json_object" } : undefined
-        });
-        return response.choices[0]?.message?.content || "";
-    }
-};
-
-/**
  * YouTube Utility - Enhanced to handle shorts and various URL formats
  */
 const extractYoutubeId = (url: string) => {
@@ -169,47 +128,8 @@ const extractYoutubeId = (url: string) => {
 };
 
 /**
- * SambaNova AI - Reliable Backup for MANGO
+ * CONSTANTS
  */
-const callSambaNovaForMomo = async (messages: any[], isJson: boolean = false) => {
-    // @ts-ignore
-    const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
-
-    if (!apiKey) throw new Error("API key is not configured. Please add VITE_SAMBANOVA_API_KEY to your environment variables.");
-
-    const formattedMessages = messages.map(m => ({
-        role: m.role === 'model' || m.role === 'ai' || m.role === 'assistant' ? 'assistant' : (m.role === 'system' ? 'system' : 'user'),
-        content: typeof m.parts?.[0]?.text === 'string' ? m.parts[0].text : m.text || m.content
-    }));
-
-    try {
-        const client = new Groq({ apiKey, baseURL: "https://api.sambanova.ai/v1", dangerouslyAllowBrowser: true });
-        const response = await client.chat.completions.create({
-            model: "Meta-Llama-3.3-70B-Instruct",
-            messages: formattedMessages as any,
-            response_format: isJson ? { type: "json_object" } : undefined
-        });
-        return response.choices[0]?.message?.content || "";
-    } catch (err: any) {
-        console.warn("SambaNova failed, falling back to reliable Groq LLaMA 70B", err);
-        // @ts-ignore
-        const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-        if (!groqKey) throw new Error(`SambaNova failed: ${err.message}. (No Groq fallback available)`);
-        
-        const backupClient = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-        const response = await backupClient.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages: formattedMessages as any,
-            response_format: isJson ? { type: "json_object" } : undefined
-        });
-        return response.choices[0]?.message?.content || "";
-    }
-};
-
-// ════════════════════════════════════════════
-// CONSTANTS
-// ════════════════════════════════════════════
-
 const SUBJECTS_CONFIG: Record<SubjectType, { color: string; icon: any; gradient: string }> = {
   'English': { color: 'blue', icon: Languages, gradient: 'from-blue-500 to-indigo-500' },
   'नेपाली': { color: 'purple', icon: Edit3, gradient: 'from-purple-500 to-pink-500' },
@@ -421,30 +341,29 @@ const MockTest = () => {
         try {
             const isNepaliSubject = settings.subject === 'नेपाली' || settings.subject === 'सामाजिक';
             
-            // GROQ (ACHAR) for questions - Force Groq as requested
-            // @ts-ignore
-            const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
+            const systemInstruction = `You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object. Do NOT include greetings. IMPORTANT: Use LaTeX ($...$) for ALL mathematical symbols, numbers, and formulas. Ensure questions and correct answers are 100% factually accurate.
+            RESPONSE SCHEMA:
+            {
+                "quiz": [
+                    {
+                        "q": "question text",
+                        "a": "choice a",
+                        "b": "choice b",
+                        "c": "choice c",
+                        "d": "choice d",
+                        "correct": "a",
+                        "explanation": "why this is correct"
+                    }
+                ]
+            }`;
+
+            const data = await generateJSONResponse(`Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+            IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer.
+            ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}`, systemInstruction);
             
-            if (!groqKey) throw new Error("GROQ_API_KEY is not configured. Please add it to Secrets.");
-            
-            const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-            
-            const completion = await groq.chat.completions.create({
-                messages: [
-                    { role: "system", content: "You are an expert exam paper generator for Grade 10 Nepal Students (SEE). You must return high-quality multiple choice questions. You MUST return ONLY the JSON object, NO other text. Do NOT include greetings. IMPORTANT: Use LaTeX ($...$) for ALL mathematical symbols, numbers, and formulas. Ensure questions and correct answers are 100% factually accurate without mistakes." },
-                    { role: "user", content: `Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
-                    IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer. NEVER include the question text in the options.
-                    Ensure that 'correct' field is one of 'a', 'b', 'c', 'd'.
-                    ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}
-                    Return JSON format: { "quiz": [{ "q": "...", "a": "...", "b": "...", "c": "...", "d": "...", "correct": "a", "explanation": "..." }] }` }
-                ],
-                model: "llama-3.3-70b-versatile",
-                response_format: { type: "json_object" }
-            });
-            const data = JSON.parse(completion.choices[0]?.message?.content || "{}");
             const quizData = data.quiz || [];
 
-            if (quizData.length === 0) throw new Error("No questions generated. Check your Groq API Key.");
+            if (quizData.length === 0) throw new Error("No questions generated.");
             
             setQuestions(quizData);
             setStatus('quiz');
@@ -757,20 +676,18 @@ const ReviewCard = ({ question, index, subject }: { question: any, index: number
     const getAIReview = async () => {
         setLoading(true);
         try {
-            const prompt = `Student performed a Grade 10 Nepal SEE ${subject} Exam.
+            const systemInstruction = `You are a professional teacher for Nepalese students. Provide a hint or conceptual explanation as to why the student's choice was wrong and guide them toward the right logic.
+            CRITICAL INSTRUCTION: DO NOT explicitly state the correct answer. Guide the student conceptually.
+            Use simple "Neplish" (English + Nepali mix). Focus on logic. 
+            Use LaTeX ($...$) for mathematical symbols.`;
+
+            const prompt = `Subject: ${subject}
 Question: ${question.q}
 Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
 Correct: ${question.correct}
-Student Answered: ${question.userChoice}
+Student Answered: ${question.userChoice}`;
 
-Your task: Provide a hint or conceptual explanation as to why the student's choice was wrong and guide them toward the right logic.
-CRITICAL INSTRUCTION: DO NOT explicitly state the correct answer (e.g. do not say "The correct answer is X" or give away the option). Guide the student conceptually so they realize it themselves.
-Be extremely direct and brief. Use bullet points if needed. No greetings.
-Use simple "Neplish" (English + Nepali mix). Focus on logic. 
-IMPORTANT: Use LaTeX ($...$) for mathematical symbols.
-Keep it under 50 words.`;
-
-            const res = await callCerebrasForMomo([{ role: "user", content: prompt }]);
+            const res = await generateAIResponse(prompt, systemInstruction);
             setExplanation(res || "Could not generate review.");
         } catch (e) {
             setExplanation("Analysis Failed. Please try again later.");
@@ -1002,110 +919,44 @@ const AITutor = () => {
         const text = txt || input;
         if (!text.trim()) return;
 
-        const updated = [...messages, { role: 'user', text: text }];
-        setMessages(updated);
+        const userMsg = { role: 'user', text: text };
+        setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
 
-        // Add placeholder AI message
-        setMessages(prev => [...prev, { role: 'ai', text: '' }]);
+        const aiMsgIndex = messages.length + 1;
+        setMessages(prev => [...prev, { role: 'ai', text: 'Thinking...' }]);
 
         try {
-            // SHARED FORMATTING RULES
             const sharedFormatting = `
 FORMATTING RULES:
 1. MATH: Use $ for inline and $$ for block math.
-2. VISUALS (SITUATIONAL): You MAY include a visual for Science, History, or Geography if it helps explain a complex topic, or if explicitly asked.
-   - DO NOT provide visuals for simple text-based questions unless necessary.
-   - USE THE TAG: [VISUAL: DESCRIPTION]
-   - DESCRIPTION: 5 specific keywords for a scientific diagram (e.g., [VISUAL: human heart internal anatomy labeled]).
-   - Put this on its own line with empty lines around it.
-3. SUBJECT EXPERTISE:
-   - NEPALI & SOCIAL STUDIES (Nepali: नेपाली, Social: सामाजिक): Answer in a mix of clear English and proper Nepali script (Unicode) where appropriate. 
-   - Use real-world examples from Nepal (e.g., specific rivers like Koshi, historical figures like Prithvi Narayan Shah, or social issues in rural Nepal).
-   - Ensure historical dates are accurate to the Nepali calendar (B.S.) where applicable.
-4. VIBRANCY: Use ### for section headers to ensure colourful output.
-   - MOMO: Use "### 🧬 Concept Core" and "### 💡 Expert Insight".
-   - MANGO: Use "### 📊 Case Data" and "### 🔍 Reliable Check".
-   - ACHAR: Use "### ⚡ Quick Facts".
-5. NO GREETINGS: Start answering immediately.
-6. PARAGRAPHS: Max 2 sentences each. Use **bold** for key concepts.`;
+2. VISUALS: [VISUAL: DESCRIPTION] describing a diagram if needed.
+3. VIBRANCY: Use ### for headers.
+4. PARAGRAPHS: Max 2 sentences each.`;
+
+            let systemInstruction = "";
+            let identity = "";
 
             if (activeTutor === 'achar') {
-                // GROQ (ACHAR) Implementation
-                const systemPrompt = `You are ACHAR, the Instant Helper. 
-IDENTITY: Lightning fast, ultra-concise facts.
-STYLE: Bullet points only.
-RESTRICTION: NO formulas, NO equations unless specifically asked for a calculation. Focus on definition and quick tips.
-${sharedFormatting}`;
-
-                const chatHistory = updated.map(m => ({
-                    role: (m.role === 'ai' ? 'assistant' : 'user') as 'assistant' | 'user',
-                    content: m.text
-                }));
-
-                // @ts-ignore
-                const groqKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                const groq = new Groq({ apiKey: groqKey, dangerouslyAllowBrowser: true });
-
-                const stream = await groq.chat.completions.create({
-                    messages: [{ role: "system", content: systemPrompt }, ...chatHistory],
-                    model: "llama-3.1-8b-instant",
-                    stream: true,
-                });
-
-                let fullResponse = "";
-                for await (const chunk of stream) {
-                    fullResponse += chunk.choices[0]?.delta?.content || "";
-                    setMessages(prev => {
-                        const newMessages = [...prev];
-                        newMessages[newMessages.length - 1].text = fullResponse;
-                        return newMessages;
-                    });
-                }
+                identity = "ACHAR, the Instant Helper. Ultra-fast facts, bullet points.";
             } else if (activeTutor === 'momo') {
-                // CEREBRAS (MOMO) Implementation
-                const systemInstruction = `You are MOMO, the Concept Tutor.
-IDENTITY: Academic Expert. Deep conceptual dives.
-VIBRANCY PERFECTION: You MUST start your response with "### 🧬 Concept Dive" and include "### 💡 Expert Insight".
-${sharedFormatting}`;
-
-                const contents = [
-                    { role: 'system', content: systemInstruction },
-                    ...updated.map(m => ({
-                        role: m.role === 'ai' ? 'assistant' : 'user',
-                        content: m.text
-                    }))
-                ];
-
-                const responseText = await callCerebrasForMomo(contents);
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].text = responseText || "Brain freeze! MOMO rebooting...";
-                    return newMessages;
-                });
+                identity = "MOMO, the Concept Tutor. Deep conceptual dives. Use ### 🧬 Concept Dive.";
             } else {
-                // SAMBANOVA (MANGO) Implementation
-                const systemInstruction = `You are MANGO, the Precise Assistant.
-IDENTITY: Fact-checker. Accurate, data-driven.
-VIBRANCY PERFECTION: You MUST start your response with "### 📊 Case Study" and include "### 🔍 Fact Verified".
-${sharedFormatting}`;
-
-                const contents = [
-                    { role: 'system', content: systemInstruction },
-                    ...updated.map(m => ({
-                        role: m.role === 'ai' ? 'assistant' : 'user',
-                        content: m.text
-                    }))
-                ];
-
-                const responseText = await callSambaNovaForMomo(contents);
-                setMessages(prev => {
-                    const newMessages = [...prev];
-                    newMessages[newMessages.length - 1].text = responseText || "Brain freeze! MANGO rebooting...";
-                    return newMessages;
-                });
+                identity = "MANGO, the Precise Assistant. Fact-checker. Precise data.";
             }
+
+            systemInstruction = `Identity: ${identity}\n${sharedFormatting}`;
+
+            const responseText = await generateAIResponse(text, systemInstruction);
+            
+            setMessages(prev => {
+                const newMessages = [...prev];
+                if (newMessages[aiMsgIndex]) {
+                    newMessages[aiMsgIndex].text = responseText || "Brain freeze! Rebooting...";
+                }
+                return newMessages;
+            });
         } catch (e: any) {
             setMessages(prev => {
                 const newMessages = [...prev];
@@ -1170,7 +1021,7 @@ ${sharedFormatting}`;
                                 <Zap className="w-8 h-8 text-emerald-400" />
                             </div>
                             <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
+                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Gemini)</p>
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
                         </button>
 
@@ -3180,8 +3031,9 @@ const NepaliDictionaryPage = () => {
         setLoading(true);
         setResult(null);
         try {
-            const prompt = `You are a high-accuracy Nepali dictionary. Explains the meaning and usage of the Nepali word: "${word}".
-            Return the response in strictly JSON format. Provide the meaning, examples, synonyms, and antonyms IN NEPALI language:
+            const systemInstruction = `You are a high-accuracy Nepali dictionary. Explains the meaning and usage of the Nepali word.
+            Return the response in strictly JSON format. Provide the meaning, examples, synonyms, and antonyms IN NEPALI language.
+            RESPONSE SCHEMA:
             {
                 "word": "Nepali word",
                 "transliteration": "how to pronounce in english",
@@ -3192,8 +3044,7 @@ const NepaliDictionaryPage = () => {
                 "antonyms": ["antonym 1 IN NEPALI", "antonym 2 IN NEPALI"]
             }`;
 
-            const res = await callCerebrasForMomo([{ role: 'user', content: prompt }], true);
-            const data = JSON.parse(res || '{}');
+            const data = await generateJSONResponse(`Word: "${word}"`, systemInstruction);
             setResult(data);
         } catch (err) {
             console.error(err);
@@ -5609,13 +5460,11 @@ const TranslatorPage = () => {
         if (!text.trim()) return;
         setLoading(true);
         try {
-            const prompt = `You are a professional translator for Nepalese students.
-            Translate the following text from ${sourceLang} to ${targetLang}.
-            Provide only the translation, no extra chatter.
-            
+            const systemInstruction = `You are a professional translator for Nepalese students. Provide only the translation, no extra chatter.`;
+            const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
             TEXT: "${text}"`;
 
-            const result = await callCerebrasForMomo([{ role: 'user', content: prompt }], false);
+            const result = await generateAIResponse(prompt, systemInstruction);
             setTranslated(result || "Translation failed.");
         } catch (e) {
             console.error(e);
@@ -5777,8 +5626,9 @@ const DictionaryPage = () => {
         const cleanWord = word.trim().toLowerCase();
 
         try {
-            const prompt = `You are a high-accuracy English dictionary. Explain the meaning and usage of the English word: "${cleanWord}".
-            Return the response in strictly JSON format. Provide the meaning, exactly 2 examples, synonyms, and antonyms IN ENGLISH:
+            const systemInstruction = `You are a high-accuracy English dictionary. Explain the meaning and usage of the English word.
+            Return the response in strictly JSON format. Provide the meaning, exactly 2 examples, synonyms, and antonyms IN ENGLISH.
+            RESPONSE SCHEMA:
             {
                 "word": "English word",
                 "phonetic": "how to pronounce",
@@ -5789,8 +5639,7 @@ const DictionaryPage = () => {
                 "antonyms": ["antonym 1", "antonym 2"]
             }`;
 
-            const res = await callCerebrasForMomo([{ role: 'user', content: prompt }], true);
-            const data = JSON.parse(res || '{}');
+            const data = await generateJSONResponse(`Word: "${cleanWord}"`, systemInstruction);
             if (!data.word) throw new Error("Could not parse result.");
             setResult(data);
         } catch (err: any) {
@@ -9520,6 +9369,11 @@ const AppProvider = ({ children }: any) => {
         let authSubscription: any;
         
         const initAuth = async () => {
+            // Safety timeout to prevent hanging on loading screen
+            const timeout = setTimeout(() => {
+                setIsInitializing(false);
+            }, 5000);
+
             try {
                 if (supabase?.auth) {
                     // 1. Check initial session
@@ -9569,6 +9423,7 @@ const AppProvider = ({ children }: any) => {
                             localStorage.removeItem('logged_user');
                         }
                         setIsInitializing(false);
+                        clearTimeout(timeout);
                     });
                     authSubscription = subscription;
                 } else {
@@ -9578,17 +9433,10 @@ const AppProvider = ({ children }: any) => {
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : String(err);
                 console.error("Auth initialization network error:", errorMessage);
-                
-                // Special handling for "Failed to fetch" which is often a network/CORS/Blocked error
-                if (errorMessage.includes("Failed to fetch")) {
-                   console.warn("Supabase network request failed. This may be due to incorrect project URL, network blockage, or project suspension.");
-                }
-                
                 setIsInitializing(false);
             } finally {
-                // Ensure isInitializing is false if we finished the session check but no user was found
-                // Note: the onAuthStateChange might fire immediately, but let's be safe.
                 setIsInitializing(false);
+                clearTimeout(timeout);
             }
         };
 
