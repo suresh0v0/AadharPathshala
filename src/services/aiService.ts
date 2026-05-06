@@ -2,8 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 import Groq from "groq-sdk";
 
 // Gemini Setup
+const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
 const genAI = new GoogleGenAI({ 
-    apiKey: typeof process !== 'undefined' && process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY || "" 
+    apiKey: geminiApiKey 
 });
 
 /**
@@ -49,6 +50,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
     try {
         switch (tutorId) {
             case PROVIDERS.GYANU.id: {
+                if (!geminiApiKey) throw new Error("Gemini API Key missing. Please set VITE_GEMINI_API_KEY in your environment.");
                 const result = await genAI.models.generateContent({
                     model: PROVIDERS.GYANU.model,
                     contents: [{ role: 'user', parts: [{ text: prompt }] }],
@@ -61,7 +63,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
 
             case PROVIDERS.MOMO.id: {
                 const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
-                if (!apiKey) throw new Error("Cerebras API Key missing");
+                if (!apiKey) throw new Error("Cerebras API Key missing. Please set VITE_CEREBRAS_API_KEY in your environment.");
                 const client = new Groq({ apiKey, baseURL: PROVIDERS.MOMO.baseURL, dangerouslyAllowBrowser: true });
                 const res = await client.chat.completions.create({
                     messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
@@ -72,7 +74,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
 
             case PROVIDERS.AACHAR.id: {
                 const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
-                if (!apiKey) throw new Error("Groq API Key missing");
+                if (!apiKey) throw new Error("Groq API Key missing. Please set VITE_GROQ_API_KEY in your environment.");
                 const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
                 const res = await client.chat.completions.create({
                     messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
@@ -83,7 +85,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
 
             case PROVIDERS.MANGO.id: {
                 const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
-                if (!apiKey) throw new Error("SambaNova API Key missing");
+                if (!apiKey) throw new Error("SambaNova API Key missing. Please set VITE_SAMBANOVA_API_KEY in your environment.");
                 
                 const response = await fetch(`${PROVIDERS.MANGO.baseURL}/chat/completions`, {
                     method: 'POST',
@@ -122,6 +124,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
  */
 export const getAIJSONResponse = async (prompt: string, systemInstruction: string) => {
     try {
+        if (!geminiApiKey) throw new Error("Gemini API Key missing. Please set VITE_GEMINI_API_KEY in your environment.");
         const result = await genAI.models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
