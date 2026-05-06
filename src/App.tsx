@@ -42,7 +42,7 @@ import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
 import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes, getUserProfile } from './supabaseClient';
-import { generateAIResponse, generateJSONResponse, startAIChat } from './services/geminiService';
+import { getAIResponse, getAIJSONResponse, PROVIDERS } from './services/aiService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
@@ -357,7 +357,7 @@ const MockTest = () => {
                 ]
             }`;
 
-            const data = await generateJSONResponse(`Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
+            const data = await getAIJSONResponse(`Generate ${settings.count} accurate multiple-choice questions for Grade 10 SEE preparation in the subject: ${settings.subject}. 
             IMPORTANT: Each option ('a', 'b', 'c', 'd') must be a distinct possible answer.
             ${isNepaliSubject ? 'IMPORTANT: BOTH QUESTIONS AND ANSWERS MUST BE IN NEPALI LANGUAGE.' : 'Use professional English Language.'}`, systemInstruction);
             
@@ -687,7 +687,7 @@ Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
 Correct: ${question.correct}
 Student Answered: ${question.userChoice}`;
 
-            const res = await generateAIResponse(prompt, systemInstruction);
+            const res = await getAIResponse('gyanu', prompt, systemInstruction);
             setExplanation(res || "Could not generate review.");
         } catch (e) {
             setExplanation("Analysis Failed. Please try again later.");
@@ -885,7 +885,7 @@ const AITutor = () => {
     
     // Using simple view state instead of complex routing for better control
     const [view, setView] = useState<'selection' | 'chat'>('selection');
-    const [activeTutor, setActiveTutor] = useState<'momo' | 'mango' | 'achar'>('momo');
+    const [activeTutor, setActiveTutor] = useState<'gyanu' | 'momo' | 'mango' | 'aachar'>('gyanu');
 
     const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
     
@@ -933,22 +933,25 @@ FORMATTING RULES:
 1. MATH: Use $ for inline and $$ for block math.
 2. VISUALS: [VISUAL: DESCRIPTION] describing a diagram if needed.
 3. VIBRANCY: Use ### for headers.
-4. PARAGRAPHS: Max 2 sentences each.`;
+4. PARAGRAPHS: Max 2 sentences each.
+GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal).`;
 
             let systemInstruction = "";
             let identity = "";
 
-            if (activeTutor === 'achar') {
-                identity = "ACHAR, the Instant Helper. Ultra-fast facts, bullet points.";
+            if (activeTutor === 'gyanu') {
+                identity = "GYANU, the Curriculum Master. Friendly, encouraging, and focused on Nepal Board Exam preparation.";
             } else if (activeTutor === 'momo') {
-                identity = "MOMO, the Concept Tutor. Deep conceptual dives. Use ### 🧬 Concept Dive.";
+                identity = "MOMO, the Concept Tutor. Scholarly, deep conceptual dives. Uses 'Concept Dive' headers.";
+            } else if (activeTutor === 'aachar') {
+                identity = "AACHAR, the Instant Helper. Bullet points only, ultra-fast facts, very practical.";
             } else {
-                identity = "MANGO, the Precise Assistant. Fact-checker. Precise data.";
+                identity = "MANGO, the Precise Assistant. Fact-checker, data-driven, accurate and concise.";
             }
 
             systemInstruction = `Identity: ${identity}\n${sharedFormatting}`;
 
-            const responseText = await generateAIResponse(text, systemInstruction);
+            const responseText = await getAIResponse(activeTutor, text, systemInstruction);
             
             setMessages(prev => {
                 const newMessages = [...prev];
@@ -996,8 +999,22 @@ FORMATTING RULES:
                         <p className="text-slate-500 font-bold max-w-[300px] mx-auto leading-relaxed">Choose your study companion for SEE 2083 prep.</p>
                     </div>
 
-                    <div className="grid gap-6">
-                        {/* MOMO Card */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* 1. GYANU (Gemini) */}
+                        <button 
+                            onClick={() => { setActiveTutor('gyanu'); setView('chat'); }}
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-indigo-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">GYANU AI</h3>
+                            <p className="text-[0.55rem] font-black text-indigo-500 uppercase tracking-widest mb-3">Curriculum Master (Gemini)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Friendly & Expert." Your main guide for SEE Prep.</p>
+                        </button>
+
+                        {/* 2. MOMO Card */}
                         <button 
                             onClick={() => { setActiveTutor('momo'); setView('chat'); }}
                             className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
@@ -1011,31 +1028,31 @@ FORMATTING RULES:
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
                         </button>
 
-                        {/* ACHAR Card */}
+                        {/* 3. ACHAR Card */}
                         <button 
-                            onClick={() => { setActiveTutor('achar'); setView('chat'); }}
+                            onClick={() => { setActiveTutor('aachar'); setView('chat'); }}
                             className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Zap className="w-8 h-8 text-emerald-400" />
+                            <div className="w-16 h-16 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Zap className="w-8 h-8" />
                             </div>
                             <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Gemini)</p>
+                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
                         </button>
 
-                        {/* MANGO Card */}
+                        {/* 4. MANGO Card */}
                         <button 
                             onClick={() => { setActiveTutor('mango'); setView('chat'); }}
                             className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                             <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Sparkles className="w-8 h-8 text-white" />
+                                <Search className="w-8 h-8 text-white" />
                             </div>
                             <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Reliable Backup (SambaNova)</p>
+                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Precise Backup (SambaNova)</p>
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
                         </button>
                     </div>
@@ -1055,20 +1072,22 @@ FORMATTING RULES:
                         </button>
                         <div className={cn(
                             "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110", 
+                            activeTutor === 'gyanu' ? "bg-linear-to-r from-indigo-500 to-indigo-700 shadow-indigo-500/30" :
                             activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
                             activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
                             "bg-linear-to-r from-emerald-500 to-teal-700 shadow-emerald-500/30"
                         )}>
-                            {activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
-                             activeTutor === 'mango' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                            {activeTutor === 'gyanu' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                             activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
+                             activeTutor === 'mango' ? <Search className="text-white w-5 h-5 md:w-6 md:h-6" /> :
                              <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />}
                         </div>
                         <div>
                             <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
-                                {activeTutor === 'momo' ? 'MOMO' : activeTutor === 'mango' ? 'MANGO' : 'ACHAR'}
+                                {PROVIDERS[activeTutor.toUpperCase() as keyof typeof PROVIDERS].name}
                             </h1>
                             <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'mango' ? 'Reliable Assistant' : 'Instant Helper'}
+                                {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'aachar' ? 'Instant Helper' : 'Precise Assistant'}
                             </p>
                         </div>
                     </div>
@@ -1090,33 +1109,39 @@ FORMATTING RULES:
                             <div className="relative w-24 h-24 mx-auto">
                                 <div className={cn(
                                     "absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", 
+                                    activeTutor === 'gyanu' ? "bg-indigo-500" :
                                     activeTutor === 'momo' ? "bg-pink-500" : 
                                     activeTutor === 'mango' ? "bg-amber-500" :
                                     "bg-emerald-500"
                                 )} />
                                 <div className={cn(
                                     "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl", 
+                                    activeTutor === 'gyanu' ? "bg-linear-to-br from-indigo-500 to-indigo-700" :
                                     activeTutor === 'momo' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
                                     activeTutor === 'mango' ? "bg-linear-to-br from-amber-400 to-orange-600" :
-                                    "bg-linear-to-br from-slate-700 to-slate-900"
+                                    "bg-linear-to-br from-emerald-500 to-teal-700"
                                 )}>
-                                    {activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : 
-                                     activeTutor === 'mango' ? <Sparkles className="w-12 h-12" /> :
-                                     <Zap className="w-12 h-12 text-emerald-400" />}
+                                    {activeTutor === 'gyanu' ? <Sparkles className="w-12 h-12" /> :
+                                     activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : 
+                                     activeTutor === 'mango' ? <Search className="w-12 h-12" /> :
+                                     <Zap className="w-12 h-12" />}
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
-                                    {activeTutor === 'momo' ? "Let's dive deep into concepts." : 
+                                    {activeTutor === 'gyanu' ? "How can I help with SEE prep today?" :
+                                     activeTutor === 'momo' ? "Let's dive deep into concepts." : 
                                      activeTutor === 'mango' ? "Factual accuracy is my priority." :
                                      "Serving facts at lightning speed!"}
                                 </h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
-                                    {activeTutor === 'momo' 
+                                    {activeTutor === 'gyanu'
+                                        ? "Master the Nepal Board Curriculum with clear, curriculum-aligned guidance."
+                                        : activeTutor === 'momo' 
                                         ? "Master Grade 10 concepts with conceptual clarity and real Nepali examples."
                                         : activeTutor === 'mango'
                                         ? "Reliable and precise assistance for all your school projects and homework."
-                                        : "Fastest tips, formulas, and shortcut methods for your SEE 2083 prep."}
+                                        : "Fastest tips, formulas, and shortcut methods for your SEE prep."}
                                 </p>
                             </div>
                         </div>
@@ -3044,7 +3069,7 @@ const NepaliDictionaryPage = () => {
                 "antonyms": ["antonym 1 IN NEPALI", "antonym 2 IN NEPALI"]
             }`;
 
-            const data = await generateJSONResponse(`Word: "${word}"`, systemInstruction);
+            const data = await getAIJSONResponse(`Word: "${word}"`, systemInstruction);
             setResult(data);
         } catch (err) {
             console.error(err);
@@ -5464,7 +5489,7 @@ const TranslatorPage = () => {
             const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
             TEXT: "${text}"`;
 
-            const result = await generateAIResponse(prompt, systemInstruction);
+            const result = await getAIResponse('gyanu', prompt, systemInstruction);
             setTranslated(result || "Translation failed.");
         } catch (e) {
             console.error(e);
@@ -5601,13 +5626,6 @@ const DictionaryPage = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    const recentTerms = [
-        { term: 'physics', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-        { term: 'mathematics', color: 'bg-rose-50 text-rose-600 border-rose-100' },
-        { term: 'science', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        { term: 'biology', color: 'bg-amber-50 text-amber-600 border-amber-100' }
-    ];
-
     const speakWord = (text: string) => {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
@@ -5616,6 +5634,13 @@ const DictionaryPage = () => {
         utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
     };
+
+    const recentTerms = [
+        { term: 'physics', color: 'bg-blue-50 text-blue-600 border-blue-100' },
+        { term: 'mathematics', color: 'bg-rose-50 text-rose-600 border-rose-100' },
+        { term: 'science', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
+        { term: 'biology', color: 'bg-amber-50 text-amber-600 border-amber-100' }
+    ];
 
     const searchWord = async (word: string) => {
         if (!word) return;
@@ -5626,24 +5651,31 @@ const DictionaryPage = () => {
         const cleanWord = word.trim().toLowerCase();
 
         try {
-            const systemInstruction = `You are a high-accuracy English dictionary. Explain the meaning and usage of the English word.
-            Return the response in strictly JSON format. Provide the meaning, exactly 2 examples, synonyms, and antonyms IN ENGLISH.
-            RESPONSE SCHEMA:
-            {
-                "word": "English word",
-                "phonetic": "how to pronounce",
-                "partOfSpeech": "noun/verb/adjective etc",
-                "meaning": "primary meaning in English",
-                "examples": ["example sentence 1", "example sentence 2"],
-                "synonyms": ["synonym 1", "synonym 2"],
-                "antonyms": ["antonym 1", "antonym 2"]
-            }`;
-
-            const data = await generateJSONResponse(`Word: "${cleanWord}"`, systemInstruction);
-            if (!data.word) throw new Error("Could not parse result.");
-            setResult(data);
+            // Priority 1: Use Free Dictionary API (English)
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`);
+            if (response.ok) {
+                const data = await response.json();
+                const entry = data[0];
+                setResult({
+                    word: entry.word,
+                    phonetic: entry.phonetic || entry.phonetics?.[0]?.text,
+                    partOfSpeech: entry.meanings?.[0]?.partOfSpeech,
+                    meaning: entry.meanings?.[0]?.definitions?.[0]?.definition,
+                    examples: entry.meanings?.[0]?.definitions?.[0]?.example ? [entry.meanings[0].definitions[0].example] : [],
+                    synonyms: entry.meanings?.[0]?.synonyms?.slice(0, 5) || [],
+                    antonyms: entry.meanings?.[0]?.antonyms?.slice(0, 5) || []
+                });
+            } else {
+                // Priority 2: Fallback to AI for non-English or specialized terms
+                const systemInstruction = `You are a high-accuracy academic dictionary. Explain the word provided.
+                Return strictly JSON. 
+                SCHEMA: { "word": string, "phonetic": string, "partOfSpeech": string, "meaning": string, "examples": string[], "synonyms": string[], "antonyms": string[] }`;
+                const data = await getAIJSONResponse(`Define: "${cleanWord}"`, systemInstruction);
+                if (data.word) setResult(data);
+                else throw new Error("Word not found");
+            }
         } catch (err: any) {
-            setError(err.message || "Failed to fetch word. Try another word.");
+            setError("Entry not found in global databases.");
         } finally {
             setLoading(false);
         }
