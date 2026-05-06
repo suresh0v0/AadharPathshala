@@ -195,11 +195,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const handleLogout = async () => {
-    try {
       await supabase.auth.signOut();
-    } catch (e) {
-      console.error("Logout failed:", e);
-    }
   };
 
   const isAdminMode = location.pathname.startsWith('/admin-portal');
@@ -887,11 +883,11 @@ const AITutor = () => {
     const { user } = useApp();
     const navigate = useNavigate();
     
+    // Using simple view state instead of complex routing for better control
     const [view, setView] = useState<'selection' | 'chat'>('selection');
     const [activeTutor, setActiveTutor] = useState<'gyanu' | 'momo' | 'mango' | 'aachar'>('gyanu');
 
     const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
-    const tutorConfig = PROVIDERS[activeTutor.toUpperCase() as keyof typeof PROVIDERS];
     
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
@@ -915,13 +911,12 @@ const AITutor = () => {
         localStorage.removeItem(storageKey);
     };
 
-    const handleFeatureClick = (prompt: string) => {
-        setInput(prompt);
-        // We don't automatically send so the user can edit or just hit send
-    };
-
-    const handleSend = async (overrideText?: string) => {
-        const text = overrideText || input;
+    const handleSend = async (txt: string) => {
+        if (!window.navigator.onLine) {
+            alert("Connection Lost. AI Scholars require an active link to respond. Please check your network.");
+            return;
+        }
+        const text = txt || input;
         if (!text.trim()) return;
 
         const userMsg = { role: 'user', text: text };
@@ -930,7 +925,7 @@ const AITutor = () => {
         setLoading(true);
 
         const aiMsgIndex = messages.length + 1;
-        setMessages(prev => [...prev, { role: 'ai', text: 'Synthesizing...' }]);
+        setMessages(prev => [...prev, { role: 'ai', text: 'Thinking...' }]);
 
         try {
             const sharedFormatting = `
@@ -939,7 +934,7 @@ FORMATTING RULES:
 2. VISUALS: [VISUAL: DESCRIPTION] describing a diagram if needed.
 3. VIBRANCY: Use ### for headers.
 4. PARAGRAPHS: Max 2 sentences each.
-GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal). Always be encouraging.`;
+GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal).`;
 
             let systemInstruction = "";
             let identity = "";
@@ -987,100 +982,78 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
 
     if (view === 'selection') {
         return (
-            <div className="fixed inset-0 pt-20 pb-[76px] bg-slate-50 z-10 flex flex-col items-center animate-fade-up overflow-y-auto font-sans">
-                <div className="w-full max-w-[800px] p-6 space-y-12">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400 shadow-sm hover:text-slate-600 transition-colors">
-                                <Home className="w-6 h-6" />
-                            </button>
-                            <div>
-                                <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Scholars Hub</h1>
-                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">Multi-Matrix AI Network</p>
-                            </div>
-                        </div>
+            <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up overflow-y-auto">
+                <div className="w-full max-w-[620px] p-6 space-y-8">
+                    <div className="flex items-center gap-4">
+                        <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+                            <Home className="w-6 h-6" />
+                        </button>
+                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">AI Hub</h1>
                     </div>
 
-                    <div className="text-center space-y-6 py-4 flex flex-col items-center">
-                        <div className="relative">
-                            <div className="w-32 h-32 bg-linear-to-br from-indigo-500 to-purple-600 rounded-[3rem] flex items-center justify-center shadow-2xl relative z-10 border-4 border-white animate-pulse">
-                                <Bot className="w-16 h-16 text-white" />
-                            </div>
-                            <div className="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full scale-150" />
+                    <div className="text-center space-y-3 py-10 flex flex-col items-center">
+                        <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl mb-4 animate-bounce border-4 border-white">
+                            <Bot className="w-10 h-10 text-white" />
                         </div>
-                        <div className="space-y-2">
-                            <h2 className="text-5xl font-black text-slate-900 leading-none tracking-tighter italic uppercase">K chha Sathi!</h2>
-                            <p className="text-slate-400 font-bold max-w-[340px] mx-auto leading-relaxed border-l-4 border-indigo-500 pl-4 py-1">Choose your specialized AI Scholar for Grade 10 prep.</p>
-                        </div>
+                        <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">K chha Sathi!</h2>
+                        <p className="text-slate-500 font-bold max-w-[300px] mx-auto leading-relaxed">Choose your study companion for SEE 2083 prep.</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                        {/* 1. GYANU */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* 1. GYANU (Gemini) */}
                         <button 
                             onClick={() => { setActiveTutor('gyanu'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-start group hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-indigo-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-                            <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-indigo-700 rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 text-white group-hover:rotate-12 transition-transform">
-                                <Sparkles className="w-10 h-10" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Sparkles className="w-8 h-8" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-1">GYANU AI</h3>
-                            <p className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-4">Curriculum Master (Gemini)</p>
-                            <p className="text-sm font-bold text-slate-400 leading-relaxed italic">"Friendly & Expert." Your main guide for Nepal board syllabus.</p>
-                            <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                Enter Matrix <ArrowRight className="w-3 h-3" />
-                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">GYANU AI</h3>
+                            <p className="text-[0.55rem] font-black text-indigo-500 uppercase tracking-widest mb-3">Curriculum Master (Gemini)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Friendly & Expert." Your main guide for SEE Prep.</p>
                         </button>
 
-                        {/* 2. MOMO */}
+                        {/* 2. MOMO Card */}
                         <button 
                             onClick={() => { setActiveTutor('momo'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-start group hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-                            <div className="w-20 h-20 bg-linear-to-br from-rose-500 to-pink-600 rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 text-white group-hover:rotate-12 transition-transform">
-                                <Bot className="w-10 h-10" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Bot className="w-8 h-8" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-1">MOMO Tutor</h3>
-                            <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-4">Conceptual Guru (Cerebras)</p>
-                            <p className="text-sm font-bold text-slate-400 leading-relaxed italic">"Deep dives only." Specialist in abstract theories.</p>
-                            <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                Enter Matrix <ArrowRight className="w-3 h-3" />
-                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MOMO Tutor</h3>
+                            <p className="text-[0.55rem] font-black text-pink-500 uppercase tracking-widest mb-3">Conceptual Guru (Cerebras)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
                         </button>
 
-                        {/* 3. ACHAR */}
+                        {/* 3. ACHAR Card */}
                         <button 
                             onClick={() => { setActiveTutor('aachar'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-start group hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-                            <div className="w-20 h-20 bg-linear-to-br from-emerald-500 to-teal-600 rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 text-white group-hover:rotate-12 transition-transform">
-                                <Zap className="w-10 h-10" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Zap className="w-8 h-8" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Help</h3>
-                            <p className="text-[0.6rem] font-black text-emerald-500 uppercase tracking-widest mb-4">Instant Assistant (Groq)</p>
-                            <p className="text-sm font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Fastest responses for facts and math.</p>
-                            <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                Enter Matrix <ArrowRight className="w-3 h-3" />
-                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
                         </button>
 
-                        {/* 4. MANGO */}
+                        {/* 4. MANGO Card */}
                         <button 
                             onClick={() => { setActiveTutor('mango'); setView('chat'); }}
-                            className="bg-white p-8 rounded-[3.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-start group hover:scale-[1.02] active:scale-95 transition-all relative overflow-hidden"
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-700" />
-                            <div className="w-20 h-20 bg-linear-to-br from-amber-400 to-orange-600 rounded-[2rem] flex items-center justify-center shadow-2xl mb-6 text-white group-hover:rotate-12 transition-transform">
-                                <Search className="w-10 h-10" />
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Search className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="text-2xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO AI</h3>
-                            <p className="text-[0.6rem] font-black text-orange-500 uppercase tracking-widest mb-4">Precise Backup (SambaNova)</p>
-                            <p className="text-sm font-bold text-slate-400 leading-relaxed italic">"Facts above all." Best for research and citations.</p>
-                            <div className="mt-8 flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                                Enter Matrix <ArrowRight className="w-3 h-3" />
-                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Precise Backup (SambaNova)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
                         </button>
                     </div>
                 </div>
@@ -1089,95 +1062,79 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
     }
 
     return (
-        <div className={cn(
-            "fixed inset-0 pt-20 pb-[76px] z-10 flex flex-col items-center animate-fade-up transition-all duration-1000 font-sans",
-            activeTutor === 'gyanu' ? "bg-indigo-50/80 bg-pattern-gyanu" :
-            activeTutor === 'momo' ? "bg-rose-50/80 bg-pattern-momo" :
-            activeTutor === 'aachar' ? "bg-emerald-50/80 bg-pattern-aachar" :
-            "bg-orange-50/80 bg-pattern-mango"
-        )}>
-            <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full overflow-hidden relative">
-                {/* Background Decor */}
-                <div className={cn("absolute top-0 left-0 w-64 h-64 blur-3xl opacity-20 rounded-full -translate-x-1/2 -translate-y-1/2 bg-linear-to-br", tutorConfig.theme)} />
-                <div className={cn("absolute bottom-0 right-0 w-96 h-96 blur-3xl opacity-10 rounded-full translate-x-1/2 translate-y-1/2 bg-linear-to-br", tutorConfig.theme)} />
-
+        <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
+            <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
                 {/* Header Section */}
-                <header className="flex items-center justify-between p-4 shrink-0 border-b border-slate-100/50 bg-white/40 backdrop-blur-3xl rounded-b-[3rem] shadow-sm relative z-10 mx-4 mt-2">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => setView('selection')} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-600 shadow-sm border border-white">
-                            <ArrowLeft className="w-6 h-6" />
+                <div className="flex items-center justify-between p-4 shrink-0 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setView('selection')} className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-600">
+                            <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div className={cn(
-                            "w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transition-transform hover:scale-110 text-white", 
-                            "bg-linear-to-br", tutorConfig.theme
+                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110", 
+                            activeTutor === 'gyanu' ? "bg-linear-to-r from-indigo-500 to-indigo-700 shadow-indigo-500/30" :
+                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
+                            activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
+                            "bg-linear-to-r from-emerald-500 to-teal-700 shadow-emerald-500/30"
                         )}>
-                            {activeTutor === 'gyanu' ? <Sparkles className="w-8 h-8" /> :
-                             activeTutor === 'momo' ? <Bot className="w-8 h-8" /> : 
-                             activeTutor === 'mango' ? <Search className="w-8 h-8" /> :
-                             <Zap className="w-8 h-8" />}
+                            {activeTutor === 'gyanu' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                             activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
+                             activeTutor === 'mango' ? <Search className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                             <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />}
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
-                                {tutorConfig.name}
+                            <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
+                                {PROVIDERS[activeTutor.toUpperCase() as keyof typeof PROVIDERS].name}
                             </h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className={cn("text-[0.6rem] font-bold uppercase tracking-widest", tutorConfig.textColor)}>
-                                    {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'aachar' ? 'Instant Helper' : 'Precise Assistant'}
-                                </span>
-                                <div className="w-1 h-1 bg-slate-300 rounded-full" />
-                                <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">{tutorConfig.provider} Matrix</span>
-                            </div>
+                            <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'aachar' ? 'Instant Helper' : 'Precise Assistant'}
+                            </p>
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                        {messages.length > 0 && (
-                            <button 
-                                onClick={clearChat}
-                                className="w-12 h-12 bg-white text-rose-500 rounded-2xl hover:text-white hover:bg-rose-500 transition-all border border-white shadow-sm flex items-center justify-center group"
-                            >
-                                <Trash2 className="w-5 h-5 group-hover:scale-110" />
-                            </button>
-                        )}
-                    </div>
-                </header>
-
-                {/* Feature Pills (Quick Actions) */}
-                <div className="flex gap-3 p-6 overflow-x-auto no-scrollbar shrink-0 relative z-10">
-                    <button onClick={() => handleFeatureClick("Explain this concept clearly with examples: ")} className="px-6 py-3 bg-white border border-slate-100/50 rounded-3xl text-[0.75rem] font-black uppercase tracking-widest text-indigo-600 whitespace-nowrap shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">🧬 Concept Dive</button>
-                    <button onClick={() => handleFeatureClick("Give me a quick quiz with 3 hard questions on: ")} className="px-6 py-3 bg-white border border-slate-100/50 rounded-3xl text-[0.75rem] font-black uppercase tracking-widest text-emerald-600 whitespace-nowrap shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">🎯 Micro Quiz</button>
-                    <button onClick={() => handleFeatureClick("Solve this step-by-step using formulas: ")} className="px-6 py-3 bg-white border border-slate-100/50 rounded-3xl text-[0.75rem] font-black uppercase tracking-widest text-rose-600 whitespace-nowrap shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">🔢 Math Wizard</button>
-                    <button onClick={() => handleFeatureClick("Summarize this chapter for SEE exam revision: ")} className="px-6 py-3 bg-white border border-slate-100/50 rounded-3xl text-[0.75rem] font-black uppercase tracking-widest text-amber-600 whitespace-nowrap shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all active:scale-95 flex items-center gap-2">📝 SEE Recap</button>
+                    {messages.length > 0 && (
+                        <button 
+                            onClick={clearChat}
+                            className="p-3 bg-rose-50 text-rose-500 rounded-xl hover:bg-rose-100 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    )}
                 </div>
 
                 {/* Messages Area */}
-                <div className="flex-1 overflow-y-auto px-6 space-y-10 py-6 custom-scrollbar relative z-10 pb-40">
+                <div className="flex-1 overflow-y-auto px-4 space-y-8 py-6 custom-scrollbar">
                     {messages.length === 0 && (
-                        <div className="text-center py-20 space-y-10 flex flex-col items-center">
-                            <div className="relative">
+                        <div className="text-center py-20 space-y-8">
+                            <div className="relative w-24 h-24 mx-auto">
                                 <div className={cn(
-                                    "absolute inset-0 rounded-[3rem] animate-pulse blur-3xl opacity-40 scale-150", 
-                                    "bg-linear-to-br", tutorConfig.theme
+                                    "absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", 
+                                    activeTutor === 'gyanu' ? "bg-indigo-500" :
+                                    activeTutor === 'momo' ? "bg-pink-500" : 
+                                    activeTutor === 'mango' ? "bg-amber-500" :
+                                    "bg-emerald-500"
                                 )} />
                                 <div className={cn(
-                                    "w-36 h-36 rounded-[4rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white", 
-                                    "bg-linear-to-br", tutorConfig.theme
+                                    "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl", 
+                                    activeTutor === 'gyanu' ? "bg-linear-to-br from-indigo-500 to-indigo-700" :
+                                    activeTutor === 'momo' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
+                                    activeTutor === 'mango' ? "bg-linear-to-br from-amber-400 to-orange-600" :
+                                    "bg-linear-to-br from-emerald-500 to-teal-700"
                                 )}>
-                                    {activeTutor === 'gyanu' ? <Sparkles className="w-16 h-16" /> :
-                                     activeTutor === 'momo' ? <Bot className="w-16 h-16" /> : 
-                                     activeTutor === 'mango' ? <Search className="w-16 h-16" /> :
-                                     <Zap className="w-16 h-16" />}
+                                    {activeTutor === 'gyanu' ? <Sparkles className="w-12 h-12" /> :
+                                     activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : 
+                                     activeTutor === 'mango' ? <Search className="w-12 h-12" /> :
+                                     <Zap className="w-12 h-12" />}
                                 </div>
                             </div>
-                            <div className="space-y-4 px-8 max-w-[480px]">
-                                <h2 className="text-4xl font-black text-slate-800 tracking-tighter italic uppercase leading-none">
-                                    {activeTutor === 'gyanu' ? "Ready for SEE prep today?" :
-                                     activeTutor === 'momo' ? "Let's crack some theories!" : 
-                                     activeTutor === 'mango' ? "Factual accuracy initialized." :
-                                     "Speed-mode activated!"}
+                            <div className="space-y-4">
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
+                                    {activeTutor === 'gyanu' ? "How can I help with SEE prep today?" :
+                                     activeTutor === 'momo' ? "Let's dive deep into concepts." : 
+                                     activeTutor === 'mango' ? "Factual accuracy is my priority." :
+                                     "Serving facts at lightning speed!"}
                                 </h2>
-                                <p className="text-[1rem] font-bold text-slate-400 italic leading-relaxed relative">
-                                    <span className="absolute -left-6 top-0 text-5xl opacity-10 text-slate-900 font-serif">"</span>
+                                <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
                                     {activeTutor === 'gyanu'
                                         ? "Master the Nepal Board Curriculum with clear, curriculum-aligned guidance."
                                         : activeTutor === 'momo' 
@@ -1185,33 +1142,32 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                         : activeTutor === 'mango'
                                         ? "Reliable and precise assistance for all your school projects and homework."
                                         : "Fastest tips, formulas, and shortcut methods for your SEE prep."}
-                                    <span className="absolute -right-6 bottom-0 text-5xl opacity-10 text-slate-900 font-serif">"</span>
                                 </p>
                             </div>
                         </div>
                     )}
 
                     {messages.map((m, i) => (
-                        <div key={i} className={cn("flex flex-col gap-4 max-w-[94%] md:max-w-[80%] opacity-0 animate-fade-in fill-mode-forwards", m.role === 'ai' ? "self-start" : "self-end items-end")}>
+                        <div key={i} className={cn("flex flex-col gap-2 max-w-[92%] md:max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
                             <div className={cn(
-                                "p-8 rounded-[3rem] text-[1rem] leading-relaxed shadow-2xl border transition-all",
+                                "p-6 rounded-[2.5rem] text-[0.95rem] leading-relaxed shadow-xl border transition-all",
                                 m.role === 'ai' 
-                                    ? "bg-white/80 backdrop-blur-xl border-white text-slate-800 rounded-tl-sm relative" 
-                                    : cn("text-white border-transparent shadow-2xl rounded-tr-sm bg-linear-to-r", tutorConfig.theme)
+                                    ? "bg-white border-slate-100 text-slate-800 rounded-tl-sm relative" 
+                                    : "bg-blue text-white border-blue shadow-2xl shadow-blue/20 rounded-tr-sm"
                             )}>
                                 <div className={cn(
-                                    "prose prose-sm max-w-none prose-p:mb-5 prose-p:leading-relaxed prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2.5rem] prose-img:shadow-2xl prose-img:border-4 prose-img:border-white",
+                                    "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
                                     m.role === 'ai' ? "prose-slate" : "prose-invert"
                                 )}>
                                     <Markdown 
                                         remarkPlugins={[remarkMath]} 
                                         rehypePlugins={[rehypeKatex, rehypeRaw]}
                                         components={{
-                                            h1: ({node, ...props}) => <h1 className="text-4xl font-black text-rose-500 uppercase tracking-tighter mt-8 mb-4 border-b-4 border-rose-50 pb-2 inline-block" {...props} />,
-                                            h2: ({node, ...props}) => <h2 className="text-3xl font-black text-blue uppercase tracking-tighter mt-7 mb-3" {...props} />,
-                                            h3: ({node, ...props}) => <h3 className="text-2xl font-black text-emerald-500 uppercase tracking-tight mt-6 mb-3" {...props} />,
-                                            h4: ({node, ...props}) => <h4 className="text-xl font-black text-amber-500 uppercase tracking-tight mt-5 mb-2" {...props} />,
-                                            strong: ({node, ...props}) => <strong className={cn("font-black px-1 rounded-sm", m.role === 'ai' ? "bg-indigo-50 text-indigo-700" : "text-white underline decoration-wavy")} {...props} />,
+                                            h1: ({node, ...props}) => <h1 className="text-3xl font-black text-rose-500 uppercase tracking-tighter mt-6 mb-2" {...props} />,
+                                            h2: ({node, ...props}) => <h2 className="text-2xl font-black text-blue uppercase tracking-tighter mt-5 mb-2" {...props} />,
+                                            h3: ({node, ...props}) => <h3 className="text-xl font-black text-emerald-500 uppercase tracking-tight mt-4 mb-2" {...props} />,
+                                            h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
+                                            strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
                                             p: ({node, children, ...props}) => {
                                                 const content = String(children);
                                                 const visualMatch = content.match(/\[VISUAL:\s*(.*?)\]/i);
@@ -1221,28 +1177,18 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                                     return <AILoadingImage src={primaryUrl} alt={prompt} i={i} />;
                                                 }
                                                 return <p className="mb-4" {...props}>{children}</p>;
+                                            },
+                                            img: ({node, ...props}) => {
+                                                const altText = props.alt || "educational_visual";
+                                                const prompt = altText.replace(/_/g, ' ');
+                                                const stableUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' educational scientific diagram')}?width=1024&height=768&nologo=true&seed=${i}`;
+                                                return <AILoadingImage src={stableUrl} alt={altText} i={i} />;
                                             }
                                         }}
                                     >
                                         {m.text}
                                     </Markdown>
                                 </div>
-                                {m.role === 'ai' && (
-                                    <div className="mt-6 flex items-center justify-between pt-6 border-t border-slate-50">
-                                        <div className="flex gap-2">
-                                            <button onClick={() => { navigator.clipboard.writeText(m.text).catch(err => console.error("Clipboard error:", err)); }} className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-indigo-600 hover:bg-indigo-50 transition-all shadow-inner">
-                                                <Copy className="w-4 h-4" />
-                                            </button>
-                                            <button className="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:text-emerald-600 hover:bg-emerald-50 transition-all shadow-inner">
-                                                <Share2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className={cn("w-2 h-2 rounded-full animate-pulse", "bg-linear-to-br", tutorConfig.theme)} />
-                                            <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest italic">{tutorConfig.name} Scholars Network</span>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ))}
@@ -1251,98 +1197,87 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                         <motion.div 
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col gap-4 self-start max-w-[360px] w-full"
+                            className="flex flex-col gap-4 self-start max-w-[320px] w-full"
                         >
-                            <div className="p-8 bg-white/60 backdrop-blur-3xl border border-white rounded-[3rem] rounded-tl-sm shadow-2xl flex items-center gap-6 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/50 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                                <div className="flex gap-2 relative">
-                                    <div className={cn("w-3 h-3 rounded-full animate-bounce [animation-delay:-0.3s]", "bg-linear-to-br", tutorConfig.theme)}></div>
-                                    <div className={cn("w-3 h-3 rounded-full animate-bounce [animation-delay:-0.15s]", "bg-linear-to-br", tutorConfig.theme)}></div>
-                                    <div className={cn("w-3 h-3 rounded-full animate-bounce", "bg-linear-to-br", tutorConfig.theme)}></div>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-[0.7rem] font-black uppercase tracking-[0.3em] text-slate-400 italic">Synthesizing</p>
-                                    <p className="text-[0.55rem] font-bold text-slate-300 uppercase tracking-widest leading-none">Consulting ${tutorConfig.provider} Matrix</p>
+                            <div className="relative p-[2px] rounded-[2.5rem] bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 overflow-hidden shadow-2xl">
+                                <motion.div 
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 bg-conic/from-180 via-blue-500 via-transparent to-blue-500 opacity-20 scale-150"
+                                />
+                                <div className="relative bg-white p-6 rounded-[2.4rem] space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative shrink-0">
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg overflow-hidden">
+                                                <motion.div 
+                                                    animate={{ y: [0, -40, 0] }}
+                                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                    className="flex flex-col items-center gap-4"
+                                                >
+                                                    <BrainCircuit className="w-6 h-6 text-blue-400" />
+                                                    <Sparkles className="w-6 h-6 text-emerald-400" />
+                                                    <Bot className="w-6 h-6 text-pink-400" />
+                                                </motion.div>
+                                            </div>
+                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-pulse shadow-lg" />
+                                        </div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">
+                                                    {activeTutor === 'momo' ? 'Synthesizing Wisdom' : activeTutor === 'mango' ? 'Extracting Data' : 'Speed Processing'}
+                                                </span>
+                                                <div className="flex gap-1">
+                                                    {[0, 1, 2].map(i => (
+                                                        <motion.div 
+                                                            key={i}
+                                                            animate={{ opacity: [0.2, 1, 0.2] }}
+                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                                                            className="w-1 h-1 bg-blue-500 rounded-full"
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
+                                                <motion.div 
+                                                    initial={{ width: "0%" }}
+                                                    animate={{ width: ["10%", "90%", "30%", "100%"] }}
+                                                    transition={{ duration: 5, repeat: Infinity }}
+                                                    className="h-full bg-linear-to-r from-blue-500 to-indigo-600 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-slate-100 italic">
+                                        <p className="text-[0.6rem] font-black text-slate-800 uppercase tracking-tighter leading-none">Synthesizing Educational Matrix...</p>
+                                        <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest leading-none">Accessing Deep Knowledge Base</p>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
                     )}
-                    <div ref={scrollRef} className="h-40" />
+                    <div ref={scrollRef} />
                 </div>
 
                 {/* Input Area */}
-                <div className={cn(
-                    "p-6 shrink-0 border-t relative z-20 mx-4 mb-4 rounded-[4rem] shadow-2xl transition-colors duration-1000",
-                    activeTutor === 'gyanu' ? "bg-indigo-900/10 border-indigo-200/50" :
-                    activeTutor === 'momo' ? "bg-rose-900/10 border-rose-200/50" :
-                    activeTutor === 'aachar' ? "bg-emerald-900/10 border-emerald-200/50" :
-                    "bg-orange-900/10 border-orange-200/50"
-                )}>
-                    <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
-                        <button 
-                            onClick={() => handleFeatureClick("Simplify this for a Grade 8 student: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
-                        >
-                            🧸 Simplify
-                        </button>
-                        <button 
-                            onClick={() => handleFeatureClick("Tell me a funny mnemonic to remember this: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
-                        >
-                            🧠 Mnemonic
-                        </button>
-                        <button 
-                            onClick={() => handleFeatureClick("Write a high-scoring 5-mark answer for this SEE question: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
-                        >
-                            ✍️ 5-Mark SEE
-                        </button>
-                        <button 
-                            onClick={() => handleFeatureClick("Translate the following explanation to Nepali: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
-                        >
-                            🇳🇵 Nepali Trans
-                        </button>
-                        <button 
-                            onClick={() => handleFeatureClick("Generate 5 flashcards for this topic to help me memorize: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
-                        >
-                            🗂️ Flashcards
-                        </button>
-                        <button 
-                            onClick={() => handleFeatureClick("Generate a quick 3-question MCQ mock test on this: ")}
-                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700"
-                        >
-                            📝 Topic Quiz
-                        </button>
-                    </div>
-                    <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-[3rem] p-3 pl-8 focus-within:ring-8 focus-within:ring-slate-100/50 transition-all shadow-2xl group">
-                        <textarea 
-                            rows={1}
+                <div className="p-4 bg-[#F8FAFC] shrink-0 border-t border-slate-100">
+                    <div className="p-2 md:p-3 bg-white border-2 border-slate-100 rounded-full shadow-2xl flex items-center gap-2 focus-within:border-blue transition-all">
+                        <input 
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSend();
-                                }
-                            }}
-                            placeholder={`Ask ${tutorConfig.name}...`}
-                            className="flex-1 bg-transparent py-4 outline-none text-[1.1rem] font-bold text-slate-800 placeholder:text-slate-300 custom-scrollbar max-h-32 resize-none"
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSend('')}
+                            placeholder={activeTutor === 'momo' ? "Ask MOMO for detailed help..." : "Ask ACHAR for quick answers..."}
+                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 px-6"
                         />
                         <button 
-                            onClick={() => handleSend()}
-                            disabled={loading || !input.trim()}
+                            onClick={() => handleSend('')}
+                            disabled={!input.trim() || loading}
                             className={cn(
-                                "w-16 h-16 rounded-[2rem] flex items-center justify-center text-white shadow-2xl transition-all active:scale-90 transform group-hover:scale-105 disabled:grayscale disabled:opacity-20",
-                                "bg-linear-to-br", tutorConfig.theme
+                                "w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-20 shrink-0",
+                                activeTutor === 'momo' ? "bg-pink-500 shadow-pink-500/20" : "bg-slate-900 shadow-slate-900/20"
                             )}
                         >
-                            <Send className="w-8 h-8" />
+                            <Send className="w-5 h-5" />
                         </button>
-                    </div>
-                    <div className="mt-3 flex justify-center">
-                        <p className={cn("text-[0.55rem] font-black text-slate-400/60 uppercase tracking-[0.4em] italic", tutorConfig.textColor)}>Press Enter to Transmit · Shift + Enter for New Line</p>
                     </div>
                 </div>
             </div>
@@ -3110,10 +3045,10 @@ const NepaliDictionaryPage = () => {
     const [loading, setLoading] = useState(false);
     
     const recentTerms = [
-        { term: 'शिक्षा', color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-        { term: 'विद्यार्थी', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        { term: 'समाज', color: 'bg-rose-50 text-rose-600 border-rose-100' },
-        { term: 'प्रविधि', color: 'bg-amber-50 text-amber-600 border-amber-100' }
+        { term: 'शिक्षा', color: 'bg-amber-50 text-amber-600 border-amber-100' },
+        { term: 'विद्यार्थी', color: 'bg-yellow-50 text-yellow-600 border-yellow-100' },
+        { term: 'समाज', color: 'bg-orange-50 text-orange-600 border-orange-100' },
+        { term: 'प्रविधि', color: 'bg-rose-50 text-rose-600 border-rose-100' }
     ];
 
     const searchNepaliWord = async (word: string) => {
@@ -3121,7 +3056,7 @@ const NepaliDictionaryPage = () => {
         setLoading(true);
         setResult(null);
         try {
-            const systemInstruction = `You are a high-accuracy Nepali dictionary. Explain the meaning and usage of the Nepali word.
+            const systemInstruction = `You are a high-accuracy Nepali dictionary. Explains the meaning and usage of the Nepali word.
             Return the response in strictly JSON format. Provide the meaning, examples, synonyms, and antonyms IN NEPALI language.
             RESPONSE SCHEMA:
             {
@@ -3144,59 +3079,47 @@ const NepaliDictionaryPage = () => {
     };
 
     return (
-        <div className="fixed inset-0 pb-24 bg-white z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
+        <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
             <div className="w-full max-w-[620px] px-6 py-6">
-                <header className="flex items-center gap-4 mb-8">
-                    <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 hover:text-slate-600 transition-colors">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">शब्दकोश</h1>
-                        <p className="text-[0.6rem] font-black text-amber-500 uppercase tracking-widest mt-1">Nepali Lexicon Matrix</p>
-                    </div>
-                </header>
+                <ToolHeader title="नेपाली शब्दकोश" subtitle="Nepali Lexicon Matrix" icon={BookOpen} />
             </div>
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-6 space-y-6">
+            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-10 space-y-6">
                 {!result && !loading && (
                     <div className="space-y-8">
-                        <div className="bg-white p-8 rounded-[3rem] shadow-2xl space-y-6 border border-slate-50 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-                            <div className="space-y-4 relative z-10">
-                                <label className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block px-1">शब्द खोजी (Search Word)</label>
-                                <div className="relative flex items-center py-4 px-6 bg-slate-50 rounded-3xl border border-slate-100 focus-within:border-amber-500 transition-all group shadow-inner">
+                        <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-6 border border-white">
+                            <div className="space-y-4">
+                                <label className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block px-1">शब्द खोजी (Nepali Word Search)</label>
+                                <div className="relative border-b-2 border-amber-100 flex items-center py-2 focus-within:border-amber-500 transition-colors group">
                                     <input 
                                         type="text" 
-                                        placeholder="नेपाली शब्द टाइप गर्नुहोस्..." 
-                                        className="w-full text-2xl font-black text-slate-900 bg-transparent outline-none placeholder:text-slate-200"
+                                        placeholder="Type Nepali word..." 
+                                        className="w-full text-2xl font-black text-slate-900 bg-transparent outline-none placeholder:text-slate-100 italic"
                                         value={query}
                                         onChange={(e) => setQuery(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && searchNepaliWord(query)}
                                     />
-                                    <button onClick={() => searchNepaliWord(query)} className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform">
-                                        <Search className="w-6 h-6" />
+                                    <button onClick={() => searchNepaliWord(query)} className="text-amber-500 hover:scale-110 transition-transform">
+                                        <Search className="w-7 h-7" />
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-4 px-2">
-                            <h3 className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-amber-400" />
-                                लोकप्रिय खोजीहरू
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">हालका शब्दहरू</h3>
+                                <Sparkles className="w-3 h-3 text-amber-500" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
                                 {recentTerms.map((item) => (
                                     <button 
                                         key={item.term} 
                                         onClick={() => { setQuery(item.term); searchNepaliWord(item.term); }}
-                                        className={cn("p-6 rounded-[2.5rem] border shadow-md text-left group transition-all active:scale-95", item.color)}
+                                        className={cn("p-5 rounded-[2rem] border shadow-sm text-left group transition-all active:scale-95", item.color)}
                                     >
-                                        <h4 className="text-3xl font-black mb-1 italic tracking-tighter">{item.term}</h4>
-                                        <div className="flex items-center gap-1 opacity-60">
-                                            <span className="font-black uppercase text-[0.5rem] tracking-widest">अर्थ हेर्नुहोस्</span>
-                                            <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                                        </div>
+                                        <h4 className="text-2xl font-black mb-1">{item.term}</h4>
+                                        <p className="font-black uppercase text-[0.55rem] tracking-widest opacity-60">अर्थ (Meaning)</p>
                                     </button>
                                 ))}
                             </div>
@@ -3205,78 +3128,62 @@ const NepaliDictionaryPage = () => {
                 )}
 
                 {loading && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-8 animate-pulse text-center">
-                         <div className="relative">
-                            <div className="w-24 h-24 bg-white rounded-full shadow-2xl flex items-center justify-center border-4 border-amber-50 relative z-10">
-                                <div className="w-12 h-12 border-4 border-slate-100 border-t-amber-500 rounded-full animate-spin" />
-                            </div>
-                            <div className="absolute inset-0 bg-amber-500 blur-2xl opacity-20 scale-150 rounded-full" />
+                    <div className="flex flex-col items-center justify-center py-20 gap-6">
+                         <div className="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center border border-amber-50">
+                            <div className="w-10 h-10 border-4 border-slate-100 border-t-amber-500 rounded-full animate-spin" />
                          </div>
-                         <div className="space-y-2">
-                            <p className="text-amber-500 font-black uppercase tracking-[0.4em] text-[0.8rem]">Matrix Searching...</p>
-                            <p className="text-slate-400 font-bold text-xs">Accessing Nepali Lexicon Data</p>
-                         </div>
+                         <p className="text-amber-400 font-black uppercase tracking-[0.3em] text-[0.6rem]">शब्दकोश खोजी गर्दै...</p>
                     </div>
                 )}
 
                 {result && !loading && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 pb-20">
-                        <div className="bg-white p-10 rounded-[4rem] shadow-2xl border border-slate-50 relative overflow-hidden">
-                            <div className="absolute top-0 left-0 w-40 h-40 bg-linear-to-br from-indigo-500/5 to-transparent rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
-                            
-                            <div className="space-y-8 relative z-10">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <div className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[0.6rem] font-black uppercase tracking-widest inline-block mb-3 border border-amber-100">
-                                            {result.partOfSpeech}
-                                        </div>
-                                        <h2 className="text-6xl font-black text-slate-900 tracking-tighter mb-2 italic leading-none">{result.word}</h2>
-                                        <p className="text-slate-400 font-mono italic text-sm tracking-widest">/ {result.transliteration} /</p>
-                                    </div>
-                                    <button onClick={() => setResult(null)} className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 hover:text-rose-500 transition-colors shadow-inner">
-                                        <X className="w-6 h-6" />
-                                    </button>
-                                </div>
+                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-10">
+                        <header className="pt-6">
+                            <button onClick={() => setResult(null)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-md border border-amber-50">
+                                <ArrowLeft className="w-5 h-5" />
+                            </button>
+                        </header>
 
-                                <div className="p-8 bg-linear-to-br from-amber-50/50 to-orange-50/50 rounded-[3rem] border border-amber-100/50 shadow-inner">
-                                    <label className="text-[0.7rem] font-black text-amber-600 uppercase tracking-[0.3em] block mb-4">अर्थ (Primary Meaning)</label>
-                                    <p className="text-2xl font-black text-slate-800 leading-tight tracking-tight">{result.meaning}</p>
-                                </div>
+                        <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-amber-50 space-y-6">
+                            <div className="space-y-1">
+                                <span className="text-amber-600 font-black uppercase tracking-[0.2em] text-[0.6rem]">{result.partOfSpeech}</span>
+                                <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-2">{result.word}</h2>
+                                <p className="text-slate-400 font-mono italic text-sm">[{result.transliteration}]</p>
+                            </div>
 
-                                <div className="space-y-4">
-                                    <label className="text-[0.7rem] font-black text-slate-300 uppercase tracking-[0.3em] block px-2">प्रयोग (Usage Examples)</label>
-                                    <div className="space-y-3">
-                                        {result.examples?.map((ex: string, i: number) => (
-                                            <p key={i} className="text-[0.95rem] font-bold text-slate-600 italic border-l-4 border-amber-400/30 pl-5 py-2 bg-slate-50/50 rounded-r-2xl">
-                                                "{ex}"
-                                            </p>
+                            <div className="p-6 bg-amber-50/30 rounded-3xl border border-amber-50">
+                                <label className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest block mb-2">अर्थ (Meaning)</label>
+                                <p className="text-xl font-bold text-slate-800 leading-tight">{result.meaning}</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">प्रयोगका उदाहरणहरू (Examples)</label>
+                                {result.examples?.map((ex: string, i: number) => (
+                                    <p key={i} className="text-sm font-bold text-slate-600 italic border-l-2 border-amber-200 pl-4">{ex}</p>
+                                ))}
+                            </div>
+
+                            {result.synonyms?.length > 0 && (
+                                <div className="pt-4 space-y-2">
+                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">समानार्थी शब्द (Synonyms)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {result.synonyms.map((s: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
                                         ))}
                                     </div>
                                 </div>
+                            )}
 
-                                <div className="grid grid-cols-2 gap-6 pt-4">
-                                    {result.synonyms?.length > 0 && (
-                                        <div className="space-y-3">
-                                            <label className="text-[0.65rem] font-black text-emerald-500 uppercase tracking-widest block px-1">समानार्थी (Synonyms)</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {result.synonyms.map((s: string, idx: number) => (
-                                                    <span key={idx} className="px-4 py-2 bg-emerald-50 rounded-2xl text-xs font-black text-emerald-700 border border-emerald-100 shadow-sm">{s}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {result.antonyms?.length > 0 && (
-                                        <div className="space-y-3">
-                                            <label className="text-[0.65rem] font-black text-rose-500 uppercase tracking-widest block px-1">विपरीतार्थी (Antonyms)</label>
-                                            <div className="flex flex-wrap gap-2">
-                                                {result.antonyms.map((a: string, idx: number) => (
-                                                    <span key={idx} className="px-4 py-2 bg-rose-50 rounded-2xl text-xs font-black text-rose-700 border border-rose-100 shadow-sm">{a}</span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                            {result.antonyms?.length > 0 && (
+                                <div className="pt-4 space-y-2">
+                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">विपरीतार्थी शब्द (Antonyms)</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {result.antonyms.map((a: string, idx: number) => (
+                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
@@ -4153,13 +4060,8 @@ const ProfilePage = () => {
     ];
 
     const handleLogout = async () => {
-        try {
-            await supabase.auth.signOut();
-            navigate('/');
-        } catch (e) {
-            console.error("Portal logout failed:", e);
-            navigate('/');
-        }
+        await supabase.auth.signOut();
+        navigate('/');
     };
 
     return (
@@ -5582,18 +5484,16 @@ const TranslatorPage = () => {
     const handleTranslate = async () => {
         if (!text.trim()) return;
         setLoading(true);
-        setTranslated('');
         try {
-            const systemInstruction = `You are a professional translator for Nepalese students. Provide only the translation, no extra chatter. Handle both English and Nepali accurately.`;
+            const systemInstruction = `You are a professional translator for Nepalese students. Provide only the translation, no extra chatter.`;
             const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
             TEXT: "${text}"`;
 
-            // Using gyanu (Gemini) as it's best for translation
             const result = await getAIResponse('gyanu', prompt, systemInstruction);
             setTranslated(result || "Translation failed.");
-        } catch (e: any) {
+        } catch (e) {
             console.error(e);
-            setTranslated(`Error: ${e.message || "Could not connect to translation engine."}`);
+            setTranslated("Error: Could not connect to translation engine.");
         } finally {
             setLoading(false);
         }
@@ -5610,7 +5510,7 @@ const TranslatorPage = () => {
 
     const copyToClipboard = (content: string) => {
         if (!content) return;
-        navigator.clipboard.writeText(content).catch(err => console.error("Clipboard error:", err));
+        navigator.clipboard.writeText(content);
     };
 
     const clearAll = () => {
@@ -5627,97 +5527,91 @@ const TranslatorPage = () => {
 
     return (
         <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <div className="w-full max-w-[620px] px-6 py-6 font-sans">
-                <header className="flex items-center gap-4 mb-8">
-                    <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 hover:text-slate-600 transition-colors">
-                        <ArrowLeft className="w-6 h-6" />
-                    </button>
-                    <div>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Translator</h1>
-                        <p className="text-[0.6rem] font-black text-blue uppercase tracking-widest mt-1">Multi-Lang Engine</p>
-                    </div>
-                </header>
+            <div className="w-full max-w-[800px] px-6 py-6">
+                <ToolHeader title="AI Translator" subtitle="Linguistic Precision V.2" icon={Languages} />
+            </div>
 
-                <div className="space-y-6">
-                    {/* Language State Indicator */}
-                    <div className="bg-white p-4 rounded-3xl shadow-xl border border-white flex items-center justify-between gap-4">
-                        <div className="flex-1 text-center py-2 bg-blue-50 rounded-2xl text-[0.7rem] font-black uppercase text-blue-600 tracking-widest">{sourceLang}</div>
-                        <button 
-                            onClick={swapLangs}
-                            className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white hover:rotate-180 transition-transform duration-500 shadow-lg"
-                        >
-                            <ArrowRightLeft className="w-4 h-4" />
+            <div className="w-full max-w-[800px] relative z-20 px-6 mt-[-20px] space-y-6">
+                <div className="bg-white p-6 md:p-8 rounded-[3rem] shadow-2xl space-y-6 border border-white relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-2 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                        <div className="flex-1 text-center bg-white py-3 px-6 rounded-2xl shadow-sm text-lg font-black text-slate-800 uppercase tracking-tighter w-full">
+                            {sourceLang}
+                        </div>
+                        <button onClick={swapLangs} className="w-12 h-12 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600 hover:rotate-180 transition-all duration-500 shadow-md shrink-0">
+                            <ArrowRightLeft className="w-6 h-6" />
                         </button>
-                        <div className="flex-1 text-center py-2 bg-rose-50 rounded-2xl text-[0.7rem] font-black uppercase text-rose-600 tracking-widest">{targetLang}</div>
+                        <div className="flex-1 text-center bg-slate-900 py-3 px-6 rounded-2xl text-lg font-black text-white uppercase tracking-tighter w-full">
+                            {targetLang}
+                        </div>
                     </div>
 
-                    {/* Content Section */}
-                    <div className="bg-white p-8 rounded-[3rem] shadow-2xl space-y-8 border border-white relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl pointer-events-none" />
-                        
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-[0.65rem] font-black text-slate-300 uppercase tracking-widest block">Input Source</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div className="space-y-4 flex flex-col">
+                            <div className="flex justify-between items-center px-2">
+                                <span className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">Source Text</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => speakText(text, sourceLang)} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-blue transition-colors">
+                                    <button onClick={() => speakText(text, sourceLang)} className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 transition-colors" title="Listen">
                                         <Volume2 className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => copyToClipboard(text)} className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-100 transition-colors" title="Copy">
+                                        <Copy className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
                             <textarea 
                                 value={text}
                                 onChange={(e) => setText(e.target.value)}
-                                placeholder={`Type ${sourceLang} text here...`}
-                                className="w-full min-h-[140px] text-xl font-bold text-slate-700 bg-transparent outline-none resize-none placeholder:text-slate-100 italic"
+                                placeholder="Input text segment..."
+                                className="w-full min-h-[160px] flex-1 bg-slate-50 p-6 rounded-[2rem] text-lg font-bold text-slate-800 placeholder:text-slate-300 outline-none focus:ring-4 focus:ring-blue-500/10 border border-slate-100 resize-none transition-all shadow-inner"
                             />
                         </div>
 
-                        <div className="h-px bg-slate-50 w-full" />
-
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center px-1">
-                                <label className="text-[0.65rem] font-black text-indigo-400 uppercase tracking-widest block">Translation</label>
+                        <div className="space-y-4 flex flex-col">
+                            <div className="flex justify-between items-center px-2">
+                                <span className="text-[0.65rem] font-black uppercase tracking-widest text-slate-400">Translation</span>
                                 <div className="flex gap-2">
-                                    <button onClick={() => speakText(translated, targetLang)} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors">
+                                    <button onClick={() => speakText(translated, targetLang)} className="p-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors" title="Listen">
                                         <Volume2 className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => { navigator.clipboard.writeText(translated).catch(err => console.error("Clipboard error:", err)); }} className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:text-indigo-600 transition-colors">
+                                    <button onClick={() => copyToClipboard(translated)} className="p-2 bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 hover:text-white transition-colors" title="Copy">
                                         <Copy className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
-                            <div className="min-h-[140px] flex items-center justify-center p-6 bg-slate-900 rounded-[2.5rem] border border-slate-800 text-white relative shadow-inner overflow-hidden">
-                                {loading ? (
-                                    <div className="flex flex-col items-center gap-2">
-                                        <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
-                                        <span className="text-[0.5rem] font-black uppercase tracking-[0.3em] text-blue-400/60">Processing Matrix...</span>
-                                    </div>
-                                ) : translated ? (
-                                    <p className="text-2xl font-black italic tracking-tight leading-tight w-full text-center py-4">{translated}</p>
-                                ) : (
-                                    <div className="text-center opacity-20">
-                                        <Languages className="w-10 h-10 mx-auto mb-2" />
-                                        <p className="text-[0.6rem] font-black uppercase tracking-widest">Wait for materialization</p>
-                                    </div>
-                                )}
+                            <div className="flex-1 w-full bg-slate-900 border border-slate-800 p-6 rounded-[2rem] text-lg font-bold text-white leading-relaxed italic relative overflow-hidden group shadow-lg shadow-slate-900/10">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none group-hover:scale-150 transition-transform duration-700" />
+                                <div className="relative z-10 w-full h-full overflow-y-auto custom-scrollbar flex flex-col">
+                                    {loading ? (
+                                        <div className="flex flex-col items-center justify-center h-full flex-1">
+                                            <RotateCcw className="w-6 h-6 text-blue-400 animate-spin mb-3" />
+                                            <span className="text-xs uppercase tracking-widest font-black text-blue-400">Synthesizing...</span>
+                                        </div>
+                                    ) : translated ? (
+                                        <p className="whitespace-pre-wrap flex-1">{translated}</p>
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full flex-1 opacity-30 select-none">
+                                            <Globe className="w-10 h-10 mb-3" />
+                                            <span className="text-xs uppercase tracking-widest">Output will materialize here</span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
+                    </div>
 
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 relative z-10">
+                        <button onClick={clearAll} className="flex-1 py-4 bg-rose-50 text-rose-500 rounded-2xl font-black uppercase tracking-widest text-xs shadow-sm hover:bg-rose-500 hover:text-white transition-all flex items-center justify-center gap-2 active:scale-95">
+                            <Trash2 className="w-4 h-4" /> Clear All
+                        </button>
                         <button 
                             onClick={handleTranslate}
                             disabled={loading || !text.trim()}
-                            className="w-full py-5 bg-linear-to-r from-blue-600 to-indigo-700 rounded-3xl text-white font-black uppercase tracking-widest shadow-xl shadow-blue-500/20 active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-3 mt-4"
+                            className="flex-[2] py-4 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-blue-700 hover:shadow-blue-500/20 shadow-blue-500/10"
                         >
-                            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                            {loading ? "Translating..." : "Execute Translation"}
+                            {loading ? <RotateCcw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                            Execute Translation
                         </button>
                     </div>
-                </div>
-
-                <div className="mt-8 flex justify-center">
-                    <button onClick={clearAll} className="px-6 py-2 bg-rose-50 text-rose-500 rounded-full text-[0.65rem] font-black uppercase tracking-widest hover:bg-rose-100 transition-colors">
-                        Clear All Data
-                    </button>
                 </div>
             </div>
         </div>
@@ -8757,14 +8651,7 @@ const OldPicturesPage = () => {
     };
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                await fetchImages(query, 1, true);
-            } catch (e) {
-                console.error("Initial fetchImages failure:", e);
-            }
-        };
-        load();
+        fetchImages(query, 1, true);
         // eslint-disable-next-line
     }, []);
 
@@ -8969,7 +8856,7 @@ const OldPicturesPage = () => {
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-20">
                                 <button 
                                     onClick={() => {
-                                        navigator.clipboard.writeText(selectedImage.largeImageURL).catch(err => console.error("Clipboard error:", err));
+                                        navigator.clipboard.writeText(selectedImage.largeImageURL);
                                         alert("Direct link copied to clipboard!");
                                     }}
                                     className="flex flex-col items-center justify-center p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 group hover:bg-white hover:border-blue-500 hover:shadow-xl transition-all"
@@ -9146,14 +9033,7 @@ const PicturesPage = () => {
     };
 
     useEffect(() => {
-        const load = async () => {
-            try {
-                await fetchImages(query, 1, activeCategory, true);
-            } catch (e) {
-                console.error("Initial fetchImages failure:", e);
-            }
-        };
-        load();
+        fetchImages(query, 1, activeCategory, true);
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -9205,7 +9085,7 @@ const PicturesPage = () => {
     };
 
     const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).catch(err => console.error("Clipboard error:", err));
+        navigator.clipboard.writeText(text);
         alert("Link copied to clipboard!");
     };
 
@@ -9592,7 +9472,7 @@ const AppProvider = ({ children }: any) => {
             }
         };
 
-        initAuth().catch(e => console.error("Unhandled initAuth rejection:", e));
+        initAuth();
 
         return () => {
             window.removeEventListener('online', handleOnline);
