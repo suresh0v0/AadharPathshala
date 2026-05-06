@@ -52,8 +52,15 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
         });
 
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error || "Server error");
+            let errorMsg = "Server error";
+            try {
+                const errData = await response.json();
+                errorMsg = errData.error || errorMsg;
+            } catch {
+                const text = await response.text();
+                errorMsg = text || errorMsg;
+            }
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -81,8 +88,15 @@ export const getAIJSONResponse = async (prompt: string, systemInstruction: strin
         });
 
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error || "Server error");
+            let errorMsg = "Server error";
+            try {
+                const errData = await response.json();
+                errorMsg = errData.error || errorMsg;
+            } catch {
+                const text = await response.text();
+                errorMsg = text || errorMsg;
+            }
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();

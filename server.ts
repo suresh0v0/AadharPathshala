@@ -20,12 +20,22 @@ async function startServer() {
   app.post("/api/ai", async (req, res) => {
     const { tutorId, prompt, systemInstruction, isJson } = req.body;
 
+    if (!tutorId || !prompt) {
+      res.status(400).json({ error: "Missing tutorId or prompt" });
+      return;
+    }
+
     try {
       if (tutorId === 'gyanu') {
-        const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "" });
+        const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        if (!geminiKey) {
+          throw new Error("GEMINI_API_KEY is missing on the server.");
+        }
+        
+        const client = new GoogleGenAI({ apiKey: geminiKey });
         
         const result = await client.models.generateContent({
-          model: "gemini-2.0-flash", // Using a stable model name
+          model: "gemini-2.0-flash",
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           config: {
             responseMimeType: isJson ? "application/json" : "text/plain",
@@ -34,11 +44,12 @@ async function startServer() {
         });
 
         const text = result.text;
+        if (!text) throw new Error("AI returned empty response");
         res.json({ text: isJson ? JSON.parse(text) : text });
         return;
       }
 
-      // Groq-compatible providers
+      // Groq-compatible providers (Momo, Aachar, Mango)
       const apiKey = 
         tutorId === 'momo' ? (process.env.CEREBRAS_API_KEY || process.env.VITE_CEREBRAS_API_KEY) :
         tutorId === 'aachar' ? (process.env.GROQ_API_KEY || process.env.VITE_GROQ_API_KEY) :
@@ -69,10 +80,11 @@ async function startServer() {
       });
 
       const content = completion.choices[0]?.message?.content || "";
+      if (!content) throw new Error("AI returned empty response");
       res.json({ text: isJson ? JSON.parse(content) : content });
 
     } catch (error: any) {
-      console.error("Server AI Error:", error);
+      console.error(`Server AI Error [${tutorId}]:`, error);
       res.status(500).json({ error: error.message || "Internal AI Error" });
     }
   });
@@ -97,4 +109,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch(err => {
+    console.error("CRITICAL: Server failed to start:", err);
+    process.exit(1);
+});

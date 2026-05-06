@@ -1087,10 +1087,10 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
     return (
         <div className={cn(
             "fixed inset-0 pt-20 pb-[76px] z-10 flex flex-col items-center animate-fade-up transition-all duration-1000 font-sans",
-            activeTutor === 'gyanu' ? "bg-indigo-50/80" :
-            activeTutor === 'momo' ? "bg-rose-50/80" :
-            activeTutor === 'aachar' ? "bg-emerald-50/80" :
-            "bg-orange-50/80"
+            activeTutor === 'gyanu' ? "bg-indigo-50/80 bg-pattern-gyanu" :
+            activeTutor === 'momo' ? "bg-rose-50/80 bg-pattern-momo" :
+            activeTutor === 'aachar' ? "bg-emerald-50/80 bg-pattern-aachar" :
+            "bg-orange-50/80 bg-pattern-mango"
         )}>
             <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full overflow-hidden relative">
                 {/* Background Decor */}
@@ -1267,28 +1267,52 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                 </div>
 
                 {/* Input Area */}
-                <div className="p-6 shrink-0 bg-white/20 backdrop-blur-3xl border-t border-white/50 relative z-20 mx-4 mb-4 rounded-[4rem] shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+                <div className={cn(
+                    "p-6 shrink-0 border-t relative z-20 mx-4 mb-4 rounded-[4rem] shadow-2xl transition-colors duration-1000",
+                    activeTutor === 'gyanu' ? "bg-indigo-900/10 border-indigo-200/50" :
+                    activeTutor === 'momo' ? "bg-rose-900/10 border-rose-200/50" :
+                    activeTutor === 'aachar' ? "bg-emerald-900/10 border-emerald-200/50" :
+                    "bg-orange-900/10 border-orange-200/50"
+                )}>
                     <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-2">
                         <button 
                             onClick={() => handleFeatureClick("Simplify this for a Grade 8 student: ")}
-                            className={cn("px-4 py-2 rounded-full text-[0.65rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap", "bg-linear-to-r", tutorConfig.theme)}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
                         >
                             🧸 Simplify
                         </button>
                         <button 
                             onClick={() => handleFeatureClick("Tell me a funny mnemonic to remember this: ")}
-                            className={cn("px-4 py-2 rounded-full text-[0.65rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap", "bg-linear-to-r", tutorConfig.theme)}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
                         >
                             🧠 Mnemonic
                         </button>
                         <button 
-                            onClick={() => handleFeatureClick("Write a 5-mark answer for this SEE question: ")}
-                            className={cn("px-4 py-2 rounded-full text-[0.65rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap", "bg-linear-to-r", tutorConfig.theme)}
+                            onClick={() => handleFeatureClick("Write a high-scoring 5-mark answer for this SEE question: ")}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
                         >
-                            ✍️ Solve Exam Q
+                            ✍️ 5-Mark SEE
+                        </button>
+                        <button 
+                            onClick={() => handleFeatureClick("Translate the following explanation to Nepali: ")}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                        >
+                            🇳🇵 Nepali Trans
+                        </button>
+                        <button 
+                            onClick={() => handleFeatureClick("Generate 5 flashcards for this topic to help me memorize: ")}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
+                        >
+                            🗂️ Flashcards
+                        </button>
+                        <button 
+                            onClick={() => handleFeatureClick("Generate a quick 3-question MCQ mock test on this: ")}
+                            className="px-6 py-2.5 rounded-full text-[0.7rem] font-black uppercase tracking-widest text-white shadow-lg active:scale-95 transition-all whitespace-nowrap bg-linear-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700"
+                        >
+                            📝 Topic Quiz
                         </button>
                     </div>
-                    <div className="flex items-center gap-3 bg-white/90 border border-white rounded-[3rem] p-3 pl-8 focus-within:ring-8 focus-within:ring-white/50 transition-all shadow-2xl group">
+                    <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-[3rem] p-3 pl-8 focus-within:ring-8 focus-within:ring-slate-100/50 transition-all shadow-2xl group">
                         <textarea 
                             rows={1}
                             value={input}
@@ -1314,7 +1338,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                         </button>
                     </div>
                     <div className="mt-3 flex justify-center">
-                        <p className="text-[0.55rem] font-black text-slate-400/60 uppercase tracking-[0.4em] italic">Press Enter to Transmit · Shift + Enter for New Line</p>
+                        <p className={cn("text-[0.55rem] font-black text-slate-400/60 uppercase tracking-[0.4em] italic", tutorConfig.textColor)}>Press Enter to Transmit · Shift + Enter for New Line</p>
                     </div>
                 </div>
             </div>
@@ -9545,7 +9569,7 @@ const AppProvider = ({ children }: any) => {
             }
         };
 
-        initAuth();
+        initAuth().catch(e => console.error("Unhandled initAuth rejection:", e));
 
         return () => {
             window.removeEventListener('online', handleOnline);
