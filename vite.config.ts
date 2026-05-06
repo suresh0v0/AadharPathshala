@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
   const cerebrasKey = process.env.VITE_CEREBRAS_API_KEY || env.VITE_CEREBRAS_API_KEY || process.env.CEREBRAS_API_KEY || env.CEREBRAS_API_KEY || "";
   const sambanovaKey = process.env.VITE_SAMBANOVA_API_KEY || env.VITE_SAMBANOVA_API_KEY || process.env.SAMBANOVA_API_KEY || env.SAMBANOVA_API_KEY || "";
   const groqKey = process.env.VITE_GROQ_API_KEY || env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY || env.GROQ_API_KEY || "";
+  const geminiKey = process.env.VITE_GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || "";
 
   return {
     base: '/',
@@ -66,6 +67,8 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.VITE_CEREBRAS_API_KEY': JSON.stringify(cerebrasKey),
       'import.meta.env.VITE_SAMBANOVA_API_KEY': JSON.stringify(sambanovaKey),
       'import.meta.env.VITE_GROQ_API_KEY': JSON.stringify(groqKey),
+      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(geminiKey),
+      'process.env.GEMINI_API_KEY': JSON.stringify(geminiKey),
     },
     resolve: {
       alias: {

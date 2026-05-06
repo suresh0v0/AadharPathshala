@@ -2,13 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import Groq from "groq-sdk";
 
 // Gemini Setup
-const getViteKey = (key: string) => {
-    // @ts-ignore
-    return import.meta.env[key] || "";
-};
-
 const genAI = new GoogleGenAI({ 
-    apiKey: getViteKey('VITE_GEMINI_API_KEY') || (typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : "") || "" 
+    apiKey: typeof process !== 'undefined' && process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY : import.meta.env.VITE_GEMINI_API_KEY || "" 
 });
 
 /**
@@ -65,7 +60,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
             }
 
             case PROVIDERS.MOMO.id: {
-                const apiKey = getViteKey('VITE_CEREBRAS_API_KEY');
+                const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
                 if (!apiKey) throw new Error("Cerebras API Key missing");
                 const client = new Groq({ apiKey, baseURL: PROVIDERS.MOMO.baseURL, dangerouslyAllowBrowser: true });
                 const res = await client.chat.completions.create({
@@ -76,7 +71,7 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
             }
 
             case PROVIDERS.AACHAR.id: {
-                const apiKey = getViteKey('VITE_GROQ_API_KEY');
+                const apiKey = import.meta.env.VITE_GROQ_API_KEY || "";
                 if (!apiKey) throw new Error("Groq API Key missing");
                 const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
                 const res = await client.chat.completions.create({
@@ -87,14 +82,30 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
             }
 
             case PROVIDERS.MANGO.id: {
-                const apiKey = getViteKey('VITE_SAMBANOVA_API_KEY');
+                const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
                 if (!apiKey) throw new Error("SambaNova API Key missing");
-                const client = new Groq({ apiKey, baseURL: PROVIDERS.MANGO.baseURL, dangerouslyAllowBrowser: true });
-                const res = await client.chat.completions.create({
-                    messages: [{ role: "system", content: systemInstruction }, { role: "user", content: prompt }],
-                    model: PROVIDERS.MANGO.model
+                
+                const response = await fetch(`${PROVIDERS.MANGO.baseURL}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: PROVIDERS.MANGO.model,
+                        messages: [
+                            { role: "system", content: systemInstruction },
+                            { role: "user", content: prompt }
+                        ]
+                    })
                 });
-                return res.choices[0]?.message?.content || "";
+
+                if (!response.ok) {
+                    throw new Error(`SambaNova API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.choices[0]?.message?.content || "";
             }
 
             default:
