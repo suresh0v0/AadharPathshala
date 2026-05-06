@@ -41,7 +41,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
-import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes } from './supabaseClient';
+import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes, getUserProfile } from './supabaseClient';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
@@ -259,7 +259,7 @@ const STATIC_MCQS: Record<string, any[]> = {};
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useApp();
+  const { user, userProfile } = useApp();
 
   useEffect(() => {
      window.scrollTo(0, 0);
@@ -4173,7 +4173,7 @@ const LoginPage = () => {
 
 /* ── PROFILE PAGE ── */
 const ProfilePage = () => {
-    const { user, setUser } = useApp();
+    const { user, setUser, userProfile } = useApp();
     const navigate = useNavigate();
     
     const stats = [
@@ -4220,7 +4220,7 @@ const ProfilePage = () => {
                     </div>
 
                     <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">{user?.email || 'student@aadhar.edu.np'}</p>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 break-all px-4">{user?.email || 'student@aadhar.edu.np'}</p>
 
                     <div className="grid grid-cols-2 gap-3">
                         {stats.map((stat) => (
@@ -4256,13 +4256,15 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="flex flex-col gap-3 pt-4">
-                        <button 
-                            onClick={() => navigate('/admin-portal')} 
-                            className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
-                        >
-                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                            Admin Dashboard
-                        </button>
+                        {userProfile?.role === 'admin' && (
+                            <button 
+                                onClick={() => navigate('/admin-portal')} 
+                                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
+                            >
+                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                                Admin Dashboard
+                            </button>
+                        )}
                         <button className="w-full py-5 bg-[#16423C] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-lg shadow-emerald-900/10 active:scale-95 transition-all flex items-center justify-center gap-3">
                             <Settings className="w-4 h-4" />
                             Update Profile
@@ -4283,7 +4285,7 @@ const ProfilePage = () => {
 
 /* ── STUDY HUB & SUBJECTS ── */
 const StudyHub = () => {
-    const { data } = useApp();
+    const { data, userProfile } = useApp();
     const navigate = useNavigate();
 
     const compulsory = ['English', 'नेपाली', 'Maths', 'Science', 'सामाजिक'];
@@ -8058,7 +8060,7 @@ const AdminPortalPage = () => {
                                     </select>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Module Designation</label>
                                         <input 
@@ -8083,7 +8085,7 @@ const AdminPortalPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Weightage (Marks)</label>
                                         <input 
@@ -9448,6 +9450,7 @@ const INITIAL_DATA: AppData = {
 
 const AppProvider = ({ children }: any) => {
     const [user, setUser] = useState<User | null>(null);
+    const [userProfile, setUserProfile] = useState<any>(null);
     const [data, setData] = useState<AppData>(() => {
         try {
             const saved = localStorage.getItem('aadhar_app_data_v3');
@@ -9533,8 +9536,17 @@ const AppProvider = ({ children }: any) => {
                         };
                         setUser(loggedUser);
                         localStorage.setItem('logged_user', JSON.stringify(loggedUser));
+                        
+                        // Fetch user profile role
+                        try {
+                            const profile = await getUserProfile(session.user.id);
+                            setUserProfile(profile);
+                        } catch (pErr) {
+                            console.error("Profile fetch error:", pErr);
+                        }
                     } else {
                         setUser(null);
+                        setUserProfile(null);
                         localStorage.removeItem('logged_user');
                     }
 
@@ -9663,7 +9675,7 @@ const AppProvider = ({ children }: any) => {
 
     return (
         <AppContext.Provider value={{ 
-            user, setUser, data, setData, updateData,
+            user, setUser, userProfile, data, setData, updateData,
             addChapter, deleteChapter,
             liveNews, liveMaterials, liveNotices, liveMcqs,
             setLiveNews, addNews, deleteNews, fetchLiveNews,

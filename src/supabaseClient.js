@@ -31,6 +31,20 @@ export const saveMindLog = async (title, content) => {
 };
 
 /**
+ * Fetches the user profile from the 'profiles' table.
+ */
+export const getUserProfile = async (userId) => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+    
+    if (error) throw error;
+    return data;
+};
+
+/**
  * Uploads a file to a Supabase storage bucket and returns the public URL.
  */
 export const uploadFile = async (bucket, path, file) => {
