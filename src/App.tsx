@@ -202,7 +202,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {!isAdminMode && (
+      {!isAdminMode && location.pathname !== '/ai' && (
         <header className="fixed top-0 w-full z-[1000] backdrop-blur-md border-b px-6 py-4 bg-white/80 border-slate-100">
           <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
             <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
@@ -228,12 +228,15 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       {isAdminMode ? (
         children
       ) : (
-        <main className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4 pb-32 min-h-screen pt-24">
+        <main className={cn(
+          "max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4",
+          location.pathname === '/ai' ? "pb-0 pt-0 h-screen flex flex-col" : "pb-32 min-h-screen pt-24"
+        )}>
           {children}
         </main>
       )}
 
-      {!isAdminMode && location.pathname !== '/profile' && (
+      {!isAdminMode && location.pathname !== '/profile' && location.pathname !== '/ai' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
           <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
             {navItems.map((item) => {
@@ -299,7 +302,7 @@ const MockTest = () => {
     });
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem(`${storageKey}_settings`);
-        return saved ? { ...JSON.parse(saved), model: JSON.parse(saved).model || 'momo' } : { subject: 'Science' as SubjectType, count: 5, model: 'momo' as 'momo' | 'mango' };
+        return saved ? { ...JSON.parse(saved), model: JSON.parse(saved).model || 'lila' } : { subject: 'Science' as SubjectType, count: 5, model: 'lila' as 'lila' | 'subash' };
     });
     const [questions, setQuestions] = useState<any[]>(() => {
         const saved = localStorage.getItem(`${storageKey}_questions`);
@@ -470,8 +473,8 @@ const MockTest = () => {
                         <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">AI Scholar Core</label>
                         <div className="flex gap-2 md:gap-3">
                             {[
-                                { id: 'momo', label: 'MOMO', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
-                                { id: 'mango', label: 'MANGO', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
+                                { id: 'lila', label: 'LILA', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
+                                { id: 'subash', label: 'SUBASH', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
                             ].map((m) => (
                                 <button
                                     key={m.id}
@@ -687,7 +690,7 @@ Options: a: ${question.a}, b: ${question.b}, c: ${question.c}, d: ${question.d}
 Correct: ${question.correct}
 Student Answered: ${question.userChoice}`;
 
-            const res = await getAIResponse('gyanu', prompt, systemInstruction);
+            const res = await getAIResponse('miso', prompt, systemInstruction);
             setExplanation(res || "Could not generate review.");
         } catch (e) {
             setExplanation("Analysis Failed. Please try again later.");
@@ -885,7 +888,7 @@ const AITutor = () => {
     
     // Using simple view state instead of complex routing for better control
     const [view, setView] = useState<'selection' | 'chat'>('selection');
-    const [activeTutor, setActiveTutor] = useState<'gyanu' | 'momo' | 'mango' | 'aachar'>('gyanu');
+    const [activeTutor, setActiveTutor] = useState<'gyanu' | 'lila' | 'subash' | 'miso'>('subash');
 
     const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
     
@@ -934,19 +937,20 @@ FORMATTING RULES:
 2. VISUALS: [VISUAL: DESCRIPTION] describing a diagram if needed.
 3. VIBRANCY: Use ### for headers.
 4. PARAGRAPHS: Max 2 sentences each.
-GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal).`;
+GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal).
+5. EMOJIS: Use relevant emojis generously in your responses (e.g. ⭐🦠🌺🏵️🏞️🏜️🔥).`;
 
             let systemInstruction = "";
             let identity = "";
 
             if (activeTutor === 'gyanu') {
                 identity = "GYANU, the Curriculum Master. Friendly, encouraging, and focused on Nepal Board Exam preparation.";
-            } else if (activeTutor === 'momo') {
-                identity = "MOMO, the Concept Tutor. Scholarly, deep conceptual dives. Uses 'Concept Dive' headers.";
-            } else if (activeTutor === 'aachar') {
-                identity = "AACHAR, the Instant Helper. Bullet points only, ultra-fast facts, very practical.";
+            } else if (activeTutor === 'lila') {
+                identity = "LILA, the Concept Tutor. Scholarly, deep conceptual dives. Uses 'Concept Dive' headers.";
+            } else if (activeTutor === 'miso') {
+                identity = "MISO, the Instant Helper. Bullet points only, ultra-fast facts, very practical.";
             } else {
-                identity = "MANGO, the Precise Assistant. Fact-checker, data-driven, accurate and concise.";
+                identity = "SUBASH, the Precise Assistant. Fact-checker, data-driven, accurate and concise.";
             }
 
             systemInstruction = `Identity: ${identity}\n${sharedFormatting}`;
@@ -964,7 +968,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
             setMessages(prev => {
                 const newMessages = [...prev];
                 const errMsg = e.message || String(e);
-                let displayMsg = `Opp! Something went wrong: ${errMsg}`;
+                let displayMsg = `Oops! Something went wrong: ${errMsg}`;
                 if (errMsg.includes("429") || errMsg.includes("quota")) {
                     displayMsg = "We've hit a small limit! Please wait a bit before asking again, Sathi.";
                 }
@@ -982,7 +986,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
 
     if (view === 'selection') {
         return (
-            <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up overflow-y-auto">
+            <div className="fixed inset-0 pt-0 pb-0 bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up overflow-y-auto">
                 <div className="w-full max-w-[620px] p-6 space-y-8">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
@@ -1000,6 +1004,34 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* 4. SUBASH Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('subash'); setView('chat'); }}
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Search className="w-8 h-8 text-white" />
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">SUBASH Assistant</h3>
+                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Precise Backup (SambaNova)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
+                        </button>
+
+                        {/* 2. LILA Card */}
+                        <button 
+                            onClick={() => { setActiveTutor('lila'); setView('chat'); }}
+                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+                            <div className="w-16 h-16 bg-linear-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
+                                <Bot className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">LILA Tutor</h3>
+                            <p className="text-[0.55rem] font-black text-pink-500 uppercase tracking-widest mb-3">Conceptual Guru (Cerebras)</p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
+                        </button>
+
                         {/* 1. GYANU (Gemini) */}
                         <button 
                             onClick={() => { setActiveTutor('gyanu'); setView('chat'); }}
@@ -1014,46 +1046,18 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Friendly & Expert." Your main guide for SEE Prep.</p>
                         </button>
 
-                        {/* 2. MOMO Card */}
-                        <button 
-                            onClick={() => { setActiveTutor('momo'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Bot className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MOMO Tutor</h3>
-                            <p className="text-[0.55rem] font-black text-pink-500 uppercase tracking-widest mb-3">Conceptual Guru (Cerebras)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
-                        </button>
-
                         {/* 3. ACHAR Card */}
                         <button 
-                            onClick={() => { setActiveTutor('aachar'); setView('chat'); }}
+                            onClick={() => { setActiveTutor('miso'); setView('chat'); }}
                             className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
                         >
                             <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
                             <div className="w-16 h-16 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
                                 <Zap className="w-8 h-8" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">ACHAR Assistant</h3>
+                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MISO Assistant</h3>
                             <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
                             <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
-                        </button>
-
-                        {/* 4. MANGO Card */}
-                        <button 
-                            onClick={() => { setActiveTutor('mango'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Search className="w-8 h-8 text-white" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MANGO Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Precise Backup (SambaNova)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
                         </button>
                     </div>
                 </div>
@@ -1062,7 +1066,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
     }
 
     return (
-        <div className="fixed inset-0 pt-20 pb-[76px] bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
+        <div className="fixed inset-0 pt-0 pb-0 bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
             <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
                 {/* Header Section */}
                 <div className="flex items-center justify-between p-4 shrink-0 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
@@ -1073,13 +1077,13 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                         <div className={cn(
                             "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110", 
                             activeTutor === 'gyanu' ? "bg-linear-to-r from-indigo-500 to-indigo-700 shadow-indigo-500/30" :
-                            activeTutor === 'momo' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
-                            activeTutor === 'mango' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
+                            activeTutor === 'lila' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
+                            activeTutor === 'subash' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
                             "bg-linear-to-r from-emerald-500 to-teal-700 shadow-emerald-500/30"
                         )}>
                             {activeTutor === 'gyanu' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
-                             activeTutor === 'momo' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
-                             activeTutor === 'mango' ? <Search className="text-white w-5 h-5 md:w-6 md:h-6" /> :
+                             activeTutor === 'lila' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
+                             activeTutor === 'subash' ? <Search className="text-white w-5 h-5 md:w-6 md:h-6" /> :
                              <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />}
                         </div>
                         <div>
@@ -1087,7 +1091,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                 {PROVIDERS[activeTutor.toUpperCase() as keyof typeof PROVIDERS].name}
                             </h1>
                             <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'momo' ? 'Conceptual Guru' : activeTutor === 'aachar' ? 'Instant Helper' : 'Precise Assistant'}
+                                {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'lila' ? 'Conceptual Guru' : activeTutor === 'miso' ? 'Instant Helper' : 'Precise Assistant'}
                             </p>
                         </div>
                     </div>
@@ -1110,36 +1114,36 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                 <div className={cn(
                                     "absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", 
                                     activeTutor === 'gyanu' ? "bg-indigo-500" :
-                                    activeTutor === 'momo' ? "bg-pink-500" : 
-                                    activeTutor === 'mango' ? "bg-amber-500" :
+                                    activeTutor === 'lila' ? "bg-pink-500" : 
+                                    activeTutor === 'subash' ? "bg-amber-500" :
                                     "bg-emerald-500"
                                 )} />
                                 <div className={cn(
                                     "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl", 
                                     activeTutor === 'gyanu' ? "bg-linear-to-br from-indigo-500 to-indigo-700" :
-                                    activeTutor === 'momo' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
-                                    activeTutor === 'mango' ? "bg-linear-to-br from-amber-400 to-orange-600" :
+                                    activeTutor === 'lila' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
+                                    activeTutor === 'subash' ? "bg-linear-to-br from-amber-400 to-orange-600" :
                                     "bg-linear-to-br from-emerald-500 to-teal-700"
                                 )}>
                                     {activeTutor === 'gyanu' ? <Sparkles className="w-12 h-12" /> :
-                                     activeTutor === 'momo' ? <Bot className="w-12 h-12" /> : 
-                                     activeTutor === 'mango' ? <Search className="w-12 h-12" /> :
+                                     activeTutor === 'lila' ? <Bot className="w-12 h-12" /> : 
+                                     activeTutor === 'subash' ? <Search className="w-12 h-12" /> :
                                      <Zap className="w-12 h-12" />}
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
                                     {activeTutor === 'gyanu' ? "How can I help with SEE prep today?" :
-                                     activeTutor === 'momo' ? "Let's dive deep into concepts." : 
-                                     activeTutor === 'mango' ? "Factual accuracy is my priority." :
+                                     activeTutor === 'lila' ? "Let's dive deep into concepts." : 
+                                     activeTutor === 'subash' ? "Factual accuracy is my priority." :
                                      "Serving facts at lightning speed!"}
                                 </h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
                                     {activeTutor === 'gyanu'
                                         ? "Master the Nepal Board Curriculum with clear, curriculum-aligned guidance."
-                                        : activeTutor === 'momo' 
+                                        : activeTutor === 'lila' 
                                         ? "Master Grade 10 concepts with conceptual clarity and real Nepali examples."
-                                        : activeTutor === 'mango'
+                                        : activeTutor === 'subash'
                                         ? "Reliable and precise assistance for all your school projects and homework."
                                         : "Fastest tips, formulas, and shortcut methods for your SEE prep."}
                                 </p>
@@ -1163,10 +1167,10 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                         remarkPlugins={[remarkMath]} 
                                         rehypePlugins={[rehypeKatex, rehypeRaw]}
                                         components={{
-                                            h1: ({node, ...props}) => <h1 className="text-3xl font-black text-rose-500 uppercase tracking-tighter mt-6 mb-2" {...props} />,
-                                            h2: ({node, ...props}) => <h2 className="text-2xl font-black text-blue uppercase tracking-tighter mt-5 mb-2" {...props} />,
-                                            h3: ({node, ...props}) => <h3 className="text-xl font-black text-emerald-500 uppercase tracking-tight mt-4 mb-2" {...props} />,
-                                            h4: ({node, ...props}) => <h4 className="text-lg font-black text-amber-500 uppercase tracking-tight mt-3 mb-1" {...props} />,
+                                            h1: ({node, ...props}) => <h1 className={cn("text-3xl font-black uppercase tracking-tighter mt-6 mb-2", activeTutor === 'gyanu' ? 'text-indigo-600' : activeTutor === 'lila' ? 'text-purple-600' : activeTutor === 'subash' ? 'text-orange-600' : 'text-emerald-600')} {...props} />,
+                                            h2: ({node, ...props}) => <h2 className={cn("text-2xl font-black uppercase tracking-tighter mt-5 mb-2", activeTutor === 'gyanu' ? 'text-indigo-500' : activeTutor === 'lila' ? 'text-pink-500' : activeTutor === 'subash' ? 'text-amber-500' : 'text-teal-500')} {...props} />,
+                                            h3: ({node, ...props}) => <h3 className={cn("text-xl font-black uppercase tracking-tight mt-4 mb-2", activeTutor === 'gyanu' ? 'text-blue-500' : activeTutor === 'lila' ? 'text-rose-500' : activeTutor === 'subash' ? 'text-yellow-600' : 'text-green-500')} {...props} />,
+                                            h4: ({node, ...props}) => <h4 className={cn("text-lg font-black uppercase tracking-tight mt-3 mb-1", activeTutor === 'gyanu' ? 'text-blue-400' : activeTutor === 'lila' ? 'text-rose-400' : activeTutor === 'subash' ? 'text-yellow-500' : 'text-green-400')} {...props} />,
                                             strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
                                             p: ({node, children, ...props}) => {
                                                 const content = String(children);
@@ -1224,7 +1228,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                                         <div className="flex-1 space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">
-                                                    {activeTutor === 'momo' ? 'Synthesizing Wisdom' : activeTutor === 'mango' ? 'Extracting Data' : 'Speed Processing'}
+                                                    {activeTutor === 'lila' ? 'Synthesizing Wisdom' : activeTutor === 'subash' ? 'Extracting Data' : 'Speed Processing'}
                                                 </span>
                                                 <div className="flex gap-1">
                                                     {[0, 1, 2].map(i => (
@@ -1265,7 +1269,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSend('')}
-                            placeholder={activeTutor === 'momo' ? "Ask MOMO for detailed help..." : "Ask ACHAR for quick answers..."}
+                            placeholder={activeTutor === 'lila' ? "Ask LILA for detailed help..." : "Ask ACHAR for quick answers..."}
                             className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 px-6"
                         />
                         <button 
@@ -1273,7 +1277,7 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                             disabled={!input.trim() || loading}
                             className={cn(
                                 "w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-20 shrink-0",
-                                activeTutor === 'momo' ? "bg-pink-500 shadow-pink-500/20" : "bg-slate-900 shadow-slate-900/20"
+                                activeTutor === 'lila' ? "bg-pink-500 shadow-pink-500/20" : "bg-slate-900 shadow-slate-900/20"
                             )}
                         >
                             <Send className="w-5 h-5" />
@@ -4096,7 +4100,7 @@ const ProfilePage = () => {
                     </div>
 
                     <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
-                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6 break-all px-4">{user?.email || 'student@aadhar.edu.np'}</p>
+                    <p className="text-sm font-semibold text-slate-500 mb-6 truncate px-4">{user?.email || 'student@aadhar.edu.np'}</p>
 
                     <div className="grid grid-cols-2 gap-3">
                         {stats.map((stat) => (
@@ -5489,7 +5493,7 @@ const TranslatorPage = () => {
             const prompt = `Translate the following text from ${sourceLang} to ${targetLang}.
             TEXT: "${text}"`;
 
-            const result = await getAIResponse('gyanu', prompt, systemInstruction);
+            const result = await getAIResponse('miso', prompt, systemInstruction);
             setTranslated(result || "Translation failed.");
         } catch (e) {
             console.error(e);
