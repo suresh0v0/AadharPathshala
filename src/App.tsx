@@ -19,7 +19,7 @@ import {
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive, Loader2,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
-  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Video
+  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Film
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -2247,9 +2247,8 @@ const HomePage = () => {
                              </div>
                         </div>
                         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-amber-50 transition-colors">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Rank</p>
+                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Test Given</p>
                              <div className="flex items-end gap-1">
-                                <span className="text-[0.7rem] font-black text-amber-500 mb-0.5">#</span>
                                 <p className="text-lg font-black text-slate-800 leading-none">12</p>
                              </div>
                         </div>
@@ -2361,7 +2360,11 @@ const AadharToolkit = () => {
 const NoticeBoard = () => {
     const { liveNotices } = useApp();
     const [currentIndex, setCurrentIndex] = useState(0);
-    const staticNotices = [];
+    const staticNotices = [
+        { id: '1', title: 'SEE 2083 Routine Published', importance: 'high', content: 'The official examination timeline has been released.' },
+        { id: '2', title: 'System Maintenance', importance: 'medium', content: 'Servers will undergo maintenance at 2 AM NPT.' },
+        { id: '3', title: 'Math Model Questions Added', importance: 'low', content: 'Check the new practice sets in the toolkit.' }
+    ];
 
     const displayNotices = (liveNotices && liveNotices.length > 0) ? liveNotices : staticNotices;
 
@@ -2937,17 +2940,34 @@ const PeriodicTablePage = () => {
                             <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group flex flex-col items-center justify-center min-h-[400px]">
                                 <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
                                     <div className="w-10 h-10 bg-slate-50 rounded-xl shadow-sm flex items-center justify-center text-blue-500"><Compass className="w-5 h-5" /></div>
-                                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Atom View</p>
+                                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Atomic Structure</p>
                                 </div>
                                 
                                 {/* Upgraded Bohr Model Visualizer using SVG */}
-                                <div className="relative w-full aspect-square max-w-[280px] mt-6 shrink-0 flex items-center justify-center">
+                                <div className="relative w-full aspect-square max-w-[320px] mt-6 shrink-0 flex items-center justify-center">
                                     <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible drop-shadow-xl">
-                                        <circle cx="50" cy="50" r="4" fill={`#${selectedElement.cpkHex}`} className="animate-pulse" filter={`drop-shadow(0 0 4px #${selectedElement.cpkHex})`} />
-                                        {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number, arr: any[]) => {
-                                            const radius = 15 + (i * 12);
+                                        <circle cx="50" cy="50" r="10" fill="transparent" stroke="black" strokeWidth="0.5" />
+                                        <text x="50" y="48" fontSize="4" fill="#38bdf8" textAnchor="middle" dominantBaseline="middle">
+                                            p⁺ = {elementDetails[selectedElement.n].p}
+                                        </text>
+                                        <text x="50" y="53" fontSize="4" fill="#38bdf8" textAnchor="middle" dominantBaseline="middle">
+                                            n⁰ = {elementDetails[selectedElement.n].n}
+                                        </text>
+                                        {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number) => {
+                                            const radius = 18 + (i * 11);
                                             const dots = parseInt(shell.trim());
-                                            const eColor = `#${selectedElement.cpkHex}`;
+                                            const categoryColorsHex: Record<string, string> = {
+                                                'alkali': '#a855f7',
+                                                'alkaline': '#7c3aed',
+                                                'transition': '#f43f5e',
+                                                'post-transition': '#38bdf8',
+                                                'metalloid': '#6366f1',
+                                                'nonmetal': '#f59e0b',
+                                                'noble': '#ef4444',
+                                                'lanthanide': '#34d399',
+                                                'actinide': '#14b8a6',
+                                            };
+                                            const eColor = categoryColorsHex[selectedElement.c] || '#94a3b8';
                                             return (
                                                 <g key={i}>
                                                     <circle 
@@ -2955,13 +2975,8 @@ const PeriodicTablePage = () => {
                                                         cy="50" 
                                                         r={radius} 
                                                         fill="none" 
-                                                        stroke="rgba(0,0,0,0.06)" 
+                                                        stroke="rgba(0,0,0,0.1)" 
                                                         strokeWidth="0.5" 
-                                                        strokeDasharray="2 3"
-                                                        style={{ 
-                                                            transformOrigin: '50px 50px',
-                                                            animation: `spin ${30 + i * 20}s linear infinite ${i % 2 === 0 ? 'normal' : 'reverse'}` 
-                                                        }}
                                                     />
                                                     <g style={{ 
                                                         transformOrigin: '50px 50px',
@@ -2977,11 +2992,12 @@ const PeriodicTablePage = () => {
                                                                     key={j}
                                                                     cx={cx}
                                                                     cy={cy}
-                                                                    r="1.5"
+                                                                    r="2"
                                                                     fill={eColor}
-                                                                    filter={`drop-shadow(0 0 2px ${eColor})`}
+                                                                    filter={`drop-shadow(0 0 1px ${eColor})`}
                                                                 />
                                                             );
+
                                                         })}
                                                     </g>
                                                 </g>
@@ -4416,7 +4432,7 @@ const ProfilePage = () => {
         { label: 'Total XP', value: user?.xp || 0, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
         { label: 'Day Streak', value: user?.streak || 0, icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50' },
         { label: 'Chapters', value: user?.completedChapters?.length || 0, icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Rank', value: '#12', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' }
+        { label: 'Test Given', value: '12', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' }
     ];
 
     const handleLogout = async () => {
@@ -6459,9 +6475,32 @@ const ExamCalendar = () => {
         { name: 'Chaitra', days: 30, offset: 1 }
     ];
 
-    const [activeMonth, setActiveMonth] = useState('Baisakh');
+    // Dynamic Nepali Date Calculation for 2083 BS
+    const getTodayNepaliDate = () => {
+        const refDate = new Date(2026, 3, 14); // April 14, 2026 = Baisakh 1, 2083 BS
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let daysLeft = Math.floor((startOfToday.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysLeft < 0) return { month: 'Baisakh', day: 1 };
+        
+        for (const m of months2083) {
+            if (daysLeft < m.days) {
+                return { month: m.name, day: daysLeft + 1 };
+            }
+            daysLeft -= m.days;
+        }
+        return { month: 'Chaitra', day: 30 };
+    };
+
+    const todayNepali = getTodayNepaliDate();
+    const todayStr_dynamic = `${todayNepali.month} ${todayNepali.day}`;
+
+    const [activeMonth, setActiveMonth] = useState(todayNepali.month);
     const [customTasks, setCustomTasks] = useState<{ id: string, title: string, date: string, type: 'exam' | 'deadline' | 'mock' | 'event' }[]>([]);
-    const [selectedDate, setSelectedDate] = useState<string | null>('Baisakh 4');
+    
+    // Initialize state with today's dynamically calculated date
+    const [selectedDate, setSelectedDate] = useState<string | null>(todayStr_dynamic);
     const [newTaskTitle, setNewTaskTitle] = useState('');
     const [newTaskType, setNewTaskType] = useState<'exam' | 'deadline' | 'mock' | 'event'>('event');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -6518,7 +6557,7 @@ const ExamCalendar = () => {
     };
 
     const selectedDateEvents = selectedDate ? allEvents.filter(e => e.date === selectedDate) : [];
-    const todayStr = 'Baisakh 4';
+    const todayStr = todayStr_dynamic;
 
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col relative pb-32 overflow-hidden">
@@ -6892,6 +6931,7 @@ const FormulaBankPage = () => {
 
 const VideoSectionPage = () => {
     const navigate = useNavigate();
+    const [activeVideo, setActiveVideo] = useState<any | null>(null);
 
     // Define some stock video resources from Pixabay
     const stockVideos = [
@@ -6945,26 +6985,26 @@ const VideoSectionPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {stockVideos.map(video => (
-                    <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col">
-                        <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
+                    <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer" onClick={() => setActiveVideo(video)}>
+                        <div className="relative aspect-video bg-slate-900 overflow-hidden">
                             <video 
                                 src={video.videoUrl} 
-                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" 
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
                                 muted 
                                 loop 
                                 playsInline
                                 onMouseEnter={(e) => e.currentTarget.play()}
                                 onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
                             />
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/40 group-hover:scale-110 transition-all">
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/20">
                                     <Play className="w-6 h-6 text-white fill-current ml-1" />
                                 </div>
                             </div>
-                            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg">
+                            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg z-10">
                                 {video.duration}
                             </div>
-                            <div className="absolute top-3 left-3 bg-indigo-500 text-white text-[0.55rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-lg">
+                            <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[0.55rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-lg z-10">
                                 {video.subject}
                             </div>
                         </div>
@@ -6973,17 +7013,66 @@ const VideoSectionPage = () => {
                                 {video.title}
                             </h3>
                             <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest">
-                                    Pixabay Resource
+                                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                    <Film className="w-3 h-3" /> Pixabay Resource
                                 </span>
-                                <button onClick={() => window.open(video.videoUrl, '_blank')} className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-full transition-colors flex items-center gap-1 text-[0.65rem] font-bold uppercase">
-                                    Watch <ArrowRight className="w-4 h-4 -rotate-45" />
+                                <button className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-full transition-colors flex items-center gap-1 text-[0.65rem] font-bold uppercase">
+                                    Play <Play className="w-3 h-3 fill-current" />
                                 </button>
                             </div>
                         </div>
                     </div>
                 ))}
             </div>
+
+            <AnimatePresence>
+                {activeVideo && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
+                        onClick={() => setActiveVideo(null)}
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            className="bg-black rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-5xl relative aspect-video filter drop-shadow-[0_0_50px_rgba(99,102,241,0.2)]"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button 
+                                onClick={() => setActiveVideo(null)}
+                                className="absolute top-6 right-6 z-20 w-12 h-12 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors border border-white/10"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                            
+                            <div className="absolute top-6 left-6 z-20 flex gap-3">
+                                <div className="bg-indigo-500 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-lg">
+                                    {activeVideo.subject}
+                                </div>
+                            </div>
+                            
+                            <div className="absolute bottom-6 left-6 right-6 z-20 pointer-events-none">
+                                <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg leading-tight w-full truncate mb-2">
+                                    {activeVideo.title}
+                                </h2>
+                            </div>
+                            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
+
+                            <video 
+                                src={activeVideo.videoUrl} 
+                                className="w-full h-full object-contain" 
+                                controls 
+                                autoPlay 
+                                playsInline
+                                crossOrigin="anonymous"
+                            />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
