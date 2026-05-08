@@ -2361,9 +2361,9 @@ const NoticeBoard = () => {
     const { liveNotices } = useApp();
     const [currentIndex, setCurrentIndex] = useState(0);
     const staticNotices = [
-        { id: '1', title: 'SEE 2083 Routine Published', importance: 'high', content: 'The official examination timeline has been released.' },
-        { id: '2', title: 'System Maintenance', importance: 'medium', content: 'Servers will undergo maintenance at 2 AM NPT.' },
-        { id: '3', title: 'Math Model Questions Added', importance: 'low', content: 'Check the new practice sets in the toolkit.' }
+        { id: '1', title: 'Routine', importance: 'alert', content: 'SEE 2083 Routine Published. Examination timeline released.' },
+        { id: '2', title: 'Update', importance: 'update', content: 'System Maintenance: Servers will undergo maintenance at 2 AM NPT.' },
+        { id: '3', title: 'Notice', importance: 'info', content: 'Math Model Questions Added to practice sets.' }
     ];
 
     const displayNotices = (liveNotices && liveNotices.length > 0) ? liveNotices : staticNotices;
@@ -2388,7 +2388,7 @@ const NoticeBoard = () => {
             
             <div className="relative overflow-hidden bg-slate-900 rounded-[2rem] p-6 shadow-xl border border-white/5 group">
                 <div className="absolute top-0 right-0 p-3">
-                    <Bell className="w-5 h-5 text-white/20 animate-swing origin-top" />
+                    <Bell className="w-5 h-5 text-white/20 animate-bounce origin-top" />
                 </div>
                 
                 <AnimatePresence mode="wait">
@@ -2401,21 +2401,21 @@ const NoticeBoard = () => {
                     >
                         <div className={cn(
                             "inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[0.55rem] font-black uppercase tracking-widest mb-3 w-fit",
-                            displayNotices[currentIndex].type === 'alert' ? "bg-red text-white" : 
-                            displayNotices[currentIndex].type === 'update' ? "bg-emerald-500 text-white" : "bg-blue text-white"
+                            (displayNotices[currentIndex].type === 'alert' || displayNotices[currentIndex].importance === 'alert') ? "bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]" : 
+                            (displayNotices[currentIndex].type === 'update' || displayNotices[currentIndex].importance === 'update') ? "bg-emerald-500 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]" : "bg-blue-500 text-white shadow-[0_0_10px_rgba(59,130,246,0.4)]"
                         )}>
                             <Pin className="w-3 h-3" />
-                            {displayNotices[currentIndex].type}
+                            {displayNotices[currentIndex].type || displayNotices[currentIndex].title}
                         </div>
-                        <p className="text-xl font-bold text-white leading-tight tracking-tight">
-                            {displayNotices[currentIndex].text}
+                        <p className="text-lg font-bold text-white leading-tight tracking-tight">
+                            {displayNotices[currentIndex].text || displayNotices[currentIndex].content}
                         </p>
                     </motion.div>
                 </AnimatePresence>
 
                 <div className="mt-8 flex gap-2">
                     {displayNotices.map((_, i) => (
-                        <div key={i} className={cn("h-1 rounded-full transition-all duration-500", i === currentIndex ? "w-8 bg-blue" : "w-3 bg-white/10")} />
+                        <div key={i} className={cn("h-1 rounded-full transition-all duration-500", i === currentIndex ? "w-8 bg-blue-500" : "w-3 bg-white/10")} />
                     ))}
                 </div>
                 
@@ -2944,14 +2944,15 @@ const PeriodicTablePage = () => {
                                 </div>
                                 
                                 {/* Upgraded Bohr Model Visualizer using SVG */}
-                                <div className="relative w-full aspect-square max-w-[320px] mt-6 shrink-0 flex items-center justify-center">
+                                <div className="relative w-full aspect-square max-w-[360px] mt-6 shrink-0 flex items-center justify-center">
                                     <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible drop-shadow-xl">
-                                        <circle cx="50" cy="50" r="10" fill="transparent" stroke="black" strokeWidth="0.5" />
-                                        <text x="50" y="48" fontSize="4" fill="#38bdf8" textAnchor="middle" dominantBaseline="middle">
-                                            p⁺ = {elementDetails[selectedElement.n].p}
+                                        {/* Nucleus */}
+                                        <circle cx="50" cy="50" r="10" fill="white" stroke="black" strokeWidth="0.5" />
+                                        <text x="50" y="48" fontSize="4" fill="black" textAnchor="middle" dominantBaseline="middle" fontWeight="bold">
+                                            {elementDetails[selectedElement.n].p} p⁺
                                         </text>
-                                        <text x="50" y="53" fontSize="4" fill="#38bdf8" textAnchor="middle" dominantBaseline="middle">
-                                            n⁰ = {elementDetails[selectedElement.n].n}
+                                        <text x="50" y="53" fontSize="4" fill="black" textAnchor="middle" dominantBaseline="middle" fontWeight="bold">
+                                            {elementDetails[selectedElement.n].n} n⁰
                                         </text>
                                         {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number) => {
                                             const radius = 18 + (i * 11);
@@ -2975,7 +2976,7 @@ const PeriodicTablePage = () => {
                                                         cy="50" 
                                                         r={radius} 
                                                         fill="none" 
-                                                        stroke="rgba(0,0,0,0.1)" 
+                                                        stroke="black" 
                                                         strokeWidth="0.5" 
                                                     />
                                                     <g style={{ 
@@ -2994,7 +2995,8 @@ const PeriodicTablePage = () => {
                                                                     cy={cy}
                                                                     r="2"
                                                                     fill={eColor}
-                                                                    filter={`drop-shadow(0 0 1px ${eColor})`}
+                                                                    stroke="black"
+                                                                    strokeWidth="0.5"
                                                                 />
                                                             );
 
@@ -6477,12 +6479,14 @@ const ExamCalendar = () => {
 
     // Dynamic Nepali Date Calculation for 2083 BS
     const getTodayNepaliDate = () => {
-        const refDate = new Date(2026, 3, 14); // April 14, 2026 = Baisakh 1, 2083 BS
         const now = new Date();
-        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        let daysLeft = Math.floor((startOfToday.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
+        const startOfYear = new Date(now.getFullYear(), 3, 13); // Approx April 13
+        let daysLeft = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
         
-        if (daysLeft < 0) return { month: 'Baisakh', day: 1 };
+        if (daysLeft < 0) {
+            // Very rough approximation for days before April 13th
+            return { month: 'Chaitra', day: 30 + daysLeft };
+        }
         
         for (const m of months2083) {
             if (daysLeft < m.days) {
@@ -6931,99 +6935,182 @@ const FormulaBankPage = () => {
 
 const VideoSectionPage = () => {
     const navigate = useNavigate();
+    const [query, setQuery] = useState('');
+    const [activeCategory, setActiveCategory] = useState('All');
+    const [videos, setVideos] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(true);
     const [activeVideo, setActiveVideo] = useState<any | null>(null);
 
-    // Define some stock video resources from Pixabay
-    const stockVideos = [
-        {
-            id: 1,
-            title: "Exploring the Universe",
-            subject: "Physics",
-            duration: "2:14",
-            videoUrl: "https://cdn.pixabay.com/video/2019/11/17/29272-374668101_large.mp4",
-        },
-        {
-            id: 2,
-            title: "Chemical Reactions",
-            subject: "Chemistry",
-            duration: "0:58",
-            videoUrl: "https://cdn.pixabay.com/video/2020/05/25/40149-425123018_large.mp4",
-        },
-        {
-            id: 3,
-            title: "Data Matrix",
-            subject: "Computer Science",
-            duration: "1:25",
-            videoUrl: "https://cdn.pixabay.com/video/2021/08/18/85422-590074219_large.mp4",
-        },
-        {
-            id: 4,
-            title: "Nature & Biology",
-            subject: "Biology",
-            duration: "1:02",
-            videoUrl: "https://cdn.pixabay.com/video/2020/04/09/35798-408427771_large.mp4",
-        },
-        {
-            id: 5,
-            title: "Abstract Mathematics",
-            subject: "Maths",
-            duration: "0:45",
-            videoUrl: "https://cdn.pixabay.com/video/2020/03/10/33481-396556157_large.mp4",
-        },
-        {
-            id: 6,
-            title: "Historical Landmarks",
-            subject: "Social Studies",
-            duration: "1:33",
-            videoUrl: "https://cdn.pixabay.com/video/2016/09/13/5194-183786499_large.mp4",
+    const API_KEY = '55653734-9bcb53c51c27b0c301beab7dc';
+    const DEFAULT_QUERY = 'education learning science student';
+
+    const CATEGORIES = ['All', 'Science', 'Mathematics', 'Technology', 'Nature', 'Space', 'History'];
+
+    const fetchVideos = async (searchQuery: string, pageNum: number, category: string, isNewSearch: boolean = false) => {
+        if (!window.navigator.onLine) {
+            setLoading(false); setLoadingMore(false); return;
         }
-    ];
+        if (isNewSearch) { setLoading(true); setVideos([]); } 
+        else { setLoadingMore(true); }
+        
+        try {
+            let currentQ = searchQuery.trim();
+            if (category !== 'All') {
+                currentQ = currentQ ? `${currentQ} ${category}` : category;
+            }
+            if (!currentQ) currentQ = DEFAULT_QUERY;
+
+            const res = await fetch(`https://pixabay.com/api/videos/?key=${API_KEY}&q=${encodeURIComponent(currentQ)}&per_page=30&page=${pageNum}&safesearch=true`);
+            const data = await res.json();
+            
+            if (data.hits && data.hits.length > 0) {
+                setVideos(prev => isNewSearch ? data.hits : [...prev, ...data.hits]);
+                setHasMore(data.hits.length === 30);
+            } else {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.error("Failed to fetch videos", error);
+        } finally {
+            setLoading(false);
+            setLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchVideos(query, 1, activeCategory, true);
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        setPage(1);
+        setHasMore(true);
+        fetchVideos(query, 1, activeCategory, true);
+    };
+
+    const handleCategoryClick = (cat: string) => {
+        setActiveCategory(cat);
+        setPage(1);
+        setHasMore(true);
+        fetchVideos(query, 1, cat, true);
+    };
+
+    const loadMore = useCallback(() => {
+        if (!loadingMore && hasMore) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchVideos(query, nextPage, activeCategory, false);
+        }
+    }, [loadingMore, hasMore, page, query, activeCategory]);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) loadMore();
+        }, { threshold: 0.1 });
+        const sentinel = document.getElementById('sentinel-videos');
+        if (sentinel) observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, loading, loadingMore, loadMore]);
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24 px-4 md:px-0">
+        <div className="space-y-6 pb-24 relative animate-fade-up px-4 md:px-0">
             <ToolHeader title="Video Library" subtitle="High-Quality Visual Learnings" icon={Video} />
 
+            <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <form onSubmit={handleSearch} className="mb-6 flex gap-3">
+                    <div className="flex-1 bg-white/10 p-2 rounded-3xl backdrop-blur-md border border-white/10 flex items-center shadow-inner focus-within:bg-white/20 transition-all relative">
+                        <Search className="w-6 h-6 text-white/50 ml-4 absolute pointer-events-none" />
+                        <input 
+                            value={query}
+                            onChange={e => setQuery(e.target.value)}
+                            placeholder="Search educational videos..."
+                            className="w-full bg-transparent p-4 pl-12 text-lg text-white placeholder:text-white/40 outline-none font-bold italic tracking-tight"
+                        />
+                    </div>
+                    <button type="submit" className="px-8 py-4 bg-indigo-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-indigo-400 active:scale-95 transition-all shadow-lg flex items-center gap-2">
+                        Search <ArrowRight className="w-5 h-5 hidden sm:block" />
+                    </button>
+                </form>
+
+                <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
+                    {CATEGORIES.map(cat => (
+                        <button
+                            key={cat}
+                            onClick={() => handleCategoryClick(cat)}
+                            className={cn(
+                                "px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest shrink-0 transition-colors border",
+                                activeCategory === cat 
+                                    ? "bg-white text-slate-900 border-white shadow-lg" 
+                                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
+                            )}
+                        >
+                            {cat}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {stockVideos.map(video => (
-                    <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer" onClick={() => setActiveVideo(video)}>
-                        <div className="relative aspect-video bg-slate-900 overflow-hidden">
-                            <video 
-                                src={video.videoUrl} 
-                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
-                                muted 
-                                loop 
-                                playsInline
-                                onMouseEnter={(e) => e.currentTarget.play()}
-                                onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/20">
-                                    <Play className="w-6 h-6 text-white fill-current ml-1" />
+                {videos.map(video => {
+                    const thumbUrl = `https://pixabay.com/get/${video.picture_id}_640.jpg`;
+                    const videoUrl = video.videos?.tiny?.url || video.videos?.small?.url;
+                    
+                    return (
+                        <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer" onClick={() => setActiveVideo(video)}>
+                            <div className="relative aspect-video bg-slate-900 overflow-hidden shrink-0">
+                                <img src={thumbUrl} alt={video.tags} className="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" loading="lazy" />
+                                {videoUrl && (
+                                    <video 
+                                        src={videoUrl}
+                                        className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700" 
+                                        muted 
+                                        loop 
+                                        playsInline
+                                        onMouseEnter={(e) => e.currentTarget.play()}
+                                        onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+                                    />
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/20">
+                                        <Play className="w-6 h-6 text-white fill-current ml-1" />
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg z-10">
+                                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
                                 </div>
                             </div>
-                            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg z-10">
-                                {video.duration}
-                            </div>
-                            <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[0.55rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-lg z-10">
-                                {video.subject}
-                            </div>
-                        </div>
-                        <div className="p-6 flex flex-col flex-grow">
-                            <h3 className="text-xl font-black text-slate-800 leading-tight uppercase italic tracking-tighter mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                                {video.title}
-                            </h3>
-                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                    <Film className="w-3 h-3" /> Pixabay Resource
-                                </span>
-                                <button className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-full transition-colors flex items-center gap-1 text-[0.65rem] font-bold uppercase">
-                                    Play <Play className="w-3 h-3 fill-current" />
-                                </button>
+                            <div className="p-6 flex flex-col flex-grow">
+                                <h3 className="text-lg font-black text-slate-800 leading-tight uppercase italic tracking-tighter mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                    {video.tags.split(',')[0] || 'Educational Video'}
+                                </h3>
+                                <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
+                                    <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 truncate w-3/4">
+                                        <Film className="w-3 h-3 shrink-0" /> {video.tags}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
+            
+            {loading && (
+                <div className="col-span-full pt-12 pb-12 flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+                    <p className="mt-4 font-black text-slate-400 uppercase tracking-widest text-sm animate-pulse">Syncing Video Feeds</p>
+                </div>
+            )}
+            
+            <div id="sentinel-videos" className="h-10 w-full" />
+            
+            {loadingMore && (
+                <div className="flex justify-center py-6">
+                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+                </div>
+            )}
 
             <AnimatePresence>
                 {activeVideo && (
@@ -7031,9 +7118,22 @@ const VideoSectionPage = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
+                        className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
                         onClick={() => setActiveVideo(null)}
                     >
+                        <div className="w-full max-w-5xl flex justify-between items-end mb-4 px-2" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex-1 min-w-0 pr-4">
+                                 <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter truncate">{activeVideo.tags}</h2>
+                                 <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest">Pixabay Video Database</p>
+                            </div>
+                            <button 
+                                onClick={() => setActiveVideo(null)}
+                                className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors border border-white/10 shrink-0"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        
                         <motion.div 
                             initial={{ scale: 0.95, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
@@ -7041,28 +7141,8 @@ const VideoSectionPage = () => {
                             className="bg-black rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-5xl relative aspect-video filter drop-shadow-[0_0_50px_rgba(99,102,241,0.2)]"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <button 
-                                onClick={() => setActiveVideo(null)}
-                                className="absolute top-6 right-6 z-20 w-12 h-12 bg-black/40 hover:bg-black/80 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors border border-white/10"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                            
-                            <div className="absolute top-6 left-6 z-20 flex gap-3">
-                                <div className="bg-indigo-500 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg shadow-lg">
-                                    {activeVideo.subject}
-                                </div>
-                            </div>
-                            
-                            <div className="absolute bottom-6 left-6 right-6 z-20 pointer-events-none">
-                                <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter drop-shadow-lg leading-tight w-full truncate mb-2">
-                                    {activeVideo.title}
-                                </h2>
-                            </div>
-                            <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none z-10" />
-
                             <video 
-                                src={activeVideo.videoUrl} 
+                                src={activeVideo.videos?.large?.url || activeVideo.videos?.medium?.url || activeVideo.videos?.small?.url} 
                                 className="w-full h-full object-contain" 
                                 controls 
                                 autoPlay 
