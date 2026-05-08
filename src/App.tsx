@@ -19,7 +19,7 @@ import {
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive, Loader2,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
-  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box
+  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Video
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -844,8 +844,8 @@ const TypewriterContent = ({ content, role, activeTutor, isNew = false, onImageC
 
     return (
         <div className={cn(
-            "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
-            role === 'ai' ? "prose-slate" : "prose-invert"
+            "prose max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
+            role === 'ai' ? "prose-slate font-semibold text-[0.95rem]" : "prose-invert font-medium text-sm"
         )}>
             <Markdown 
                 remarkPlugins={[remarkMath]} 
@@ -1268,12 +1268,12 @@ FORMATTING:
                             {/* Avatar */}
                             <div className="shrink-0 mt-1">
                                 {m.role === 'ai' ? (
-                                    <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shadow-lg bg-linear-to-br", currentTutor.grad)}>
-                                        <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+                                    <div className={cn("w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shadow-lg bg-linear-to-br", currentTutor.grad)}>
+                                        <Sparkles className="w-3.5 h-3.5 md:w-6 md:h-6" />
                                     </div>
                                 ) : (
-                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white overflow-hidden border-2 border-white shadow-xl">
-                                        <UserIcon className="w-5 h-5 md:w-6 md:h-6" />
+                                    <div className="w-6 h-6 md:w-10 md:h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white overflow-hidden border-2 border-white shadow-xl">
+                                        <UserIcon className="w-3.5 h-3.5 md:w-6 md:h-6" />
                                     </div>
                                 )}
                             </div>
@@ -1308,8 +1308,8 @@ FORMATTING:
 
                     {loading && messages[messages.length - 1]?.text === 'Thinking...' && (
                         <div className="flex gap-4 w-full items-start animate-fade-up">
-                             <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg bg-linear-to-br", currentTutor.grad)}>
-                                <Sparkles className="w-5 h-5" />
+                             <div className={cn("w-6 h-6 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg bg-linear-to-br", currentTutor.grad)}>
+                                <Sparkles className="w-3.5 h-3.5" />
                             </div>
                             <div className="flex items-center gap-4 py-2">
                                 <div className="flex gap-1.5">
@@ -2302,7 +2302,7 @@ const AadharToolkit = () => {
             { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
             { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/translator' },
             { id: 'gpa', label: 'GPA Estimate', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
-            { id: 'converter', label: 'Unit Converter', icon: Scale, color: 'teal', path: '/tools/converter' },
+            { id: 'videos', label: 'Videos', icon: Video, color: 'teal', path: '/tools/videos' },
             { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
         ] : []),
     ];
@@ -2934,19 +2934,20 @@ const PeriodicTablePage = () => {
                             </div>
                             
                             {/* ATOM 3D FIGURE CARD */}
-                            <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden group flex flex-col items-center justify-center min-h-[300px]">
+                            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl relative overflow-hidden group flex flex-col items-center justify-center min-h-[400px]">
                                 <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
-                                    <div className="w-10 h-10 bg-white/10 rounded-xl backdrop-blur-md flex items-center justify-center text-blue-400"><Compass className="w-5 h-5" /></div>
-                                    <p className="text-[0.65rem] font-black text-white/50 uppercase tracking-widest">Atom View</p>
+                                    <div className="w-10 h-10 bg-slate-50 rounded-xl shadow-sm flex items-center justify-center text-blue-500"><Compass className="w-5 h-5" /></div>
+                                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Atom View</p>
                                 </div>
                                 
                                 {/* Upgraded Bohr Model Visualizer using SVG */}
-                                <div className="relative w-full aspect-square max-w-[200px] mt-6 shrink-0 flex items-center justify-center">
-                                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible drop-shadow-2xl">
-                                        <circle cx="50" cy="50" r="4" fill="#f43f5e" className="animate-pulse" filter="drop-shadow(0 0 4px #f43f5e)" />
+                                <div className="relative w-full aspect-square max-w-[280px] mt-6 shrink-0 flex items-center justify-center">
+                                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible drop-shadow-xl">
+                                        <circle cx="50" cy="50" r="4" fill={`#${selectedElement.cpkHex}`} className="animate-pulse" filter={`drop-shadow(0 0 4px #${selectedElement.cpkHex})`} />
                                         {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number, arr: any[]) => {
                                             const radius = 15 + (i * 12);
                                             const dots = parseInt(shell.trim());
+                                            const eColor = `#${selectedElement.cpkHex}`;
                                             return (
                                                 <g key={i}>
                                                     <circle 
@@ -2954,7 +2955,7 @@ const PeriodicTablePage = () => {
                                                         cy="50" 
                                                         r={radius} 
                                                         fill="none" 
-                                                        stroke="rgba(255,255,255,0.15)" 
+                                                        stroke="rgba(0,0,0,0.06)" 
                                                         strokeWidth="0.5" 
                                                         strokeDasharray="2 3"
                                                         style={{ 
@@ -2977,8 +2978,8 @@ const PeriodicTablePage = () => {
                                                                     cx={cx}
                                                                     cy={cy}
                                                                     r="1.5"
-                                                                    fill="#60a5fa"
-                                                                    filter="drop-shadow(0 0 2px #60a5fa)"
+                                                                    fill={eColor}
+                                                                    filter={`drop-shadow(0 0 2px ${eColor})`}
                                                                 />
                                                             );
                                                         })}
@@ -4770,7 +4771,7 @@ const ChapterDetail = () => {
 
     return (
         <div className="animate-fade-up pb-32">
-            <header className="mb-8 space-y-6 px-4 sm:px-0">
+            <header className="mb-6 md:mb-8 space-y-6 px-3 sm:px-0">
                 <div className="flex items-center justify-between px-1">
                     <button 
                         onClick={() => navigate(-1)} 
@@ -4790,39 +4791,40 @@ const ChapterDetail = () => {
                 <motion.div 
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className={cn("p-8 md:p-12 rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl min-h-[220px] flex flex-col justify-end border-4 border-white/20 bg-linear-to-br", config.gradient)}
+                    className={cn("p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] text-white relative overflow-hidden shadow-2xl min-h-[200px] flex flex-col justify-end border-2 md:border-4 border-white/20 bg-linear-to-br", config.gradient)}
                 >
-                    <div className="absolute top-0 right-0 p-12 opacity-10">
-                        <Icon className="w-48 h-48 -rotate-12 translate-x-12 -translate-y-12" />
-                    </div>
-                    <div className="relative z-10 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[0.65rem] font-black uppercase tracking-widest border border-white/10">
-                                {decodeURIComponent(name || '')} Curriculum Node
-                            </span>
-                        </div>
-                        <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase leading-none max-w-2xl drop-shadow-lg">
-                            {chapter.title}
-                        </h1>
+                    <div className="absolute top-0 right-0 p-8 md:p-12 opacity-10 blur-[2px] transition-transform duration-700 hover:blur-none hover:opacity-20 hover:scale-110">
+                        <Icon className="w-32 h-32 md:w-48 md:h-48 -rotate-12 translate-x-8 md:translate-x-12 -translate-y-8 md:-translate-y-12" />
                     </div>
                     
-                    {!hideMarks && marksValue !== 0 && (
-                        <div className="absolute bottom-6 right-8 md:bottom-10 md:right-12 z-10">
-                            <div className="px-5 py-2.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1.5rem] flex flex-col items-end shadow-xl">
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[0.65rem] font-black uppercase tracking-widest border border-white/10 shrink-0">
+                                    {decodeURIComponent(name || '')} Curriculum Node
+                                </span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black italic tracking-tighter uppercase leading-tight md:leading-none max-w-2xl drop-shadow-lg">
+                                {chapter.title}
+                            </h1>
+                        </div>
+                        
+                        {!hideMarks && marksValue !== 0 && (
+                            <div className="px-4 py-2 md:px-5 md:py-2.5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-[1.5rem] flex flex-col items-start sm:items-end shadow-xl self-start sm:self-auto shrink-0">
                                 <span className="text-[0.55rem] font-black uppercase tracking-[0.2em] opacity-80 mb-0.5">Board Weightage</span>
-                                <span className="text-xl font-black italic tracking-tighter uppercase leading-none">
+                                <span className="text-xl md:text-2xl font-black italic tracking-tighter uppercase leading-none">
                                     {marksValue} Marks
                                 </span>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </motion.div>
             </header>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start px-4 sm:px-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start px-3 sm:px-0">
                     {/* Content Section */}
                     <div className="lg:col-span-8 space-y-8">
-                        <div className="bg-white p-8 md:p-12 rounded-[3.5rem] border border-slate-100 shadow-xl min-h-[500px]">
+                        <div className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-slate-100 shadow-xl min-h-[500px]">
                             {chapter.file_url?.toLowerCase().endsWith('.pdf') ? (
                                 <div className="flex flex-col items-center justify-center py-24 text-center space-y-8">
                                     <div className="w-24 h-24 bg-indigo-50 text-indigo-600 rounded-[2rem] flex items-center justify-center shadow-lg border border-indigo-100">
@@ -6888,118 +6890,99 @@ const FormulaBankPage = () => {
     );
 };
 
-const UnitConverterPage = () => {
+const VideoSectionPage = () => {
     const navigate = useNavigate();
-    const [val, setVal] = useState('1');
-    const [type, setType] = useState('length');
 
-    const unitsList = ['length', 'mass', 'temp', 'area', 'volume', 'speed', 'time', 'data'];
-
-    const unitMap: Record<string, string[]> = {
-        'length': ['meter', 'centimeter', 'kilometer', 'feet', 'inch', 'mile'],
-        'mass': ['kilogram', 'gram', 'milligram', 'pound', 'ounce'],
-        'temp': ['Celsius', 'Fahrenheit', 'Kelvin'],
-        'area': ['sq.meter', 'sq.km', 'sq.feet', 'hectare', 'acre'],
-        'volume': ['Liter', 'milliliter', 'gallon', 'cubic.m'],
-        'speed': ['m/s', 'km/h', 'mph'],
-        'time': ['sec', 'min', 'hour', 'day'],
-        'data': ['Byte', 'KB', 'MB', 'GB', 'TB']
-    };
-
-    const [fromUnits, setFromUnits] = useState('meter');
-    const [toUnits, setToUnits] = useState('feet');
-
-    useEffect(() => {
-        setFromUnits(unitMap[type][0]);
-        setToUnits(unitMap[type][1]);
-    }, [type]);
-
-    const convert = () => {
-        const input = parseFloat(val) || 0;
-        if (type === 'temp') {
-            if (fromUnits === 'Celsius' && toUnits === 'Fahrenheit') return (input * 9/5) + 32;
-            if (fromUnits === 'Fahrenheit' && toUnits === 'Celsius') return (input - 32) * 5/9;
-            if (fromUnits === 'Celsius' && toUnits === 'Kelvin') return input + 273.15;
-            if (fromUnits === 'Kelvin' && toUnits === 'Celsius') return input - 273.15;
-            if (fromUnits === 'Fahrenheit' && toUnits === 'Kelvin') return (input - 32) * 5/9 + 273.15;
-            if (fromUnits === 'Kelvin' && toUnits === 'Fahrenheit') return (input - 273.15) * 9/5 + 32;
-            return input;
+    // Define some stock video resources from Pixabay
+    const stockVideos = [
+        {
+            id: 1,
+            title: "Exploring the Universe",
+            subject: "Physics",
+            duration: "2:14",
+            videoUrl: "https://cdn.pixabay.com/video/2019/11/17/29272-374668101_large.mp4",
+        },
+        {
+            id: 2,
+            title: "Chemical Reactions",
+            subject: "Chemistry",
+            duration: "0:58",
+            videoUrl: "https://cdn.pixabay.com/video/2020/05/25/40149-425123018_large.mp4",
+        },
+        {
+            id: 3,
+            title: "Data Matrix",
+            subject: "Computer Science",
+            duration: "1:25",
+            videoUrl: "https://cdn.pixabay.com/video/2021/08/18/85422-590074219_large.mp4",
+        },
+        {
+            id: 4,
+            title: "Nature & Biology",
+            subject: "Biology",
+            duration: "1:02",
+            videoUrl: "https://cdn.pixabay.com/video/2020/04/09/35798-408427771_large.mp4",
+        },
+        {
+            id: 5,
+            title: "Abstract Mathematics",
+            subject: "Maths",
+            duration: "0:45",
+            videoUrl: "https://cdn.pixabay.com/video/2020/03/10/33481-396556157_large.mp4",
+        },
+        {
+            id: 6,
+            title: "Historical Landmarks",
+            subject: "Social Studies",
+            duration: "1:33",
+            videoUrl: "https://cdn.pixabay.com/video/2016/09/13/5194-183786499_large.mp4",
         }
-
-        const rates: Record<string, number> = {
-            'length_meter': 1, 'length_centimeter': 0.01, 'length_kilometer': 1000, 'length_feet': 0.3048, 'length_inch': 0.0254, 'length_mile': 1609.34,
-            'mass_kilogram': 1, 'mass_gram': 0.001, 'mass_milligram': 0.000001, 'mass_pound': 0.453592, 'mass_ounce': 0.0283495,
-            'area_sq.meter': 1, 'area_sq.km': 1000000, 'area_sq.feet': 0.092903, 'area_hectare': 10000, 'area_acre': 4046.86,
-            'volume_Liter': 1, 'volume_milliliter': 0.001, 'volume_gallon': 3.78541, 'volume_cubic.m': 1000,
-            'speed_m/s': 1, 'speed_km/h': 0.277778, 'speed_mph': 0.44704,
-            'time_sec': 1, 'time_min': 60, 'time_hour': 3600, 'time_day': 86400,
-            'data_Byte': 1, 'data_KB': 1024, 'data_MB': 1048576, 'data_GB': 1073741824, 'data_TB': 1099511627776
-        };
-
-        const fromRate = rates[`${type}_${fromUnits}`];
-        const toRate = rates[`${type}_${toUnits}`];
-
-        if (!fromRate || !toRate) return input;
-        return (input * fromRate) / toRate;
-    };
-
-    let result = '';
-    const numRes = convert();
-    if (type === 'data' || type === 'time') {
-        result = parseFloat(numRes.toFixed(4)).toString();
-    } else {
-        result = parseFloat(numRes.toFixed(4)).toString();
-    }
+    ];
 
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <ToolHeader title="Smart Converter" subtitle="Metric Dimensional Shift" icon={Box} />
+        <div className="space-y-8 animate-fade-up pb-24 px-4 md:px-0">
+            <ToolHeader title="Video Library" subtitle="High-Quality Visual Learnings" icon={Video} />
 
-            <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-100 shadow-xl space-y-6">
-                <div className="grid grid-cols-4 gap-2">
-                    {unitsList.map(t => (
-                        <button key={t} onClick={() => setType(t)} className={cn("py-3 rounded-[1rem] font-black text-[0.55rem] md:text-[0.65rem] uppercase tracking-widest border transition-all truncate px-1", type === t ? "bg-blue text-white border-blue shadow-md" : "bg-slate-50 text-slate-400 border-slate-100 overflow-hidden")}>
-                            {t}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="space-y-4 pt-4 border-t border-slate-100">
-                    <div className="space-y-1">
-                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4 flex justify-between px-2">
-                            <span>From: {fromUnits}</span>
-                        </label>
-                        <div className="flex bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden focus-within:ring-4 focus-within:ring-blue/10 transition-all">
-                            <input 
-                                type="number"
-                                value={val}
-                                onChange={e => setVal(e.target.value)}
-                                className="w-full bg-transparent p-6 font-black text-2xl text-slate-800 outline-none"
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {stockVideos.map(video => (
+                    <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col">
+                        <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
+                            <video 
+                                src={video.videoUrl} 
+                                className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300" 
+                                muted 
+                                loop 
+                                playsInline
+                                onMouseEnter={(e) => e.currentTarget.play()}
+                                onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
                             />
-                            <select value={fromUnits} onChange={e => setFromUnits(e.target.value)} className="bg-slate-100 outline-none px-4 font-black uppercase text-slate-600">
-                                {unitMap[type].map(u => <option key={`f-${u}`} value={u}>{u}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-center py-2">
-                         <div className="w-10 h-10 rounded-full bg-blue text-white flex items-center justify-center shadow-lg"><ArrowLeft className="-rotate-90" /></div>
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest ml-4 flex justify-between px-2">
-                            <span>To: {toUnits}</span>
-                        </label>
-                        <div className="flex bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-inner">
-                            <div className="w-full p-6 font-black text-2xl text-white truncate">
-                                {result}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/40 group-hover:scale-110 transition-all">
+                                    <Play className="w-6 h-6 text-white fill-current ml-1" />
+                                </div>
                             </div>
-                            <select value={toUnits} onChange={e => setToUnits(e.target.value)} className="bg-slate-800 text-white outline-none px-4 font-black uppercase border-l border-white/10">
-                                {unitMap[type].map(u => <option key={`t-${u}`} value={u}>{u}</option>)}
-                            </select>
+                            <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg">
+                                {video.duration}
+                            </div>
+                            <div className="absolute top-3 left-3 bg-indigo-500 text-white text-[0.55rem] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-lg">
+                                {video.subject}
+                            </div>
+                        </div>
+                        <div className="p-6 flex flex-col flex-grow">
+                            <h3 className="text-xl font-black text-slate-800 leading-tight uppercase italic tracking-tighter mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+                                {video.title}
+                            </h3>
+                            <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
+                                <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest">
+                                    Pixabay Resource
+                                </span>
+                                <button onClick={() => window.open(video.videoUrl, '_blank')} className="text-indigo-500 hover:bg-indigo-50 p-2 rounded-full transition-colors flex items-center gap-1 text-[0.65rem] font-bold uppercase">
+                                    Watch <ArrowRight className="w-4 h-4 -rotate-45" />
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ))}
             </div>
         </div>
     );
@@ -9726,7 +9709,7 @@ const AppContent = () => {
                 <Route path="/tools/timer" element={<StudyTimer />} />
                 <Route path="/tools/calendar" element={<ExamCalendar />} />
                 <Route path="/tools/formulas" element={<FormulaBankPage />} />
-                <Route path="/tools/converter" element={<UnitConverterPage />} />
+                <Route path="/tools/videos" element={<VideoSectionPage />} />
                 <Route path="/tools/todo" element={<TodoListPage />} />
                 <Route path="/tools/words" element={<WordCounterPage />} />
                 <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
