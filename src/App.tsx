@@ -1,15 +1,15 @@
 import { create, all } from 'mathjs';
 const math = create(all);
 
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { 
   Home, BookOpen, MessageSquare, ListChecks, Newspaper, 
   ChevronRight, ArrowLeft, Send, Sparkles, Trophy, 
   History, Calculator, User as UserIcon,
   PlayCircle, FileText,
-  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, TrendingDown, Activity, Monitor,
-  Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users,
+  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, TrendingDown, Activity, Monitor, Mic,
+  Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users, Compass,
   Bot, Coffee, Pause, Play, RotateCcw, RotateCw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff, FileCode,
@@ -41,7 +41,7 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { jsPDF } from 'jspdf';
-import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes, getUserProfile } from './supabaseClient';
+import { supabase, fetchStudyMaterials, saveMindLog, handleUpload, uploadJSON, saveChapterNotes, getUserProfile, saveNews, saveNotice } from './supabaseClient';
 import { getAIResponse, getAIJSONResponse, PROVIDERS } from './services/aiService';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -202,10 +202,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
-      {!isAdminMode && location.pathname !== '/ai' && (
+      {!isAdminMode && (
         <header className="fixed top-0 w-full z-[1000] backdrop-blur-md border-b px-6 py-4 bg-white/80 border-slate-100">
           <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
-            <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500" onClick={() => navigate('/')}>
+            <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500 mt-2" onClick={() => navigate('/')}>
               <Logo size="sm" />
             </div>
             <div className="flex items-center gap-4">
@@ -230,13 +230,13 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       ) : (
         <main className={cn(
           "max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4",
-          location.pathname === '/ai' ? "pb-0 pt-0 h-screen flex flex-col" : "pb-32 min-h-screen pt-24"
+          location.pathname === '/ai' ? "pb-0 pt-0" : "pb-32 min-h-screen pt-24"
         )}>
           {children}
         </main>
       )}
 
-      {!isAdminMode && location.pathname !== '/profile' && location.pathname !== '/ai' && (
+      {!isAdminMode && location.pathname !== '/profile' && (
         <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
           <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
             {navItems.map((item) => {
@@ -473,8 +473,8 @@ const MockTest = () => {
                         <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">AI Scholar Core</label>
                         <div className="flex gap-2 md:gap-3">
                             {[
-                                { id: 'lila', label: 'LILA', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
-                                { id: 'subash', label: 'SUBASH', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
+                                { id: 'miso', label: 'MISO', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
+                                { id: 'nova', label: 'NOVA', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
                             ].map((m) => (
                                 <button
                                     key={m.id}
@@ -554,7 +554,7 @@ const MockTest = () => {
                         className="bg-white p-6 md:p-12 rounded-[3rem] md:rounded-[4rem] border border-slate-100 shadow-[0_50px_100px_rgba(0,0,0,0.05)] relative overflow-hidden"
                     >
                         <div className={cn("absolute top-0 left-0 w-2 h-full bg-linear-to-b", currentSubjectConfig.gradient)} />
-                        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-6 md:mb-12 leading-[1.15] tracking-tighter uppercase italic">
+                        <h2 className="text-xl md:text-3xl font-black text-slate-900 mb-6 md:mb-12 leading-[1.15] tracking-tighter italic">
                             <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{questions[currentIdx].q}</Markdown>
                         </h2>
                         <div className="grid grid-cols-1 gap-2 md:gap-4">
@@ -817,16 +817,131 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
     );
 };
 
-const AILoadingImage = ({ src, alt, i }: { src: string, alt: string, i: number }) => {
+const TypewriterContent = ({ content, role, activeTutor, isNew = false, onImageClick }: { content: string, role: 'ai' | 'user', activeTutor: string, isNew?: boolean, onImageClick?: (url: string) => void }) => {
+    const [displayedText, setDisplayedText] = useState('');
+    const [index, setIndex] = useState(0);
+    const words = useMemo(() => content.split(' '), [content]);
+
+    useEffect(() => {
+        if (role === 'user' || content === 'Thinking...' || !isNew) {
+            setDisplayedText(content);
+            return;
+        }
+        setDisplayedText('');
+        setIndex(0);
+    }, [content, role, isNew]);
+
+    useEffect(() => {
+        if (role === 'user' || content === 'Thinking...' || !isNew) return;
+        if (index < words.length) {
+            const timer = setTimeout(() => {
+                setDisplayedText(prev => prev + (prev ? ' ' : '') + words[index]);
+                setIndex(prev => prev + 1);
+            }, 25);
+            return () => clearTimeout(timer);
+        }
+    }, [index, words, role, content, isNew]);
+
+    return (
+        <div className={cn(
+            "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
+            role === 'ai' ? "prose-slate" : "prose-invert"
+        )}>
+            <Markdown 
+                remarkPlugins={[remarkMath]} 
+                rehypePlugins={[rehypeKatex, rehypeRaw]}
+                components={{
+                    h1: ({node, ...props}) => <h1 className={cn("text-3xl font-black uppercase tracking-tighter mt-6 mb-2", activeTutor === 'cannon' ? 'text-indigo-600' : activeTutor === 'nova' ? 'text-purple-600' : activeTutor === 'spark' ? 'text-orange-600' : 'text-emerald-600')} {...props} />,
+                    h2: ({node, ...props}) => <h2 className={cn("text-2xl font-black uppercase tracking-tighter mt-5 mb-2", activeTutor === 'cannon' ? 'text-indigo-500' : activeTutor === 'nova' ? 'text-pink-500' : activeTutor === 'spark' ? 'text-amber-500' : 'text-teal-500')} {...props} />,
+                    h3: ({node, ...props}) => <h3 className={cn("text-xl font-black uppercase tracking-tight mt-4 mb-2", activeTutor === 'cannon' ? 'text-blue-500' : activeTutor === 'nova' ? 'text-rose-500' : activeTutor === 'spark' ? 'text-yellow-600' : 'text-green-500')} {...props} />,
+                    h4: ({node, ...props}) => <h4 className={cn("text-lg font-black uppercase tracking-tight mt-3 mb-1", activeTutor === 'cannon' ? 'text-blue-400' : activeTutor === 'nova' ? 'text-rose-400' : activeTutor === 'spark' ? 'text-yellow-500' : 'text-green-400')} {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
+                    p: ({node, children, ...props}) => {
+                        const txt = String(children);
+                        const visualMatch = txt.match(/\[VISUAL:\s*(.*?)\]/i);
+                        if (visualMatch) {
+                            const prompt = visualMatch[1].trim();
+                            const primaryUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' highly detailed scientific labeled educational diagram white background')}?width=1024&height=768&nologo=true`;
+                            return <AILoadingImage src={primaryUrl} alt={prompt} i={0} onClick={() => onImageClick?.(primaryUrl)} />;
+                        }
+                        return <p className="mb-4" {...props}>{children}</p>;
+                    },
+                }}
+            >
+                {displayedText}
+            </Markdown>
+        </div>
+    );
+};
+
+const ImagePreviewModal = ({ url, onClose }: { url: string, onClose: () => void }) => {
+    const [zoom, setZoom] = useState(1);
+    
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[5000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 md:p-10"
+        >
+            <button 
+                onClick={onClose}
+                className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white transition-colors z-20"
+            >
+                <X className="w-6 h-6" />
+            </button>
+            
+            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
+                <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl flex items-center gap-4 border border-white/10">
+                    <button onClick={() => setZoom(z => Math.max(0.5, z - 0.25))} className="text-white hover:text-blue-400 transition-colors"><SearchX className="w-5 h-5" /></button>
+                    <span className="text-white text-xs font-black min-w-[3rem] text-center">{Math.round(zoom * 100)}%</span>
+                    <button onClick={() => setZoom(z => Math.min(3, z + 0.25))} className="text-white hover:text-blue-400 transition-colors"><Search className="w-5 h-5" /></button>
+                </div>
+                
+                <a 
+                    href={url} 
+                    download={`aadhar_ai_${Date.now()}.png`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="h-10 px-6 bg-blue text-white rounded-2xl flex items-center gap-2 font-black text-[0.65rem] uppercase tracking-widest shadow-xl transition-all active:scale-95"
+                >
+                    <Download className="w-4 h-4" />
+                    Download
+                </a>
+            </div>
+
+            <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="relative max-w-full max-h-full overflow-auto custom-scrollbar flex items-center justify-center p-4 cursor-zoom-in"
+                onClick={(e) => {
+                    if (e.target === e.currentTarget) onClose();
+                }}
+            >
+                <motion.img 
+                    src={url} 
+                    alt="Aadhar AI Visual" 
+                    className="rounded-3xl shadow-2xl origin-center h-auto max-w-full"
+                    style={{ scale: zoom }}
+                    layoutId={`image-${url}`}
+                />
+            </motion.div>
+        </motion.div>
+    );
+};
+
+const AILoadingImage = ({ src, alt, i, onClick }: { src: string, alt: string, i: number, onClick?: () => void }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
 
     return (
         <div className="my-10 relative group-visual">
             <div className="absolute -inset-2 bg-linear-to-r from-blue-500 to-cyan-400 rounded-[3.5rem] blur-2xl opacity-10" />
-            <div className={cn(
-                "relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl min-h-[300px] flex items-center justify-center transition-all duration-500",
-                loading ? "bg-slate-100" : "bg-slate-50"
+            <div 
+                onClick={onClick}
+                className={cn(
+                "relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl min-h-[300px] flex items-center justify-center transition-all duration-500 cursor-pointer",
+                loading ? "bg-slate-100" : "bg-slate-50 hover:scale-[1.02]"
             )}>
                 {loading && (
                     <motion.div 
@@ -886,21 +1001,26 @@ const AITutor = () => {
     const { user } = useApp();
     const navigate = useNavigate();
     
-    // Using simple view state instead of complex routing for better control
     const [view, setView] = useState<'selection' | 'chat'>('selection');
-    const [activeTutor, setActiveTutor] = useState<'gyanu' | 'lila' | 'subash' | 'miso'>('subash');
+    const [activeTutor, setActiveTutor] = useState<'cannon' | 'nova' | 'spark' | 'miso'>('miso');
 
     const storageKey = `aadhar_chats_${user?.id || 'guest'}_${activeTutor}`;
     
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [limitError, setLimitError] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    // Initialize messages from localStorage when tutor changes
     useEffect(() => {
         const saved = localStorage.getItem(storageKey);
-        setMessages(saved ? JSON.parse(saved) : []);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            // Ensure isNew is false for historical messages
+            setMessages(parsed.map((m: any) => ({ ...m, isNew: false })));
+        } else {
+            setMessages([]);
+        }
     }, [activeTutor, storageKey]);
 
     useEffect(() => {
@@ -922,38 +1042,38 @@ const AITutor = () => {
         const text = txt || input;
         if (!text.trim()) return;
 
-        const userMsg = { role: 'user', text: text };
+        const userMsg = { role: 'user', text: text, isNew: true };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setLoading(true);
 
         const aiMsgIndex = messages.length + 1;
-        setMessages(prev => [...prev, { role: 'ai', text: 'Thinking...' }]);
+        setMessages(prev => [...prev, { role: 'ai', text: 'Thinking...', isNew: true }]);
 
         try {
             const sharedFormatting = `
-FORMATTING RULES:
-1. MATH: Use $ for inline and $$ for block math.
-2. VISUALS: [VISUAL: DESCRIPTION] describing a diagram if needed.
-3. VIBRANCY: Use ### for headers.
-4. PARAGRAPHS: Max 2 sentences each.
-GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answers must strictly follow standard Nepali educational guidelines (CDC Nepal).
-5. EMOJIS: Use relevant emojis generously in your responses (e.g. ⭐🦠🌺🏵️🏞️🏜️🔥).`;
+IDENTITY: You are Aadhar AI Tutor. Specifically the ${currentTutor.name} version.
+STRICTNESS: No mistakes allowed. Strictly follow the Grade 10 CDC Nepal Syllabus. Think step-by-step for correctness.
+FORMATTING:
+1. MATH: Use $ for inline and $$ for block LaTeX math. Variables must be italic.
+2. VISUALS: Use [VISUAL: DESCRIPTION] for diagrams.
+3. EMOJIS: Maximum 3-4 emojis per response.
+4. PARAGRAPHS: Keep them concise and focused.`;
 
             let systemInstruction = "";
             let identity = "";
 
-            if (activeTutor === 'gyanu') {
-                identity = "GYANU, the Curriculum Master. Friendly, encouraging, and focused on Nepal Board Exam preparation.";
-            } else if (activeTutor === 'lila') {
-                identity = "LILA, the Concept Tutor. Scholarly, deep conceptual dives. Uses 'Concept Dive' headers.";
+            if (activeTutor === 'cannon') {
+                identity = "CANNON V4.1, the Aadhar AI Curriculum Master. Friendly, encouraging, and focused on Nepal Board Exam preparation.";
+            } else if (activeTutor === 'nova') {
+                identity = "NOVA V3.4, the Aadhar AI Concept Tutor. Scholarly, deep conceptual dives. Uses 'Concept Dive' headers.";
             } else if (activeTutor === 'miso') {
-                identity = "MISO, the Instant Helper. Bullet points only, ultra-fast facts, very practical.";
+                identity = "MISO V1.1, the Aadhar AI Instant Helper. Bullet points only, ultra-fast facts, very practical. THINK STEP BY STEP before providing any final answer. Verify each step logic.";
             } else {
-                identity = "SUBASH, the Precise Assistant. Fact-checker, data-driven, accurate and concise.";
+                identity = "SPARK V2.3, the Aadhar AI Precise Assistant. Fact-checker, data-driven, accurate and concise.";
             }
 
-            systemInstruction = `Identity: ${identity}\n${sharedFormatting}`;
+            systemInstruction = `Identity: I am Aadhar AI. ${identity}\n${sharedFormatting}`;
 
             const responseText = await getAIResponse(activeTutor, text, systemInstruction);
             
@@ -961,16 +1081,20 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                 const newMessages = [...prev];
                 if (newMessages[aiMsgIndex]) {
                     newMessages[aiMsgIndex].text = responseText || "Brain freeze! Rebooting...";
+                    newMessages[aiMsgIndex].isNew = true;
                 }
                 return newMessages;
             });
         } catch (e: any) {
+            const errMsg = e.message || String(e);
+            if (errMsg.includes("429") || errMsg.includes("quota")) {
+                setLimitError(true);
+            }
             setMessages(prev => {
                 const newMessages = [...prev];
-                const errMsg = e.message || String(e);
                 let displayMsg = `Oops! Something went wrong: ${errMsg}`;
                 if (errMsg.includes("429") || errMsg.includes("quota")) {
-                    displayMsg = "We've hit a small limit! Please wait a bit before asking again, Sathi.";
+                    displayMsg = "⚡ AI Limit Reached! Our scholar needs a quick rest. Please try again in a few moments!";
                 }
                 newMessages[newMessages.length - 1].text = displayMsg;
                 return newMessages;
@@ -984,89 +1108,84 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, loading]);
 
+    const [selectedAiImage, setSelectedAiImage] = useState<string | null>(null);
+
+    const tutorConfig = {
+        miso: { name: 'MISO V1.1', sub: 'Instant Helper', color: 'emerald', grad: 'from-emerald-500 to-teal-600', desc: '"Serving it hot!" Formulas and quick facts.' },
+        spark: { name: 'SPARK V2.3', sub: 'Precise Assistant', color: 'orange', grad: 'from-amber-400 to-orange-600', desc: '"Stays Factual!" Reliable and accurate factual help.' },
+        nova: { name: 'NOVA V3.4', sub: 'Conceptual Guru', color: 'purple', grad: 'from-pink-500 to-rose-600', desc: '"Let\'s dive deep." Deep conceptual explanations.' },
+        cannon: { name: 'CANNON V4.1', sub: 'Curriculum Master', color: 'indigo', grad: 'from-indigo-500 to-indigo-700', desc: '"Friendly & Expert." Your main guide for SEE Prep.' }
+    };
+
+    const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+
     if (view === 'selection') {
         return (
-            <div className="fixed inset-0 pt-0 pb-0 bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up overflow-y-auto">
-                <div className="w-full max-w-[620px] p-6 space-y-8">
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/')} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
-                            <Home className="w-6 h-6" />
-                        </button>
-                        <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">AI Hub</h1>
+            <div className="w-full animate-fade-up space-y-8 pb-32 pt-28">
+                <div className="text-center space-y-3 py-10 flex flex-col items-center">
+                    <div className="relative group cursor-pointer active:scale-95 transition-transform duration-500">
+                        <div className="absolute -inset-6 bg-indigo-500/20 blur-3xl rounded-full animate-pulse group-hover:bg-indigo-500/30" />
+                        <motion.div 
+                            animate={{ 
+                                y: [0, -15, 0],
+                                rotate: [0, 5, -5, 0]
+                            }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="w-24 h-24 bg-linear-to-br from-indigo-500 via-indigo-600 to-purple-700 rounded-[2.5rem] flex items-center justify-center shadow-[0_20px_50px_rgba(79,70,229,0.3)] mb-8 relative z-10 border-4 border-white overflow-hidden"
+                        >
+                            <div className="absolute inset-0 bg-linear-to-tr from-white/10 to-transparent opacity-50" />
+                            <Bot className="w-12 h-12 text-white drop-shadow-xl" />
+                        </motion.div>
                     </div>
+                    <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">Hello My Friend!</h2>
+                    <p className="text-slate-500 font-bold max-w-[320px] mx-auto leading-relaxed mt-2 text-balance">
+                        I am Aadhar AI Tutor. Choose one of my versions for your study.
+                    </p>
+                </div>
 
-                    <div className="text-center space-y-3 py-10 flex flex-col items-center">
-                        <div className="w-20 h-20 bg-linear-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl mb-4 animate-bounce border-4 border-white">
-                            <Bot className="w-10 h-10 text-white" />
-                        </div>
-                        <h2 className="text-4xl font-black text-slate-900 leading-none tracking-tight">K chha Sathi!</h2>
-                        <p className="text-slate-500 font-bold max-w-[300px] mx-auto leading-relaxed">Choose your study companion for SEE 2083 prep.</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* 4. SUBASH Card */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(Object.keys(tutorConfig) as Array<keyof typeof tutorConfig>).map((key) => (
                         <button 
-                            onClick={() => { setActiveTutor('subash'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-amber-500 transition-all relative overflow-hidden"
+                            key={key}
+                            onClick={() => { setActiveTutor(key); setView('chat'); }}
+                            className={cn(
+                                "bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group transition-all relative overflow-hidden",
+                                key === 'miso' ? "hover:border-emerald-500" : 
+                                key === 'spark' ? "hover:border-amber-500" :
+                                key === 'nova' ? "hover:border-pink-500" : "hover:border-indigo-500"
+                            )}
                         >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Search className="w-8 h-8 text-white" />
+                            <div className={cn("absolute top-0 right-0 w-24 h-24 rounded-full -translate-y-1/2 translate-x-1/2", 
+                                key === 'miso' ? "bg-emerald-500/5" : key === 'spark' ? "bg-amber-500/5" : key === 'nova' ? "bg-pink-500/5" : "bg-indigo-500/5")} />
+                            <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform bg-linear-to-br", tutorConfig[key].grad)}>
+                                <Sparkles className="w-8 h-8 text-white" />
                             </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">SUBASH Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-orange-500 uppercase tracking-widest mb-3">Precise Backup (SambaNova)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Stays Factual!" Reliable and accurate factual help.</p>
+                            <h3 className={cn("text-xl font-black italic uppercase leading-none mb-1", 
+                                key === 'miso' ? "text-emerald-600" : 
+                                key === 'spark' ? "text-orange-600" : 
+                                key === 'nova' ? "text-pink-600" : "text-indigo-600")} 
+                                style={{ fontFamily: 'Outfit, sans-serif' }}
+                            >
+                                {tutorConfig[key].name}
+                            </h3>
+                            <p className={cn("text-[0.55rem] font-black uppercase tracking-widest mb-3", 
+                                key === 'miso' ? "text-emerald-500/60" : 
+                                key === 'spark' ? "text-orange-500/60" : 
+                                key === 'nova' ? "text-pink-500/60" : "text-indigo-500/60")}>
+                                {tutorConfig[key].sub}
+                            </p>
+                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">{tutorConfig[key].desc}</p>
                         </button>
-
-                        {/* 2. LILA Card */}
-                        <button 
-                            onClick={() => { setActiveTutor('lila'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-pink-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Bot className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">LILA Tutor</h3>
-                            <p className="text-[0.55rem] font-black text-pink-500 uppercase tracking-widest mb-3">Conceptual Guru (Cerebras)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Let's dive deep." Deep conceptual explanations.</p>
-                        </button>
-
-                        {/* 1. GYANU (Gemini) */}
-                        <button 
-                            onClick={() => { setActiveTutor('gyanu'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-indigo-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-indigo-500 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Sparkles className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">GYANU AI</h3>
-                            <p className="text-[0.55rem] font-black text-indigo-500 uppercase tracking-widest mb-3">Curriculum Master (Gemini)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Friendly & Expert." Your main guide for SEE Prep.</p>
-                        </button>
-
-                        {/* 3. ACHAR Card */}
-                        <button 
-                            onClick={() => { setActiveTutor('miso'); setView('chat'); }}
-                            className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl text-left flex flex-col items-center text-center group hover:border-emerald-500 transition-all relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-                            <div className="w-16 h-16 bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg mb-4 text-white group-hover:scale-110 transition-transform">
-                                <Zap className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-xl font-black italic uppercase text-slate-900 leading-none mb-1">MISO Assistant</h3>
-                            <p className="text-[0.55rem] font-black text-emerald-500 uppercase tracking-widest mb-3">Instant Helper (Groq)</p>
-                            <p className="text-[0.7rem] font-bold text-slate-400 leading-relaxed italic">"Serving it hot!" Formulas and quick facts.</p>
-                        </button>
-                    </div>
+                    ))}
                 </div>
             </div>
         );
     }
 
+    const currentTutor = tutorConfig[activeTutor];
+
     return (
-        <div className="fixed inset-0 pt-0 pb-0 bg-[#F8FAFC] z-10 flex flex-col items-center animate-fade-up">
+        <div className="fixed inset-0 bg-[#F8FAFC] z-[2000] flex flex-col items-center animate-fade-up">
             <div className="w-full max-w-[620px] md:max-w-4xl lg:max-w-6xl flex flex-col h-full bg-[#F8FAFC]">
                 {/* Header Section */}
                 <div className="flex items-center justify-between p-4 shrink-0 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
@@ -1075,23 +1194,22 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                             <ArrowLeft className="w-5 h-5" />
                         </button>
                         <div className={cn(
-                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110", 
-                            activeTutor === 'gyanu' ? "bg-linear-to-r from-indigo-500 to-indigo-700 shadow-indigo-500/30" :
-                            activeTutor === 'lila' ? "bg-linear-to-r from-pink-500 to-rose-600 shadow-rose-500/30" : 
-                            activeTutor === 'subash' ? "bg-linear-to-r from-amber-400 to-orange-600 shadow-orange-500/30" :
-                            "bg-linear-to-r from-emerald-500 to-teal-700 shadow-emerald-500/30"
+                            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform hover:scale-110 bg-linear-to-r", 
+                            currentTutor.grad
                         )}>
-                            {activeTutor === 'gyanu' ? <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" /> :
-                             activeTutor === 'lila' ? <Bot className="text-white w-5 h-5 md:w-6 md:h-6" /> : 
-                             activeTutor === 'subash' ? <Search className="text-white w-5 h-5 md:w-6 md:h-6" /> :
-                             <Zap className="text-white w-5 h-5 md:w-6 md:h-6" />}
+                            <Sparkles className="text-white w-5 h-5 md:w-6 md:h-6" />
                         </div>
                         <div>
-                            <h1 className="text-lg md:text-xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">
-                                {PROVIDERS[activeTutor.toUpperCase() as keyof typeof PROVIDERS].name}
+                            <h1 className={cn("text-lg md:text-xl font-black italic tracking-tighter uppercase leading-none", 
+                                activeTutor === 'miso' ? "text-emerald-600" : 
+                                activeTutor === 'spark' ? "text-orange-600" : 
+                                activeTutor === 'nova' ? "text-pink-600" : "text-indigo-600")}
+                                style={{ fontFamily: 'Outfit, sans-serif' }}
+                            >
+                                {currentTutor.name}
                             </h1>
                             <p className="text-[0.5rem] md:text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1">
-                                {activeTutor === 'gyanu' ? 'Curriculum Master' : activeTutor === 'lila' ? 'Conceptual Guru' : activeTutor === 'miso' ? 'Instant Helper' : 'Precise Assistant'}
+                                {currentTutor.sub}
                             </p>
                         </div>
                     </div>
@@ -1113,37 +1231,31 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                             <div className="relative w-24 h-24 mx-auto">
                                 <div className={cn(
                                     "absolute inset-0 rounded-[1.5rem] animate-pulse blur-xl opacity-20", 
-                                    activeTutor === 'gyanu' ? "bg-indigo-500" :
-                                    activeTutor === 'lila' ? "bg-pink-500" : 
-                                    activeTutor === 'subash' ? "bg-amber-500" :
+                                    currentTutor.grad.includes('indigo') ? "bg-indigo-500" :
+                                    currentTutor.grad.includes('pink') ? "bg-pink-500" : 
+                                    currentTutor.grad.includes('amber') ? "bg-amber-500" :
                                     "bg-emerald-500"
                                 )} />
                                 <div className={cn(
-                                    "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl", 
-                                    activeTutor === 'gyanu' ? "bg-linear-to-br from-indigo-500 to-indigo-700" :
-                                    activeTutor === 'lila' ? "bg-linear-to-br from-pink-500 to-rose-600" : 
-                                    activeTutor === 'subash' ? "bg-linear-to-br from-amber-400 to-orange-600" :
-                                    "bg-linear-to-br from-emerald-500 to-teal-700"
+                                    "w-24 h-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative border-4 border-white transition-all duration-700 text-white shadow-xl bg-linear-to-br", 
+                                    currentTutor.grad
                                 )}>
-                                    {activeTutor === 'gyanu' ? <Sparkles className="w-12 h-12" /> :
-                                     activeTutor === 'lila' ? <Bot className="w-12 h-12" /> : 
-                                     activeTutor === 'subash' ? <Search className="w-12 h-12" /> :
-                                     <Zap className="w-12 h-12" />}
+                                    <Sparkles className="w-12 h-12" />
                                 </div>
                             </div>
                             <div className="space-y-4">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight italic uppercase shrink-0">
-                                    {activeTutor === 'gyanu' ? "How can I help with SEE prep today?" :
-                                     activeTutor === 'lila' ? "Let's dive deep into concepts." : 
-                                     activeTutor === 'subash' ? "Factual accuracy is my priority." :
+                                    {activeTutor === 'cannon' ? "How can I help with SEE prep today?" :
+                                     activeTutor === 'nova' ? "Let's dive deep into concepts." : 
+                                     activeTutor === 'spark' ? "Factual accuracy is my priority." :
                                      "Serving facts at lightning speed!"}
                                 </h2>
                                 <p className="text-[0.85rem] font-bold text-slate-400 max-w-[320px] mx-auto leading-relaxed border-l-4 border-slate-100 pl-4 py-2 italic">
-                                    {activeTutor === 'gyanu'
+                                    {activeTutor === 'cannon'
                                         ? "Master the Nepal Board Curriculum with clear, curriculum-aligned guidance."
-                                        : activeTutor === 'lila' 
+                                        : activeTutor === 'nova' 
                                         ? "Master Grade 10 concepts with conceptual clarity and real Nepali examples."
-                                        : activeTutor === 'subash'
+                                        : activeTutor === 'spark'
                                         ? "Reliable and precise assistance for all your school projects and homework."
                                         : "Fastest tips, formulas, and shortcut methods for your SEE prep."}
                                 </p>
@@ -1152,135 +1264,122 @@ GROUNDING: You are an expert teacher in the Nepal Class 10 Curriculum. All answe
                     )}
 
                     {messages.map((m, i) => (
-                        <div key={i} className={cn("flex flex-col gap-2 max-w-[92%] md:max-w-[85%]", m.role === 'ai' ? "self-start" : "self-end items-end")}>
-                            <div className={cn(
-                                "p-6 rounded-[2.5rem] text-[0.95rem] leading-relaxed shadow-xl border transition-all",
-                                m.role === 'ai' 
-                                    ? "bg-white border-slate-100 text-slate-800 rounded-tl-sm relative" 
-                                    : "bg-blue text-white border-blue shadow-2xl shadow-blue/20 rounded-tr-sm"
-                            )}>
-                                <div className={cn(
-                                    "prose prose-sm max-w-none prose-p:mb-4 prose-headings:font-black prose-headings:text-slate-900 prose-img:rounded-[2rem] prose-img:shadow-lg prose-img:border prose-img:border-slate-100",
-                                    m.role === 'ai' ? "prose-slate" : "prose-invert"
+                        <div key={i} className={cn("flex gap-1.5 md:gap-3 w-full", m.role === 'ai' ? "flex-row" : "flex-row-reverse")}>
+                            {/* Avatar */}
+                            <div className="shrink-0 mt-1">
+                                {m.role === 'ai' ? (
+                                    <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shadow-lg bg-linear-to-br", currentTutor.grad)}>
+                                        <Sparkles className="w-5 h-5 md:w-6 md:h-6" />
+                                    </div>
+                                ) : (
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white overflow-hidden border-2 border-white shadow-xl">
+                                        <UserIcon className="w-5 h-5 md:w-6 md:h-6" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className={cn("flex flex-col gap-2 max-w-[95%] md:max-w-[85%]", m.role === 'ai' ? "items-start" : "items-end")}>
+                                    <div className={cn("text-[0.95rem] md:text-[1rem] transition-all",
+                                    m.role === 'ai' 
+                                        ? "bg-transparent text-slate-800 p-1" 
+                                        : cn("text-white shadow-2xl rounded-tr-sm border-transparent p-4 md:p-5 rounded-[2rem] shadow-xl border", 
+                                            activeTutor === 'miso' ? "bg-emerald-500 shadow-emerald-500/20" : 
+                                            activeTutor === 'spark' ? "bg-orange-500 shadow-orange-500/20" : 
+                                            activeTutor === 'nova' ? "bg-pink-500 shadow-pink-500/20" : "bg-indigo-600 shadow-indigo-600/20"
+                                          )
                                 )}>
-                                    <Markdown 
-                                        remarkPlugins={[remarkMath]} 
-                                        rehypePlugins={[rehypeKatex, rehypeRaw]}
-                                        components={{
-                                            h1: ({node, ...props}) => <h1 className={cn("text-3xl font-black uppercase tracking-tighter mt-6 mb-2", activeTutor === 'gyanu' ? 'text-indigo-600' : activeTutor === 'lila' ? 'text-purple-600' : activeTutor === 'subash' ? 'text-orange-600' : 'text-emerald-600')} {...props} />,
-                                            h2: ({node, ...props}) => <h2 className={cn("text-2xl font-black uppercase tracking-tighter mt-5 mb-2", activeTutor === 'gyanu' ? 'text-indigo-500' : activeTutor === 'lila' ? 'text-pink-500' : activeTutor === 'subash' ? 'text-amber-500' : 'text-teal-500')} {...props} />,
-                                            h3: ({node, ...props}) => <h3 className={cn("text-xl font-black uppercase tracking-tight mt-4 mb-2", activeTutor === 'gyanu' ? 'text-blue-500' : activeTutor === 'lila' ? 'text-rose-500' : activeTutor === 'subash' ? 'text-yellow-600' : 'text-green-500')} {...props} />,
-                                            h4: ({node, ...props}) => <h4 className={cn("text-lg font-black uppercase tracking-tight mt-3 mb-1", activeTutor === 'gyanu' ? 'text-blue-400' : activeTutor === 'lila' ? 'text-rose-400' : activeTutor === 'subash' ? 'text-yellow-500' : 'text-green-400')} {...props} />,
-                                            strong: ({node, ...props}) => <strong className="font-black text-indigo-600" {...props} />,
-                                            p: ({node, children, ...props}) => {
-                                                const content = String(children);
-                                                const visualMatch = content.match(/\[VISUAL:\s*(.*?)\]/i);
-                                                if (visualMatch) {
-                                                    const prompt = visualMatch[1].trim();
-                                                    const primaryUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' highly detailed scientific labeled educational diagram white background')}?width=1024&height=768&nologo=true&seed=${i}`;
-                                                    return <AILoadingImage src={primaryUrl} alt={prompt} i={i} />;
-                                                }
-                                                return <p className="mb-4" {...props}>{children}</p>;
-                                            },
-                                            img: ({node, ...props}) => {
-                                                const altText = props.alt || "educational_visual";
-                                                const prompt = altText.replace(/_/g, ' ');
-                                                const stableUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' educational scientific diagram')}?width=1024&height=768&nologo=true&seed=${i}`;
-                                                return <AILoadingImage src={stableUrl} alt={altText} i={i} />;
-                                            }
-                                        }}
-                                    >
-                                        {m.text}
-                                    </Markdown>
+                                    <TypewriterContent 
+                                        content={m.text} 
+                                        role={m.role} 
+                                        activeTutor={activeTutor} 
+                                        isNew={m.isNew} 
+                                        onImageClick={(url) => setSelectedAiImage(url)}
+                                    />
                                 </div>
                             </div>
                         </div>
                     ))}
-                    
-                    {loading && (
-                        <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col gap-4 self-start max-w-[320px] w-full"
-                        >
-                            <div className="relative p-[2px] rounded-[2.5rem] bg-linear-to-r from-blue-500 via-purple-500 to-pink-500 overflow-hidden shadow-2xl">
-                                <motion.div 
-                                    animate={{ rotate: 360 }}
-                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                    className="absolute inset-0 bg-conic/from-180 via-blue-500 via-transparent to-blue-500 opacity-20 scale-150"
-                                />
-                                <div className="relative bg-white p-6 rounded-[2.4rem] space-y-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className="relative shrink-0">
-                                            <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg overflow-hidden">
-                                                <motion.div 
-                                                    animate={{ y: [0, -40, 0] }}
-                                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                                    className="flex flex-col items-center gap-4"
-                                                >
-                                                    <BrainCircuit className="w-6 h-6 text-blue-400" />
-                                                    <Sparkles className="w-6 h-6 text-emerald-400" />
-                                                    <Bot className="w-6 h-6 text-pink-400" />
-                                                </motion.div>
-                                            </div>
-                                            <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white animate-pulse shadow-lg" />
-                                        </div>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[0.65rem] font-black uppercase text-blue-600 tracking-widest italic">
-                                                    {activeTutor === 'lila' ? 'Synthesizing Wisdom' : activeTutor === 'subash' ? 'Extracting Data' : 'Speed Processing'}
-                                                </span>
-                                                <div className="flex gap-1">
-                                                    {[0, 1, 2].map(i => (
-                                                        <motion.div 
-                                                            key={i}
-                                                            animate={{ opacity: [0.2, 1, 0.2] }}
-                                                            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                                                            className="w-1 h-1 bg-blue-500 rounded-full"
-                                                        />
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-slate-50 rounded-full overflow-hidden">
-                                                <motion.div 
-                                                    initial={{ width: "0%" }}
-                                                    animate={{ width: ["10%", "90%", "30%", "100%"] }}
-                                                    transition={{ duration: 5, repeat: Infinity }}
-                                                    className="h-full bg-linear-to-r from-blue-500 to-indigo-600 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5 pl-2 border-l-2 border-slate-100 italic">
-                                        <p className="text-[0.6rem] font-black text-slate-800 uppercase tracking-tighter leading-none">Synthesizing Educational Matrix...</p>
-                                        <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest leading-none">Accessing Deep Knowledge Base</p>
-                                    </div>
+
+                    <AnimatePresence>
+                        {selectedAiImage && (
+                            <ImagePreviewModal url={selectedAiImage} onClose={() => setSelectedAiImage(null)} />
+                        )}
+                    </AnimatePresence>
+
+                    {loading && messages[messages.length - 1]?.text === 'Thinking...' && (
+                        <div className="flex gap-4 w-full items-start animate-fade-up">
+                             <div className={cn("w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg bg-linear-to-br", currentTutor.grad)}>
+                                <Sparkles className="w-5 h-5" />
+                            </div>
+                            <div className="flex items-center gap-4 py-2">
+                                <div className="flex gap-1.5">
+                                    <div className={cn("w-1.5 h-1.5 rounded-full animate-bounce", currentTutor.grad.includes('indigo') ? 'bg-indigo-500' : 'bg-emerald-500')} style={{ animationDelay: '0ms' }} />
+                                    <div className={cn("w-1.5 h-1.5 rounded-full animate-bounce", currentTutor.grad.includes('indigo') ? 'bg-indigo-500' : 'bg-emerald-500')} style={{ animationDelay: '150ms' }} />
+                                    <div className={cn("w-1.5 h-1.5 rounded-full animate-bounce", currentTutor.grad.includes('indigo') ? 'bg-indigo-500' : 'bg-emerald-500')} style={{ animationDelay: '300ms' }} />
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     )}
-                    <div ref={scrollRef} />
+                    
+                    <div ref={scrollRef} className="h-4" />
                 </div>
 
                 {/* Input Area */}
-                <div className="p-4 bg-[#F8FAFC] shrink-0 border-t border-slate-100">
-                    <div className="p-2 md:p-3 bg-white border-2 border-slate-100 rounded-full shadow-2xl flex items-center gap-2 focus-within:border-blue transition-all">
+                <div className="p-4 bg-[#F8FAFC] shrink-0 border-t border-slate-100 relative">
+                    {isAttachmentMenuOpen && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            className="absolute bottom-[calc(100%+1rem)] left-4 bg-white rounded-3xl shadow-2xl border border-slate-100 p-3 flex flex-col gap-1 w-48 z-20 overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl rounded-full" />
+                            {[
+                                { icon: ImageIcon, label: 'Image', color: 'bg-emerald-500' },
+                                { icon: Monitor, label: 'Camera', color: 'bg-blue-500' },
+                                { icon: Mic, label: 'Voice', color: 'bg-orange-500' }
+                            ].map((item, idx) => (
+                                <button 
+                                    key={idx}
+                                    onClick={() => { alert(`${item.label} Coming Soon!`); setIsAttachmentMenuOpen(false); }}
+                                    className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-2xl transition-colors text-left group"
+                                >
+                                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-110", item.color)}>
+                                        <item.icon className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-xs font-black uppercase text-slate-600 tracking-widest">{item.label}</span>
+                                </button>
+                            ))}
+                        </motion.div>
+                    )}
+
+                    <div className="max-w-4xl mx-auto p-1.5 md:p-2 bg-white border-2 border-slate-100 rounded-full shadow-lg flex items-center gap-2 focus-within:border-indigo-500 transition-all">
+                        <button 
+                            onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+                            className={cn(
+                                "w-11 h-11 rounded-full flex items-center justify-center transition-all bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 shrink-0",
+                                isAttachmentMenuOpen && "bg-indigo-500 text-white rotate-45 hover:bg-indigo-600"
+                            )}
+                        >
+                            <Plus className="w-6 h-6" />
+                        </button>
+                        
                         <input 
                             value={input}
                             onChange={e => setInput(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && handleSend('')}
-                            placeholder={activeTutor === 'lila' ? "Ask LILA for detailed help..." : "Ask ACHAR for quick answers..."}
-                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 px-6"
+                            placeholder={`Message ${currentTutor.name}...`}
+                            className="flex-1 bg-transparent border-none outline-none font-bold text-sm md:text-base text-slate-700 px-3"
                         />
+
                         <button 
-                            onClick={() => handleSend('')}
-                            disabled={!input.trim() || loading}
+                            onClick={loading ? () => setLoading(false) : () => handleSend('')}
+                            disabled={(!input.trim() && !loading)}
                             className={cn(
-                                "w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-20 shrink-0",
-                                activeTutor === 'lila' ? "bg-pink-500 shadow-pink-500/20" : "bg-slate-900 shadow-slate-900/20"
+                                "w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg active:scale-90 transition-all disabled:opacity-20 shrink-0 bg-linear-to-br",
+                                loading ? "bg-rose-500 shadow-rose-200" : currentTutor.grad
                             )}
                         >
-                            <Send className="w-5 h-5" />
+                            {loading ? <X className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                         </button>
                     </div>
                 </div>
@@ -2323,183 +2422,264 @@ const NoticeBoard = () => {
     );
 };
 
+const SAMPLE_NEWS: any[] = [
+    {
+        id: 's1',
+        title: 'SEE Exam 2083: New Model Question Sets Released by CDC',
+        content: `The Curriculum Development Centre (CDC) has released the updated model question sets for the Secondary Education Examination (SEE) 2083. 
+
+The new sets include changes in the marking scheme for Mathematics and Science, focusing more on conceptual understanding rather than rote memorization. This year, the questions are designed to test higher-order thinking skills as part of the ongoing curriculum reform.
+
+Students can download the PDFs from the official Aadhar Hub or visit the National Education Board website. Our AI Tutor, CANNON V4.1, has already been updated with these new patterns to help you prepare better.`,
+        category: 'Exams',
+        image_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1470&auto=format&fit=crop',
+        author: 'Aadhar Editorial',
+        created_at: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+        id: 's2',
+        title: 'Top 10 Tips for Master Grade 10 Science Practicals',
+        content: `Practical exams contribute significantly to your final grade. Here are the top 10 tips to master your Science laboratory experiments:
+
+1. Understand the Theory: Before entering the lab, ensure you know the chemical reactions or physical principles behind the experiment.
+2. Maintain a Clean Logbook: Clear diagrams and neat observations are key.
+3. Safety First: Always wear a lab coat and handle acids with care.
+4. Calibration: Check your instruments like pipettes and spring balances for zero errors.
+
+Our expert AI, NOVA V3.4, has a dedicated module for practical simulations and common viva questions used by SEE examiners.`,
+        category: 'Study Tips',
+        image_url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=1470&auto=format&fit=crop',
+        author: 'Dr. Sameer Pathak',
+        created_at: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+        id: 's3',
+        title: 'Education Minister Announces Digital Transformation in Public Schools',
+        content: `In a landmark decision, the Ministry of Education has announced a plan to equip all public secondary schools with high-speed internet and digital learning tools within the next two years.
+
+"The goal is to bridge the digital divide between private and community schools," the minister stated during the press conference. Aadhar Pathshala is proud to be at the forefront of this digital revolution, providing AI-powered learning to students across Nepal.
+
+Initial pilot programs will begin in schools across the Bagmati Province starting next semester.`,
+        category: 'Policy',
+        image_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=1470&auto=format&fit=crop',
+        author: 'EduWeekly Nepal',
+        created_at: new Date(Date.now() - 172800000).toISOString()
+    },
+    {
+        id: 's4',
+        title: 'How to Manage Board Exam Stress: A Student Perspective',
+        content: `The pressure of the SEE can be overwhelming. We interviewed several toppers from last year to see how they managed their mental health.
+
+- Consistent Breaks: "I followed the Pomodoro technique, studying for 50 minutes and resting for 10," says Ravi, who scored 4.0 GPA.
+- Physical Activity: A quick walk or 20 minutes of exercise helps recharge the brain.
+- Adequate Sleep: Sacrificing sleep for studies often leads to lower retention rates.
+
+Remember, the Board Exam is just a milestone, not the destination. Stay calm and trust your preparation.`,
+        category: 'Wellness',
+        image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1470&auto=format&fit=crop',
+        author: 'Priya Sharma',
+        created_at: new Date(Date.now() - 259200000).toISOString()
+    },
+    {
+        id: 's5',
+        title: 'New Vocational Courses Introduced in Grade 9 and 10 Curriculum',
+        content: `The CDC has introduced three new vocational courses: Artificial Intelligence, Tourism Management, and Sustainable Agriculture, as optional subjects for Grade 9 and 10.
+
+These subjects aim to provide practical skills that are relevant to the modern economy. "We want students to not only be academic experts but also skill-ready for the real world," said the curriculum coordinator.
+
+Aadhar AI will soon launch specific tutors and hub materials for these new subjects. Stay tuned!`,
+        category: 'Updates',
+        image_url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1470&auto=format&fit=crop',
+        author: 'Aadhar News Desk',
+        created_at: new Date(Date.now() - 345600000).toISOString()
+    }
+];
+
 const NewsPage = () => {
     const { liveNews, fetchLiveNews } = useApp();
-    const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
-    const [activeTab, setActiveTab] = useState('All');
+    const [selectedNews, setSelectedNews] = useState<any | null>(null);
+    const [activeTab, setActiveTab] = useState('For You');
 
-    useEffect(() => { fetchLiveNews && fetchLiveNews(); }, []);
+    useEffect(() => { if (fetchLiveNews) fetchLiveNews(); }, []);
 
-    const categories = [
-        { id: 'All', icon: Globe, color: 'bg-slate-100 text-slate-600', active: 'bg-linear-to-r from-slate-800 to-slate-900 text-white' },
-        { id: 'Exams', icon: GraduationCap, color: 'bg-rose-100 text-rose-600', active: 'bg-linear-to-r from-rose-500 to-rose-600 text-white' },
-        { id: 'Results', icon: Trophy, color: 'bg-amber-100 text-amber-600', active: 'bg-linear-to-r from-amber-500 to-amber-600 text-white' },
-        { id: 'General', icon: Zap, color: 'bg-emerald-100 text-emerald-600', active: 'bg-linear-to-r from-emerald-500 to-emerald-600 text-white' }
-    ];
+    const tabs = ['For You', 'Featured', 'Top stories', 'Trending'];
 
-    const filteredNews = activeTab === 'All' ? liveNews.map(n => ({
+    const allNews = liveNews.map(n => ({
         id: n.id,
         title: n.title,
-        body: n.content,
-        date: new Date(n.created_at).toLocaleDateString('ne-NP'),
-        tag: n.category?.toUpperCase() || 'GENERAL',
-        tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
-        imageUrl: n.image_url
-    })) : liveNews.filter(n => {
-        const normalizedTag = n.category?.toLowerCase() || '';
-        const normalizedActiveTab = activeTab.toLowerCase().slice(0, -1);
-        return normalizedTag.includes(normalizedActiveTab) || normalizedTag === activeTab.toLowerCase();
-    }).map(n => ({
-        id: n.id,
-        title: n.title,
-        body: n.content,
-        date: new Date(n.created_at).toLocaleDateString('ne-NP'),
-        tag: n.category?.toUpperCase() || 'GENERAL',
-        tagBg: n.category === 'exam' ? 'bg-rose-500' : n.category === 'result' ? 'bg-indigo-500' : 'bg-emerald-500',
-        imageUrl: n.image_url
-    }));
+        content: n.content,
+        created_at: n.created_at,
+        category: n.category || 'General',
+        image_url: n.image_url,
+        author: n.author || 'Admin'
+    })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const filteredNews = activeTab === 'For You' ? allNews : allNews.filter(n => {
+        if (activeTab === 'Featured') return n.category === 'Exams' || n.category === 'Updates';
+        if (activeTab === 'Top stories') return true;
+        return true;
+    });
+
+    if (selectedNews) {
+        return (
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="fixed inset-0 z-[3000] bg-white overflow-y-auto"
+            >
+                <div className="relative h-80 md:h-[30rem]">
+                    <img 
+                        src={selectedNews.image_url || 'https://images.unsplash.com/photo-1504711432869-5d39a1103c0e?q=80&w=1470&auto=format&fit=crop'} 
+                        className="w-full h-full object-cover" 
+                        alt="" 
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
+                    <button 
+                        onClick={() => setSelectedNews(null)}
+                        className="absolute top-6 left-6 w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20 active:scale-95 transition-all"
+                    >
+                        <ChevronLeft className="w-8 h-8" />
+                    </button>
+                    
+                    <div className="absolute bottom-10 left-10 right-10 max-w-4xl mx-auto">
+                        <span className="px-5 py-2 bg-rose-500 text-white text-[0.7rem] font-black uppercase tracking-widest rounded-2xl mb-4 inline-block shadow-2xl">
+                            {selectedNews.category}
+                        </span>
+                        <h2 className="text-3xl md:text-5xl font-black text-white leading-none tracking-tighter drop-shadow-2xl italic uppercase">
+                            {selectedNews.title}
+                        </h2>
+                    </div>
+                </div>
+
+                <div className="max-w-4xl mx-auto px-6 py-12">
+                    <div className="bg-white rounded-[3rem] p-6 md:p-8 shadow-2xl border border-slate-50 mb-12 -mt-24 relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
+                        <div className="flex items-center gap-4 w-full md:w-auto overflow-hidden">
+                            <div className="w-14 h-14 md:w-16 md:h-16 rounded-[1.5rem] bg-slate-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl rotate-3 shrink-0">
+                                <img src={`https://ui-avatars.com/api/?name=${selectedNews.author}&background=000&color=fff`} className="w-full h-full object-cover" alt="" />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="text-base md:text-lg font-black text-slate-900 uppercase italic leading-tight truncate">{selectedNews.author}</h3>
+                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest mt-1 truncate">{new Date(selectedNews.created_at).toLocaleDateString()} · Official Metadata</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 sm:gap-3 w-full md:w-auto">
+                             <button className="flex-1 md:flex-none h-14 px-4 sm:px-8 bg-slate-900 text-white rounded-[1.5rem] flex items-center justify-center gap-2 sm:gap-3 font-black text-[0.65rem] sm:text-[0.7rem] uppercase tracking-widest shadow-xl transition-all active:scale-95 whitespace-nowrap">
+                                 <Bookmark className="w-4 h-4 shrink-0" />
+                                 Track Report
+                             </button>
+                             <button className="w-14 h-14 bg-slate-50 rounded-[1.5rem] flex items-center justify-center text-slate-400 border border-slate-100 active:rotate-12 transition-transform shrink-0"><Share2 className="w-5 h-5" /></button>
+                        </div>
+                    </div>
+
+                    <div className="prose prose-lg prose-slate max-w-none prose-p:text-slate-600 prose-p:font-bold prose-p:leading-relaxed prose-headings:italic prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tighter">
+                        <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>{selectedNews.content}</Markdown>
+                    </div>
+
+                    <div className="mt-20 pt-10 border-t border-slate-100 space-y-8">
+                         <div className="flex items-center justify-between">
+                            <h4 className="text-[0.8rem] font-black text-slate-900 uppercase tracking-[0.4em] italic">Visual Intelligence</h4>
+                            <div className="flex-1 h-px bg-linear-to-r from-transparent via-slate-100 to-transparent mx-4" />
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div className="aspect-video bg-slate-100 rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white">
+                                 <img src="https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=800" className="w-full h-full object-cover" alt="" />
+                             </div>
+                             <div className="aspect-video bg-slate-100 rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white">
+                                 <img src="https://images.unsplash.com/photo-1523050335456-c384474b3353?q=80&w=800" className="w-full h-full object-cover" alt="" />
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     return (
         <div className="space-y-12 animate-fade-up pb-32">
-            <header className="relative py-16 md:py-24 overflow-hidden rounded-[4rem] bg-slate-900 text-white border-[10px] border-slate-800 shadow-2xl">
-                <div className="absolute inset-0 bg-linear-to-br from-blue-600/30 via-transparent to-rose-600/30 blur-[80px]" />
-                <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 pointer-events-none" />
-                
-                <div className="relative z-10 text-center px-6">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-3 px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 mb-8"
-                    >
-                        <Radio className="w-4 h-4 text-rose-500 animate-pulse" />
-                        <span className="text-[0.6rem] font-black uppercase tracking-[0.4em]">Official Broadcast Channel</span>
-                    </motion.div>
-                    <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-[0.8] mb-6 drop-shadow-2xl">
-                        Universal <br/> <span className="text-rose-500">Pulse</span>
-                    </h1>
-                    <p className="text-[0.7rem] md:text-lg font-bold text-slate-300 max-w-2xl mx-auto tracking-wide leading-relaxed italic opacity-80 uppercase">
-                        Global SEE 2083 Intelligence • Real-time curriculum updates • National Board Alerts
-                    </p>
+            <header className="flex flex-col md:flex-row md:items-end justify-between px-1 gap-6">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                         <span className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-black text-xs italic">A</span>
+                         <span className="text-[0.65rem] font-black uppercase tracking-[0.5em] text-slate-400">Intelligence Feed</span>
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">The Pulse</h1>
+                </div>
+                <div className="flex gap-3">
+                     <div className="h-14 px-6 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-slate-400 group focus-within:ring-2 focus-within:ring-slate-900 transition-all">
+                         <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                         <input type="text" placeholder="Search Intel..." className="bg-transparent border-none outline-none text-xs font-black uppercase tracking-widest text-slate-900 placeholder:text-slate-300 w-32 md:w-48" />
+                     </div>
                 </div>
             </header>
 
-            <div className="flex gap-4 overflow-x-auto pb-4 px-2 no-scrollbar scroll-smooth">
-                {categories.map(cat => (
+            <div className="flex items-center gap-8 overflow-x-auto px-1 no-scrollbar pb-2">
+                {tabs.map((tab) => (
                     <button 
-                        key={cat.id}
-                        onClick={() => setActiveTab(cat.id)}
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
                         className={cn(
-                            "flex items-center gap-4 px-10 py-5 rounded-[2.5rem] font-black text-[0.7rem] uppercase tracking-widest transition-all shrink-0 border-4",
-                            activeTab === cat.id 
-                                ? cat.active + " border-transparent shadow-2xl scale-105" 
-                                : "bg-white text-slate-400 border-white hover:border-slate-100 shadow-sm"
+                            "text-[0.7rem] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap relative pb-4",
+                            activeTab === tab ? "text-slate-900 scale-110" : "text-slate-400 hover:text-slate-600"
                         )}
                     >
-                        <cat.icon className={cn("w-5 h-5", activeTab === cat.id ? "text-white" : "text-slate-300")} />
-                        {cat.id}
+                        {tab}
+                        {activeTab === tab && (
+                            <motion.div layoutId="news-tab" className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-900 rounded-full" />
+                        )}
                     </button>
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <AnimatePresence mode="popLayout">
-                    {filteredNews.length > 0 ? filteredNews.map((n, i) => (
-                        <motion.div
-                            key={n.id}
-                            initial={{ opacity: 0, scale: 0.9, rotate: -1 }}
-                            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                            transition={{ delay: i * 0.05 }}
-                            className="bg-white rounded-[3.5rem] border-4 border-slate-50 shadow-2xl overflow-hidden group flex flex-col hover:border-rose-500/20 hover:shadow-rose-500/10 transition-all duration-500"
-                        >
-                            <div className="relative h-64 overflow-hidden shrink-0">
-                                <img src={n.imageUrl || 'https://images.unsplash.com/photo-1588702547324-f176aa5130b0?auto=format&fit=crop&q=80'} alt={n.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
-                                <div className="absolute inset-0 bg-linear-to-t from-slate-950/90 via-transparent to-transparent" />
-                                <div className="absolute top-6 left-6">
-                                    <span className={cn("text-[0.55rem] font-black px-5 py-2 rounded-2xl uppercase tracking-widest shadow-xl border border-white/20", n.tagBg)}>{n.tag}</span>
-                                </div>
-                            </div>
-                            <div className="p-10 flex flex-col flex-1">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Calendar className="w-5 h-5 text-slate-300" />
-                                    <span className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">{n.date}</span>
-                                </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-4 leading-tight tracking-tighter uppercase italic group-hover:text-rose-500 transition-colors">
-                                    {n.title}
-                                </h3>
-                                <p className="text-sm text-slate-500 leading-relaxed font-bold mb-10 flex-1 line-clamp-3">
-                                    {n.body}
-                                </p>
-                                <button 
-                                    onClick={() => setSelectedNews(n)}
-                                    className="w-full py-4 bg-slate-50 text-slate-900 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm flex items-center justify-center gap-3"
-                                >
-                                    Access Data Stream
-                                    <ArrowLeft className="w-4 h-4 rotate-180" />
-                                </button>
-                            </div>
-                        </motion.div>
-                    )) : (
-                        <div className="col-span-full py-32 text-center bg-white rounded-[4rem] border-4 border-dashed border-slate-100">
-                            <Megaphone className="w-20 h-20 text-slate-200 mx-auto mb-6" />
-                            <h3 className="text-2xl font-black text-slate-300 uppercase tracking-tighter">Quiet Frequency</h3>
-                            <p className="text-[0.65rem] font-black text-slate-400/60 uppercase tracking-widest mt-2 italic">Broadcast node offline or no data detected.</p>
-                        </div>
-                    )}
-                </AnimatePresence>
-            </div>
-
-            {/* Read More Modal */}
-            <AnimatePresence>
-                {selectedNews && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {filteredNews.map((news, i) => (
                     <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm"
-                        onClick={() => setSelectedNews(null)}
+                        key={news.id}
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        onClick={() => setSelectedNews(news)}
+                        className="group bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden cursor-pointer hover:shadow-slate-200/50 transition-all relative active:scale-[0.98]"
                     >
-                        <motion.div 
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white w-full max-w-2xl rounded-[3rem] overflow-hidden shadow-2xl relative"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button onClick={() => setSelectedNews(null)} className="absolute top-6 right-6 z-10 w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-slate-900 hover:bg-white transition-all">
-                                <X className="w-5 h-5" />
-                            </button>
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                            <img 
+                                src={news.image_url || 'https://images.unsplash.com/photo-1504711432869-5d39a1103c0e?q=80&w=1470&auto=format&fit=crop'} 
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
+                                alt="" 
+                            />
+                            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
                             
-                            {selectedNews.imageUrl && (
-                                <div className="w-full h-64 overflow-hidden relative">
-                                    <img src={selectedNews.imageUrl} alt={selectedNews.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                    <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                                    <div className="absolute bottom-8 left-10">
-                                        <span className={cn("text-[0.6rem] font-black px-4 py-2 rounded-xl uppercase tracking-widest text-white backdrop-blur-md border border-white/20", selectedNews.tagBg)}>
-                                            {selectedNews.tag}
-                                        </span>
+                            <div className="absolute top-8 left-8">
+                                <span className={cn(
+                                    "px-5 py-2 text-white text-[0.65rem] font-black uppercase tracking-widest rounded-2xl shadow-2xl backdrop-blur-md",
+                                    news.category === 'Exams' ? "bg-rose-500" : news.category === 'Study Tips' ? "bg-indigo-500" : "bg-emerald-500"
+                                )}>
+                                    {news.category}
+                                </span>
+                            </div>
+
+                            <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8">
+                                <h3 className="text-xl md:text-3xl font-black text-white leading-tight tracking-tighter italic uppercase drop-shadow-xl mb-4 md:mb-6 group-hover:translate-x-3 transition-transform line-clamp-3">
+                                    {news.title}
+                                </h3>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                                        <div className="w-10 h-10 rounded-xl border-2 border-white/20 overflow-hidden shadow-lg rotate-2 shrink-0">
+                                            <img src={`https://ui-avatars.com/api/?name=${news.author}&background=fff&color=000`} alt="" className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-[0.65rem] font-black text-white uppercase tracking-widest leading-none truncate">{news.author}</span>
+                                            <span className="text-[0.55rem] font-bold text-white/50 uppercase tracking-widest mt-1 truncate">{new Date(news.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                    <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all shrink-0">
+                                        <ArrowRight className="w-6 h-6" />
                                     </div>
                                 </div>
-                            )}
-
-                            <div className="p-10 md:p-14 overflow-y-auto max-h-[60vh] custom-scrollbar">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Calendar className="w-5 h-5 text-rose-500" />
-                                    <span className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest">{selectedNews.date}</span>
-                                </div>
-                                <h2 className="text-3xl font-black text-slate-900 mb-6 leading-tight tracking-tighter uppercase italic">{selectedNews.title}</h2>
-                                <div className="prose prose-slate max-w-none text-slate-600 font-bold leading-relaxed whitespace-pre-wrap">
-                                    {selectedNews.body}
-                                </div>
                             </div>
-                            
-                            <div className="p-8 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-                                <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Official Channel • Aadhar Pathshala</p>
-                                <button onClick={() => setSelectedNews(null)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all">Close</button>
-                            </div>
-                        </motion.div>
+                        </div>
                     </motion.div>
-                )}
-            </AnimatePresence>
+                ))}
+            </div>
         </div>
     );
 };
@@ -2633,26 +2813,26 @@ const PeriodicTablePage = () => {
     ];
 
     const elementDetails: Record<number, any> = {
-        1: { v: 1, ec: '1', p: 1, n: 0, e: 1, f: 'Highly flammable, most abundant element in the universe.' },
-        2: { v: 0, ec: '2', p: 2, n: 2, e: 2, f: 'Noble gas, inert, used in balloons and high-tech cryogenics.' },
-        3: { v: 1, ec: '2, 1', p: 3, n: 4, e: 3, f: 'Lightest alkali metal, highly reactive with water, used in rechargeable batteries.' },
-        4: { v: 2, ec: '2, 2', p: 4, n: 5, e: 4, f: 'Alkaline earth metal, high melting point, very strong yet lightweight.' },
-        5: { v: 3, ec: '2, 3', p: 5, n: 6, e: 5, f: 'Metalloid, found in borax, essential for plant growth and fiberglass.' },
-        6: { v: 4, ec: '2, 4', p: 6, n: 6, e: 6, f: 'Basis of all life, forms diamonds and graphite. Crucial for carbon dating.' },
-        7: { v: 3, ec: '2, 5', p: 7, n: 7, e: 7, f: 'Colorless gas, makes up 78% of the atmosphere, vital for fertilizers.' },
-        8: { v: 2, ec: '2, 6', p: 8, n: 8, e: 8, f: 'Highly reactive non-metal, 21% of atmosphere, essential for respiration.' },
-        9: { v: 1, ec: '2, 7', p: 9, n: 10, e: 9, f: 'Pale yellow gas, most reactive element, found in toothpaste for tooth security.' },
-        10: { v: 0, ec: '2, 8', p: 10, n: 10, e: 10, f: 'Noble gas, completely inert, glows bright orange-red in discharge tubes.' },
-        11: { v: 1, ec: '2, 8, 1', p: 11, n: 12, e: 11, f: 'Soft alkali metal, highly reactive, found in table salt (NaCl).' },
-        12: { v: 2, ec: '2, 8, 2', p: 12, n: 12, e: 12, f: 'Strong, lightweight metal, burns with a blinding white flame.' },
-        13: { v: 3, ec: '2, 8, 3', p: 13, n: 14, e: 13, f: 'Most abundant metal in Earth crust, lightweight and corrosion-resistant.' },
-        14: { v: 4, ec: '2, 8, 4', p: 14, n: 14, e: 14, f: 'Semiconductor, used in computer chips and solar cells. 2nd most abundant in crust.' },
-        15: { v: '3, 5', ec: '2, 8, 5', p: 15, n: 16, e: 15, f: 'Highly reactive non-metal, found in DNA, bones, and matches.' },
-        16: { v: '2, 4, 6', ec: '2, 8, 6', p: 16, n: 16, e: 16, f: 'Bright yellow non-metal, found in volcanic areas, used in sulfuric acid.' },
-        17: { v: 1, ec: '2, 8, 7', p: 17, n: 18, e: 17, f: 'Toxic green gas, used for water purification and as a disinfectant.' },
-        18: { v: 0, ec: '2, 8, 8', p: 18, n: 22, e: 18, f: 'Noble gas, used as an inert shield in welding and light bulbs.' },
-        19: { v: 1, ec: '2, 8, 8, 1', p: 19, n: 20, e: 19, f: 'Highly reactive alkali metal, essential electrolyte for nerve conduction.' },
-        20: { v: 2, ec: '2, 8, 8, 2', p: 20, n: 20, e: 20, f: 'Alkaline earth metal, vital for bones, teeth, and muscle movement.' },
+        1: { v: 1, ec: '1', spdf: '1s¹', p: 1, n: 0, e: 1, f: 'Highly flammable, most abundant element in the universe.' },
+        2: { v: 0, ec: '2', spdf: '1s²', p: 2, n: 2, e: 2, f: 'Noble gas, inert, used in balloons and high-tech cryogenics.' },
+        3: { v: 1, ec: '2, 1', spdf: '1s² 2s¹', p: 3, n: 4, e: 3, f: 'Lightest alkali metal, highly reactive with water, used in rechargeable batteries.' },
+        4: { v: 2, ec: '2, 2', spdf: '1s² 2s²', p: 4, n: 5, e: 4, f: 'Alkaline earth metal, high melting point, very strong yet lightweight.' },
+        5: { v: 3, ec: '2, 3', spdf: '1s² 2s² 2p¹', p: 5, n: 6, e: 5, f: 'Metalloid, found in borax, essential for plant growth and fiberglass.' },
+        6: { v: 4, ec: '2, 4', spdf: '1s² 2s² 2p²', p: 6, n: 6, e: 6, f: 'Basis of all life, forms diamonds and graphite. Crucial for carbon dating.' },
+        7: { v: 3, ec: '2, 5', spdf: '1s² 2s² 2p³', p: 7, n: 7, e: 7, f: 'Colorless gas, makes up 78% of the atmosphere, vital for fertilizers.' },
+        8: { v: 2, ec: '2, 6', spdf: '1s² 2s² 2p⁴', p: 8, n: 8, e: 8, f: 'Highly reactive non-metal, 21% of atmosphere, essential for respiration.' },
+        9: { v: 1, ec: '2, 7', spdf: '1s² 2s² 2p⁵', p: 9, n: 10, e: 9, f: 'Pale yellow gas, most reactive element, found in toothpaste for tooth security.' },
+        10: { v: 0, ec: '2, 8', spdf: '1s² 2s² 2p⁶', p: 10, n: 10, e: 10, f: 'Noble gas, completely inert, glows bright orange-red in discharge tubes.' },
+        11: { v: 1, ec: '2, 8, 1', spdf: '1s² 2s² 2p⁶ 3s¹', p: 11, n: 12, e: 11, f: 'Soft alkali metal, highly reactive, found in table salt (NaCl).' },
+        12: { v: 2, ec: '2, 8, 2', spdf: '1s² 2s² 2p⁶ 3s²', p: 12, n: 12, e: 12, f: 'Strong, lightweight metal, burns with a blinding white flame.' },
+        13: { v: 3, ec: '2, 8, 3', spdf: '1s² 2s² 2p⁶ 3s² 3p¹', p: 13, n: 14, e: 13, f: 'Most abundant metal in Earth crust, lightweight and corrosion-resistant.' },
+        14: { v: 4, ec: '2, 8, 4', spdf: '1s² 2s² 2p⁶ 3s² 3p²', p: 14, n: 14, e: 14, f: 'Semiconductor, used in computer chips and solar cells. 2nd most abundant in crust.' },
+        15: { v: '3, 5', ec: '2, 8, 5', spdf: '1s² 2s² 2p⁶ 3s² 3p³', p: 15, n: 16, e: 15, f: 'Highly reactive non-metal, found in DNA, bones, and matches.' },
+        16: { v: '2, 4, 6', ec: '2, 8, 6', spdf: '1s² 2s² 2p⁶ 3s² 3p⁴', p: 16, n: 16, e: 16, f: 'Bright yellow non-metal, found in volcanic areas, used in sulfuric acid.' },
+        17: { v: 1, ec: '2, 8, 7', spdf: '1s² 2s² 2p⁶ 3s² 3p⁵', p: 17, n: 18, e: 17, f: 'Toxic green gas, used for water purification and as a disinfectant.' },
+        18: { v: 0, ec: '2, 8, 8', spdf: '1s² 2s² 2p⁶ 3s² 3p⁶', p: 18, n: 22, e: 18, f: 'Noble gas, used as an inert shield in welding and light bulbs.' },
+        19: { v: 1, ec: '2, 8, 8, 1', spdf: '1s² 2s² 2p⁶ 3s² 3p⁶ 4s¹', p: 19, n: 20, e: 19, f: 'Highly reactive alkali metal, essential electrolyte for nerve conduction.' },
+        20: { v: 2, ec: '2, 8, 8, 2', spdf: '1s² 2s² 2p⁶ 3s² 3p⁶ 4s²', p: 20, n: 20, e: 20, f: 'Alkaline earth metal, vital for bones, teeth, and muscle movement.' },
     };
 
     const getCategoryStyles = (c: string) => {
@@ -2675,6 +2855,253 @@ const PeriodicTablePage = () => {
     };
 
     const first20 = elementsData.slice(0, 20);
+
+    if (selectedElement) {
+        return (
+            <div className="space-y-8 animate-fade-up pb-24 overflow-hidden min-h-screen">
+                <div className="max-w-4xl mx-auto flex items-center gap-4 py-2 mt-4 px-4">
+                    <button onClick={() => setSelectedElement(null)} className="w-12 h-12 bg-white shadow-sm border border-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-50 transition-colors shrink-0">
+                        <ArrowLeft className="w-6 h-6" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-black italic uppercase tracking-tighter text-slate-800">{selectedElement.name}</h1>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedElement.c.replace('-', ' ')} Model</p>
+                    </div>
+                </div>
+
+                <div className="max-w-4xl mx-auto space-y-8 pb-32 px-4">
+                    <div className="flex items-start justify-between flex-wrap gap-8">
+                        <div className="flex items-center gap-8">
+                            <div className={cn(
+                                "w-28 h-28 md:w-36 md:h-36 rounded-[2.5rem] border-[4px] border-white shadow-2xl flex flex-col items-center justify-center relative",
+                                getCategoryStyles(selectedElement.c)
+                            )}>
+                                <span className="absolute top-3 left-4 text-sm md:text-lg font-black opacity-60 leading-none">{selectedElement.n}</span>
+                                <span className="text-5xl md:text-7xl font-black italic tracking-tighter leading-none">{selectedElement.s}</span>
+                                <span className="absolute bottom-3 right-4 text-[0.7rem] md:text-[0.9rem] font-black opacity-40 leading-none">{selectedElement.m}</span>
+                            </div>
+                            <div className="space-y-2">
+                                <div className="flex items-center gap-3">
+                                    <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{selectedElement.name}</h2>
+                                    <button 
+                                        onClick={() => {
+                                            const utterance = new SpeechSynthesisUtterance(selectedElement.name);
+                                            window.speechSynthesis.speak(utterance);
+                                        }}
+                                        className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-indigo-500 hover:bg-indigo-50 transition-colors shadow-sm ml-2 active:scale-95"
+                                        title="Pronounce"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                                    </button>
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <span className="px-4 py-1.5 bg-slate-100 rounded-full text-xs font-black text-slate-500 uppercase tracking-widest">Atomic: {selectedElement.n}</span>
+                                    <span className="px-4 py-1.5 bg-slate-100 rounded-full text-xs font-black text-slate-500 uppercase tracking-widest">Mass: {selectedElement.m}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* FIRST 20 DETAILS */}
+                    {elementDetails[selectedElement.n] ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up w-full">
+                            {/* ELECTRONIC CONFIGURATION CARD */}
+                            <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group col-span-1 md:col-span-2 lg:col-span-1">
+                                <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">K</div>
+                                <div className="flex items-center gap-3 relative z-10">
+                                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-500"><Sigma className="w-5 h-5" /></div>
+                                    <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Configuration</p>
+                                </div>
+                                <div className="space-y-4 relative z-10 w-full overflow-hidden">
+                                    {/* Main Orbits */}
+                                    <div>
+                                        <p className="text-2xl font-black text-slate-800 italic tracking-tighter font-mono truncate">{elementDetails[selectedElement.n].ec}</p>
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {elementDetails[selectedElement.n].ec.split(',').map((_: any, i: number) => (
+                                                <span key={i} className="text-[0.55rem] font-black text-white bg-slate-800 px-1.5 py-0.5 rounded-md uppercase shrink-0">
+                                                    {['K', 'L', 'M', 'N', 'O'][i]} Shell
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="w-full h-[1px] bg-slate-200" />
+                                    {/* Subshell Configuration */}
+                                    <div>
+                                        <p className="text-xl font-black text-indigo-600 italic tracking-tighter font-mono pb-1 break-words">{elementDetails[selectedElement.n].spdf}</p>
+                                        <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Subshell Notation</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* ATOM 3D FIGURE CARD */}
+                            <div className="bg-slate-900 p-8 rounded-[2.5rem] border border-slate-800 shadow-2xl relative overflow-hidden group flex flex-col items-center justify-center min-h-[300px]">
+                                <div className="absolute top-4 left-4 flex items-center gap-3 z-10">
+                                    <div className="w-10 h-10 bg-white/10 rounded-xl backdrop-blur-md flex items-center justify-center text-blue-400"><Compass className="w-5 h-5" /></div>
+                                    <p className="text-[0.65rem] font-black text-white/50 uppercase tracking-widest">Atom View</p>
+                                </div>
+                                
+                                {/* Upgraded Bohr Model Visualizer using SVG */}
+                                <div className="relative w-full aspect-square max-w-[200px] mt-6 shrink-0 flex items-center justify-center">
+                                    <svg viewBox="0 0 100 100" className="absolute inset-0 w-full h-full overflow-visible drop-shadow-2xl">
+                                        <circle cx="50" cy="50" r="4" fill="#f43f5e" className="animate-pulse" filter="drop-shadow(0 0 4px #f43f5e)" />
+                                        {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number, arr: any[]) => {
+                                            const radius = 15 + (i * 12);
+                                            const dots = parseInt(shell.trim());
+                                            return (
+                                                <g key={i}>
+                                                    <circle 
+                                                        cx="50" 
+                                                        cy="50" 
+                                                        r={radius} 
+                                                        fill="none" 
+                                                        stroke="rgba(255,255,255,0.15)" 
+                                                        strokeWidth="0.5" 
+                                                        strokeDasharray="2 3"
+                                                        style={{ 
+                                                            transformOrigin: '50px 50px',
+                                                            animation: `spin ${30 + i * 20}s linear infinite ${i % 2 === 0 ? 'normal' : 'reverse'}` 
+                                                        }}
+                                                    />
+                                                    <g style={{ 
+                                                        transformOrigin: '50px 50px',
+                                                        animation: `spin ${10 + i * 8}s linear infinite ${i % 2 === 0 ? 'normal' : 'reverse'}` 
+                                                    }}>
+                                                        {Array.from({ length: dots }).map((_, j) => {
+                                                            const angle = (360 / dots) * j;
+                                                            const rad = (angle * Math.PI) / 180;
+                                                            const cx = 50 + radius * Math.cos(rad);
+                                                            const cy = 50 + radius * Math.sin(rad);
+                                                            return (
+                                                                <circle 
+                                                                    key={j}
+                                                                    cx={cx}
+                                                                    cy={cy}
+                                                                    r="1.5"
+                                                                    fill="#60a5fa"
+                                                                    filter="drop-shadow(0 0 2px #60a5fa)"
+                                                                />
+                                                            );
+                                                        })}
+                                                    </g>
+                                                </g>
+                                            );
+                                        })}
+                                    </svg>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500"><Zap className="w-5 h-5" /></div>
+                                        <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Properties</p>
+                                    </div>
+                                    <div className="flex items-end gap-3">
+                                        <p className="text-3xl font-black text-slate-800 italic tracking-tighter">{elementDetails[selectedElement.n].v}</p>
+                                        <p className="text-[0.65rem] font-bold text-slate-400 leading-relaxed uppercase pb-1">Valency</p>
+                                    </div>
+                                </div>
+                                <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
+                                    <div>
+                                        <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">State</p>
+                                        <p className="text-sm font-bold text-slate-700">{['H','N','O','F','Cl','He','Ne','Ar','Kr','Xe','Rn'].includes(selectedElement.s) ? 'Gas' : ['Hg','Br'].includes(selectedElement.s) ? 'Liquid' : 'Solid'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">Group / Period</p>
+                                        <p className="text-sm font-bold text-slate-700">{selectedElement.x} / {selectedElement.y}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow md:col-span-2 relative overflow-hidden group">
+                                <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">N</div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500"><Activity className="w-5 h-5" /></div>
+                                        <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Nucleus Data</p>
+                                    </div>
+                                    <span className="text-[0.55rem] font-black bg-emerald-100 text-emerald-600 px-2 py-1 rounded-md uppercase tracking-widest">{selectedElement.n === 1 ? '3 Isotopes' : 'Isotopes'}</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4 pt-2">
+                                    <div className="flex flex-col border-r border-slate-200">
+                                        <span className="text-[0.6rem] font-black text-emerald-600 uppercase tracking-widest">Protons</span>
+                                        <span className="text-3xl font-black text-slate-800">{elementDetails[selectedElement.n].p}</span>
+                                    </div>
+                                    <div className="flex flex-col border-r border-slate-200 px-2">
+                                        <span className="text-[0.6rem] font-black text-blue-600 uppercase tracking-widest">Neutrons</span>
+                                        <span className="text-3xl font-black text-slate-800">{elementDetails[selectedElement.n].n}</span>
+                                    </div>
+                                    <div className="flex flex-col px-2">
+                                        <span className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest">Electrons</span>
+                                        <span className="text-3xl font-black text-slate-800">{elementDetails[selectedElement.n].e}</span>
+                                    </div>
+                                </div>
+                                <div className="pt-4 mt-2 border-t border-slate-200">
+                                    <details className="group/details">
+                                        <summary className="text-[0.65rem] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-emerald-600 transition-colors flex items-center gap-1">
+                                            View Known Isotopes <ChevronRight className="w-3 h-3 group-open/details:rotate-90 transition-transform" />
+                                        </summary>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            {selectedElement.n === 1 ? (
+                                                <>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Protium [¹H]</span>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Deuterium [²H]</span>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Tritium [³H]</span>
+                                                </>
+                                            ) : selectedElement.n === 6 ? (
+                                                <>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-12</span>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-13</span>
+                                                    <span className="text-xs font-bold text-slate-700 bg-white border border-rose-200 px-2.5 py-1 rounded-lg text-rose-700">Carbon-14 (Radioactive)</span>
+                                                </>
+                                            ) : (
+                                                <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Standard isotopic mix</span>
+                                            )}
+                                        </div>
+                                    </details>
+                                </div>
+                            </div>
+
+                            <div className="bg-linear-to-br from-indigo-900 to-slate-900 p-10 rounded-[3rem] shadow-2xl md:col-span-2 lg:col-span-3 text-white relative overflow-hidden group mt-4">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
+                                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-2 h-2 bg-pink-500 rounded-full animate-ping" />
+                                            <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-[0.4em]">Expert Key Features</p>
+                                        </div>
+                                        <p className="text-xl md:text-2xl font-black italic tracking-tighter leading-snug">
+                                            {elementDetails[selectedElement.n].f}
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => navigate('/ai')}
+                                        className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
+                                    >
+                                        Learn More via AI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-6 max-w-2xl mx-auto shadow-sm mt-8">
+                            <Info className="w-16 h-16 text-slate-300 mx-auto" />
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">Atomic Profile Partial</h3>
+                                <p className="text-base font-bold text-slate-400">Deep structural analysis is available for the first 20 elements. Ask Aadhar Pro for other elements.</p>
+                            </div>
+                            <button 
+                                onClick={() => navigate('/ai')}
+                                className="inline-flex items-center gap-3 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:shadow-slate-900/20 active:scale-95 transition-all"
+                            >
+                                <Zap className="w-5 h-5 text-amber-400 shadow-[0_0_10px_white]" /> Consult Expert
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 animate-fade-up pb-24 overflow-hidden min-h-screen">
@@ -2793,250 +3220,131 @@ const PeriodicTablePage = () => {
                 ))}
             </div>
 
-            {/* ADDITIONAL ELEMENT CARDS (FIRST 20) */}
-            <div className="space-y-6 mt-12 bg-white/30 backdrop-blur-md p-8 rounded-[3.5rem] border border-white/50 shadow-inner">
-                <div className="flex items-center gap-3 px-2">
-                    <div className="w-2 h-8 bg-blue-500 rounded-full" />
-                    <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter">Detailed Element Profiles (First 20)</h3>
+            <div className="mt-16 pb-12 px-4 md:px-8 max-w-7xl mx-auto">
+                <div className="flex flex-col items-center text-center gap-4 mb-12">
+                    <div className="w-16 h-16 bg-indigo-100 rounded-3xl flex items-center justify-center text-indigo-500 shadow-sm shrink-0 rotate-3">
+                        <Sparkles className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <h2 className="text-3xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-800">Periodic Insights 🔄</h2>
+                        <p className="text-[0.65rem] md:text-sm font-bold uppercase tracking-widest text-slate-400 mt-2">Core Concepts & Elemental Trends</p>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {first20.map(el => (
-                        <div 
-                            key={`card-${el.n}`} 
-                            onClick={() => setSelectedElement(el)}
-                            className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue/20 transition-all cursor-pointer group relative overflow-hidden"
-                        >
-                            <div className={cn("absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 rounded-full", getCategoryStyles(el.c))} />
-                            <div className="flex items-center gap-4">
-                                <div className={cn("w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 border-2 border-white shadow-md", getCategoryStyles(el.c))}>
-                                    <span className="text-xl font-black">{el.s}</span>
-                                    <span className="text-[0.5rem] font-bold opacity-60 leading-none">{el.n}</span>
-                                </div>
-                                <div className="min-w-0">
-                                    <h4 className="font-black text-slate-800 uppercase tracking-tight truncate">{el.name}</h4>
-                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest leading-none mt-1">{el.c}</p>
-                                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Groups and Periods */}
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/20 hover:scale-[1.02] transition-transform duration-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center">
+                                <Activity className="w-6 h-6" />
                             </div>
-                            {elementDetails[el.n] && (
-                                <div className="mt-4 pt-4 border-t border-slate-50 grid grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                        <p className="text-[0.5rem] font-black text-slate-300 uppercase">Valency</p>
-                                        <p className="text-sm font-black text-slate-700">{elementDetails[el.n].v}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[0.5rem] font-black text-slate-300 uppercase">Conf.</p>
-                                        <p className="text-sm font-black text-slate-700 truncate">{elementDetails[el.n].ec}</p>
-                                    </div>
-                                </div>
-                            )}
+                            <h3 className="text-xl font-black text-slate-800 uppercase italic">Groups & Periods</h3>
                         </div>
-                    ))}
+                        <ul className="space-y-4 text-slate-600 text-sm font-medium">
+                            <li className="flex gap-3">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Groups (Columns)</strong>: Elements in the same group share identical valence electron counts, leading to similar chemical behavior.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Periods (Rows)</strong>: Moving left to right across a period adds protons and electrons, sequentially filling the valence shell.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Alkali Metals (Group 1)</strong>: Highly reactive, especially with water. Includes Lithium, Sodium, Potassium.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-blue-500 mt-0.5">•</span>
+                                <span><strong>Noble Gases (Group 18)</strong>: Completely inert and stable due to full valence electron shells.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* Periodic Trends */}
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/20 hover:scale-[1.02] transition-transform duration-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase italic">Periodic Trends</h3>
+                        </div>
+                        <ul className="space-y-4 text-slate-600 text-sm font-medium">
+                            <li className="flex gap-3">
+                                <span className="text-rose-500 mt-0.5">•</span>
+                                <span><strong>Atomic Radius</strong>: Decreases from left to right across a period, and increases moving down a group.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-rose-500 mt-0.5">•</span>
+                                <span><strong>Electronegativity</strong>: The ability of an atom to attract electrons. It increases across a period and decreases down a group (Fluorine is highest).</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-rose-500 mt-0.5">•</span>
+                                <span><strong>Ionization Energy</strong>: Energy required to remove an electron. Higher on the top right of the table (Helium is highest).</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-rose-500 mt-0.5">•</span>
+                                <span><strong>Metallic Character</strong>: Strongest at the bottom left (Francium), weakest at top right.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* Block Elements */}
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/20 hover:scale-[1.02] transition-transform duration-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+                                <Box className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase italic">Electron Blocks</h3>
+                        </div>
+                        <ul className="space-y-4 text-slate-600 text-sm font-medium">
+                            <li className="flex gap-3">
+                                <span className="text-amber-500 mt-0.5">•</span>
+                                <span><strong>s-block</strong>: The first two columns (Alkali & Alkaline Earth Metals) plus Helium. Their outermost electrons are in the s-orbital.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-amber-500 mt-0.5">•</span>
+                                <span><strong>p-block</strong>: The right six columns. Contains non-metals, halogens, noble gases, and metalloids.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-amber-500 mt-0.5">•</span>
+                                <span><strong>d-block</strong>: The central transition metals. Known for colorful compounds and variable oxidation states.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-amber-500 mt-0.5">•</span>
+                                <span><strong>f-block</strong>: Lanthanides and Actinides, usually placed below to save space. Mostly radioactive or synthetic.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* History & Facts */}
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/20 hover:scale-[1.02] transition-transform duration-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                                <Book className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 uppercase italic">History & Evolution</h3>
+                        </div>
+                        <ul className="space-y-4 text-slate-600 text-sm font-medium">
+                            <li className="flex gap-3">
+                                <span className="text-emerald-500 mt-0.5">•</span>
+                                <span><strong>Mendeleev's Genius</strong>: Dmitri Mendeleev organized it by atomic mass and vividly predicted properties of undiscovered elements like Gallium & Germanium.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-emerald-500 mt-0.5">•</span>
+                                <span><strong>Modern Table</strong>: Henry Moseley rearranged it by <strong>Atomic Number</strong> (protons), fixing mass irregularities.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-emerald-500 mt-0.5">•</span>
+                                <span><strong>Synthetic Elements</strong>: Elements past Uranium (92) are almost exclusively created in laboratories via particle accelerators.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="text-emerald-500 mt-0.5">•</span>
+                                <span><strong>J is Missing</strong>: The letter &quot;J&quot; is the only letter not present on the periodic table anywhere!</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
-                <p className="text-center text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] py-4 italic">Analysis powered by Aadhar Scientific Engine</p>
             </div>
-
-            {/* ELEMENT DETAILS DRAWER / SECTION */}
-            <AnimatePresence>
-                {selectedElement && (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 100 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 100 }}
-                        className="fixed inset-x-0 bottom-0 z-50 p-6 md:p-10 bg-white shadow-[0_-20px_60px_rgba(0,0,0,0.1)] rounded-t-[4rem] border-t border-slate-100 max-h-[90vh] overflow-y-auto"
-                    >
-                        <div className="max-w-4xl mx-auto space-y-8 pb-48">
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-8">
-                                    <div className={cn(
-                                        "w-24 h-24 md:w-32 md:h-32 rounded-3xl md:rounded-[2.5rem] border-[4px] border-white shadow-2xl flex flex-col items-center justify-center relative",
-                                        getCategoryStyles(selectedElement.c)
-                                    )}>
-                                        <span className="absolute top-2 left-3 text-sm md:text-lg font-black opacity-60 leading-none">{selectedElement.n}</span>
-                                        <span className="text-4xl md:text-6xl font-black italic tracking-tighter leading-none">{selectedElement.s}</span>
-                                        <span className="absolute bottom-2 right-3 text-[0.6rem] md:text-[0.8rem] font-black opacity-40 leading-none">{selectedElement.m}</span>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[0.65rem] md:text-xs font-black text-slate-400 uppercase tracking-[0.3em]">{selectedElement.c.replace('-', ' ')} Model</p>
-                                        <div className="flex items-center gap-3">
-                                            <h2 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">{selectedElement.name}</h2>
-                                            <button 
-                                                onClick={() => {
-                                                    const utterance = new SpeechSynthesisUtterance(selectedElement.name);
-                                                    window.speechSynthesis.speak(utterance);
-                                                }}
-                                                className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:bg-indigo-50 hover:text-indigo-500 transition-colors shadow-sm ml-2 active:scale-95"
-                                                title="Pronounce"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                                            </button>
-                                        </div>
-                                        <div className="flex gap-2 pt-2">
-                                            <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Atomic: {selectedElement.n}</span>
-                                            <span className="px-3 py-1 bg-slate-100 rounded-full text-[0.6rem] font-black text-slate-500 uppercase tracking-widest">Mass: {selectedElement.m}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button onClick={() => setSelectedElement(null)} className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
-                                    <ArrowLeft className="w-6 h-6 rotate-270" />
-                                </button>
-                            </div>
-
-                            {/* FIRST 20 DETAILS */}
-                            {elementDetails[selectedElement.n] ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up">
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
-                                        <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">K</div>
-                                        <div className="flex items-center gap-3 relative z-10">
-                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-blue-500"><Sigma className="w-5 h-5" /></div>
-                                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Configuration</p>
-                                        </div>
-                                        <div className="flex justify-between items-center gap-4 relative z-10">
-                                            <div>
-                                                <p className="text-3xl font-black text-slate-800 italic tracking-tighter font-mono">{elementDetails[selectedElement.n].ec}</p>
-                                                <div className="flex gap-1 mt-2">
-                                                    {elementDetails[selectedElement.n].ec.split(',').map((_: any, i: number) => (
-                                                        <span key={i} className="text-[0.55rem] font-black text-white bg-slate-800 px-1.5 py-0.5 rounded-md uppercase">
-                                                            {['K', 'L', 'M', 'N', 'O'][i]} Shell
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            {/* Bohr Model visualizer */}
-                                            <div className="relative w-20 h-20 shrink-0 flex items-center justify-center -mr-2">
-                                                <div className="w-3 h-3 rounded-full bg-rose-500 z-10 shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
-                                                {elementDetails[selectedElement.n].ec.split(',').map((shell: string, i: number, arr: any[]) => {
-                                                    const radius = 16 + (i * 12);
-                                                    const dots = parseInt(shell.trim());
-                                                    return (
-                                                        <div key={i} className="absolute inset-0 flex items-center justify-center animate-[spin_60s_linear_infinite]" style={{ width: '100%', height: '100%', animationDirection: i % 2 === 0 ? 'normal' : 'reverse', animationDuration: `${20 + i * 15}s` }}>
-                                                            <div className="absolute rounded-full border border-slate-300 pointer-events-none" style={{ width: radius * 2, height: radius * 2 }} />
-                                                            {Array.from({ length: dots }).map((_, j) => (
-                                                                <div 
-                                                                    key={j} 
-                                                                    className="absolute w-2.5 h-2.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.8)]"
-                                                                    style={{ 
-                                                                        transform: `rotate(${(360 / dots) * j}deg) translateY(-${radius}px)` 
-                                                                    }}
-                                                                    title={`${['K', 'L', 'M', 'N', 'O'][i]} Shell Electron`}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-6 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
-                                        <div className="space-y-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-rose-500"><Zap className="w-5 h-5" /></div>
-                                                <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Properties</p>
-                                            </div>
-                                            <div className="flex items-end gap-3">
-                                                <p className="text-3xl font-black text-slate-800 italic tracking-tighter">{elementDetails[selectedElement.n].v}</p>
-                                                <p className="text-[0.65rem] font-bold text-slate-400 leading-relaxed uppercase pb-1">Valency</p>
-                                            </div>
-                                        </div>
-                                        <div className="pt-4 border-t border-slate-200 grid grid-cols-2 gap-4">
-                                            <div>
-                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">State</p>
-                                                <p className="text-sm font-bold text-slate-700">{['H','N','O','F','Cl','He','Ne','Ar','Kr','Xe','Rn'].includes(selectedElement.s) ? 'Gas' : ['Hg','Br'].includes(selectedElement.s) ? 'Liquid' : 'Solid'}</p>
-                                            </div>
-                                            <div>
-                                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">Group / Period</p>
-                                                <p className="text-sm font-bold text-slate-700">{selectedElement.x} / {selectedElement.y}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 space-y-4 shadow-sm hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-3 relative overflow-hidden group">
-                                        <div className="absolute top-4 right-4 text-[5rem] font-black italic opacity-5 -z-10 group-hover:scale-110 transition-transform">N</div>
-                                        <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-emerald-500"><Activity className="w-5 h-5" /></div>
-                                                <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Nucleus Data</p>
-                                            </div>
-                                            <span className="text-[0.55rem] font-black bg-emerald-100 text-emerald-600 px-2 py-1 rounded-md uppercase tracking-widest">{selectedElement.n === 1 ? '3 Isotopes' : 'Isotopes'}</span>
-                                        </div>
-                                        <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                                            <span className="text-[0.6rem] font-black text-emerald-600 uppercase tracking-widest">Protons</span>
-                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].p}</span>
-                                        </div>
-                                        <div className="flex justify-between items-end border-b border-slate-200 pb-2">
-                                            <span className="text-[0.6rem] font-black text-blue-600 uppercase tracking-widest">Neutrons</span>
-                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].n}</span>
-                                        </div>
-                                        <div className="flex justify-between items-end">
-                                            <span className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest">Electrons</span>
-                                            <span className="text-xl font-black text-slate-800">{elementDetails[selectedElement.n].e}</span>
-                                        </div>
-                                        <div className="pt-2 mt-2 border-t border-slate-200">
-                                            <details className="group/details">
-                                                <summary className="text-[0.65rem] font-black text-slate-500 uppercase tracking-widest cursor-pointer hover:text-emerald-600 transition-colors flex items-center gap-1">
-                                                    View Known Isotopes <ChevronRight className="w-3 h-3 group-open/details:rotate-90 transition-transform" />
-                                                </summary>
-                                                <div className="mt-3 flex flex-wrap gap-2">
-                                                    {selectedElement.n === 1 ? (
-                                                        <>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Protium [¹H]</span>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Deuterium [²H]</span>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Tritium [³H]</span>
-                                                        </>
-                                                    ) : selectedElement.n === 6 ? (
-                                                        <>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-12</span>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Carbon-13</span>
-                                                            <span className="text-xs font-bold text-slate-700 bg-white border border-rose-200 px-2.5 py-1 rounded-lg text-rose-700">Carbon-14 (Radioactive)</span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-slate-500 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">Standard isotopic mix</span>
-                                                    )}
-                                                </div>
-                                            </details>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-linear-to-br from-indigo-900 to-slate-900 p-10 rounded-[3rem] shadow-2xl md:col-span-2 lg:col-span-3 text-white relative overflow-hidden group">
-                                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-700" />
-                                        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-ping" />
-                                                    <p className="text-[0.65rem] font-black text-white/40 uppercase tracking-[0.4em]">Expert Key Features</p>
-                                                </div>
-                                                <p className="text-xl md:text-2xl font-black italic tracking-tighter leading-snug">
-                                                    {elementDetails[selectedElement.n].f}
-                                                </p>
-                                            </div>
-                                            <button 
-                                                onClick={() => navigate('/ai')}
-                                                className="px-8 py-4 bg-white text-slate-900 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-slate-50 transition-colors whitespace-nowrap"
-                                            >
-                                                Learn More via AI
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="bg-slate-50 p-12 rounded-[3.5rem] border border-slate-100 text-center space-y-4">
-                                    <Info className="w-12 h-12 text-slate-300 mx-auto" />
-                                    <div className="space-y-1">
-                                        <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">Atomic Profile Partial</h3>
-                                        <p className="text-sm font-bold text-slate-400">Deep structural analysis is available for the first 20 elements. Ask Aadhar Pro for other elements.</p>
-                                    </div>
-                                    <button 
-                                        onClick={() => navigate('/ai')}
-                                        className="inline-flex items-center gap-3 px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:shadow-slate-900/20 mt-4"
-                                    >
-                                        <Zap className="w-4 h-4 text-amber-400 shadow-[0_0_10px_white]" /> Consult Expert
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };
@@ -3772,6 +4080,7 @@ const LoginPage = () => {
     const navigate = useNavigate();
     const [view, setView] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -3788,6 +4097,11 @@ const LoginPage = () => {
             return;
         }
 
+        if (view === 'signup' && !fullName) {
+            setError("Full Name is required");
+            return;
+        }
+
         setLoading(true);
         try {
             if (view === 'signup') {
@@ -3797,13 +4111,18 @@ const LoginPage = () => {
                 const { data, error: signupError } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: fullName
+                        }
+                    }
                 });
                 if (signupError) throw signupError;
                 
                 if (data.session) {
                     const newUser: User = {
                         id: data.user!.id,
-                        name: email.split('@')[0],
+                        name: fullName || email.split('@')[0],
                         email: email,
                         grade: '10',
                         streak: 1,
@@ -3951,6 +4270,18 @@ const LoginPage = () => {
                                     {successMessage}
                                 </motion.div>
                             )}
+                            {view === 'signup' && (
+                                <div className="relative">
+                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><UserIcon className="w-5 h-5" /></span>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Full Name" 
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
+                                    />
+                                </div>
+                            )}
                             <div className="relative">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Languages className="w-5 h-5" /></span>
                                 <input 
@@ -4055,6 +4386,30 @@ const LoginPage = () => {
 const ProfilePage = () => {
     const { user, setUser, userProfile } = useApp();
     const navigate = useNavigate();
+    const [isEditing, setIsEditing] = useState(false);
+    const [newName, setNewName] = useState(user?.name || '');
+    const [updating, setUpdating] = useState(false);
+    
+    const handleUpdateName = async () => {
+        if (!newName.trim()) return;
+        setUpdating(true);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { full_name: newName }
+            });
+            if (error) throw error;
+            if (user) {
+                const updated = { ...user, name: newName };
+                setUser(updated);
+                localStorage.setItem('logged_user', JSON.stringify(updated));
+            }
+            setIsEditing(false);
+        } catch (e) {
+            alert("Failed to update name");
+        } finally {
+            setUpdating(false);
+        }
+    };
     
     const stats = [
         { label: 'Total XP', value: user?.xp || 0, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -4099,7 +4454,27 @@ const ProfilePage = () => {
                         </div>
                     </div>
 
-                    <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
+                    {isEditing ? (
+                        <div className="flex flex-col items-center gap-3 mb-6">
+                            <input 
+                                value={newName}
+                                onChange={e => setNewName(e.target.value)}
+                                className="w-full max-w-xs p-3 border-2 border-indigo-100 rounded-2xl text-center font-black text-xl outline-none focus:border-indigo-500"
+                                placeholder="Enter Name"
+                            />
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-black text-xs uppercase tracking-widest">Cancel</button>
+                                <button onClick={handleUpdateName} disabled={updating} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200">
+                                    {updating ? 'Saving...' : 'Save Name'}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
+                            <button onClick={() => setIsEditing(true)} className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-4 hover:underline">Edit Name</button>
+                        </>
+                    )}
                     <p className="text-sm font-semibold text-slate-500 mb-6 truncate px-4">{user?.email || 'student@aadhar.edu.np'}</p>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -4135,7 +4510,7 @@ const ProfilePage = () => {
                         ))}
                     </div>
 
-                    <div className="flex flex-col gap-3 pt-4">
+                        <div className="flex flex-col gap-3 pt-6">
                         {userProfile?.role === 'admin' && (
                             <button 
                                 onClick={() => navigate('/admin-portal')} 
@@ -4145,13 +4520,9 @@ const ProfilePage = () => {
                                 Admin Dashboard
                             </button>
                         )}
-                        <button className="w-full py-5 bg-[#16423C] text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-lg shadow-emerald-900/10 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <Settings className="w-4 h-4" />
-                            Update Profile
-                        </button>
                         <button 
                             onClick={handleLogout}
-                            className="w-full py-5 bg-white text-rose-500 border-2 border-rose-50 rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center gap-3"
+                            className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-3"
                         >
                             <LogOut className="w-4 h-4" />
                             Sign Out Account
@@ -4600,49 +4971,68 @@ const VideoList = () => {
     const dynamicVideos = liveMaterials.filter(m => m.subject === name && m.type === 'video');
 
     return (
-        <div className="space-y-6 animate-fade-up pb-24">
-            <div className="flex items-center gap-4">
+        <div className="space-y-8 animate-fade-up pb-24 px-4 md:px-8 max-w-7xl mx-auto mt-4">
+            <div className="flex items-center gap-4 border-b border-slate-100 pb-6 mb-6">
                 <button 
                     onClick={() => navigate(-1)} 
-                    className="w-10 h-10 bg-slate-900 text-white rounded-xl shadow-lg flex items-center justify-center active:scale-95 transition-all z-20"
+                    className="w-12 h-12 bg-white text-slate-400 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center hover:bg-slate-50 transition-all z-20 group shrink-0"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
                 </button>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800">Explainer TV</h1>
+                <div>
+                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-800">Explainer TV</h1>
+                    <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest mt-1 hidden md:block">Master concepts with high-quality visual lessons</p>
+                </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
                 {/* Dynamic Videos */}
                 {dynamicVideos.map((v: any) => {
                     const yId = v.youtube_id || extractYoutubeId(v.file_url || v.link_url);
                     const thumbUrl = yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : null;
                     
                     return (
-                        <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
-                            <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700 overflow-hidden">
+                        <div key={v.id} onClick={() => window.open(yId ? `https://youtube.com/watch?v=${yId}` : (v.file_url || v.link_url))} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden group cursor-pointer flex flex-col h-full transform hover:-translate-y-1">
+                            <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden shrink-0">
                                 {yId ? (
                                     <>
-                                        <img src={thumbUrl!} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                                        <img src={thumbUrl!} className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" referrerPolicy="no-referrer" />
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <button onClick={() => window.open(`https://youtube.com/watch?v=${yId}`)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                                <PlayCircle className="w-10 h-10 fill-current" />
-                                            </button>
+                                            <div className="relative w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                                <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-50" />
+                                                <div className="absolute inset-0 bg-white/30 rounded-full backdrop-blur-sm" />
+                                                <Play className="w-7 h-7 text-white fill-white relative z-10 translate-x-0.5" />
+                                            </div>
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-800">
-                                        <button onClick={() => window.open(v.file_url || v.link_url)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                            <PlayCircle className="w-10 h-10 fill-current" />
-                                        </button>
+                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-800 group-hover:bg-slate-700 transition-colors duration-500">
+                                        <div className="relative w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                            <div className="absolute inset-0 bg-rose-500/20 rounded-full animate-ping opacity-50" />
+                                            <div className="absolute inset-0 bg-rose-600 rounded-full shadow-xl shadow-rose-600/30" />
+                                            <Play className="w-7 h-7 text-white fill-white relative z-10 translate-x-0.5" />
+                                        </div>
                                     </div>
                                 )}
+                                <div className="absolute top-4 left-4">
+                                    <span className="px-3 py-1.5 bg-rose-500 text-white text-[0.55rem] font-black uppercase tracking-widest rounded-lg shadow-lg backdrop-blur-md flex items-center gap-1.5">
+                                        <TrendingUp className="w-3 h-3" /> New Upload
+                                    </span>
+                                </div>
                             </div>
-                            <div className="p-8">
-                                <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                    <TrendingUp className="w-3 h-3" /> New Upload
-                                </p>
-                                <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight italic">{v.title}</h3>
-                                <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Hub • {yId ? 'External Stream' : 'Official Asset'}</p>
+                            <div className="p-6 flex-1 flex flex-col">
+                                <h3 className="text-lg md:text-xl font-black text-slate-800 mb-3 leading-tight uppercase tracking-tight italic line-clamp-2 flex-1 group-hover:text-indigo-600 transition-colors">{v.title}</h3>
+                                <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                            <Youtube className="w-3 h-3 text-slate-400" />
+                                        </div>
+                                        <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest truncate">{yId ? 'YouTube Stream' : 'Official Asset'}</p>
+                                    </div>
+                                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                                        <ArrowRight className="w-4 h-4 -rotate-45" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     );
@@ -4650,24 +5040,38 @@ const VideoList = () => {
 
                 {/* Initial Videos */}
                 {sub.videos.map((v: any) => (
-                    <div key={v.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden group">
-                        <div className="relative aspect-video bg-slate-900 group-hover:scale-105 transition-transform duration-700">
-                             <img src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`} className="w-full h-full object-cover opacity-60" referrerPolicy="no-referrer" />
+                    <div key={v.id} onClick={() => window.open(`https://youtube.com/watch?v=${v.youtubeId}`)} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden group cursor-pointer flex flex-col h-full transform hover:-translate-y-1">
+                        <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden shrink-0">
+                             <img src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`} className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" referrerPolicy="no-referrer" />
                              <div className="absolute inset-0 flex items-center justify-center">
-                                 <button onClick={() => window.open(`https://youtube.com/watch?v=${v.youtubeId}`)} className="w-20 h-20 bg-rose-600 text-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform">
-                                     <PlayCircle className="w-10 h-10 fill-current" />
-                                 </button>
+                                 <div className="relative w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+                                     <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-50" />
+                                     <div className="absolute inset-0 bg-white/30 rounded-full backdrop-blur-sm shadow-[0_0_30px_rgba(0,0,0,0.3)]" />
+                                     <Play className="w-7 h-7 text-white fill-white relative z-10 translate-x-0.5" />
+                                 </div>
                              </div>
-                             <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md text-white text-[0.65rem] font-black px-3 py-1 rounded-lg tracking-widest">
-                                 {v.duration}
+                             <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md text-white text-[0.6rem] font-bold px-3 py-1.5 rounded-lg tracking-widest shadow-lg flex items-center gap-1.5">
+                                 <Clock className="w-3 h-3 text-slate-300" /> {v.duration}
+                             </div>
+                             <div className="absolute top-4 left-4">
+                                <span className="px-3 py-1.5 bg-black/40 backdrop-blur-md text-white text-[0.55rem] font-black uppercase tracking-widest rounded-lg shadow-lg border border-white/10 flex items-center gap-1.5">
+                                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" /> Featured
+                                </span>
                              </div>
                         </div>
-                        <div className="p-8">
-                             <p className="text-[0.6rem] font-black text-rose-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                 <TrendingUp className="w-3 h-3" /> Trending Mastery
-                             </p>
-                             <h3 className="text-xl font-black text-slate-900 mb-2 leading-tight uppercase tracking-tight">{v.title}</h3>
-                             <p className="text-[0.75rem] text-slate-400 font-black uppercase tracking-widest">Aadhar Education • Verified Partner</p>
+                        <div className="p-6 flex-1 flex flex-col">
+                             <h3 className="text-lg md:text-xl font-black text-slate-800 mb-3 leading-tight uppercase tracking-tight line-clamp-2 flex-1 group-hover:text-indigo-600 transition-colors">{v.title}</h3>
+                             <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
+                                 <div className="flex items-center gap-2">
+                                     <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                                         <ShieldCheck className="w-3 h-3 text-slate-400" />
+                                     </div>
+                                     <p className="text-[0.6rem] text-slate-400 font-bold uppercase tracking-widest truncate">Aadhar Hub Partner</p>
+                                 </div>
+                                 <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                                     <ArrowRight className="w-4 h-4 -rotate-45" />
+                                 </div>
+                             </div>
                         </div>
                     </div>
                 ))}
@@ -6651,7 +7055,8 @@ const RichTextEditor = ({ value, onChange }: { value: string, onChange: (v: stri
             <div 
                 ref={editorRef}
                 contentEditable
-                className="w-full min-h-[400px] bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 text-slate-700 font-medium leading-relaxed outline-none focus:bg-white focus:border-amber-200 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner overflow-y-auto"
+                className="w-full min-h-[400px] bg-slate-50 p-6 md:p-8 rounded-[2rem] border border-slate-100 text-slate-700 font-medium leading-relaxed outline-none focus:bg-white focus:border-amber-200 focus:ring-4 focus:ring-amber-50 transition-all shadow-inner overflow-y-auto touch-manipulation"
+                style={{ WebkitOverflowScrolling: 'touch' }}
                 onInput={(e) => onChange(e.currentTarget.innerHTML)}
             />
         </div>
@@ -6886,22 +7291,25 @@ const TodoListPage = () => {
     const [tasks, setTasks] = useState<{id: string, text: string, done: boolean, priority: 'low' | 'medium' | 'high', category: string}[]>([]);
     const [newTask, setNewTask] = useState("");
     const [isLoading, setIsLoading] = useState(true);
-    const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
-    const [activePriority, setActivePriority] = useState<'low' | 'medium' | 'high'>('medium');
-    const [activeCategory, setActiveCategory] = useState('Study');
-    const [showAddMenu, setShowAddMenu] = useState(false);
-
-    const categories = ['Study', 'Personal', 'School', 'Project'];
+    const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+    const [selectedPriority, setSelectedPriority] = useState<'low' | 'medium' | 'high'>('medium');
+    const [selectedCategory, setSelectedCategory] = useState('Study');
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const categories = ['Study', 'Personal', 'School', 'Project', 'Health'];
+    const priorities = [
+        { id: 'low', color: 'bg-emerald-500', text: 'Low' },
+        { id: 'medium', color: 'bg-amber-500', text: 'Medium' },
+        { id: 'high', color: 'bg-rose-500', text: 'High' }
+    ];
 
     useEffect(() => {
-        const local = localStorage.getItem('tasks_local_v3');
+        const local = localStorage.getItem('aadhar_tasks_v4');
         if (local) {
             setTasks(JSON.parse(local));
         } else {
-            const oldLocal = localStorage.getItem('tasks_local_v2');
-            if (oldLocal) {
-                setTasks(JSON.parse(oldLocal));
-                localStorage.setItem('tasks_local_v3', oldLocal);
+            const old = localStorage.getItem('tasks_local_v3');
+            if (old) {
+                setTasks(JSON.parse(old));
             }
         }
         setIsLoading(false);
@@ -6909,7 +7317,7 @@ const TodoListPage = () => {
 
     const saveTasks = (newTasks: any[]) => {
         setTasks(newTasks);
-        localStorage.setItem('tasks_local_v3', JSON.stringify(newTasks));
+        localStorage.setItem('aadhar_tasks_v4', JSON.stringify(newTasks));
     };
 
     const addTask = () => {
@@ -6918,201 +7326,215 @@ const TodoListPage = () => {
             id: 'task_' + Date.now(), 
             text: newTask, 
             done: false, 
-            priority: activePriority,
-            category: activeCategory
+            priority: selectedPriority,
+            category: selectedCategory
         };
         saveTasks([task, ...tasks]);
         setNewTask("");
-        setShowAddMenu(false);
+        setIsMenuOpen(false);
     };
 
-    const toggleStatus = (id: string) => {
+    const toggleTask = (id: string) => {
         saveTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
     };
 
-    const deleteStatus = (id: string) => {
+    const deleteTask = (id: string) => {
         saveTasks(tasks.filter(t => t.id !== id));
     };
 
-    const filteredTasks = tasks.filter(t => {
-        if (filter === 'pending') return !t.done;
-        if (filter === 'completed') return t.done;
-        return true;
-    });
-
-    const getPriorityColor = (p: string) => {
-        switch(p) {
-            case 'high': return 'text-rose-500 bg-rose-50 border-rose-100';
-            case 'medium': return 'text-amber-500 bg-amber-50 border-amber-100';
-            case 'low': return 'text-blue-500 bg-blue-50 border-blue-100';
-            default: return 'text-slate-500 bg-slate-50 border-slate-100';
-        }
-    };
+    const filteredTasks = tasks.filter(t => activeTab === 'completed' ? t.done : !t.done);
+    const completionRate = tasks.length ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0;
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col relative pb-32">
-            {/* Header */}
-            <header className="pt-6 pb-4 px-6 sticky top-0 bg-slate-50/90 backdrop-blur-md z-30 flex items-center justify-between">
-                <button 
-                    onClick={() => navigate(-1)} 
-                    className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-500 shadow-sm active:scale-95 transition-transform shrink-0"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div className="flex flex-col items-center flex-1 pr-10">
-                    <h1 className="text-xl font-black text-slate-800 tracking-tight uppercase italic flex items-center gap-2">
-                        <ListChecks className="w-5 h-5 text-indigo-500" /> Tasks
+        <div className="min-h-screen bg-slate-50 flex flex-col pb-40 font-sans selection:bg-indigo-500/30">
+            <header className="px-4 md:px-8 py-6 md:py-10 flex flex-col gap-6 relative overflow-hidden bg-white rounded-b-[3rem] shadow-sm mb-6 pb-12">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-20 -mt-20 opacity-50 border pointer-events-none" />
+                <div className="flex items-center justify-between relative z-10 w-full max-w-4xl mx-auto">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-slate-400 border border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 transition-all z-20 group"
+                    >
+                        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                    </button>
+                    <div className="flex bg-slate-100 p-1.5 rounded-[1.5rem] shadow-inner relative z-20">
+                        <motion.div 
+                            animate={{ x: activeTab === 'pending' ? 0 : '100%' }}
+                            transition={{ type: "spring", damping: 25, stiffness: 250 }}
+                            className="absolute inset-y-1.5 left-1.5 w-[calc(50%-0.375rem)] bg-white rounded-xl shadow-md"
+                        />
+                        <button 
+                            onClick={() => setActiveTab('pending')}
+                            className={cn("px-6 py-2.5 text-[0.65rem] md:text-sm font-black uppercase tracking-widest relative z-10 transition-colors duration-300", activeTab === 'pending' ? "text-indigo-600" : "text-slate-400")}
+                        >
+                            Pending
+                        </button>
+                        <button 
+                            onClick={() => setActiveTab('completed')}
+                            className={cn("px-6 py-2.5 text-[0.65rem] md:text-sm font-black uppercase tracking-widest relative z-10 transition-colors duration-300", activeTab === 'completed' ? "text-slate-900" : "text-slate-400")}
+                        >
+                            Success
+                        </button>
+                    </div>
+                </div>
+                
+                <div className="text-center relative z-10 mt-2 max-w-4xl mx-auto w-full">
+                    <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic flex flex-col gap-1 items-center justify-center">
+                        Task Fusion <Sparkles className="w-8 h-8 text-indigo-500 ml-2 inline-block animate-pulse" />
                     </h1>
+                    <div className="flex items-center justify-center gap-4 mt-6">
+                        <div className="flex -space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 border-2 border-white flex items-center justify-center shadow-sm z-30"><Check className="w-4 h-4 text-emerald-600" /></div>
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center shadow-sm z-20"><Activity className="w-4 h-4 text-indigo-600" /></div>
+                            <div className="w-10 h-10 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center shadow-sm z-10 text-[0.6rem] font-black text-slate-500">{tasks.length}</div>
+                        </div>
+                        <div className="flex flex-col items-start bg-slate-50 px-4 py-2 rounded-2xl border border-slate-100">
+                            <span className="text-[0.55rem] font-black uppercase tracking-widest text-slate-400">Completion</span>
+                            <span className="text-lg font-black text-indigo-500">{completionRate}%</span>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <div className="px-5 flex-1 flex flex-col pt-2 max-w-2xl mx-auto w-full">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] flex flex-col relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-3 opacity-[0.03] group-hover:scale-110 transition-transform"><CheckCircle2 className="w-16 h-16" /></div>
-                        <span className="text-3xl font-black text-slate-800 relative z-10">{tasks.filter(t => !t.done).length}</span>
-                        <span className="text-[0.6rem] font-bold uppercase tracking-widest text-slate-400 mt-1 relative z-10 flex items-center gap-1"><Circle className="w-2.5 h-2.5" /> Pending</span>
-                    </div>
-                    <div className="bg-slate-900 p-4 rounded-[2rem] shadow-xl flex flex-col relative overflow-hidden text-white group">
-                        <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:scale-110 transition-transform"><Trophy className="w-16 h-16" /></div>
-                        <span className="text-3xl font-black relative z-10">{tasks.filter(t => t.done).length}</span>
-                        <span className="text-[0.6rem] font-bold uppercase tracking-widest text-indigo-300 mt-1 relative z-10 flex items-center gap-1"><CheckCircle2 className="w-2.5 h-2.5" /> Completed</span>
-                    </div>
-                </div>
-
-                {/* Filters */}
-                <div className="flex bg-slate-200/50 p-1.5 rounded-2xl mb-6">
-                    {(['all', 'pending', 'completed'] as const).map(f => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={cn(
-                                "flex-1 py-2 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all",
-                                filter === f ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                            )}
-                        >
-                            {f}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Task List */}
-                <div className="space-y-3 flex-1 pb-10">
+            <div className="px-4 md:px-8 flex-1 max-w-4xl mx-auto w-full">
+                <div className="space-y-4">
                     <AnimatePresence mode="popLayout">
-                        {filteredTasks.length > 0 ? filteredTasks.map(t => (
-                            <motion.div
-                                layout
-                                initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                                key={t.id}
+                        {filteredTasks.length > 0 ? filteredTasks.map((task, i) => (
+                            <motion.div 
+                                layoutId={task.id} key={task.id}
+                                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.9, x: -100 }}
+                                transition={{ type: "spring", damping: 25, stiffness: 200, delay: i * 0.05 }}
                                 className={cn(
-                                    "p-4 rounded-[2rem] border transition-all flex items-start gap-4 group",
-                                    t.done ? "bg-slate-50 border-slate-200/60 opacity-60" : "bg-white border-slate-100 shadow-[0_4px_15px_rgba(0,0,0,0.02)]"
+                                    "p-5 md:p-6 rounded-[2rem] bg-white border shadow-sm group relative overflow-hidden transition-all duration-500 hover:shadow-lg",
+                                    task.done ? "opacity-70 border-slate-100 bg-slate-50/50" : "border-slate-100 hover:border-indigo-200"
                                 )}
                             >
-                                <button 
-                                    onClick={() => toggleStatus(t.id)}
-                                    className={cn(
-                                        "w-7 h-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all mt-0.5",
-                                        t.done ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 text-transparent hover:border-emerald-400"
-                                    )}
-                                >
-                                    <Check className={cn("w-4 h-4 transition-transform", t.done ? "scale-100" : "scale-50 opacity-0")} />
-                                </button>
+                                <div className={cn("absolute left-0 top-0 bottom-0 w-1.5 rounded-l-[2rem] transition-colors", task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500')} />
                                 
-                                <div className="flex-1 min-w-0 flex flex-col gap-1.5" onClick={() => toggleStatus(t.id)}>
-                                    <p className={cn(
-                                        "font-bold transition-all break-words leading-snug cursor-pointer",
-                                        t.done ? "line-through text-slate-400 text-sm" : "text-slate-800 text-base"
-                                    )}>
-                                        {t.text}
-                                    </p>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className={cn("px-2 py-0.5 rounded-lg text-[0.55rem] font-black uppercase tracking-widest border", getPriorityColor(t.priority))}>
-                                            {t.priority}
-                                        </span>
-                                        <span className="text-[0.55rem] font-bold text-slate-500 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-lg border border-slate-200/50">{t.category}</span>
-                                    </div>
-                                </div>
+                                <div className="flex items-start gap-4 md:gap-6 relative z-10 pl-2">
+                                    <button 
+                                        onClick={() => toggleTask(task.id)}
+                                        className={cn("w-7 h-7 md:w-8 md:h-8 rounded-full border-2 flex items-center justify-center transition-all duration-500 mt-1 shrink-0", task.done ? "bg-emerald-500 border-emerald-500 text-white" : "border-slate-300 bg-white hover:border-indigo-400 hover:scale-110")}
+                                    >
+                                        <Check className={cn("w-4 h-4 transition-all duration-500", task.done ? "opacity-100 scale-100" : "opacity-0 scale-50")} />
+                                    </button>
 
-                                <button 
-                                    onClick={() => deleteStatus(t.id)}
-                                    className="w-8 h-8 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center hover:bg-rose-100 hover:text-rose-500 transition-colors shrink-0"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                                    <div className="flex-1 flex flex-col gap-2 cursor-pointer min-w-0" onClick={() => toggleTask(task.id)}>
+                                        <h3 className={cn("text-base md:text-lg font-bold leading-snug transition-all break-words pr-8", task.done ? "text-slate-400 line-through decoration-slate-300" : "text-slate-800")}>{task.text}</h3>
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <span className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-lg text-[0.6rem] font-black uppercase tracking-widest text-slate-500">
+                                                <Tag className="w-3 h-3" /> {task.category}
+                                            </span>
+                                            <span className={cn("px-3 py-1 rounded-lg text-[0.6rem] font-black uppercase tracking-widest", task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600')}>
+                                                {task.priority} Priority
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <button onClick={() => deleteTask(task.id)} className="absolute right-4 top-4 md:relative md:right-0 md:top-0 w-10 h-10 bg-slate-50 text-slate-300 rounded-[1.2rem] flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 hover:bg-rose-100 hover:text-rose-600 transition-all active:scale-90 shrink-0">
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </motion.div>
-                        )) : !isLoading && (
-                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-slate-400 bg-white rounded-[3rem] border border-slate-100 border-dashed">
-                                <ListChecks className="w-16 h-16 opacity-30 mb-4" />
-                                <p className="text-lg font-black italic text-slate-700 uppercase tracking-tighter">Inbox Zero</p>
-                                <p className="text-[0.65rem] font-bold uppercase tracking-widest mt-1">No tasks found in this view.</p>
+                        )) : (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-20 text-center space-y-6 bg-white rounded-[3rem] border border-slate-100 border-dashed">
+                                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto text-slate-200 rotate-12 transition-transform hover:rotate-0"><ListChecks className="w-10 h-10" /></div>
+                                <div className="space-y-2">
+                                    <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tighter uppercase italic">Everything Clear</h2>
+                                    <p className="text-[0.65rem] md:text-xs font-bold text-slate-400 uppercase tracking-widest max-w-[200px] mx-auto">Ready for your next set of objectives</p>
+                                </div>
+                                <button onClick={() => setIsMenuOpen(true)} className="px-8 py-3 bg-indigo-50 text-indigo-600 font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-indigo-100 transition-colors">Start Planning</button>
                             </motion.div>
                         )}
                     </AnimatePresence>
                 </div>
             </div>
 
-            {/* Quick Add FAB */}
-            <div className="fixed bottom-6 right-6 z-40">
+            <div className="fixed bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 z-[1050] w-full max-w-sm px-4 md:px-0">
                 <button 
-                    onClick={() => setShowAddMenu(true)}
-                    className="w-16 h-16 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-slate-900/30"
+                    onClick={() => setIsMenuOpen(true)}
+                    className="w-full h-16 bg-slate-900 text-white rounded-[2rem] shadow-2xl flex items-center justify-between px-8 group active:scale-95 transition-all shadow-slate-900/30 overflow-hidden relative"
                 >
-                    <Plus className="w-8 h-8" />
+                    <div className="absolute inset-0 bg-linear-to-r from-indigo-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity" />
+                    <span className="text-[0.7rem] md:text-xs font-black uppercase tracking-[0.2em] group-hover:translate-x-2 transition-transform italic z-10 flex items-center gap-2 border-r border-white/20 pr-4">Add Objective</span>
+                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center z-10 group-hover:bg-white group-hover:text-slate-900 transition-colors">
+                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+                    </div>
                 </button>
             </div>
 
-            {/* Add Task Bottom Sheet */}
             <AnimatePresence>
-                {showAddMenu && (
+                {isMenuOpen && (
                     <>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[2000]" onClick={() => setIsMenuOpen(false)} />
                         <motion.div 
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
-                            onClick={() => setShowAddMenu(false)}
-                        />
-                        <motion.div 
-                            initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3rem] z-50 p-6 shadow-2xl flex flex-col max-h-[90vh] pb-8 max-w-2xl mx-auto"
+                            initial={{ y: '100%', scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: '100%', scale: 0.95 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 250 }}
+                            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[3.5rem] p-6 pt-8 md:p-10 z-[2001] shadow-2xl max-w-2xl mx-auto flex flex-col gap-8 max-h-[90vh] overflow-y-auto"
                         >
-                            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
-                            <h2 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter mb-4 text-center">New Task</h2>
+                            <div className="w-16 h-1.5 bg-slate-200 rounded-full mx-auto shrink-0 mb-2" />
                             
-                            <div className="bg-slate-50 rounded-[2rem] p-2 border border-slate-100 mb-6 flex-1 overflow-y-auto">
-                                <textarea 
-                                    autoFocus
-                                    value={newTask}
-                                    onChange={e => setNewTask(e.target.value)}
-                                    placeholder="I need to..."
-                                    className="w-full bg-transparent p-5 min-h-[120px] outline-none text-slate-800 font-bold resize-none placeholder:text-slate-400 text-lg md:text-xl"
-                                />
+                            <div className="flex items-center gap-4 border-b border-slate-100 pb-6">
+                                <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+                                    <Target className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black italic uppercase tracking-tight text-slate-800">New Objective</h2>
+                                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Detail your next move</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-8">
+                                <div className="space-y-3">
+                                    <label className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-500 ml-2">What needs attention?</label>
+                                    <div className="bg-slate-50 p-3 rounded-[2rem] border-2 border-transparent focus-within:bg-white focus-within:border-indigo-400 transition-all shadow-inner relative">
+                                        <textarea 
+                                            autoFocus 
+                                            value={newTask} 
+                                            onChange={e => setNewTask(e.target.value)} 
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    addTask();
+                                                }
+                                            }}
+                                            placeholder="Write your task here..." 
+                                            className="w-full bg-transparent outline-none font-medium text-slate-800 placeholder:text-slate-300 resize-none px-3 py-2 min-h-[80px]" 
+                                        />
+                                    </div>
+                                </div>
                                 
-                                <div className="p-3 space-y-4">
-                                    <div className="flex flex-col gap-3">
-                                        <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-widest pl-1">Priority Level</span>
-                                        <div className="flex gap-2">
-                                            {(['low', 'medium', 'high'] as const).map(p => (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
+                                        <label className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-500 ml-2 flex items-center gap-2"><Flame className="w-3 h-3 text-rose-500" /> Urgency Level</label>
+                                        <div className="flex gap-2 bg-slate-50 p-2 rounded-[1.5rem] border border-slate-100">
+                                            {priorities.map(p => (
                                                 <button 
-                                                    key={p} onClick={() => setActivePriority(p)}
-                                                    className={cn("flex-1 py-3 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest transition-all", activePriority === p ? getPriorityColor(p) + " shadow-sm" : "bg-white text-slate-500 border border-slate-200/60 hover:bg-slate-100")}
+                                                    key={p.id} 
+                                                    onClick={() => setSelectedPriority(p.id as any)} 
+                                                    className={cn(
+                                                        "flex-1 py-3 px-2 rounded-xl transition-all border flex flex-col items-center gap-1", 
+                                                        selectedPriority === p.id ? "bg-white text-slate-900 shadow-md border-indigo-100 scale-105" : "text-slate-400 border-transparent hover:bg-slate-100"
+                                                    )}
                                                 >
-                                                    {p}
+                                                    <div className={cn("w-3 h-3 rounded-full", p.color)} />
+                                                    <span className="text-[0.55rem] font-black uppercase tracking-widest">{p.text}</span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
-
-                                    <div className="flex flex-col gap-3 pt-2">
-                                        <span className="text-[0.6rem] font-black uppercase text-slate-400 tracking-widest pl-1">Topic Category</span>
-                                        <div className="flex gap-2 flex-wrap">
+                                    <div className="space-y-4">
+                                        <label className="text-[0.6rem] font-black uppercase tracking-[0.2em] text-slate-500 ml-2 flex items-center gap-2"><LayoutGrid className="w-3 h-3 text-blue-500" /> Category</label>
+                                        <div className="flex flex-wrap gap-2">
                                             {categories.map(c => (
-                                                <button 
-                                                    key={c} onClick={() => setActiveCategory(c)}
-                                                    className={cn("px-4 py-2.5 rounded-xl text-[0.65rem] font-bold uppercase tracking-widest transition-all border", activeCategory === c ? "bg-indigo-50 border-indigo-200 text-indigo-600" : "bg-white border-slate-200/60 text-slate-500 hover:bg-slate-100")}
+                                                <button
+                                                    key={c}
+                                                    onClick={() => setSelectedCategory(c)}
+                                                    className={cn(
+                                                        "px-4 py-2 rounded-full text-[0.65rem] font-black uppercase tracking-widest transition-all",
+                                                        selectedCategory === c ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                                                    )}
                                                 >
                                                     {c}
                                                 </button>
@@ -7120,15 +7542,15 @@ const TodoListPage = () => {
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <button 
+                                    onClick={addTask} 
+                                    disabled={!newTask.trim()} 
+                                    className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black text-sm uppercase tracking-widest disabled:opacity-50 active:scale-95 transition-all shadow-xl shadow-slate-900/20 italic flex items-center justify-center gap-3 hover:bg-indigo-600"
+                                >
+                                    <CheckCircle2 className="w-5 h-5" /> Establish Mission
+                                </button>
                             </div>
-
-                            <button 
-                                onClick={addTask}
-                                disabled={!newTask.trim()}
-                                className="w-full py-5 bg-slate-900 text-white rounded-[2rem] font-black uppercase tracking-widest text-[0.75rem] disabled:opacity-50 active:scale-95 transition-all mb-safe shadow-xl shadow-slate-900/20"
-                            >
-                                Commit Task
-                            </button>
                         </motion.div>
                     </>
                 )}
@@ -7136,6 +7558,7 @@ const TodoListPage = () => {
         </div>
     );
 };
+
 
 const ScrollToTop = () => {
     const { pathname } = useLocation();
@@ -7344,7 +7767,8 @@ const AdminPortalPage = () => {
         liveNotices, addNotice, deleteNotice,
         liveMaterials, addMaterial, deleteMaterial,
         liveMcqs, addMcqSet, deleteMcqSet,
-        addChapter, deleteChapter, updateData
+        addChapter, deleteChapter, updateData,
+        fetchLiveNews, fetchLiveMaterials
     } = useApp();
     const [activeTab, setActiveTab] = useState('Dashboard');
     const isDarkMode = true; // Match app theme
@@ -7424,7 +7848,10 @@ const AdminPortalPage = () => {
         subject: 'Science' as string,
         file_url: '',
         file_url_docx: '',
-        mcq_json: ''
+        mcq_json: '',
+        actual_file: null as File | null,
+        actual_docx_file: null as File | null,
+        news_image: null as File | null
     });
 
     const handleResourceSubmit = async (e: React.FormEvent) => {
@@ -7434,8 +7861,22 @@ const AdminPortalPage = () => {
             if (activeTab === 'MCQs') {
                 await uploadJSON(resourceForm.mcq_json);
                 alert("MCQs synchronized successfully!");
+            } else if (activeTab === 'News') {
+                await saveNews({
+                    title: resourceForm.title,
+                    content: resourceForm.content,
+                    file: resourceForm.news_image
+                });
+                alert("News synchronized successfully!");
+                fetchLiveNews(); // Refresh news
+            } else if (activeTab === 'Notice') {
+                await saveNotice({
+                    title: resourceForm.title,
+                    content: resourceForm.content
+                });
+                alert("Notice synchronized successfully!");
+                fetchLiveNews(); // Refresh notices
             } else if (['Books', 'Videos', 'Note Archives', 'Model Questions'].includes(activeTab)) {
-                // Determine category and payload for handleUpload
                 const categoryMap: any = {
                     'Books': 'Book',
                     'Videos': 'Video',
@@ -7455,49 +7896,30 @@ const AdminPortalPage = () => {
                 } else if (category === 'Book') {
                     payload.google_drive_url = resourceForm.file_url;
                 } else {
-                    // For storage uploads, we need the file object
-                    // In this prototype, we're currently storing DataURLs in state 
-                    // which isn't ideal for Supabase uploadFile (needs Blob/File)
-                    // But for the sake of the requirement, let's assume handleUpload handles it
-                    // Or if it's already a URL, it just saves it.
+                    payload.file = resourceForm.actual_file;
                 }
                 
                 await handleUpload(category, payload);
                 alert(`${activeTab} synchronized successfully!`);
+                fetchLiveMaterials(); // Refresh materials
             }
         } catch (err: any) {
             alert(`Synchronization error: ${err.message}`);
             return;
         }
 
-        const resId = Math.random().toString(36).substr(2, 9);
-        const newItem = {
-            id: resId,
-            ...resourceForm,
-            type: activeTab === 'News' ? 'news' :
-                  activeTab === 'Notice' ? 'notice' :
-                  activeTab === 'Books' ? 'textbook' :
-                  activeTab === 'Videos' ? 'video' :
-                  activeTab === 'Note Archives' ? 'note_archive' :
-                  activeTab === 'Model Questions' ? 'model_question' :
-                  activeTab === 'MCQs' ? 'mcq' : 'other',
-            created_at: new Date().toISOString()
-        };
-
-        if (activeTab === 'News') addNews(newItem);
-        else if (activeTab === 'Notice') addNotice(newItem);
-        else if (activeTab === 'MCQs') addMcqSet(newItem);
-        else addMaterial(newItem);
-
         setIsResourceModalOpen(false);
-        setResourceForm(prev => ({
-            ...prev,
+        setResourceForm({
             title: '',
             content: '',
+            subject: 'Science' as string,
             file_url: '',
             file_url_docx: '',
-            mcq_json: ''
-        }));
+            mcq_json: '',
+            actual_file: null,
+            actual_docx_file: null,
+            news_image: null
+        });
     };
 
     const handleChapterSubmit = async (e: React.FormEvent) => {
@@ -7925,7 +8347,7 @@ const AdminPortalPage = () => {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
+                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
                         >
                             <div className="absolute top-0 left-0 w-32 h-32 bg-indigo-600/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
                             
@@ -8058,7 +8480,17 @@ const AdminPortalPage = () => {
                     </div>
                     <button 
                         onClick={() => {
-                            setResourceForm({ title: '', content: '', subject: selectedManagerSubject || 'Science', file_url: '', file_url_docx: '', mcq_json: '' });
+                            setResourceForm({ 
+                                title: '', 
+                                content: '', 
+                                subject: selectedManagerSubject || 'Science', 
+                                file_url: '', 
+                                file_url_docx: '', 
+                                mcq_json: '',
+                                actual_file: null,
+                                actual_docx_file: null,
+                                news_image: null
+                            });
                             setIsResourceModalOpen(true);
                         }}
                         className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-2xl font-black text-[0.7rem] uppercase tracking-widest shadow-xl shadow-emerald-600/20 transition-all active:scale-95 flex items-center justify-center gap-3"
@@ -8196,7 +8628,7 @@ const AdminPortalPage = () => {
                             initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
-                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-hidden"
+                            className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 relative z-10 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
                         >
                             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/10 blur-3xl -translate-x-1/2 -translate-y-1/2" />
                             <h2 className="text-xl font-black text-white italic uppercase tracking-tighter mb-8 bg-linear-to-r from-white to-slate-500 bg-clip-text text-transparent">
@@ -8251,16 +8683,34 @@ const AdminPortalPage = () => {
                                         />
                                     </div>
                                 ) : (activeTab === 'News' || activeTab === 'Notice') ? (
-                                    <div className="space-y-2">
-                                        <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Content Stream</label>
-                                        <textarea 
-                                            placeholder="Write detailed information..."
-                                            value={resourceForm.content}
-                                            onChange={(e) => setResourceForm({ ...resourceForm, content: e.target.value })}
-                                            rows={4}
-                                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 resize-none"
-                                            required
-                                        />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">Content Stream</label>
+                                            <textarea 
+                                                placeholder="Write detailed information..."
+                                                value={resourceForm.content}
+                                                onChange={(e) => setResourceForm({ ...resourceForm, content: e.target.value })}
+                                                rows={4}
+                                                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 resize-none"
+                                                required
+                                            />
+                                        </div>
+                                        {activeTab === 'News' && (
+                                            <div className="space-y-2">
+                                                <label className="text-[0.6rem] font-bold text-slate-500 uppercase tracking-[0.3em]">News Photo (Optional)</label>
+                                                <input 
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            setResourceForm({ ...resourceForm, news_image: file });
+                                                        }
+                                                    }}
+                                                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-[0.6rem] file:font-black file:uppercase file:bg-indigo-600 file:text-white"
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
@@ -8275,11 +8725,7 @@ const AdminPortalPage = () => {
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) {
-                                                            const reader = new FileReader();
-                                                            reader.onloadend = () => {
-                                                                setResourceForm({ ...resourceForm, file_url: reader.result as string });
-                                                            };
-                                                            reader.readAsDataURL(file);
+                                                            setResourceForm({ ...resourceForm, actual_file: file, file_url: file.name });
                                                         }
                                                     }}
                                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-[0.6rem] file:font-black file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
@@ -8304,11 +8750,7 @@ const AdminPortalPage = () => {
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0];
                                                         if (file) {
-                                                            const reader = new FileReader();
-                                                            reader.onloadend = () => {
-                                                                setResourceForm({ ...resourceForm, file_url_docx: reader.result as string });
-                                                            };
-                                                            reader.readAsDataURL(file);
+                                                            setResourceForm({ ...resourceForm, actual_docx_file: file, file_url_docx: file.name });
                                                         }
                                                     }}
                                                     className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-300 focus:outline-none focus:border-indigo-500/50 file:mr-4 file:py-1 file:px-4 file:rounded-lg file:border-0 file:text-[0.6rem] file:font-black file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-500"
@@ -8948,41 +9390,38 @@ const OldPicturesPage = () => {
 const NewImageCard = ({ img, onClick, onDownload, onLike }: { img: any, onClick: () => void, onDownload: (url:string, id:string) => void, onLike: () => void }) => {
     const [isLoaded, setIsLoaded] = useState(false);
     return (
-        <div className="w-full break-inside-avoid rounded-3xl overflow-hidden relative group bg-slate-100 shadow-sm inline-block mb-6 border border-slate-200 hover:shadow-xl transition-all duration-500">
+        <motion.div 
+            whileHover={{ y: -5 }}
+            className="w-full break-inside-avoid rounded-[2.5rem] overflow-hidden relative group bg-white shadow-xl inline-block mb-8 border-4 border-white hover:border-indigo-500/20 transition-all duration-500"
+        >
             {!isLoaded && (
-                <div className="w-full h-64 animate-pulse bg-gradient-to-br from-slate-200 to-slate-100" />
+                <div className="w-full h-80 animate-pulse bg-slate-100 flex items-center justify-center">
+                    <Zap className="w-10 h-10 text-slate-200 animate-pulse" />
+                </div>
             )}
             <img 
                 src={img.webformatURL} 
                 alt="Search result" 
                 onLoad={() => setIsLoaded(true)}
-                className={`w-full h-auto transform group-hover:scale-105 transition-all duration-700 block cursor-pointer ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                className={`w-full h-auto transform group-hover:scale-110 transition-all duration-1000 block cursor-pointer ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
                 loading="lazy" 
                 onClick={onClick}
+                referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none" />
             
-            <div className="absolute bottom-0 left-0 w-full p-4 flex justify-between items-end opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
+            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
                 <div className="flex flex-col">
-                    <span className="text-white text-xs font-black uppercase tracking-widest bg-black/50 px-2 py-1 rounded backdrop-blur-md w-fit mb-1">{img.user}</span>
-                    <span className="text-white/80 text-[0.6rem] font-bold uppercase tracking-wider line-clamp-1">{img.tags}</span>
+                    <span className="text-white text-[0.6rem] font-black uppercase tracking-widest bg-white/10 backdrop-blur-xl px-3 py-1 rounded-lg w-fit mb-2 border border-white/20">@{img.user}</span>
+                    <span className="text-white/80 text-[0.55rem] font-bold uppercase tracking-wider line-clamp-1 italic">Signals • {img.tags}</span>
                 </div>
                 <div className="flex gap-2">
-                     <button onClick={(e) => { e.stopPropagation(); onLike(); }} className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-rose-500 hover:scale-110 active:scale-95 transition-all shadow-lg pointer-events-auto">
-                        <Heart className="w-4 h-4" />
-                     </button>
-                     <button onClick={(e) => { e.stopPropagation(); onDownload(img.largeImageURL, img.id); }} className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-blue-500 hover:scale-110 active:scale-95 transition-all shadow-lg pointer-events-auto">
+                     <button onClick={(e) => { e.stopPropagation(); onDownload(img.largeImageURL, img.id); }} className="w-10 h-10 rounded-xl bg-white text-slate-900 flex items-center justify-center hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-90 transition-all shadow-xl pointer-events-auto">
                         <Download className="w-4 h-4" />
                      </button>
                 </div>
             </div>
-
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-500 -translate-y-4 group-hover:translate-y-0">
-                <button onClick={(e) => { e.stopPropagation(); onClick(); }} className="px-4 py-2 bg-black/40 backdrop-blur-md text-white rounded-xl text-[0.65rem] font-black uppercase tracking-widest hover:bg-white hover:text-black transition-colors pointer-events-auto">
-                    Expand
-                </button>
-            </div>
-        </div>
+        </motion.div>
     );
 };
 
@@ -9346,9 +9785,29 @@ const AppProvider = ({ children }: any) => {
         }
     });
     const [isOnline, setIsOnline] = useState(window.navigator.onLine);
-    const [liveNews, setLiveNews] = useState<any[]>([]);
+    const [liveNews, setLiveNews] = useState<any[]>(() => {
+        const saved = localStorage.getItem('aadhar_live_news_v4');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 's1', title: 'SEE Exam 2083: New Model Question Sets Released by CDC', content: 'The Curriculum Development Centre (CDC) has released updated model question sets for SEE 2083. Science and Maths exams focus on conceptual understanding.', created_at: new Date().toISOString(), category: 'Exams', image_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1470&auto=format&fit=crop', author: 'Aadhar Editorial' },
+            { id: 'n1', title: 'SEE 2083 Examination Schedule Released', content: 'The Official schedule is out. Prepare for high-intensity sessions.', created_at: new Date().toISOString(), category: 'Updates', image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1470&auto=format&fit=crop', author: 'Aadhar Admin' },
+            { id: 'n2', title: 'Digital Learning Transformation in Nepal', content: 'Bridging the divide with AI-powered tutoring systems.', created_at: new Date().toISOString(), category: 'Policy', image_url: 'https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=1474&auto=format&fit=crop', author: 'EduWeekly' },
+            { id: 'n3', title: 'Mental Wellness During Board Trials', content: 'Techniques from toppers to manage stress and peak performance.', created_at: new Date().toISOString(), category: 'Wellness', image_url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=1470&auto=format&fit=crop', author: 'Dr. Sameer' },
+            { id: 'n4', title: 'National Mock Battle Ground - Live Now', content: 'Compete with 5000+ students in real-time MCQ simulations.', created_at: new Date().toISOString(), category: 'Events', image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=1470&auto=format&fit=crop', author: 'Admin Console' }
+        ];
+    });
     const [liveNotices, setLiveNotices] = useState<any[]>([]);
-    const [liveMaterials, setLiveMaterials] = useState<any[]>([]);
+    const [liveMaterials, setLiveMaterials] = useState<any[]>(() => {
+        const saved = localStorage.getItem('aadhar_live_materials_v4');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 'm1', subject: 'Science', type: 'chapter', title: 'Chapter 1: Force and Motion', content: 'Detailed conceptual notes covering Newton laws and gravitational force.', date: new Date().toISOString(), created_at: new Date().toISOString() },
+            { id: 'm2', subject: 'Maths', type: 'model_question', title: 'Trigonometry Challenge Pack 2083', file_url: '#', date: new Date().toISOString(), created_at: new Date().toISOString() },
+            { id: 'm3', subject: 'English', type: 'note_archive', title: 'Unit 5: Sustainable Development', content: 'Key definitions and sample essay prompts for Unit 5.', date: new Date().toISOString(), created_at: new Date().toISOString() },
+            { id: 'm4', subject: 'नेपाली', type: 'chapter', title: 'पाठ १: सामाजिक न्याय', content: 'प्रमुख बुँदाहरू र अभ्यासका प्रश्नहरू।', date: new Date().toISOString(), created_at: new Date().toISOString() },
+            { id: 'm5', subject: 'Computer', type: 'model_question', title: 'C Programming Syntax Sheet', file_url: '#', date: new Date().toISOString(), created_at: new Date().toISOString() }
+        ];
+    });
     const [liveMcqs, setLiveMcqs] = useState<any[]>([]);
     const [isInitializing, setIsInitializing] = useState(true);
 
@@ -9380,13 +9839,31 @@ const AppProvider = ({ children }: any) => {
     };
 
     const addNews = (item: any) => setLiveNews(prev => [item, ...prev]);
-    const deleteNews = (id: string) => setLiveNews(prev => prev.filter(n => n.id !== id));
+    const deleteNews = (id: string) => {
+        setLiveNews(prev => {
+            const up = prev.filter(n => n.id !== id);
+            localStorage.setItem('aadhar_live_news_v4', JSON.stringify(up));
+            return up;
+        });
+    };
     
     const addNotice = (item: any) => setLiveNotices(prev => [item, ...prev]);
     const deleteNotice = (id: string) => setLiveNotices(prev => prev.filter(n => n.id !== id));
 
-    const addMaterial = (item: any) => setLiveMaterials(prev => [item, ...prev]);
-    const deleteMaterial = (id: string) => setLiveMaterials(prev => prev.filter(m => m.id !== id));
+    const addMaterial = (item: any) => {
+        setLiveMaterials(prev => {
+            const up = [item, ...prev];
+            localStorage.setItem('aadhar_live_materials_v4', JSON.stringify(up));
+            return up;
+        });
+    };
+    const deleteMaterial = (id: string) => {
+        setLiveMaterials(prev => {
+            const up = prev.filter(m => m.id !== id);
+            localStorage.setItem('aadhar_live_materials_v4', JSON.stringify(up));
+            return up;
+        });
+    };
 
     const addMcqSet = (item: any) => setLiveMcqs(prev => [item, ...prev]);
     const deleteMcqSet = (id: string) => setLiveMcqs(prev => prev.filter(m => m.id !== id));
@@ -9496,17 +9973,59 @@ const AppProvider = ({ children }: any) => {
         localStorage.setItem('logged_user', JSON.stringify(updatedUser));
     };
 
-    const toggleChapterComplete = (chapterId: string) => {
-        if (!user || !chapterId) return;
-        const isComplete = user.completedChapters?.includes(chapterId) || false;
-        const newList = isComplete 
-            ? user.completedChapters.filter(id => id !== chapterId)
-            : [...(user.completedChapters || []), chapterId];
-        
-        const updatedUser = { ...user, completedChapters: newList };
-        setUser(updatedUser);
-        localStorage.setItem('logged_user', JSON.stringify(updatedUser));
+    const fetchLiveNews = async () => {
+        try {
+            const { data: newsData, error: newsError } = await supabase.from('news').select('*').order('created_at', { ascending: false });
+            const { data: noticeData, error: noticeError } = await supabase.from('notices').select('*').order('created_at', { ascending: false });
+            
+            if (newsError) console.error("News fetch error:", newsError);
+            else if (newsData) setLiveNews(newsData);
+            
+            if (noticeError) console.error("Notice fetch error:", noticeError);
+            else if (noticeData) setLiveNotices(noticeData);
+        } catch (e) {
+            console.error("Live news/notices fetch error:", e);
+        }
     };
+
+    const fetchLiveMaterials = async () => {
+        try {
+            const materials = await fetchStudyMaterials();
+            if (materials) {
+                // Map category to type for compatibility with frontend components
+                const mappedMaterials = materials.map((m: any) => {
+                    let type = m.category?.toLowerCase();
+                    if (type === 'notes') {
+                        // If it has a file_url and no notes content, it's likely an archive
+                        type = (m.file_url && !m.notes) ? 'note_archive' : 'note';
+                    } else if (type === 'video') {
+                        type = 'video';
+                    } else if (type === 'book') {
+                        type = 'textbook';
+                    } else if (type === 'chapter') {
+                        type = 'chapter';
+                    } else if (type === 'model question') {
+                        type = 'model_question';
+                    }
+                    return { ...m, type };
+                });
+                setLiveMaterials(mappedMaterials);
+            }
+            
+            const { data: mcqs, error: mcqError } = await supabase.from('mcq_bank').select('*');
+            if (mcqError) console.error("MCQ fetch error:", mcqError);
+            else if (mcqs) setLiveMcqs(mcqs);
+        } catch (e) {
+            console.error("Live materials fetch error:", e);
+        }
+    };
+
+    useEffect(() => {
+        if (user) {
+            fetchLiveNews();
+            fetchLiveMaterials();
+        }
+    }, [user]);
 
     if (isInitializing) {
         return (
@@ -9554,11 +10073,20 @@ const AppProvider = ({ children }: any) => {
         );
     }
 
-    const fetchLiveNews = async () => {};
-    const fetchLiveMaterials = async () => {};
+    const toggleChapterComplete = (chapterId: string) => {
+        if (!user || !chapterId) return;
+        const isComplete = user.completedChapters?.includes(chapterId) || false;
+        const newList = isComplete 
+            ? user.completedChapters.filter(id => id !== chapterId)
+            : [...(user.completedChapters || []), chapterId];
+        
+        const updatedUser = { ...user, completedChapters: newList };
+        setUser(updatedUser);
+        localStorage.setItem('logged_user', JSON.stringify(updatedUser));
+    };
 
     return (
-        <AppContext.Provider value={{ 
+        <AppContext.Provider value={{
             user, setUser, userProfile, data, setData, updateData,
             addChapter, deleteChapter,
             liveNews, liveMaterials, liveNotices, liveMcqs,

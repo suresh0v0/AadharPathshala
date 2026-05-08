@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -244,6 +244,22 @@
 .markdown-body th { @apply bg-slate-50 border border-slate-100 p-2 text-left text-[0.7rem] font-black uppercase tracking-widest text-slate-500; }
 .markdown-body td { @apply border border-slate-100 p-2 text-sm text-slate-600; }
 .markdown-body img { @apply rounded-2xl shadow-lg border border-slate-100 mx-auto my-6; }
+
+/* ── KATEX CUSTOM STYLING ── */
+.katex {
+  font-size: 0.95em !important;
+}
+
+.katex-display {
+  padding: 1rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Ensure variables are always italicized in student view as requested */
+.katex .mathit {
+  font-style: italic !important;
+}
 
 /* Hide Vercel Toolbar */
 #vercel-live-feedback, 

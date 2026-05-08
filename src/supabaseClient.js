@@ -69,6 +69,7 @@ export const handleUpload = async (category, payload) => {
         case 'Notes':
         case 'Model Question':
         case 'Chapter':
+            if (!payload.file) throw new Error(`A valid file is required for ${category} upload`);
             const publicUrl = await uploadFile('notes', `${category}/${Date.now()}_${payload.file.name}`, payload.file);
             return await supabase.from('study_hub').insert([{
                 title: payload.title,
@@ -105,12 +106,66 @@ export const handleUpload = async (category, payload) => {
 };
 
 /**
+ * Saves a news item to the 'news' table.
+ */
+export const saveNews = async (payload) => {
+    let imageUrl = payload.image_url;
+    
+    // If there's an actual file, upload it
+    if (payload.file) {
+        imageUrl = await uploadFile('news_images', `${Date.now()}_${payload.file.name}`, payload.file);
+    }
+    
+    const { data, error } = await supabase
+        .from('news')
+        .insert([{
+            title: payload.title,
+            content: payload.content,
+            image_url: imageUrl,
+            category: payload.category || 'General'
+        }])
+        .select();
+    
+    if (error) throw error;
+    return data;
+};
+
+/**
+ * Saves a notice item to the 'notices' table.
+ */
+export const saveNotice = async (payload) => {
+    const { data, error } = await supabase
+        .from('notices')
+        .insert([{
+            title: payload.title,
+            content: payload.content,
+            category: payload.category || 'General'
+        }])
+        .select();
+    
+    if (error) throw error;
+    return data;
+};
+
+/**
  * Specialized handler for bulk uploading MCQs via JSON.
  */
 export const uploadJSON = async (jsonString) => {
     try {
-        const data = JSON.parse(jsonString);
-        if (!Array.isArray(data)) throw new Error("JSON must be an array of questions");
+        let data = JSON.parse(jsonString);
+        
+        // Handle cases where the JSON might be wrapped in an object { "quiz": [...] } or { "questions": [...] }
+        if (!Array.isArray(data)) {
+            if (data.quiz && Array.isArray(data.quiz)) {
+                data = data.quiz;
+            } else if (data.questions && Array.isArray(data.questions)) {
+                data = data.questions;
+            } else if (data.mcqs && Array.isArray(data.mcqs)) {
+                data = data.mcqs;
+            } else {
+                throw new Error("JSON must be an array of questions or contain a 'quiz'/'questions' array.");
+            }
+        }
         
         const { error } = await supabase.from('mcq_bank').insert(data);
         if (error) throw error;

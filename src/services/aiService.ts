@@ -11,35 +11,35 @@ const genAI = new GoogleGenAI({
  * AI Providers configuration
  */
 export const PROVIDERS = {
-    SUBASH: {
-        id: 'subash',
-        name: 'Subash',
+    MISO: {
+        id: 'miso',
+        name: 'Miso V1.1',
+        provider: 'Groq',
+        model: 'llama-3.3-70b-versatile',
+        color: 'emerald'
+    },
+    SPARK: {
+        id: 'spark',
+        name: 'Spark V2.3',
         provider: 'SambaNova',
         model: 'Meta-Llama-3.3-70B-Instruct',
         baseURL: "https://api.sambanova.ai/v1",
         color: 'orange'
     },
-    LILA: {
-        id: 'lila',
-        name: 'Lila',
+    NOVA: {
+        id: 'nova',
+        name: 'Nova V3.4',
         provider: 'Cerebras',
         model: 'llama-3.3-70b',
         baseURL: "https://api.cerebras.ai/v1",
         color: 'purple'
     },
-    GYANU: {
-        id: 'gyanu',
-        name: 'Gyanu',
+    CANNON: {
+        id: 'cannon',
+        name: 'Cannon V4.1',
         provider: 'Gemini',
         model: 'gemini-3-flash-preview',
         color: 'indigo'
-    },
-    MISO: {
-        id: 'miso',
-        name: 'Miso',
-        provider: 'Groq',
-        model: 'llama-3.3-70b-versatile',
-        color: 'emerald'
     }
 };
 
@@ -49,18 +49,18 @@ export const PROVIDERS = {
 export const getAIResponse = async (tutorId: string, prompt: string, systemInstruction: string) => {
     try {
         switch (tutorId) {
-            case PROVIDERS.SUBASH.id: {
+            case PROVIDERS.SPARK.id: {
                 const apiKey = import.meta.env.VITE_SAMBANOVA_API_KEY || "";
                 if (!apiKey) throw new Error("SambaNova API Key missing. Please set VITE_SAMBANOVA_API_KEY in your environment.");
                 
-                const response = await fetch(`${PROVIDERS.SUBASH.baseURL}/chat/completions`, {
+                const response = await fetch(`${PROVIDERS.SPARK.baseURL}/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: PROVIDERS.SUBASH.model,
+                        model: PROVIDERS.SPARK.model,
                         messages: [
                             { role: "system", content: systemInstruction },
                             { role: "user", content: prompt }
@@ -69,25 +69,27 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
                 });
 
                 if (!response.ok) {
-                    throw new Error(`SambaNova (Subash) Limit Exceeded or Error. Please try another AI!`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error?.message || response.statusText;
+                    throw new Error(`SambaNova Error: ${errorMessage}`);
                 }
 
                 const data = await response.json();
                 return data.choices[0]?.message?.content || "";
             }
 
-            case PROVIDERS.LILA.id: {
+            case PROVIDERS.NOVA.id: {
                 const apiKey = import.meta.env.VITE_CEREBRAS_API_KEY || "";
                 if (!apiKey) throw new Error("Cerebras API Key missing. Please set VITE_CEREBRAS_API_KEY in your environment.");
                 
-                const response = await fetch(`${PROVIDERS.LILA.baseURL}/chat/completions`, {
+                const response = await fetch(`${PROVIDERS.NOVA.baseURL}/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        model: PROVIDERS.LILA.model,
+                        model: PROVIDERS.NOVA.model,
                         messages: [
                             { role: "system", content: systemInstruction },
                             { role: "user", content: prompt }
@@ -96,23 +98,25 @@ export const getAIResponse = async (tutorId: string, prompt: string, systemInstr
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Cerebras (Lila) Limit Exceeded or Error. Please try another AI!`);
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.error?.message || response.statusText;
+                    throw new Error(`Cerebras Error: ${errorMessage}`);
                 }
 
                 const data = await response.json();
                 return data.choices[0]?.message?.content || "";
             }
 
-            case PROVIDERS.GYANU.id: {
+            case PROVIDERS.CANNON.id: {
                 if (!geminiApiKey) throw new Error("Gemini API Key missing. Please set VITE_GEMINI_API_KEY in your environment.");
                 const result = await genAI.models.generateContent({
-                    model: PROVIDERS.GYANU.model,
+                    model: PROVIDERS.CANNON.model,
                     contents: [{ role: 'user', parts: [{ text: prompt }] }],
                     config: {
                         systemInstruction
                     }
                 }).catch(e => {
-                    throw new Error(`Gemini (Gyanu) Limit Exceeded or Error. Please try another AI!`);
+                    throw new Error(`Gemini (Cannon) Limit Exceeded or Error. Please try another AI!`);
                 });
                 return result.text;
             }

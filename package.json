@@ -13,7 +13,7 @@
     "@google/genai": "^1.29.0",
     "@supabase/supabase-js": "^2.45.0",
     "clsx": "^2.1.1",
-    "framer-motion": "^11.11.17",
+    "framer-motion": "^11.18.2",
     "groq-sdk": "^1.1.2",
     "jspdf": "^4.2.1",
     "katex": "^0.16.45",
