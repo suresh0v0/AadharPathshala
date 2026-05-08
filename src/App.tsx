@@ -7055,13 +7055,17 @@ const VideoSectionPage = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {videos.map(video => {
-                    const thumbUrl = `https://pixabay.com/get/${video.picture_id}_640.jpg`;
                     const videoUrl = video.videos?.tiny?.url || video.videos?.small?.url;
                     
                     return (
                         <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer" onClick={() => setActiveVideo(video)}>
                             <div className="relative aspect-video bg-slate-900 overflow-hidden shrink-0">
-                                <img src={thumbUrl} alt={video.tags} className="w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" loading="lazy" />
+                                <img 
+                                    src={video.previewURL || `https://i.vimeocdn.com/video/${video.picture_id}_640x360.jpg`} 
+                                    alt={video.tags} 
+                                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" 
+                                    loading="lazy"
+                                />
                                 {videoUrl && (
                                     <video 
                                         src={videoUrl}
