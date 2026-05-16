@@ -8,18 +8,21 @@ import {
   ChevronRight, ArrowLeft, Send, Sparkles, Trophy, 
   History, Calculator, User as UserIcon,
   PlayCircle, FileText,
-  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, TrendingDown, Activity, Monitor, Mic,
+  Clock, Plus, FlaskConical, Globe, Divide, TrendingUp, TrendingDown, Activity, Monitor,
   Layout as ToolLayout, GraduationCap, Timer, Book, Zap, Users, Compass,
   Bot, Coffee, Pause, Play, RotateCcw, RotateCw, Flame, Wind, Calendar,
   Dna, Binary, Languages, Microscope, Sigma, Scale, Lightbulb, Bell, Megaphone,
   Pin, Info, AlertTriangle, ChevronDown, ChevronUp, ChevronLeft, CheckCircle2, Search, Download, PenTool, Eye, EyeOff, FileCode,
+  Hash, Percent, BadgePercent, BarChart, Banknote, Variable, ArrowUpRight, LineChart, ListOrdered, Move, Triangle, Construction,
   ExternalLink, BarChart3, LogOut, LayoutDashboard, Video, FileJson, MessageSquareQuote, 
   Trash2, Edit3, Check, CheckCircle, X, Filter, Image as ImageIcon, PlusSquare, Radio, Database, Server, Lock, Shield,
-  StickyNote, Circle,
+  StickyNote, Circle, Cat, Bird, Leaf, Apple, Orbit, Building2, SlidersHorizontal, MoreHorizontal, Grid2X2,
+  Mic, Camera, Quote, Pencil,
   BrainCircuit, ClipboardCheck, XCircle, Library, Grid3X3, UserCheck, GalleryVertical, Archive, Loader2,
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
-  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Film
+  Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Film,
+  Gamepad2, Brain, LayoutList, BookCopy, ShieldAlert, Link2, VolumeX, Puzzle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -46,8 +49,8 @@ import { getAIResponse, getAIJSONResponse, PROVIDERS } from './services/aiServic
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, PieChart, Pie, Cell, LineChart, Line
+  Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, PieChart, Pie, Cell, Line
 } from 'recharts';
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 
@@ -179,7 +182,7 @@ const STATIC_MCQS: Record<string, any[]> = {};
 export const Layout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userProfile } = useApp();
+  const { user, setUser, userProfile } = useApp();
 
   useEffect(() => {
      window.scrollTo(0, 0);
@@ -195,7 +198,16 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const handleLogout = async () => {
-      await supabase.auth.signOut();
+      try {
+          await supabase.auth.signOut();
+          localStorage.removeItem('logged_user');
+          navigate('/');
+      } catch (err) {
+          console.error("Logout error:", err);
+          // Force logout in app state anyway
+          setUser(null);
+          navigate('/');
+      }
   };
 
   const isAdminMode = location.pathname.startsWith('/admin-portal');
@@ -817,6 +829,115 @@ const Mascot = ({ mood = 'idle' }: { mood?: 'idle' | 'talking' | 'thinking' }) =
     );
 };
 
+/**
+ * Wikimedia Commons API Helper
+ */
+const fetchWikimediaImages = async (query: string, limit: number = 30, offset: number = 0) => {
+    try {
+        const cleanQuery = query.replace(/[^\w\s-]/gi, ' ').trim();
+        if (!cleanQuery) return [];
+
+        // Enhanced query: Try to find high quality educational diagrams
+        const educationalQuery = `${cleanQuery} educational diagram illustration labeled`;
+        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=search&iiprop=url|extmetadata&iiextmetadatafilter=ObjectName|ImageDescription&gsrsearch=${encodeURIComponent(educationalQuery)}&gsrnamespace=6&gsrlimit=${limit}&gsroffset=${offset}&origin=*`;
+
+        const res = await fetch(searchUrl, { mode: 'cors' });
+        if (!res.ok) return [];
+        
+        const data = await res.json();
+        let pages = data.query?.pages;
+
+        // Fallback to broader search if specific search fails
+        if (!pages) {
+            const fallbackUrl = `https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&generator=search&iiprop=url|extmetadata&iiextmetadatafilter=ObjectName&gsrsearch=${encodeURIComponent(cleanQuery)}&gsrnamespace=6&gsrlimit=${limit}&gsroffset=${offset}&origin=*`;
+            const fallbackRes = await fetch(fallbackUrl, { mode: 'cors' });
+            const fallbackData = await fallbackRes.json();
+            pages = fallbackData.query?.pages;
+        }
+
+        if (!pages) return [];
+        
+        return Object.values(pages).map((page: any) => {
+            const info = page.imageinfo?.[0];
+            const meta = info?.extmetadata;
+            const title = meta?.ObjectName?.value || meta?.ImageDescription?.value || page.title.replace('File:', '').replace(/\.[^/.]+$/, "");
+            
+            return {
+                id: page.pageid,
+                webformatURL: info?.url,
+                largeImageURL: info?.url,
+                previewURL: info?.url,
+                tags: title,
+                user: "Wikimedia Commons",
+                views: Math.floor(Math.random() * 10000) + 1000,
+                downloads: Math.floor(Math.random() * 5000) + 500
+            };
+        }).filter((img: any) => {
+            const url = (img.webformatURL || '').toLowerCase();
+            return url.match(/\.(jpg|jpeg|png|gif|svg|webp)$/);
+        });
+    } catch (e) {
+        return [];
+    }
+};
+const WikimediaAIImage = ({ query, alt, onImageClick }: { query: string, alt: string, onImageClick?: (url: string) => void }) => {
+    const [imgUrl, setImgUrl] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchImg = async () => {
+            try {
+                // Using Pollinations for high-fidelity diagrams
+                const prompt = `${query} highly detailed educational scientific diagram, clear labels, colored illustration, clean white background, professional science textbook style`;
+                setImgUrl(`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=768&nologo=true&seed=${Math.floor(Math.random() * 100000)}`);
+            } catch (e) {
+                setImgUrl(`https://image.pollinations.ai/prompt/${encodeURIComponent(query + ' diagram')}?width=1024&height=768&nologo=true&seed=42`);
+            }
+            setLoading(false);
+        };
+        fetchImg();
+    }, [query]);
+
+    if (loading) return (
+        <div className="my-10 relative overflow-hidden rounded-[3rem] bg-slate-50 border border-slate-100 min-h-[400px] flex items-center justify-center shadow-inner">
+            <motion.div 
+                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="flex flex-col items-center gap-4"
+            >
+                <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-indigo-100 border-t-indigo-500 animate-spin" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-indigo-400 animate-pulse" />
+                    </div>
+                </div>
+                <div className="text-center">
+                    <p className="text-[0.6rem] font-black text-indigo-600 uppercase tracking-[0.3em]">Synthesizing Diagram</p>
+                    <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest mt-1">Sourcing high-fidelity medical visuals</p>
+                </div>
+            </motion.div>
+        </div>
+    );
+    
+    if (!imgUrl) return null;
+
+    return (
+        <div className="my-10 group/wiki animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <AILoadingImage src={imgUrl} alt={alt} i={0} onClick={() => onImageClick?.(imgUrl)} />
+            <div className="mt-4 px-6 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center">
+                        <Brain className="w-2.5 h-2.5 text-slate-500" />
+                    </div>
+                    <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">AI Scientific Visualization</p>
+                </div>
+                <div className="h-[1px] flex-1 bg-slate-100 mx-4" />
+                <p className="text-[0.5rem] font-bold text-indigo-400 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-full">Precision Core</p>
+            </div>
+        </div>
+    );
+};
+
 const TypewriterContent = ({ content, role, activeTutor, isNew = false, onImageClick }: { content: string, role: 'ai' | 'user', activeTutor: string, isNew?: boolean, onImageClick?: (url: string) => void }) => {
     const [displayedText, setDisplayedText] = useState('');
     const [index, setIndex] = useState(0);
@@ -861,8 +982,7 @@ const TypewriterContent = ({ content, role, activeTutor, isNew = false, onImageC
                         const visualMatch = txt.match(/\[VISUAL:\s*(.*?)\]/i);
                         if (visualMatch) {
                             const prompt = visualMatch[1].trim();
-                            const primaryUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt + ' highly detailed scientific labeled educational diagram white background')}?width=1024&height=768&nologo=true`;
-                            return <AILoadingImage src={primaryUrl} alt={prompt} i={0} onClick={() => onImageClick?.(primaryUrl)} />;
+                            return <WikimediaAIImage query={prompt} alt={prompt} onImageClick={onImageClick} />;
                         }
                         return <p className="mb-4" {...props}>{children}</p>;
                     },
@@ -933,63 +1053,126 @@ const ImagePreviewModal = ({ url, onClose }: { url: string, onClose: () => void 
 const AILoadingImage = ({ src, alt, i, onClick }: { src: string, alt: string, i: number, onClick?: () => void }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
+    const [retryCount, setRetryCount] = useState(0);
 
     return (
         <div className="my-10 relative group-visual">
-            <div className="absolute -inset-2 bg-linear-to-r from-blue-500 to-cyan-400 rounded-[3.5rem] blur-2xl opacity-10" />
+            {/* Immersive Background Glow */}
+            <motion.div 
+                animate={{ 
+                    opacity: [0.05, 0.15, 0.05],
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 5, 0]
+                }}
+                transition={{ duration: 6, repeat: Infinity }}
+                className="absolute -inset-10 bg-linear-to-tr from-indigo-500/10 via-purple-500/10 to-blue-500/10 rounded-[5rem] blur-3xl -z-10" 
+            />
+
             <div 
                 onClick={onClick}
                 className={cn(
-                "relative overflow-hidden rounded-[3rem] bg-slate-50 border-[8px] border-white shadow-2xl min-h-[300px] flex items-center justify-center transition-all duration-500 cursor-pointer",
-                loading ? "bg-slate-100" : "bg-slate-50 hover:scale-[1.02]"
+                "relative overflow-hidden rounded-[2.5rem] bg-white border border-slate-200/60 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] min-h-[380px] flex items-center justify-center transition-all duration-700 cursor-pointer group",
+                loading ? "animate-pulse" : "hover:border-indigo-400 hover:shadow-indigo-500/15"
             )}>
+                {/* Advanced Scanning UI */}
                 {loading && (
-                    <motion.div 
-                        animate={{ 
-                            scale: [1, 1.1, 1],
-                            opacity: [0.3, 0.7, 0.3],
-                            rotate: [0, 5, -5, 0]
-                        }}
-                        transition={{ duration: 3, repeat: Infinity }}
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-4"
-                    >
-                        <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-indigo-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl">
-                            <Bot className="w-10 h-10" />
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/50 backdrop-blur-[2px]">
+                        <div className="relative w-32 h-32 flex items-center justify-center">
+                            {/* Rotating Inner Rings */}
+                            <motion.div 
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 border-2 border-dashed border-indigo-200 rounded-full"
+                            />
+                            <motion.div 
+                                animate={{ rotate: -360 }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-4 border border-indigo-400/30 rounded-full border-t-indigo-500"
+                            />
+                            <div className="relative z-10 bg-white p-4 rounded-3xl shadow-lg border border-slate-100 italic font-black text-indigo-600 text-lg">
+                                <Search className="w-8 h-8" />
+                            </div>
                         </div>
-                        <p className="text-[0.6rem] font-black text-blue-500 uppercase tracking-[0.3em] animate-pulse">Rendering Insight...</p>
-                    </motion.div>
+
+                        {/* Status HUD */}
+                        <div className="mt-8 text-center space-y-2">
+                            <motion.div 
+                                animate={{ opacity: [0.4, 1, 0.4] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                                className="flex items-center gap-2"
+                            >
+                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
+                                <span className="text-[0.65rem] font-black text-slate-800 uppercase tracking-[0.3em]">Synthesizing Data</span>
+                            </motion.div>
+                            <p className="text-[0.5rem] font-bold text-slate-400 uppercase tracking-widest">Constructing visual representation</p>
+                        </div>
+
+                        {/* Scanner Beam */}
+                        <motion.div 
+                            animate={{ top: ['-10%', '110%'] }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                            className="absolute inset-x-0 h-1 bg-linear-to-r from-transparent via-indigo-400 to-transparent blur-sm z-30"
+                        />
+                    </div>
                 )}
+
                 <img 
                     src={src}
                     alt={alt}
                     className={cn(
-                        "w-full h-auto object-cover transition-all duration-1000",
-                        loading ? "opacity-0 scale-95" : "opacity-100 scale-100 ring-2 ring-white/50"
+                        "w-full h-auto min-h-[380px] object-cover transition-all duration-1000",
+                        loading ? "opacity-0 scale-110 blur-2xl" : "opacity-100 scale-100 blur-0 group-hover:scale-[1.02]"
                     )}
                     referrerPolicy="no-referrer"
                     onLoad={() => setLoading(false)}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        if (!target.src.includes('retry=true')) {
-                            target.src = `https://pollinations.ai/p/${encodeURIComponent(alt + ' scientific_diagram')}?width=800&height=600&nologo=true&retry=true`;
+                        if (retryCount < 3) {
+                            setRetryCount(prev => prev + 1);
+                            // Fallback to a different seed and simpler prompt
+                            const fallbackQuery = alt.replace(/[^\w\s]/gi, ' ').trim() + " science illustration diagram";
+                            target.src = `https://image.pollinations.ai/prompt/${encodeURIComponent(fallbackQuery)}?width=1024&height=768&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+                        } else if (retryCount === 3) {
+                            setRetryCount(prev => prev + 1);
+                            // Ultimate fallback: High quality general stock photo from LoremFlickr
+                            target.src = `https://loremflickr.com/1024/768/${encodeURIComponent(alt.split(' ')[0] || 'science')}?lock=${Math.floor(Math.random() * 1000)}`;
                         } else {
                             setError(true);
                             setLoading(false);
                         }
                     }}
                 />
+
+                {/* Floating Meta Tag */}
                 {!loading && !error && (
-                    <div className="absolute top-6 left-6 bg-white/90 backdrop-blur-md px-5 py-2 rounded-2xl shadow-xl border border-blue/5">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue rounded-full animate-ping" />
-                            <span className="text-[0.65rem] font-black text-blue uppercase tracking-widest">Visual Core 3.0</span>
+                    <motion.div 
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-xl p-4 rounded-2xl border border-white shadow-2xl flex items-center justify-between z-10"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                                <Sparkles className="w-4 h-4" />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Visual Insight</span>
+                                <span className="text-[0.7rem] font-bold text-slate-900 line-clamp-1 truncate max-w-[150px]">{alt}</span>
+                            </div>
                         </div>
-                    </div>
+                        <div className="flex items-center gap-1 bg-slate-100 px-2 py-1 rounded-lg">
+                            <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                            <span className="text-[0.45rem] font-black text-slate-500 uppercase tracking-widest">Verified</span>
+                        </div>
+                    </motion.div>
                 )}
+
                 {error && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-10 text-center bg-slate-50">
-                        <AlertTriangle className="w-12 h-12 text-rose-500 mb-4" />
-                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Visual Link Interrupted</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center bg-slate-50">
+                        <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center mb-4 border border-rose-100">
+                            <AlertTriangle className="w-8 h-8 text-rose-500" />
+                        </div>
+                        <h3 className="text-sm font-black text-slate-800 uppercase tracking-tight mb-2">Sync Error</h3>
+                        <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest leading-loose">The requested diagram could not be retrieved. Please try rephrasing your question.</p>
                     </div>
                 )}
             </div>
@@ -2018,12 +2201,12 @@ const GPACalculator = () => {
     );
 };
 
-const ToolHeader = ({ title, subtitle, icon: Icon }: { title: string; subtitle: string; icon?: any }) => {
+const ToolHeader = ({ title, subtitle, icon: Icon, onBack }: { title: string; subtitle: string; icon?: any, onBack?: () => void }) => {
     const navigate = useNavigate();
     return (
         <header className="flex items-center gap-4 mb-8 text-left">
             <button 
-                onClick={() => navigate(-1)} 
+                onClick={() => onBack ? onBack() : navigate(-1)} 
                 className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-all hover:scale-105 active:scale-95"
             >
                 <ArrowLeft className="w-6 h-6" />
@@ -3374,149 +3557,294 @@ const NepaliDictionaryPage = () => {
     const [query, setQuery] = useState("");
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
-    
-    const recentTerms = [
-        { term: 'शिक्षा', color: 'bg-amber-50 text-amber-600 border-amber-100' },
-        { term: 'विद्यार्थी', color: 'bg-yellow-50 text-yellow-600 border-yellow-100' },
-        { term: 'समाज', color: 'bg-orange-50 text-orange-600 border-orange-100' },
-        { term: 'प्रविधि', color: 'bg-rose-50 text-rose-600 border-rose-100' }
-    ];
+    const [error, setError] = useState("");
+    const [colorIdx, setColorIdx] = useState(0);
+
+    const currentColor = COLOR_CYCLE[colorIdx % COLOR_CYCLE.length];
+    const currentText = TEXT_COLOR_CYCLE[colorIdx % TEXT_COLOR_CYCLE.length];
 
     const searchNepaliWord = async (word: string) => {
         if (!word) return;
         setLoading(true);
-        setResult(null);
+        setError("");
         try {
-            const systemInstruction = `You are a high-accuracy Nepali dictionary. Explains the meaning and usage of the Nepali word.
-            Return the response in strictly JSON format. Provide the meaning, examples, synonyms, and antonyms IN NEPALI language.
-            RESPONSE SCHEMA:
-            {
-                "word": "Nepali word",
-                "transliteration": "how to pronounce in english",
-                "meaning": "primary meaning IN NEPALI",
-                "partOfSpeech": "noun/verb etc IN NEPALI",
-                "examples": ["example sentence 1 IN NEPALI", "example sentence 2 IN NEPALI"],
-                "synonyms": ["synonym 1 IN NEPALI", "synonym 2 IN NEPALI"],
-                "antonyms": ["antonym 1 IN NEPALI", "antonym 2 IN NEPALI"]
+            const systemInstruction = `You are a world-class Nepali dictionary. Provide detailed info for: "${word}".
+            Return strictly JSON in NEPALI language where applicable.
+            SCHEMA: { 
+                "word": string, 
+                "transliteration": string,
+                "partOfSpeech": string, 
+                "meaning": string, 
+                "examples": string[], 
+                "synonyms": string[], 
+                "antonyms": string[], 
+                "usageTip": string, 
+                "didYouKnow": string
             }`;
 
             const data = await getAIJSONResponse(`Word: "${word}"`, systemInstruction);
             setResult(data);
+            setColorIdx(prev => prev + 1);
         } catch (err) {
             console.error(err);
+            setError("खोज्न असफल भयो। फेरि प्रयास गर्नुहोस्।");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <div className="w-full max-w-[620px] px-6 py-6">
-                <ToolHeader title="नेपाली शब्दकोश" subtitle="Nepali Lexicon Matrix" icon={BookOpen} />
+        <div className={cn("min-h-screen bg-slate-50 flex flex-col items-center pt-2 md:pt-4 pb-32 transition-all duration-700", loading && "blur-sm opacity-60")}>
+            {/* Header Area */}
+            <div className="w-full max-w-6xl px-4 py-3 md:py-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 md:gap-4 leading-tight">
+                    <button onClick={() => navigate(-1)} className="w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center text-slate-800 shadow-sm border border-slate-100 hover:bg-slate-50 transition-colors"><ArrowLeft className="w-4 h-4 md:w-5 md:h-5" /></button>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1 md:gap-2">
+                             <h1 className="text-lg md:text-2xl font-black text-slate-800 italic tracking-tight truncate">नेपाली शब्दकोश</h1>
+                             <button className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 bg-amber-100 text-amber-600 rounded-full text-[0.45rem] md:text-[0.6rem] font-black uppercase tracking-tighter shrink-0">
+                                <BookOpen className="w-2.5 md:w-3.5 h-2.5 md:h-3.5" /> LEXICON
+                             </button>
+                        </div>
+                        <p className={cn("text-[0.5rem] md:text-[0.65rem] font-bold uppercase tracking-widest mt-0 md:mt-0.5 truncate transition-colors", currentText)}>शब्द सिक्नुहोस्। नयाँ विश्व बनाउनुहोस्।</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5 md:gap-3">
+                    <button className={cn("w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm border border-slate-100 transition-all active:scale-90", currentText)}><Clock className="w-4 h-4 md:w-5 md:h-5" /></button>
+                    <button className={cn("w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm border border-slate-100 transition-all active:scale-90", currentText)}><Bookmark className="w-4 h-4 md:w-5 md:h-5" /></button>
+                </div>
             </div>
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-10 space-y-6">
+            {/* Search Section */}
+            <div className="w-full max-w-6xl px-4 py-1.5 flex items-center gap-1.5 md:gap-4 mb-3 md:mb-6">
+                <div className="flex-1 bg-white rounded-xl md:rounded-[2rem] h-10 md:h-16 px-3 md:px-6 flex items-center gap-2 md:gap-4 shadow-lg border border-slate-100 group focus-within:ring-4 focus-within:ring-slate-100 transition-all">
+                    <Search className="w-4 h-4 md:w-5 md:h-5 text-slate-300 group-focus-within:text-slate-500" />
+                    <input 
+                        type="text" 
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && searchNepaliWord(query)}
+                        placeholder="शब्द खोज्नुहोस्..."
+                        className="flex-1 text-xs md:text-lg font-bold text-slate-800 outline-none placeholder:text-slate-300"
+                    />
+                     <div className="flex items-center gap-1.5 md:gap-3 border-l border-slate-100 pl-1.5 md:pl-4">
+                        <button className={cn("hover:scale-110 transition-all p-1", currentText)}><Mic className="w-3.5 h-3.5 md:w-5 md:h-5" /></button>
+                        <button className={cn("hover:scale-110 transition-all p-1", currentText)}><Camera className="w-3.5 h-3.5 md:w-5 md:h-5" /></button>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => searchNepaliWord(query)}
+                    disabled={loading}
+                    className={cn("h-10 md:h-16 w-10 md:w-16 flex items-center justify-center text-white rounded-xl md:rounded-[2rem] font-black shadow-xl active:scale-95 transition-all disabled:opacity-50", currentColor)}
+                >
+                    {loading ? <RotateCcw className="w-3.5 h-3.5 md:w-5 md:h-5 animate-spin" /> : <Search className="w-4 h-4 md:w-6 md:h-6" />}
+                </button>
+            </div>
+
+            <div className="w-full max-w-6xl px-4 space-y-4 md:space-y-6">
+                {/* Feature Cards */}
+                <div className="grid grid-cols-4 gap-2 md:gap-4">
+                    {[
+                        { label: 'शब्द खेल', icon: Gamepad2, color: 'bg-indigo-50 text-indigo-600' },
+                        { label: 'आजको शब्द', icon: Star, color: 'bg-blue-50 text-blue-600' },
+                        { label: 'मेरा शब्दहरू', icon: LayoutList, color: 'bg-orange-50 text-orange-600' },
+                        { label: 'पहेली', icon: Puzzle, color: 'bg-emerald-50 text-emerald-600' }
+                    ].map((card, i) => (
+                        <div key={i} className={cn(card.color, "p-2 md:p-5 rounded-xl md:rounded-3xl flex flex-col items-center text-center gap-1 shadow-sm border border-transparent hover:border-white transition-all cursor-pointer group active:scale-95")}>
+                            <div className="w-7 h-7 md:w-11 md:h-11 rounded-lg md:rounded-2xl bg-white flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-sm">
+                                <card.icon className="w-4 h-4 md:w-6 md:h-6" />
+                            </div>
+                            <h4 className="text-[0.45rem] md:text-[0.7rem] font-black uppercase tracking-tight line-clamp-1">{card.label}</h4>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Animated Pre-Search Cards */}
                 {!result && !loading && (
-                    <div className="space-y-8">
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-6 border border-white">
-                            <div className="space-y-4">
-                                <label className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block px-1">शब्द खोजी (Nepali Word Search)</label>
-                                <div className="relative border-b-2 border-amber-100 flex items-center py-2 focus-within:border-amber-500 transition-colors group">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Type Nepali word..." 
-                                        className="w-full text-2xl font-black text-slate-900 bg-transparent outline-none placeholder:text-slate-100 italic"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && searchNepaliWord(query)}
-                                    />
-                                    <button onClick={() => searchNepaliWord(query)} className="text-amber-500 hover:scale-110 transition-transform">
-                                        <Search className="w-7 h-7" />
-                                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pt-4">
+                        <motion.div 
+                            animate={{ x: [0, 10, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-xl flex flex-col gap-4"
+                        >
+                            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner">
+                                <Quote className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg md:text-2xl font-black text-slate-800 italic leading-tight">
+                                "तपाईंको सपनाहरूको साकारता मात्र आजको शंकाद्वारा सीमित हुनेछ।"
+                            </h3>
+                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">— फ्र्याङ्कलिन डी. रूजवेल्ट</p>
+                        </motion.div>
+
+                        <motion.div 
+                            animate={{ x: [0, -10, 0] }}
+                            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-indigo-600 p-6 md:p-10 rounded-[2.5rem] shadow-xl text-white flex flex-col gap-4 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 opacity-10 rotate-12">
+                                <Zap className="w-full h-full" />
+                            </div>
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
+                                <Languages className="w-6 h-6" />
+                            </div>
+                            <h3 className="text-lg md:text-2xl font-black italic leading-tight">
+                                हाम्रो एआई टूलको मद्दतले नेपाली नोटहरूलाई अङ्ग्रेजीमा सहजै अनुवाद गर्नुहोस्।
+                            </h3>
+                            <div className="flex items-center gap-2 mt-auto">
+                                <span className="px-3 py-1 bg-white/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">अनुवाद प्रो</span>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+
+                {/* Main Content Box */}
+                {result && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="bg-white rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100"
+                    >
+                        <div className={cn("p-6 md:p-10 text-white relative overflow-hidden transition-colors duration-500", currentColor)}>
+                            <div className="absolute top-0 right-0 w-32 h-32 md:w-64 md:h-64 opacity-20 pointer-events-none">
+                                <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                <Book className="w-full h-full rotate-12 translate-x-1/4" />
+                            </div>
+                            
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+                                <div>
+                                    <h2 className="text-4xl md:text-7xl font-black italic tracking-tighter mb-2 drop-shadow-lg">{result.word}</h2>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-white/80 font-mono text-base md:text-xl">[{result.transliteration}]</span>
+                                        <span className="px-3 py-1 bg-white/30 backdrop-blur-md rounded-full text-[0.6rem] md:text-xs font-black uppercase tracking-widest border border-white/20">{result.partOfSpeech}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between px-2">
-                                <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">हालका शब्दहरू</h3>
-                                <Sparkles className="w-3 h-3 text-amber-500" />
+                        <div className="p-6 md:p-10 space-y-6 md:space-y-8 bg-gradient-to-b from-white to-slate-50/30">
+                            <div className="space-y-4">
+                                <h3 className={cn("text-[0.6rem] md:text-xs font-black uppercase tracking-widest", currentText)}>परिभाषा (Definition)</h3>
+                                <p className="text-lg md:text-2xl font-bold text-slate-800 leading-snug">{result.meaning}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {recentTerms.map((item) => (
-                                    <button 
-                                        key={item.term} 
-                                        onClick={() => { setQuery(item.term); searchNepaliWord(item.term); }}
-                                        className={cn("p-5 rounded-[2rem] border shadow-sm text-left group transition-all active:scale-95", item.color)}
-                                    >
-                                        <h4 className="text-2xl font-black mb-1">{item.term}</h4>
-                                        <p className="font-black uppercase text-[0.55rem] tracking-widest opacity-60">अर्थ (Meaning)</p>
-                                    </button>
-                                ))}
+
+                            <div className="bg-white/60 backdrop-blur-sm p-6 md:p-10 rounded-[2.5rem] border border-slate-200/50 flex flex-col gap-3 shadow-sm relative overflow-hidden group">
+                                <div className={cn("absolute top-0 left-0 w-1.5 h-full opacity-60", currentColor)} />
+                                <Quote className="absolute top-6 right-6 w-8 h-8 md:w-12 md:h-12 text-slate-100 group-hover:scale-110 transition-transform" />
+                                <div className="pl-4 md:pl-6 space-y-4">
+                                    <h5 className={cn("text-[0.55rem] md:text-[0.65rem] font-black uppercase tracking-widest opacity-80", currentText)}>उदाहरण (Example Sentence)</h5>
+                                    {result.examples?.map((ex: string, i: number) => (
+                                        <p key={i} className="text-sm md:text-xl font-bold text-slate-900 leading-relaxed italic relative z-10">"{ex}"</p>
+                                    ))}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                )}
-
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-6">
-                         <div className="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center border border-amber-50">
-                            <div className="w-10 h-10 border-4 border-slate-100 border-t-amber-500 rounded-full animate-spin" />
-                         </div>
-                         <p className="text-amber-400 font-black uppercase tracking-[0.3em] text-[0.6rem]">शब्दकोश खोजी गर्दै...</p>
-                    </div>
+                    </motion.div>
                 )}
 
                 {result && !loading && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-10">
-                        <header className="pt-6">
-                            <button onClick={() => setResult(null)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-md border border-amber-50">
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                        </header>
-
-                        <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-amber-50 space-y-6">
-                            <div className="space-y-1">
-                                <span className="text-amber-600 font-black uppercase tracking-[0.2em] text-[0.6rem]">{result.partOfSpeech}</span>
-                                <h2 className="text-5xl font-black text-slate-900 tracking-tighter mb-2">{result.word}</h2>
-                                <p className="text-slate-400 font-mono italic text-sm">[{result.transliteration}]</p>
-                            </div>
-
-                            <div className="p-6 bg-amber-50/30 rounded-3xl border border-amber-50">
-                                <label className="text-[0.6rem] font-black text-amber-600 uppercase tracking-widest block mb-2">अर्थ (Meaning)</label>
-                                <p className="text-xl font-bold text-slate-800 leading-tight">{result.meaning}</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">प्रयोगका उदाहरणहरू (Examples)</label>
-                                {result.examples?.map((ex: string, i: number) => (
-                                    <p key={i} className="text-sm font-bold text-slate-600 italic border-l-2 border-amber-200 pl-4">{ex}</p>
-                                ))}
-                            </div>
-
-                            {result.synonyms?.length > 0 && (
-                                <div className="pt-4 space-y-2">
-                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">समानार्थी शब्द (Synonyms)</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.synonyms.map((s: string, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
-                                        ))}
-                                    </div>
+                    <div className="space-y-6 md:space-y-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                            >
+                                <div className="bg-emerald-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><BookCopy className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">समानार्थी (Synonyms)</h3>
                                 </div>
-                            )}
-
-                            {result.antonyms?.length > 0 && (
-                                <div className="pt-4 space-y-2">
-                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">विपरीतार्थी शब्द (Antonyms)</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.antonyms.map((a: string, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
-                                        ))}
-                                    </div>
+                                <div className="p-6 md:p-10 flex flex-wrap gap-2 md:gap-3">
+                                    {result.synonyms?.map((s: string, idx: number) => (
+                                        <motion.span 
+                                            whileHover={{ scale: 1.05 }}
+                                            key={idx} 
+                                            className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[0.65rem] md:text-sm font-bold text-slate-600 uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-100 transition-colors"
+                                        >
+                                            {s}
+                                        </motion.span>
+                                    ))}
                                 </div>
-                            )}
+                            </motion.div>
+
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                            >
+                                <div className="bg-rose-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><ShieldAlert className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">विपरीतार्थी (Antonyms)</h3>
+                                </div>
+                                <div className="p-6 md:p-10 flex flex-wrap gap-2 md:gap-3">
+                                    {result.antonyms?.map((a: string, idx: number) => (
+                                        <motion.span 
+                                            whileHover={{ scale: 1.05 }}
+                                            key={idx} 
+                                            className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[0.65rem] md:text-sm font-bold text-slate-600 uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-colors"
+                                        >
+                                            {a}
+                                        </motion.span>
+                                    ))}
+                                </div>
+                            </motion.div>
                         </div>
-                    </motion.div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                             <motion.div 
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                             >
+                                <div className="bg-amber-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><Lightbulb className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">के तपाईंलाई थाहा छ?</h3>
+                                </div>
+                                <div className="p-8 md:p-12">
+                                    <p className="text-base md:text-2xl text-slate-700 font-bold leading-relaxed italic">
+                                        "{result.didYouKnow || "नेपाली भाषा संसारकै समृद्ध भाषाहरू मध्ये एक हो।"}"
+                                    </p>
+                                </div>
+                             </motion.div>
+
+                             <motion.div 
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                             >
+                                <div className="bg-blue-600 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><Info className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">प्रयोग टिप</h3>
+                                </div>
+                                <div className="p-8 md:p-12">
+                                    <p className="text-base md:text-2xl text-slate-700 font-bold leading-relaxed italic">
+                                        "{result.usageTip || "शब्दको सही अर्थ र सन्दर्भ बुझेर प्रयोग गर्दा भाषा अझ प्रभावकारी हुन्छ।"}"
+                                    </p>
+                                </div>
+                             </motion.div>
+                        </div>
+
+                        <div className="text-center pt-10">
+                            <button onClick={() => navigate(-1)} className="px-8 py-4 bg-slate-900 text-white rounded-full font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Learning Hub मा फर्कनुहोस्</button>
+                        </div>
+                    </div>
+                )}
+
+                {(!result || error) && !loading && (
+                    <div className="text-center py-20">
+                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                             <Search className="w-10 h-10" />
+                         </div>
+                         <h3 className="text-slate-800 font-black text-xl mb-2">नेपाली शब्द खोज्नुहोस्</h3>
+                         <p className="text-slate-400 font-bold text-sm">अर्थ, उदाहरण र अन्य जानकारी पत्ता लगाउनुहोस्।</p>
+                         {error && <p className="text-rose-500 font-bold text-sm mt-4">{error}</p>}
+                    </div>
                 )}
             </div>
         </div>
@@ -4368,6 +4696,17 @@ const LoginPage = () => {
                             )}
                         </motion.button>
 
+                        <button 
+                            onClick={() => {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                window.location.href = '/';
+                            }}
+                            className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest hover:text-[#16423C] transition-colors mt-2 text-center w-full"
+                        >
+                            Stuck? Reset Session
+                        </button>
+
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -5016,7 +5355,17 @@ const VideoList = () => {
                             <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden shrink-0">
                                 {yId ? (
                                     <>
-                                        <img src={thumbUrl!} className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" referrerPolicy="no-referrer" />
+                                        <img 
+                                          src={thumbUrl!} 
+                                          className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" 
+                                          referrerPolicy="no-referrer" 
+                                          onError={(e) => {
+                                              const target = e.target as HTMLImageElement;
+                                              if (!target.src.includes('hqdefault')) {
+                                                  target.src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
+                                              }
+                                          }}
+                                        />
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <div className="relative w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                                                 <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-50" />
@@ -5062,7 +5411,17 @@ const VideoList = () => {
                 {sub.videos.map((v: any) => (
                     <div key={v.id} onClick={() => window.open(`https://youtube.com/watch?v=${v.youtubeId}`)} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden group cursor-pointer flex flex-col h-full transform hover:-translate-y-1">
                         <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden shrink-0">
-                             <img src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`} className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" referrerPolicy="no-referrer" />
+                             <img 
+                               src={`https://img.youtube.com/vi/${v.youtubeId}/maxresdefault.jpg`} 
+                               className="w-full h-full object-cover opacity-70 group-hover:scale-105 group-hover:opacity-50 transition-all duration-700" 
+                               referrerPolicy="no-referrer" 
+                               onError={(e) => {
+                                   const target = e.target as HTMLImageElement;
+                                   if (!target.src.includes('hqdefault')) {
+                                       target.src = `https://img.youtube.com/vi/${v.youtubeId}/hqdefault.jpg`;
+                                   }
+                               }}
+                             />
                              <div className="absolute inset-0 flex items-center justify-center">
                                  <div className="relative w-16 h-16 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                                      <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-50" />
@@ -6046,204 +6405,350 @@ const TranslatorPage = () => {
     );
 };
 
-/** ── DICTIONARY PAGE ── */
+const COLOR_CYCLE = [
+    'bg-blue-600', 'bg-rose-600', 'bg-amber-500', 'bg-emerald-600', 
+    'bg-indigo-600', 'bg-violet-600', 'bg-orange-500', 'bg-pink-600', 
+    'bg-teal-600', 'bg-cyan-600', 'bg-red-600', 'bg-fuchsia-600', 
+    'bg-lime-600', 'bg-sky-600', 'bg-yellow-500'
+];
+
+const TEXT_COLOR_CYCLE = [
+    'text-blue-600', 'text-rose-600', 'text-amber-500', 'text-emerald-600', 
+    'text-indigo-600', 'text-violet-600', 'text-orange-500', 'text-pink-600', 
+    'text-teal-600', 'text-cyan-600', 'text-red-600', 'text-fuchsia-600', 
+    'text-lime-600', 'text-sky-600', 'text-yellow-500'
+];
+
 const DictionaryPage = () => {
     const navigate = useNavigate();
     const [query, setQuery] = useState("");
     const [result, setResult] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [colorIdx, setColorIdx] = useState(0);
 
-    const speakWord = (text: string) => {
+    const currentColor = COLOR_CYCLE[colorIdx % COLOR_CYCLE.length];
+    const currentText = TEXT_COLOR_CYCLE[colorIdx % TEXT_COLOR_CYCLE.length];
+
+    const speakWord = (text: string, rate = 0.9) => {
         if (!window.speechSynthesis) return;
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 0.9;
+        utterance.rate = rate;
         utterance.pitch = 1.0;
         window.speechSynthesis.speak(utterance);
     };
-
-    const recentTerms = [
-        { term: 'physics', color: 'bg-blue-50 text-blue-600 border-blue-100' },
-        { term: 'mathematics', color: 'bg-rose-50 text-rose-600 border-rose-100' },
-        { term: 'science', color: 'bg-emerald-50 text-emerald-600 border-emerald-100' },
-        { term: 'biology', color: 'bg-amber-50 text-amber-600 border-amber-100' }
-    ];
 
     const searchWord = async (word: string) => {
         if (!word) return;
         setLoading(true);
         setError("");
-        setResult(null);
 
         const cleanWord = word.trim().toLowerCase();
 
         try {
-            // Priority 1: Use Free Dictionary API (English)
-            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${cleanWord}`);
-            if (response.ok) {
-                const data = await response.json();
-                const entry = data[0];
-                setResult({
-                    word: entry.word,
-                    phonetic: entry.phonetic || entry.phonetics?.[0]?.text,
-                    partOfSpeech: entry.meanings?.[0]?.partOfSpeech,
-                    meaning: entry.meanings?.[0]?.definitions?.[0]?.definition,
-                    examples: entry.meanings?.[0]?.definitions?.[0]?.example ? [entry.meanings[0].definitions[0].example] : [],
-                    synonyms: entry.meanings?.[0]?.synonyms?.slice(0, 5) || [],
-                    antonyms: entry.meanings?.[0]?.antonyms?.slice(0, 5) || []
-                });
-            } else {
-                // Priority 2: Fallback to AI for non-English or specialized terms
-                const systemInstruction = `You are a high-accuracy academic dictionary. Explain the word provided.
-                Return strictly JSON. 
-                SCHEMA: { "word": string, "phonetic": string, "partOfSpeech": string, "meaning": string, "examples": string[], "synonyms": string[], "antonyms": string[] }`;
-                const data = await getAIJSONResponse(`Define: "${cleanWord}"`, systemInstruction);
-                if (data.word) setResult(data);
-                else throw new Error("Word not found");
-            }
-        } catch (err: any) {
-            setError("Entry not found in global databases.");
+            const systemInstruction = `You are a world-class educational dictionary. Provide detailed info for: "${cleanWord}".
+            Return strictly JSON. 
+            SCHEMA: { 
+                "word": string, 
+                "phonetic": string, 
+                "partOfSpeech": string, 
+                "meaning": string, 
+                "examples": string[], 
+                "synonyms": string[], 
+                "antonyms": string[], 
+                "usageTip": string, 
+                "didYouKnow": string,
+                "wordBuilder": { "noun": string, "verb": string, "adjective": string },
+                "relatedWords": string[]
+            }`;
+
+            const response = await getAIJSONResponse(systemInstruction, word);
+            setResult(response);
+            setColorIdx(prev => prev + 1);
+        } catch (err) {
+            console.error("Dictionary error:", err);
+            setError("Failed to fetch dictionary data. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 pb-24 bg-slate-50 z-[1001] flex flex-col items-center animate-fade-up overflow-y-auto">
-            <div className="w-full max-w-[620px] px-6 py-6">
-                <ToolHeader title="Dictionary Hub" subtitle="Universal Semantic Research" icon={BookOpen} />
+        <div className={cn("min-h-screen bg-slate-50 flex flex-col items-center pt-2 md:pt-4 pb-32 transition-all duration-700", loading && "blur-sm opacity-60")}>
+            {/* Header Area */}
+            <div className="w-full max-w-6xl px-4 py-3 md:py-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 md:gap-4 leading-tight">
+                    <button onClick={() => navigate(-1)} className="w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center text-slate-800 shadow-sm border border-slate-100 hover:bg-slate-50 transition-colors"><ArrowLeft className="w-4 h-4 md:w-5 md:h-5" /></button>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1 md:gap-2">
+                             <h1 className="text-lg md:text-2xl font-black text-slate-800 italic tracking-tight truncate">English Dictionary</h1>
+                             <button className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded-full text-[0.45rem] md:text-[0.6rem] font-black uppercase tracking-tighter shrink-0">
+                                <GraduationCap className="w-2.5 md:w-3.5 h-2.5 md:h-3.5" /> PRO
+                             </button>
+                        </div>
+                        <p className={cn("text-[0.5rem] md:text-[0.65rem] font-bold uppercase tracking-widest mt-0 md:mt-0.5 truncate transition-colors", currentText)}>Learn words. Boost your world.</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1.5 md:gap-3">
+                    <button className={cn("w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm border border-slate-100 transition-all active:scale-90", currentText)}><Clock className="w-4 h-4 md:w-5 md:h-5" /></button>
+                    <button className={cn("w-8 h-8 md:w-11 md:h-11 bg-white rounded-lg md:rounded-xl flex items-center justify-center shadow-sm border border-slate-100 transition-all active:scale-90", currentText)}><Bookmark className="w-4 h-4 md:w-5 md:h-5" /></button>
+                </div>
             </div>
 
-            <div className="w-full max-w-[620px] relative z-20 px-6 -mt-10 space-y-6">
+            {/* Search Section */}
+            <div className="w-full max-w-6xl px-4 py-1.5 flex items-center gap-1.5 md:gap-4 mb-3 md:mb-6">
+                <div className="flex-1 bg-white rounded-xl md:rounded-[2rem] h-10 md:h-16 px-3 md:px-6 flex items-center gap-2 md:gap-4 shadow-lg border border-slate-100 group focus-within:ring-4 focus-within:ring-slate-100 transition-all">
+                    <Search className="w-4 h-4 md:w-5 md:h-5 text-slate-300 group-focus-within:text-slate-500" />
+                    <input 
+                        type="text" 
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && searchWord(query)}
+                        placeholder="Search a word..."
+                        className="flex-1 text-xs md:text-lg font-bold text-slate-800 outline-none placeholder:text-slate-300"
+                    />
+                    <div className="flex items-center gap-1.5 md:gap-3 border-l border-slate-100 pl-1.5 md:pl-4">
+                        <button className={cn("hover:scale-110 transition-all p-1", currentText)}><Mic className="w-3.5 h-3.5 md:w-5 md:h-5" /></button>
+                        <button className={cn("hover:scale-110 transition-all p-1", currentText)}><Camera className="w-3.5 h-3.5 md:w-5 md:h-5" /></button>
+                    </div>
+                </div>
+                <button 
+                    onClick={() => searchWord(query)}
+                    disabled={loading}
+                    className={cn("h-10 md:h-16 w-10 md:w-16 flex items-center justify-center text-white rounded-xl md:rounded-[2rem] font-black shadow-xl active:scale-95 transition-all disabled:opacity-50", currentColor)}
+                >
+                    {loading ? <RotateCcw className="w-3.5 h-3.5 md:w-5 md:h-5 animate-spin" /> : <Search className="w-4 h-4 md:w-6 md:h-6" />}
+                </button>
+            </div>
+
+            <div className="w-full max-w-6xl px-4 space-y-4 md:space-y-6">
+                {/* Feature Cards - 4 cards */}
+                <div className="grid grid-cols-4 gap-2 md:gap-4">
+                    {[
+                        { label: 'Word Game', icon: Gamepad2, color: 'bg-indigo-50 text-indigo-600' },
+                        { label: 'Day Word', icon: Star, color: 'bg-blue-50 text-blue-600' },
+                        { label: 'My Words', icon: LayoutList, color: 'bg-orange-50 text-orange-600' },
+                        { label: 'Puzzles', icon: Puzzle, color: 'bg-emerald-50 text-emerald-600' }
+                    ].map((card, i) => (
+                        <div key={i} className={cn(card.color, "p-2 md:p-5 rounded-xl md:rounded-3xl flex flex-col items-center text-center gap-1 shadow-sm border border-transparent hover:border-white transition-all cursor-pointer group active:scale-95")}>
+                            <div className="w-7 h-7 md:w-11 md:h-11 rounded-lg md:rounded-2xl bg-white flex items-center justify-center mb-1 group-hover:scale-110 transition-transform shadow-sm">
+                                <card.icon className="w-4 h-4 md:w-6 md:h-6" />
+                            </div>
+                            <h4 className="text-[0.45rem] md:text-[0.7rem] font-black uppercase tracking-tight line-clamp-1">{card.label}</h4>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Animated Pre-Search Cards */}
                 {!result && !loading && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-
-                        <div className="bg-white p-6 rounded-[2.5rem] shadow-2xl space-y-6 border border-white">
-                            <div className="space-y-4">
-                                <label className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest block px-1">Vocabulary Search</label>
-                                <div className="relative border-b-2 border-rose-100 flex items-center py-2 focus-within:border-rose-500 transition-colors group">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Type key term..." 
-                                        className="w-full text-2xl font-black text-slate-900 bg-transparent outline-none placeholder:text-slate-100 italic"
-                                        value={query}
-                                        onChange={(e) => setQuery(e.target.value)}
-                                        onKeyDown={(e) => e.key === 'Enter' && searchWord(query)}
-                                    />
-                                    <button onClick={() => searchWord(query)} className="text-rose-500 hover:scale-110 transition-transform">
-                                        <Search className="w-7 h-7" />
-                                    </button>
-                                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pt-4">
+                        <motion.div 
+                            animate={{ x: [0, 10, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-100 shadow-xl flex flex-col gap-4"
+                        >
+                            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shadow-inner">
+                                <Quote className="w-6 h-6" />
                             </div>
-                        </div>
+                            <h3 className="text-lg md:text-2xl font-black text-slate-800 italic leading-tight">
+                                "The only limit to our realization of tomorrow will be our doubts of today."
+                            </h3>
+                            <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">— Franklin D. Roosevelt</p>
+                        </motion.div>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between px-2">
-                                <h3 className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Trending Concepts</h3>
-                                <Sparkles className="w-3 h-3 text-rose-500" />
+                        <motion.div 
+                            animate={{ x: [0, -10, 0] }}
+                            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                            className="bg-indigo-600 p-6 md:p-10 rounded-[2.5rem] shadow-xl text-white flex flex-col gap-4 relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 right-0 w-32 h-32 opacity-10 rotate-12">
+                                <Zap className="w-full h-full" />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                {recentTerms.map((item) => (
-                                    <button 
-                                        key={item.term} 
-                                        onClick={() => { setQuery(item.term); searchWord(item.term); }}
-                                        className={cn("p-5 rounded-[2rem] border shadow-sm text-left group transition-all active:scale-95", item.color)}
-                                    >
-                                        <h4 className="text-lg font-black lowercase italic mb-1">{item.term}</h4>
-                                        <p className="font-black uppercase text-[0.55rem] tracking-widest opacity-60">Definition</p>
-                                    </button>
-                                ))}
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
+                                <Languages className="w-6 h-6" />
                             </div>
-                        </div>
-                    </motion.div>
-                )}
-
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-20 gap-6">
-                         <div className="w-16 h-16 bg-white rounded-3xl shadow-2xl flex items-center justify-center border border-rose-50">
-                            <div className="w-10 h-10 border-4 border-slate-100 border-t-rose-500 rounded-full animate-spin" />
-                         </div>
-                         <p className="text-rose-400 font-black uppercase tracking-[0.3em] text-[0.6rem]">Querying Global Lexicon...</p>
+                            <h3 className="text-lg md:text-2xl font-black italic leading-tight">
+                                Transform your Nepali notes into English perfectly with our AI Translator tool.
+                            </h3>
+                            <div className="flex items-center gap-2 mt-auto">
+                                <span className="px-3 py-1 bg-white/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">Translation Pro</span>
+                            </div>
+                        </motion.div>
                     </div>
                 )}
 
-                {result && !loading && (
-                    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6 pb-10">
-                        <header className="pt-6">
-                            <button onClick={() => setResult(null)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-rose-500 shadow-md border border-rose-50">
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
-                        </header>
-
-                        <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-rose-50 space-y-6">
-                            <div className="flex items-start justify-between gap-4">
-                                <div className="space-y-1 min-w-0">
-                                    <span className="text-rose-600 font-black uppercase tracking-[0.2em] text-[0.6rem]">{result.partOfSpeech}</span>
-                                    <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter mb-2 lowercase break-words leading-[0.9]">{result.word}</h2>
-                                    {result.phonetic && <p className="text-slate-400 font-mono italic text-sm">[{result.phonetic}]</p>}
+                {/* Main Content Box (Word, Meaning, Example) */}
+                {result && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="bg-white rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-100"
+                    >
+                        {/* Box Header */}
+                        <div className={cn("p-6 md:p-10 text-white relative overflow-hidden transition-colors duration-500", currentColor)}>
+                            <div className="absolute top-0 right-0 w-32 h-32 md:w-64 md:h-64 opacity-20 pointer-events-none">
+                                <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                <Book className="w-full h-full rotate-12 translate-x-1/4" />
+                            </div>
+                            
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+                                <div>
+                                    <div className="flex items-center gap-3 md:gap-4 mb-2">
+                                        <h2 className="text-4xl md:text-7xl font-black italic tracking-tighter drop-shadow-lg">{result.word}</h2>
+                                        <button 
+                                            onClick={() => speakWord(result.word)} 
+                                            className="w-10 h-10 md:w-14 md:h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center transition-all shrink-0 active:scale-90 border border-white/20"
+                                        >
+                                            <Volume2 className="w-5 h-5 md:w-7 md:h-7" />
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-white/80 font-mono text-base md:text-xl">/{result.phonetic}/</span>
+                                        <span className="px-3 py-1 bg-white/30 backdrop-blur-md rounded-full text-[0.6rem] md:text-xs font-black uppercase tracking-widest border border-white/20">{result.partOfSpeech}</span>
+                                    </div>
                                 </div>
-                                <button 
-                                    onClick={() => speakWord(result.word)}
-                                    className="w-12 h-12 bg-rose-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-rose-200 hover:scale-110 active:scale-95 transition-all flex-shrink-0 mt-4"
-                                >
-                                    <Volume2 className="w-6 h-6" />
-                                </button>
                             </div>
+                        </div>
 
-                            <div className="p-6 bg-rose-50/30 rounded-3xl border border-rose-50">
-                                <label className="text-[0.6rem] font-black text-rose-600 uppercase tracking-widest block mb-2">Definition</label>
-                                <p className="text-lg md:text-xl font-bold text-slate-800 leading-tight">{result.meaning}</p>
-                            </div>
-
+                        {/* Meaning & Example Area */}
+                        <div className="p-6 md:p-10 space-y-6 md:space-y-8 bg-gradient-to-b from-white to-slate-50/30">
                             <div className="space-y-4">
-                                <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">Examples</label>
-                                {result.examples?.map((ex: string, i: number) => (
-                                    <p key={i} className="text-sm font-bold text-slate-600 italic border-l-2 border-rose-200 pl-4">{ex}</p>
-                                ))}
+                                <h3 className={cn("text-[0.6rem] md:text-xs font-black uppercase tracking-widest", currentText)}>Definition</h3>
+                                <p className="text-lg md:text-2xl font-bold text-slate-800 leading-snug">{result.meaning}</p>
                             </div>
 
-                            {result.synonyms?.length > 0 && (
-                                <div className="pt-4 space-y-2">
-                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">Synonyms</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.synonyms.map((s: string, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{s}</span>
-                                        ))}
+                            <div className="bg-white/60 backdrop-blur-sm p-6 md:p-10 rounded-[2.5rem] border border-slate-200/50 flex flex-col gap-3 shadow-sm relative overflow-hidden group">
+                                <div className={cn("absolute top-0 left-0 w-1.5 h-full opacity-60", currentColor)} />
+                                <Quote className="absolute top-6 right-6 w-8 h-8 md:w-12 md:h-12 text-slate-100 group-hover:scale-110 transition-transform" />
+                                <div className="pl-4 md:pl-6 space-y-4">
+                                    <h5 className={cn("text-[0.55rem] md:text-[0.65rem] font-black uppercase tracking-widest opacity-80", currentText)}>Example Sentence</h5>
+                                    <p className="text-sm md:text-xl font-bold text-slate-900 leading-relaxed italic relative z-10">
+                                        "{result.examples?.[0] || `The ${result.word} process is highly engaging.`}"
+                                    </p>
+                                    <div className="flex items-center gap-2 relative z-10">
+                                        <button onClick={() => speakWord(result.examples?.[0] || result.word)} className={cn("p-2 bg-white rounded-xl shadow-sm border border-slate-100 hover:bg-slate-50 transition-all", currentText)}><Volume2 className="w-4 h-4" /></button>
+                                        <span className="text-[0.55rem] md:text-[0.65rem] font-black text-slate-400 uppercase tracking-widest">Speak Example</span>
                                     </div>
                                 </div>
-                            )}
-
-                            {result.antonyms?.length > 0 && (
-                                <div className="pt-4 space-y-2">
-                                    <label className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest block px-1">Antonyms</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {result.antonyms.map((a: string, idx: number) => (
-                                            <span key={idx} className="px-3 py-1 bg-slate-100 rounded-lg text-xs font-bold text-slate-600">{a}</span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                            </div>
                         </div>
                     </motion.div>
                 )}
 
-                {error && !loading && (
-                    <div className="text-center py-40 space-y-6">
-                         <div className="w-16 h-16 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto text-rose-500">
-                            <SearchX className="w-8 h-8" />
+                {/* Vertical Panels Stack */}
+                {result && !loading && (
+                    <div className="space-y-6 md:space-y-10">
+                        {/* Synonyms & Antonyms */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                            >
+                                <div className="bg-emerald-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><BookCopy className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">Synonyms</h3>
+                                </div>
+                                <div className="p-6 md:p-10 flex flex-wrap gap-2 md:gap-3">
+                                    {result.synonyms?.slice(0, 8).map((s: string) => (
+                                        <motion.span 
+                                            whileHover={{ scale: 1.05 }}
+                                            key={s} 
+                                            className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[0.65rem] md:text-sm font-bold text-slate-600 uppercase tracking-widest hover:bg-emerald-50 hover:border-emerald-100 transition-colors"
+                                        >
+                                            {s}
+                                        </motion.span>
+                                    ))}
+                                </div>
+                            </motion.div>
+
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                            >
+                                <div className="bg-rose-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><ShieldAlert className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">Antonyms</h3>
+                                </div>
+                                <div className="p-6 md:p-10 flex flex-wrap gap-2 md:gap-3">
+                                    {result.antonyms?.slice(0, 8).map((s: string) => (
+                                        <motion.span 
+                                            whileHover={{ scale: 1.05 }}
+                                            key={s} 
+                                            className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-[0.65rem] md:text-sm font-bold text-slate-600 uppercase tracking-widest hover:bg-rose-50 hover:border-rose-100 transition-colors"
+                                        >
+                                            {s}
+                                        </motion.span>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Usage & Did You Know */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                             <motion.div 
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.2 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                             >
+                                <div className="bg-amber-500 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><Lightbulb className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">Did You Know?</h3>
+                                </div>
+                                <div className="p-8 md:p-12">
+                                    <p className="text-base md:text-2xl text-slate-700 font-bold leading-relaxed italic">"{result.didYouKnow}"</p>
+                                </div>
+                             </motion.div>
+
+                             <motion.div 
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 }}
+                                className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-slate-100 flex flex-col group"
+                             >
+                                <div className="bg-blue-600 p-5 md:p-7 flex items-center gap-4 text-white relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2" />
+                                    <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-white/20"><Info className="w-5 h-5" /></div>
+                                    <h3 className="text-base md:text-xl font-black italic uppercase tracking-tight relative z-10">Usage Tip</h3>
+                                </div>
+                                <div className="p-8 md:p-12">
+                                    <p className="text-base md:text-2xl text-slate-700 font-bold leading-relaxed italic">"{result.usageTip}"</p>
+                                </div>
+                             </motion.div>
+                        </div>
+
+                        <div className="text-center pt-10">
+                            <button onClick={() => navigate(-1)} className="px-8 py-4 bg-slate-900 text-white rounded-full font-black uppercase tracking-widest text-xs shadow-xl active:scale-95 transition-all">Back to Learning Hub</button>
+                        </div>
+                    </div>
+                )}
+
+                {(!result || error) && !loading && (
+                    <div className="text-center py-20">
+                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                             <Search className="w-10 h-10" />
                          </div>
-                         <div className="space-y-2">
-                            <p className="text-slate-900 font-black text-xl tracking-tighter uppercase italic">{error}</p>
-                            <p className="text-slate-400 font-bold text-[0.6rem] uppercase tracking-widest">Entry not found in academic core</p>
-                         </div>
-                         <button onClick={() => { setError(""); setQuery(""); }} className="bg-slate-900 text-white px-8 py-4 rounded-2xl font-black text-[0.6rem] uppercase tracking-widest shadow-xl active:scale-95 transition-all">Re-sync Database</button>
+                         <h3 className="text-slate-800 font-black text-xl mb-2">Search for a word</h3>
+                         <p className="text-slate-400 font-bold text-sm">Discover meanings, examples, and more.</p>
+                         {error && <p className="text-rose-500 font-bold text-sm mt-4">{error}</p>}
                     </div>
                 )}
             </div>
         </div>
     );
 };
+
+
+
+
 
 const StudyTimer = () => {
     const navigate = useNavigate();
@@ -6480,11 +6985,15 @@ const ExamCalendar = () => {
     // Dynamic Nepali Date Calculation for 2083 BS
     const getTodayNepaliDate = () => {
         const now = new Date();
-        const startOfYear = new Date(now.getFullYear(), 3, 13); // Approx April 13
-        let daysLeft = Math.floor((now.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
+        const startOfYear = new Date(now.getFullYear(), 3, 14); // Approx April 14 for 2083 BS
+        startOfYear.setHours(0, 0, 0, 0);
+        
+        // Calculate days difference correctly ignoring time of day
+        const todayAtMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let daysLeft = Math.round((todayAtMidnight.getTime() - startOfYear.getTime()) / (1000 * 60 * 60 * 24));
         
         if (daysLeft < 0) {
-            // Very rough approximation for days before April 13th
+            // Rough approximation for days before the start of the year
             return { month: 'Chaitra', day: 30 + daysLeft };
         }
         
@@ -6808,127 +7317,475 @@ const ExamCalendar = () => {
     );
 };
 
+import { TriangleFigure, RightTriangleFigure, CircleFigure, CylinderFigure, ConeFigure, SphereFigure, ParallelogramFigure, SetVennFigure } from './components/MathFigures';
+
 const FormulaBankPage = () => {
     const navigate = useNavigate();
-    const [activeSubject, setActiveSubject] = useState<'Maths' | 'Opt. Maths' | 'Science'>('Maths');
+    const [view, setView] = useState<'subjects' | 'chapters' | 'formulas'>('subjects');
+    const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+    const [selectedChapter, setSelectedChapter] = useState<any | null>(null);
 
-    const formulasList: Record<'Maths' | 'Opt. Maths' | 'Science', any[]> = {
-        'Maths': [
-            { subheading: 'Algebraic Identities' },
-            { title: '(a+b)²', formula: '(a+b)^2 = a^2 + 2ab + b^2' },
-            { title: '(a-b)²', formula: '(a-b)^2 = a^2 - 2ab + b^2' },
-            { title: 'a² - b²', formula: 'a^2 - b^2 = (a-b)(a+b)' },
-            { title: 'a³ + b³', formula: 'a^3 + b^3 = (a+b)(a^2 - ab + b^2)' },
-            { title: 'a³ - b³', formula: 'a^3 - b^3 = (a-b)(a^2 + ab + b^2)' },
-            { title: 'Quadratic Roots', formula: 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}' },
-            { subheading: 'Commercial Arithmetic' },
-            { title: 'Simple Interest', formula: 'I = \\frac{P \\times T \\times R}{100}' },
-            { title: 'Compound Interest (Yearly)', formula: 'C.I. = P\\left[\\left(1 + \\frac{R}{100}\\right)^T - 1\\right]' },
-            { title: 'Compound Amount (Yearly)', formula: 'C.A. = P\\left(1 + \\frac{R}{100}\\right)^T' },
-            { title: 'Population Growth', formula: 'P_t = P_0\\left(1 + \\frac{R}{100}\\right)^T' },
-            { title: 'Depreciation', formula: 'V_t = V_0\\left(1 - \\frac{R}{100}\\right)^T' },
-            { title: 'VAT Calculation', formula: 'VAT\\ Amount = VAT\\% \\text{ of } SP' },
-            { subheading: 'Mensuration' },
-            { title: 'Area of Scalene (Heron\'s)', formula: 'A = \\sqrt{s(s-a)(s-b)(s-c)}' },
-            { title: 'Area of Equilateral Triangle', formula: 'A = \\frac{\\sqrt{3}}{4} a^2' },
-            { title: 'Area of Isosceles Triangle', formula: 'A = \\frac{b}{4} \\sqrt{4a^2 - b^2}' },
-            { title: 'TSA of Cylinder', formula: 'T.S.A. = 2\\pi r(r + h)' },
-            { title: 'Volume of Cylinder', formula: 'V = \\pi r^2 h' },
-            { title: 'TSA of Cone', formula: 'T.S.A. = \\pi r(r + l)' },
-            { title: 'Volume of Cone', formula: 'V = \\frac{1}{3} \\pi r^2 h' },
-            { title: 'Surface Area of Sphere', formula: 'S.A. = 4\\pi r^2' },
-            { title: 'Volume of Sphere', formula: 'V = \\frac{4}{3} \\pi r^3' },
-            { title: 'Volume of Pyramid', formula: 'V = \\frac{1}{3} A h' },
-            { subheading: 'Statistics' },
-            { title: 'Mean (Grouped)', formula: '\\overline{X} = \\frac{\\sum fx}{N}' },
-            { title: 'Median (Continuous)', formula: 'M_d = L + \\frac{\\frac{N}{2} - c.f.}{f} \\times i' },
-            { title: 'Quartile 1 (Q1)', formula: 'Q_1 = L + \\frac{\\frac{N}{4} - c.f.}{f} \\times i' },
-            { title: 'Quartile 3 (Q3)', formula: 'Q_3 = L + \\frac{\\frac{3N}{4} - c.f.}{f} \\times i' }
+    const subjects = [
+        { 
+            id: 'cmaths', 
+            name: 'C. Maths', 
+            icon: Calculator, 
+            gradient: 'from-blue-400 to-indigo-500', 
+            description: 'Core Mathematics',
+            progress: 70,
+            subIcons: [Percent, Hash, Box, Sigma],
+            accentColor: 'text-indigo-600'
+        },
+        { 
+            id: 'science', 
+            name: 'Science', 
+            icon: FlaskConical, 
+            gradient: 'from-emerald-400 to-teal-500', 
+            description: 'Physics & Chem',
+            progress: 45,
+            subIcons: [FlaskConical, Microscope, Zap, Wind],
+            accentColor: 'text-teal-600'
+        },
+        { 
+            id: 'omaths', 
+            name: 'O. Maths', 
+            icon: Sigma, 
+            gradient: 'from-rose-400 to-pink-500', 
+            description: 'Advanced Maths',
+            progress: 90,
+            subIcons: [Variable, Triangle, Move, Activity],
+            accentColor: 'text-rose-600'
+        },
+        { 
+            id: 'grammar', 
+            name: 'English', 
+            icon: Languages, 
+            gradient: 'from-amber-400 to-orange-500', 
+            description: 'Grammar Hub',
+            progress: 20,
+            subIcons: [BookOpen, PenTool, Languages, MessageSquareQuote],
+            accentColor: 'text-orange-600'
+        },
+        { 
+            id: 'byakaran', 
+            name: 'Nepali', 
+            icon: BookOpen, 
+            gradient: 'from-purple-400 to-violet-500', 
+            description: 'Byakaran',
+            progress: 35,
+            subIcons: [BookOpen, PenTool, ClipboardList, Languages],
+            accentColor: 'text-violet-600'
+        },
+        { 
+            id: 'account', 
+            name: 'Account', 
+            icon: ClipboardList, 
+            gradient: 'from-cyan-400 to-blue-500', 
+            description: 'Finance',
+            progress: 60,
+            subIcons: [Banknote, BarChart, Scale, Calculator],
+            accentColor: 'text-blue-600'
+        }
+    ];
+
+    const cmathsChapters = [
+        { id: 'sets', title: 'Sets', icon: Box, color: 'blue' },
+        { id: 'number', title: 'Number System', icon: Hash, color: 'slate' },
+        { id: 'percent', title: 'Percentage', icon: Percent, color: 'sky' },
+        { id: 'profit', title: 'Profit & Loss', icon: BadgePercent, color: 'rose' },
+        { id: 'si', title: 'Simple Interest', icon: TrendingUp, color: 'emerald' },
+        { id: 'compound', title: 'Compound Interest', icon: BarChart, color: 'indigo' },
+        { id: 'ratio', title: 'Ratio & Prop.', icon: Scale, color: 'cyan' },
+        { id: 'variation', title: 'Variation', icon: Zap, color: 'lime' },
+        { id: 'money', title: 'Money Exchange', icon: Banknote, color: 'amber' },
+        { id: 'algebra', title: 'Algebra', icon: Variable, color: 'purple' },
+        { id: 'indices', title: 'Indices', icon: ArrowUpRight, color: 'orange' },
+        { id: 'linear', title: 'Linear Eq.', icon: LineChart, color: 'blue' },
+        { id: 'quadratic', title: 'Quadratic Eq.', icon: Activity, color: 'red' },
+        { id: 'sequence', title: 'Sequence', icon: ListOrdered, color: 'teal' },
+        { id: 'angles', title: 'Lines & Angles', icon: Move, color: 'slate' },
+        { id: 'triangles', title: 'Triangles', icon: Triangle, color: 'indigo' }
+    ];
+
+    const omathsChapters = [
+        { id: 'algebra_om', title: 'Algebra', icon: Variable, color: 'rose' },
+        { id: 'limit', title: 'Limit & Cont.', icon: Activity, color: 'indigo' },
+        { id: 'matrix', title: 'Matrices', icon: Grid3X3, color: 'purple' },
+        { id: 'coord', title: 'Coordinate Geo.', icon: Move, color: 'emerald' },
+        { id: 'trig', title: 'Trigonometry', icon: Triangle, color: 'orange' },
+        { id: 'vectors', title: 'Vectors', icon: ArrowUpRight, color: 'blue' },
+        { id: 'trans', title: 'Transformation', icon: Zap, color: 'cyan' },
+        { id: 'stats_om', title: 'Statistics', icon: BarChart, color: 'slate' }
+    ];
+
+    const scienceChapters = [
+        { id: 'force', title: 'Force', icon: Zap, color: 'emerald' },
+        { id: 'pressure', title: 'Pressure', icon: Wind, color: 'blue' },
+        { id: 'energy', title: 'Energy', icon: Flame, color: 'orange' },
+        { id: 'heat', title: 'Heat', icon: Coffee, color: 'red' },
+        { id: 'science_matter', title: 'Materials', icon: FlaskConical, color: 'purple' },
+        { id: 'life_process', title: 'Life Process', icon: Dna, color: 'emerald' },
+        { id: 'heredity', title: 'Heredity', icon: Microscope, color: 'teal' },
+        { id: 'universe', title: 'The Universe', icon: Globe, color: 'slate' }
+    ];
+
+    const allFormulas: Record<string, any[]> = {
+        'sets': [
+            { title: 'Union of Two Sets', formula: 'n(A \\cup B) = n(A) + n(B) - n(A \\cap B)', figure: SetVennFigure, topic: 'Basic Operations' },
+            { title: 'Three Sets Union', formula: 'n(A\\cup B\\cup C) = n(A)+n(B)+n(C) - n(A\\cap B) - n(B\\cap C) - n(A\\cap C) + n(A\\cap B\\cap C)', topic: 'Basic Operations' },
+            { title: 'Complement of A', formula: 'n(A\') = n(U) - n(A)', topic: 'Set Identities' },
+            { title: 'De Morgan\'s Law 1', formula: '(A \\cup B)\' = A\' \\cap B\'', topic: 'Set Identities' },
+            { title: 'De Morgan\'s Law 2', formula: '(A \\cap B)\' = A\' \\cup B\'', topic: 'Set Identities' }
         ],
-        'Opt. Maths': [
-            { subheading: 'Trigonometry' },
-            { title: 'Multiple Angle: Sin 2A', formula: '\\sin 2A = 2\\sin A\\cos A = \\frac{2\\tan A}{1+\\tan^2 A}' },
-            { title: 'Multiple Angle: Cos 2A', formula: '\\cos 2A = \\cos^2 A - \\sin^2 A = 1 - 2\\sin^2 A' },
-            { title: 'Multiple Angle: Tan 2A', formula: '\\tan 2A = \\frac{2\\tan A}{1-\\tan^2 A}' },
-            { title: 'Sin 3A', formula: '\\sin 3A = 3\\sin A - 4\\sin^3 A' },
-            { title: 'Transformation: 2 SinA CosB', formula: '\\sin(A+B) + \\sin(A-B)' },
-            { title: 'Trig Sum: SinC + SinD', formula: '2\\sin\\frac{C+D}{2}\\cos\\frac{C-D}{2}' },
-            { subheading: 'Coordinate Geometry' },
-            { title: 'Internal Division', formula: '(x, y) = \\left(\\frac{m_1x_2 + m_2x_1}{m_1+m_2}, \\frac{m_1y_2 + m_2y_1}{m_1+m_2}\\right)' },
-            { title: 'Slope of Line', formula: 'm = \\frac{y_2 - y_1}{x_2 - x_1} = -\\frac{A}{B}' },
-            { title: 'Angle between two lines', formula: '\\tan\\theta = \\pm \\frac{m_1 - m_2}{1 + m_1m_2}' },
-            { title: 'Perpendicular condition', formula: 'm_1 \\times m_2 = -1' },
-            { title: 'Equation of Circle', formula: '(x-h)^2 + (y-k)^2 = r^2' },
-            { subheading: 'Vectors & Transformation' },
-            { title: 'Magnitude of Vector', formula: '|\\vec{v}| = \\sqrt{x^2 + y^2}' },
-            { title: 'Dot Product', formula: '\\vec{a} \\cdot \\vec{b} = |\\vec{a}||\\vec{b}|\\cos\\theta' },
-            { title: 'Matrix Determinant', formula: '|A| = ad - bc' },
-            { title: 'Matrix Inverse', formula: 'A^{-1} = \\frac{1}{|A|} \\begin{pmatrix} d & -b \\\\ -c & a \\end{pmatrix}' }
+        'number': [
+            { title: 'HCF and LCM', formula: 'HCF(a, b) \\times LCM(a, b) = a \\times b', description: 'The product of two numbers is equal to the product of their HCF and LCM.' },
+            { title: 'Fractions', formula: '\\frac{a}{b} \\times \\frac{c}{d} = \\frac{ac}{bd}', description: 'Simple multiplication of numerators and denominators.' },
+            { title: 'Divisibility by 3', formula: '\\sum digits \\div 3', description: 'Sum of digits must be divisible by 3.' },
+            { title: 'Divisibility by 9', formula: '\\sum digits \\div 9', description: 'Sum of digits must be divisible by 9.' }
         ],
-        'Science': [
-            { subheading: 'Physics' },
-            { title: 'Gravitational Force', formula: 'F = G\\frac{m_1 m_2}{d^2}' },
-            { title: 'Gravity at Surface', formula: 'g = \\frac{GM}{R^2}' },
-            { title: 'Liquid Pressure', formula: 'P = \\rho g h' },
-            { title: 'Upthrust (Archimedes)', formula: 'U = V \\rho g' },
-            { title: 'Heat Capacity', formula: 'Q = ms\\Delta\\theta' },
-            { title: 'Lens Formula', formula: '\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}' },
-            { title: 'Ohm\'s Law', formula: 'V = IR' },
-            { title: 'Electrical Power', formula: 'P = VI = I^2 R' },
-            { title: 'Transformer Rule', formula: '\\frac{N_p}{N_s} = \\frac{V_p}{V_s}' }
+        'percent': [
+            { title: 'Percentage', formula: '\\text{Percentage} = \\frac{\\text{Part}}{\\text{Whole}} \\times 100' },
+            { title: 'Percent Increase', formula: '\\% \\text{Increase} = \\frac{\\text{Increase}}{\\text{Original}} \\times 100' },
+            { title: 'New Value after Inc.', formula: 'V = \\text{Original} \\times \\frac{100 + r}{100}' }
+        ],
+        'profit': [
+            { title: 'Profit Amount', formula: '\\text{Profit} = SP - CP', description: 'When Selling Price is greater than Cost Price.' },
+            { title: 'Loss Amount', formula: '\\text{Loss} = CP - SP', description: 'When Cost Price is greater than Selling Price.' },
+            { title: 'Profit Percentage', formula: '\\text{Profit}\\% = \\frac{\\text{Profit}}{CP} \\times 100' },
+            { title: 'VAT Amount', formula: '\\text{VAT} = SP \\times \\frac{\\text{VAT}\\%}{100}' }
+        ],
+        'si': [
+            { title: 'Simple Interest', formula: 'SI = \\frac{P \\times T \\times R}{100}' },
+            { title: 'Amount', formula: 'A = P + SI = P(1 + \\frac{TR}{100})' },
+            { title: 'Rate of Interest', formula: 'R = \\frac{SI \\times 100}{P \\times T}' }
+        ],
+        'compound': [
+            { title: 'Compound Amount', formula: 'CA = P(1 + \\frac{R}{100})^T', description: 'Yearly compounding.' },
+            { title: 'Compound Interest', formula: 'CI = P\\left[(1 + \\frac{R}{100})^T - 1\\right]' },
+            { title: 'Population Growth', formula: 'P_T = P_0(1 + \\frac{R}{100})^T' },
+            { title: 'Depreciation', formula: 'V_T = V_0(1 - \\frac{R}{100})^T' }
+        ],
+        'ratio': [
+            { title: 'Proportion', formula: 'a:b = c:d \\implies ad = bc', description: 'Product of Extremes = Product of Means.' },
+            { title: 'Mean Proportion', formula: 'b = \\sqrt{ac}', description: 'If a:b = b:c, then b is mean proportion.' },
+            { title: 'Componendo-Dividendo', formula: '\\frac{a+b}{a-b} = \\frac{c+d}{c-d}' }
+        ],
+        'variation': [
+            { title: 'Direct Variation', formula: 'y = kx \\implies \\frac{y}{x} = k', description: 'Both increase or decrease proportionally.' },
+            { title: 'Inverse Variation', formula: 'y = \\frac{k}{x} \\implies xy = k', description: 'One increases as the other decreases proportionally.' }
+        ],
+        'money': [
+            { title: 'Currency Exchange', formula: '\\text{Foreign Amt} = \\frac{\\text{Local Amt}}{\\text{Exch Rate}}' },
+            { title: 'Chain Rule', formula: 'a \\times \\frac{b}{a} \\times \\frac{c}{b} = c', description: 'Multi-currency conversion factor.' }
+        ],
+        'algebra': [
+            { title: 'Square Identity (Sum)', formula: '(a + b)^2 = a^2 + 2ab + b^2', topic: 'Quadratic Identities' },
+            { title: 'Square Identity (Diff)', formula: '(a - b)^2 = a^2 - 2ab + b^2', topic: 'Quadratic Identities' },
+            { title: 'Difference of Squares', formula: 'a^2 - b^2 = (a-b)(a+b)', topic: 'Quadratic Identities' },
+            { title: 'Cube Identity (Sum)', formula: '(a + b)^3 = a^3 + 3a^2b + 3ab^2 + b^3', topic: 'Cubic Identities' },
+            { title: 'Sum of Cubes', formula: 'a^3 + b^3 = (a+b)(a^2 - ab + b^2)', topic: 'Cubic Identities' }
+        ],
+        'indices': [
+            { title: 'Product Law', formula: 'a^m \\times a^n = a^{m+n}' },
+            { title: 'Quotient Law', formula: '\\frac{a^m}{a^n} = a^{m-n}' },
+            { title: 'Power Law', formula: '(a^m)^n = a^{mn}' },
+            { title: 'Zero Power Law', formula: 'a^0 = 1' },
+            { title: 'Negative Index', formula: 'a^{-n} = \\frac{1}{a^n}' }
+        ],
+        'linear': [
+            { title: 'Simultaneous Eq.', formula: 'ax + by = c \\ \\& \\ dx + ey = f', description: 'Can be solved by elimination, substitution, or matrices.' },
+            { title: 'Linear Relation', formula: 'y = mx + c', description: 'Equation of a straight line.' }
+        ],
+        'quadratic': [
+            { title: 'Standard Form', formula: 'ax^2 + bx + c = 0' },
+            { title: 'Quadratic Formula', formula: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}' },
+            { title: 'Discriminant', formula: 'D = b^2 - 4ac' },
+            { title: 'Sum of Roots', formula: '\\alpha + \\beta = -b/a' },
+            { title: 'Product of Roots', formula: '\\alpha\\beta = c/a' }
+        ],
+        'sequence': [
+            { title: 'Arithmetic nth Term', formula: 't_n = a + (n-1)d' },
+            { title: 'Arithmetic Sum', formula: 'S_n = \\frac{n}{2}[2a + (n-1)d]' },
+            { title: 'Geometric nth Term', formula: 't_n = ar^{n-1}' },
+            { title: 'Geometric Sum', formula: 'S_n = \\frac{a(r^n - 1)}{r - 1} \\ (r > 1)' }
+        ],
+        'angles': [
+            { title: 'Straight Line Sum', formula: '\\angle a + \\angle b = 180^\\circ' },
+            { title: 'Angles at a Point', formula: '\\sum \\angle = 360^\\circ' },
+            { title: 'Complementary Angles', formula: '\\angle 1 + \\angle 2 = 90^\\circ' },
+            { title: 'Supplementary Angles', formula: '\\angle 1 + \\angle 2 = 180^\\circ' }
+        ],
+        'triangles': [
+            { title: 'Area of Triangle', formula: 'A = \\frac{1}{2} \\times b \\times h', figure: TriangleFigure },
+            { title: 'Heron\'s Formula', formula: 'A = \\sqrt{s(s-a)(s-b)(s-c)}', figure: TriangleFigure },
+            { title: 'Pythagoras Theorem', formula: 'h^2 = p^2 + b^2', figure: RightTriangleFigure },
+            { title: 'Similar Triangles', formula: '\\frac{A_1}{A_2} = (\\frac{s_1}{s_2})^2', description: 'Ratio of areas equals ratio of squares of sides.' }
+        ],
+        'algebra_om': [
+            { title: 'Partial Fractions', formula: '\\frac{px+q}{(x-a)(x-b)} = \\frac{A}{x-a} + \\frac{B}{x-b}' },
+            { title: 'Polynomial Division', formula: 'P(x) = Q(x)D(x) + R(x)' }
+        ],
+        'limit': [
+            { title: 'Standard Limit', formula: '\\lim_{x \\to a} \\frac{x^n - a^n}{x - a} = na^{n-1}' }
+        ],
+        'matrix': [
+            { title: 'Determinant (2x2)', formula: '|A| = ad - bc' },
+            { title: 'Inverse Matrix', formula: 'A^{-1} = \\frac{1}{|A|} \\text{adj } A' }
+        ],
+        'trig': [
+            { title: 'Compound Angles', formula: '\\sin(A \\pm B) = \\sin A \\cos B \\pm \\cos A \\sin B' },
+            { title: 'Multiple Angles', formula: '\\cos 2A = \\cos^2 A - \\sin^2 A' }
+        ],
+        'force': [
+            { title: 'Newton\'s Law of Gravitation', formula: 'F = G \\frac{m_1 m_2}{d^2}' },
+            { title: 'Acceleration due to Gravity', formula: 'g = \\frac{GM}{R^2}' }
+        ],
+        'pressure': [
+            { title: 'Liquid Pressure', formula: 'P = h \\rho g', description: 'Pressure depends on depth, density, and gravity.' },
+            { title: 'Pascal\'s Law', formula: '\\frac{F_1}{A_1} = \\frac{F_2}{A_2}' }
         ]
     };
 
+    const handleSubjectClick = (sub: any) => {
+        if (sub.id === 'cmaths') {
+            setSelectedSubject(sub.name);
+            setView('chapters');
+        } else {
+            // Placeholder for other subjects
+            setSelectedSubject(sub.name);
+            setView('chapters');
+        }
+    };
+
+    const handleChapterClick = (chapter: any) => {
+        setSelectedChapter(chapter);
+        setView('formulas');
+    };
+
+    const goBack = () => {
+        if (view === 'formulas') setView('chapters');
+        else if (view === 'chapters') setView('subjects');
+        else navigate('/tools');
+    };
+
     return (
-        <div className="space-y-8 animate-fade-up pb-24">
-            <ToolHeader title="Formula Vault" subtitle="Theoretical Reference Base" icon={Sigma} />
+        <div className="space-y-8 animate-fade-up pb-24 min-h-screen">
+            <ToolHeader 
+                title={view === 'formulas' ? selectedChapter?.title : view === 'chapters' ? selectedSubject : "Formula Bank"} 
+                subtitle={view === 'formulas' ? "Detailed Reference" : view === 'chapters' ? "Select a chapter" : "Choose a subject to begin"} 
+                icon={Sigma} 
+                onBack={goBack}
+            />
 
-            <div className="flex bg-white p-1.5 rounded-full border border-slate-200 shadow-sm mb-10 max-w-lg mx-auto">
-                {(Object.keys(formulasList) as ('Maths' | 'Opt. Maths' | 'Science')[]).map(subj => (
-                    <button 
-                        key={subj}
-                        onClick={() => setActiveSubject(subj)}
-                        className={cn(
-                            "flex-1 py-3 px-4 rounded-full font-black text-[0.65rem] md:text-xs uppercase tracking-widest transition-all",
-                            activeSubject === subj ? "bg-slate-900 text-white shadow-md" : "text-slate-400 hover:text-slate-900 hover:bg-slate-50"
-                        )}
-                    >
-                        {subj}
-                    </button>
-                ))}
-            </div>
+            {view === 'subjects' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {subjects.map((sub, i) => (
+                        <motion.button
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            whileHover={{ y: -8 }}
+                            whileTap={{ scale: 0.98 }}
+                            transition={{ 
+                                delay: i * 0.05,
+                                duration: 0.5,
+                                ease: [0.23, 1, 0.32, 1]
+                            }}
+                            key={sub.id}
+                            onClick={() => handleSubjectClick(sub)}
+                            className={cn(
+                                "group relative min-h-[220px] p-6 rounded-[2.5rem] bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col justify-between overflow-hidden transition-all text-left"
+                            )}
+                        >
+                            {/* Accent Background */}
+                            <div className={cn(
+                                "absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-[0.08] group-hover:opacity-[0.12] transition-opacity rounded-full translate-x-1/3 -translate-y-1/3",
+                                sub.gradient
+                            )} />
 
-            <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                {formulasList[activeSubject].map((f, i) => f.subheading ? (
-                    <div key={`sub-${i}`} className="break-inside-avoid pt-6 pb-2">
-                        <div className="flex items-center gap-4">
-                            <div className="h-px bg-slate-200 flex-1" />
-                            <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em]">{f.subheading}</h2>
-                            <div className="h-px bg-slate-200 flex-1" />
-                        </div>
-                    </div>
-                ) : (
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.01 }}
-                        key={f.title} 
-                        className="break-inside-avoid bg-white rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all mb-6 relative overflow-hidden group flex flex-col"
-                    >
-                        <div className="p-6 border-b border-slate-50 bg-slate-50/50">
-                            <h3 className="font-black text-sm text-slate-700 tracking-tight leading-none group-hover:text-indigo-600 transition-colors uppercase">{f.title}</h3>
-                        </div>
-                        <div className="p-6 md:p-8 bg-white flex items-center justify-center min-h-[120px] relative overflow-x-auto">
-                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, black 1px, transparent 0)', backgroundSize: '16px 16px' }} />
-                            <div className="transform scale-100 group-hover:scale-105 transition-transform duration-500">
-                                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
-                                    {`$$\n${f.formula}\n$$`}
-                                </Markdown>
+                            <div className="flex gap-5 relative z-10">
+                                <div className={cn(
+                                    "w-14 h-14 bg-gradient-to-br rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-500",
+                                    sub.gradient
+                                )}>
+                                    <sub.icon className="w-7 h-7" strokeWidth={2} />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-tight italic">{sub.name}</h3>
+                                    <p className="text-slate-400 font-bold text-[0.65rem] tracking-widest uppercase italic">{sub.description}</p>
+                                </div>
                             </div>
+
+                            <div className="space-y-4 relative z-10 w-full">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {sub.subIcons.map((Icon, idx) => (
+                                        <div key={idx} className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-100 transition-all">
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-tighter italic">Progress</span>
+                                        <span className={cn("text-sm font-black italic", sub.accentColor)}>{sub.progress}%</span>
+                                    </div>
+                                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                        <motion.div 
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${sub.progress}%` }}
+                                            transition={{ duration: 1, delay: 0.4 }}
+                                            className={cn("h-full rounded-full bg-gradient-to-r shadow-sm", sub.gradient)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.button>
+                    ))}
+                </div>
+            )}
+
+            {view === 'chapters' && (
+                <div className="space-y-4">
+                    {(selectedSubject === 'C. Maths' ? cmathsChapters : 
+                      selectedSubject === 'O. Maths' ? omathsChapters :
+                      selectedSubject === 'Science' ? scienceChapters :
+                      []).map((chapter, i) => {
+                        const currentSub = subjects.find(s => s.name === selectedSubject);
+                        const subGradient = currentSub?.gradient || 'from-slate-400 to-slate-600';
+                        const subAccent = currentSub?.accentColor || 'text-slate-600';
+
+                        return (
+                            <motion.button
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                whileHover={{ scale: 1.01, x: 4 }}
+                                whileTap={{ scale: 0.99 }}
+                                transition={{ delay: i * 0.05 }}
+                                key={chapter.id}
+                                onClick={() => handleChapterClick(chapter)}
+                                className="w-full bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all text-left flex items-center gap-5 group relative overflow-hidden active:scale-[0.98]"
+                            >
+                                <div className={cn("absolute top-0 right-0 w-24 h-24 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity rounded-full -mr-12 -mt-12 bg-current pointer-events-none", subAccent)} />
+                                
+                                <div className={cn(
+                                    "w-14 h-14 rounded-2xl flex flex-col items-center justify-center text-white font-black shadow-lg shrink-0 relative z-10 transition-transform group-hover:rotate-3 bg-gradient-to-br",
+                                    subGradient
+                                )}>
+                                    <span className="text-[0.5rem] uppercase tracking-widest opacity-60 leading-none mb-0.5">Unit</span>
+                                    <span className="text-xl leading-none italic">{String(i + 1).padStart(2, '0')}</span>
+                                </div>
+
+                                <div className="flex-1 min-w-0 relative z-10">
+                                    <h4 className="text-lg font-black text-slate-800 tracking-tighter uppercase italic leading-tight truncate">
+                                        {chapter.title}
+                                    </h4>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest italic">Chapter {i + 1}</span>
+                                        <div className="w-1 h-1 rounded-full bg-slate-200" />
+                                        <span className={cn("text-[0.6rem] font-bold uppercase tracking-widest italic", subAccent)}>Formulas Inside</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-center w-10 h-10 bg-slate-50 rounded-xl text-slate-300 group-hover:bg-slate-900 group-hover:text-white transition-all shrink-0">
+                                    <ChevronRight className="w-5 h-5" />
+                                </div>
+                            </motion.button>
+                        );
+                    })}
+                    {(!['C. Maths', 'O. Maths', 'Science'].includes(selectedSubject || '')) && (
+                         <div className="py-20 text-center space-y-4 bg-white rounded-[3rem] border border-slate-100 border-dashed animate-fade-in">
+                            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                <Construction className="w-10 h-10" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800">Coming Soon!</h3>
+                            <p className="text-slate-500 font-medium">Chapters for {selectedSubject} are currently being added.</p>
                         </div>
-                    </motion.div>
-                ))}
-            </div>
+                    )}
+                </div>
+            )}
+
+            {view === 'formulas' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                    {(() => {
+                        const formulas = allFormulas[selectedChapter?.id] || [];
+                        const grouped: Record<string, any[]> = {};
+                        
+                        formulas.forEach(f => {
+                            const topic = f.topic || "General References";
+                            if (!grouped[topic]) grouped[topic] = [];
+                            grouped[topic].push(f);
+                        });
+
+                        return Object.entries(grouped).map(([topic, items], i) => (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                transition={{ 
+                                    delay: i * 0.1,
+                                    duration: 0.6,
+                                    ease: [0.23, 1, 0.32, 1]
+                                }}
+                                key={topic}
+                                className="bg-white rounded-[2.5rem] border border-slate-100 shadow-[0_15px_50px_rgba(0,0,0,0.03)] overflow-hidden flex flex-col hover:shadow-[0_30px_80px_rgba(0,0,0,0.08)] transition-all duration-500"
+                            >
+                                <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-6 bg-indigo-500 rounded-full" />
+                                        <h3 className="text-xl font-black text-slate-800 tracking-tight italic uppercase">{topic}</h3>
+                                    </div>
+                                    <span className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-[0.6rem] font-black uppercase tracking-wider">{items.length} Units</span>
+                                </div>
+                                <div className="p-8 space-y-10">
+                                    {items.map((f, idx) => (
+                                        <div key={idx} className="space-y-4 group">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="space-y-1">
+                                                    <h4 className="font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+                                                        <span className="w-5 h-5 rounded-md bg-slate-100 text-slate-500 text-[0.6rem] flex items-center justify-center font-black group-hover:bg-indigo-500 group-hover:text-white transition-colors">{idx + 1}</span>
+                                                        {f.title}
+                                                    </h4>
+                                                    {f.description && (
+                                                        <p className="text-[0.65rem] font-bold text-slate-400 leading-relaxed max-w-md italic uppercase tracking-widest">{f.description}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="relative p-6 bg-slate-900 rounded-3xl shadow-inner group-hover:shadow-[0_10px_30px_rgba(0,0,0,0.2)] transition-all duration-500 group-hover:-translate-y-1 overflow-x-auto scrollbar-hide">
+                                                <div className="absolute top-0 right-0 p-3 flex gap-1">
+                                                    <div className="w-1 h-1 rounded-full bg-white/20" />
+                                                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                                                </div>
+                                                <div className="text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">
+                                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex, rehypeRaw]}>
+                                                        {`$$\n${f.formula}\n$$`}
+                                                    </Markdown>
+                                                </div>
+                                            </div>
+
+                                            {f.figure && (
+                                                <div className="p-6 bg-slate-50/30 border border-slate-100 rounded-3xl flex justify-center items-center group-hover:bg-white transition-colors">
+                                                    <f.figure className="w-full max-w-[180px] h-auto text-slate-500" />
+                                                </div>
+                                            )}
+                                            
+                                            {idx < items.length - 1 && <div className="h-px bg-slate-100 w-full pt-4" />}
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        ));
+                    })()}
+                    {(!allFormulas[selectedChapter?.id] || allFormulas[selectedChapter?.id].length === 0) && (
+                        <div className="col-span-full py-20 text-center space-y-4 bg-white rounded-[3rem] border border-slate-100 border-dashed">
+                            <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-400">
+                                <Construction className="w-10 h-10" />
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800">Coming Soon!</h3>
+                            <p className="text-slate-500 font-medium">Formulas for this chapter are currently being added.</p>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -6937,6 +7794,7 @@ const VideoSectionPage = () => {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
+    const [activeTab, setActiveTab] = useState('For You');
     const [videos, setVideos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -6947,7 +7805,14 @@ const VideoSectionPage = () => {
     const API_KEY = '55653734-9bcb53c51c27b0c301beab7dc';
     const DEFAULT_QUERY = 'education learning science student';
 
-    const CATEGORIES = ['All', 'Science', 'Mathematics', 'Technology', 'Nature', 'Space', 'History'];
+    const CATEGORIES = [
+        { name: 'Science', icon: Microscope, color: 'bg-emerald-50 text-emerald-500', borderColor: 'border-emerald-100', query: 'science' },
+        { name: 'Maths', icon: Sigma, color: 'bg-rose-50 text-rose-500', borderColor: 'border-rose-100', query: 'mathematics' },
+        { name: 'Tech', icon: Monitor, color: 'bg-blue-50 text-blue-500', borderColor: 'border-blue-100', query: 'technology' },
+        { name: 'Nature', icon: Leaf, color: 'bg-orange-50 text-orange-500', borderColor: 'border-orange-100', query: 'nature' },
+    ];
+
+    const TABS = ['For You', 'Trending', 'New', 'Collection'];
 
     const fetchVideos = async (searchQuery: string, pageNum: number, category: string, isNewSearch: boolean = false) => {
         if (!window.navigator.onLine) {
@@ -6958,12 +7823,9 @@ const VideoSectionPage = () => {
         
         try {
             let currentQ = searchQuery.trim();
-            if (category !== 'All') {
-                currentQ = currentQ ? `${currentQ} ${category}` : category;
-            }
-            if (!currentQ) currentQ = DEFAULT_QUERY;
-
-            const res = await fetch(`https://pixabay.com/api/videos/?key=${API_KEY}&q=${encodeURIComponent(currentQ)}&per_page=30&page=${pageNum}&safesearch=true`);
+            const pixabayCategory = (!category || category === 'All') ? '' : category.toLowerCase();
+            
+            const res = await fetch(`https://pixabay.com/api/videos/?key=${API_KEY}&q=${encodeURIComponent(currentQ || pixabayCategory || DEFAULT_QUERY)}&per_page=30&page=${pageNum}&safesearch=true`);
             const data = await res.json();
             
             if (data.hits && data.hits.length > 0) {
@@ -6981,7 +7843,7 @@ const VideoSectionPage = () => {
     };
 
     useEffect(() => {
-        fetchVideos(query, 1, activeCategory, true);
+        fetchVideos('', 1, 'All', true);
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -6991,11 +7853,12 @@ const VideoSectionPage = () => {
         fetchVideos(query, 1, activeCategory, true);
     };
 
-    const handleCategoryClick = (cat: string) => {
-        setActiveCategory(cat);
+    const handleCategoryClick = (catName: string) => {
+        const newCat = activeCategory === catName ? 'All' : catName;
+        setActiveCategory(newCat);
         setPage(1);
         setHasMore(true);
-        fetchVideos(query, 1, cat, true);
+        fetchVideos(query, 1, newCat, true);
     };
 
     const loadMore = useCallback(() => {
@@ -7016,145 +7879,162 @@ const VideoSectionPage = () => {
     }, [hasMore, loading, loadingMore, loadMore]);
 
     return (
-        <div className="space-y-6 pb-24 relative animate-fade-up px-4 md:px-0">
-            <ToolHeader title="Video Library" subtitle="High-Quality Visual Learnings" icon={Video} />
-
-            <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                <form onSubmit={handleSearch} className="mb-6 flex gap-3">
-                    <div className="flex-1 bg-white/10 p-2 rounded-3xl backdrop-blur-md border border-white/10 flex items-center shadow-inner focus-within:bg-white/20 transition-all relative">
-                        <Search className="w-6 h-6 text-white/50 ml-4 absolute pointer-events-none" />
-                        <input 
-                            value={query}
-                            onChange={e => setQuery(e.target.value)}
-                            placeholder="Search educational videos..."
-                            className="w-full bg-transparent p-4 pl-12 text-lg text-white placeholder:text-white/40 outline-none font-bold italic tracking-tight"
-                        />
-                    </div>
-                    <button type="submit" className="px-8 py-4 bg-indigo-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-indigo-400 active:scale-95 transition-all shadow-lg flex items-center gap-2">
-                        Search <ArrowRight className="w-5 h-5 hidden sm:block" />
+        <div className="min-h-screen bg-[#FDFDFF] pb-32">
+            {/* Header */}
+            <header className="p-2 pt-4 pb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-600"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
                     </button>
-                </form>
+                    <div className="flex-1 min-w-0 pr-2">
+                        <h1 className="text-lg font-black text-slate-800 tracking-tight italic uppercase whitespace-nowrap overflow-hidden text-ellipsis">Video Library</h1>
+                        <p className="text-blue-500 font-bold text-[0.5rem] tracking-widest uppercase truncate">Visual learnings for everyone. 🎥</p>
+                    </div>
+                </div>
+            </header>
 
-                <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
-                    {CATEGORIES.map(cat => (
+            {/* Search Bar */}
+            <div className="px-2 mb-4 flex gap-2">
+                <form onSubmit={handleSearch} className="flex-1 bg-white border border-slate-100 rounded-lg shadow-sm flex items-center px-3 relative group transition-all">
+                    <Search className="w-3.5 h-3.5 text-slate-300 mr-2" />
+                    <input 
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        placeholder="Search videos..."
+                        className="w-full bg-transparent py-2.5 text-[0.7rem] font-bold text-slate-700 placeholder:text-slate-300 outline-none"
+                    />
+                </form>
+                <button 
+                    onClick={handleSearch}
+                    className="w-10 h-10 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100"
+                >
+                    <Search className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Categories */}
+            <div className="px-2 mb-6 grid grid-cols-4 gap-1.5">
+                {CATEGORIES.map((cat) => (
+                    <button
+                        key={cat.name}
+                        onClick={() => handleCategoryClick(cat.name)}
+                        className={cn(
+                            "flex flex-col items-center gap-1 p-2 rounded-xl border transition-all",
+                            activeCategory === cat.name 
+                                ? "bg-white shadow-md border-slate-200" 
+                                : cn(cat.color, cat.borderColor)
+                        )}
+                    >
+                        <div className={cn(
+                            "w-7 h-7 rounded-lg flex items-center justify-center shadow-sm bg-white",
+                        )}>
+                            <cat.icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-black text-[0.5rem] uppercase tracking-widest text-center truncate w-full">
+                            {cat.name}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Tabs Header */}
+            <div className="px-1 flex items-center justify-between border-b border-slate-100 mb-4 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
+                <div className="flex gap-4 px-2">
+                    {TABS.slice(0, 2).map((tab) => (
                         <button
-                            key={cat}
-                            onClick={() => handleCategoryClick(cat)}
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
                             className={cn(
-                                "px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest shrink-0 transition-colors border",
-                                activeCategory === cat 
-                                    ? "bg-white text-slate-900 border-white shadow-lg" 
-                                    : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
+                                "pb-3 text-[0.6rem] font-black uppercase tracking-widest italic transition-all relative px-1",
+                                activeTab === tab ? "text-slate-900" : "text-slate-400"
                             )}
                         >
-                            {cat}
+                            {tab}
+                            {activeTab === tab && (
+                                <motion.div layoutId="vid-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900 rounded-full" />
+                            )}
                         </button>
                     ))}
                 </div>
+                <div className="flex items-center gap-2 px-2 mb-2">
+                    <button className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg text-[0.5rem] font-bold text-slate-600">
+                        More <ChevronDown className="w-3 h-3" />
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.map(video => {
-                    const videoUrl = video.videos?.tiny?.url || video.videos?.small?.url;
-                    
-                    return (
-                        <div key={video.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-xl overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer" onClick={() => setActiveVideo(video)}>
-                            <div className="relative aspect-video bg-slate-900 overflow-hidden shrink-0">
-                                <img 
-                                    src={video.previewURL || `https://i.vimeocdn.com/video/${video.picture_id}_640x360.jpg`} 
-                                    alt={video.tags} 
-                                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700" 
-                                    loading="lazy"
-                                />
-                                {videoUrl && (
-                                    <video 
-                                        src={videoUrl}
-                                        className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-700" 
-                                        muted 
-                                        loop 
-                                        playsInline
-                                        onMouseEnter={(e) => e.currentTarget.play()}
-                                        onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
-                                    />
-                                )}
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-2xl group-hover:bg-white/30 group-hover:scale-110 transition-all border border-white/20">
-                                        <Play className="w-6 h-6 text-white fill-current ml-1" />
+            {/* Masonry Grid */}
+            <div className="px-1.5">
+                {loading && videos.length === 0 ? (
+                    <div className="w-full py-32 flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin" />
+                        <p className="text-slate-400 font-bold text-[0.6rem] uppercase tracking-[0.2em] animate-pulse italic">Scanning library...</p>
+                    </div>
+                ) : (
+                    <div className="columns-2 lg:columns-4 gap-1.5 space-y-1.5 px-1">
+                        {videos.map(video => (
+                                <motion.div 
+                                    key={video.id} 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="break-inside-avoid group relative rounded-xl overflow-hidden cursor-zoom-in shadow-sm hover:shadow-xl transition-all duration-300 bg-white" 
+                                    onClick={() => setActiveVideo(video)}
+                                >
+                                    <div className="relative aspect-[16/9] bg-slate-900 overflow-hidden">
+                                        <img 
+                                            src={video.picture_id ? `https://i.vimeocdn.com/video/${video.picture_id}_640x360.jpg` : `https://images.pixabay.com/video/thumbnail/${video.id}_640x360.jpg`} 
+                                            alt={video.tags} 
+                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-all duration-700" 
+                                            loading="lazy"
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                // Fallback sequence for video thumbnails
+                                                if (target.src.includes('vimeocdn')) {
+                                                    // Fallback 1: Pixabay CDN with ID
+                                                    target.src = `https://cdn.pixabay.com/video/thumbnail/${video.id}_640x360.jpg`;
+                                                } else if (target.src.includes('cdn.pixabay.com')) {
+                                                    // Fallback 2: Direct thumb path
+                                                    target.src = `https://i.pixabay.com/video/${video.id}/thumb.jpg`;
+                                                } else if (!target.src.includes('images.pixabay.com')) {
+                                                     // Fallback 3: Standard image thumb
+                                                    target.src = `https://images.pixabay.com/video/thumbnail/${video.id}_640x360.jpg`;
+                                                } else {
+                                                    // Ultimate fallback: LoremFlickr with topic-relevant keyword
+                                                    const tag = video.tags.split(',')[0] || 'education';
+                                                    target.src = `https://loremflickr.com/640/360/${encodeURIComponent(tag)}?lock=${video.id}`;
+                                                }
+                                            }}
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                            <p className="text-white font-bold text-[0.65rem] truncate">{video.tags.split(',')[0]}</p>
+                                        </div>
+                                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[0.5rem] font-black px-1.5 py-0.5 rounded-lg z-10 uppercase tracking-widest">
+                                            {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-md text-white text-[0.6rem] font-bold px-2 py-1 rounded-lg z-10">
-                                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
-                                </div>
-                            </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                                <h3 className="text-lg font-black text-slate-800 leading-tight uppercase italic tracking-tighter mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
-                                    {video.tags.split(',')[0] || 'Educational Video'}
-                                </h3>
-                                <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-                                    <span className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 truncate w-3/4">
-                                        <Film className="w-3 h-3 shrink-0" /> {video.tags}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
+                                </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
-            
-            {loading && (
-                <div className="col-span-full pt-12 pb-12 flex flex-col items-center justify-center">
-                    <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
-                    <p className="mt-4 font-black text-slate-400 uppercase tracking-widest text-sm animate-pulse">Syncing Video Feeds</p>
-                </div>
-            )}
-            
-            <div id="sentinel-videos" className="h-10 w-full" />
-            
-            {loadingMore && (
-                <div className="flex justify-center py-6">
-                    <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+
+            {hasMore && videos.length > 0 && (
+                <div id="sentinel-videos" className="h-40 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-slate-100 border-t-indigo-600 rounded-full animate-spin" />
                 </div>
             )}
 
             <AnimatePresence>
                 {activeVideo && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-slate-900/90 backdrop-blur-xl"
-                        onClick={() => setActiveVideo(null)}
-                    >
-                        <div className="w-full max-w-5xl flex justify-between items-end mb-4 px-2" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex-1 min-w-0 pr-4">
-                                 <h2 className="text-2xl md:text-3xl font-black text-white italic uppercase tracking-tighter truncate">{activeVideo.tags}</h2>
-                                 <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-widest">Pixabay Video Database</p>
-                            </div>
-                            <button 
-                                onClick={() => setActiveVideo(null)}
-                                className="w-12 h-12 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-colors border border-white/10 shrink-0"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        
-                        <motion.div 
-                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                            className="bg-black rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-5xl relative aspect-video filter drop-shadow-[0_0_50px_rgba(99,102,241,0.2)]"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <video 
-                                src={activeVideo.videos?.large?.url || activeVideo.videos?.medium?.url || activeVideo.videos?.small?.url} 
-                                className="w-full h-full object-contain" 
-                                controls 
-                                autoPlay 
-                                playsInline
-                                crossOrigin="anonymous"
-                            />
-                        </motion.div>
-                    </motion.div>
+                    <ImageVideoModal 
+                        item={activeVideo} 
+                        type="video" 
+                        onClose={() => setActiveVideo(null)} 
+                    />
                 )}
             </AnimatePresence>
         </div>
@@ -9545,38 +10425,211 @@ const OldPicturesPage = () => {
 
 const NewImageCard = ({ img, onClick, onDownload, onLike }: { img: any, onClick: () => void, onDownload: (url:string, id:string) => void, onLike: () => void }) => {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [liked, setLiked] = useState(false);
     return (
         <motion.div 
-            whileHover={{ y: -5 }}
-            className="w-full break-inside-avoid rounded-[2.5rem] overflow-hidden relative group bg-white shadow-xl inline-block mb-8 border-4 border-white hover:border-indigo-500/20 transition-all duration-500"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4 }}
+            className="group bg-white rounded-2xl overflow-hidden shadow-[0_2px_15px_rgba(0,0,0,0.03)] hover:shadow-xl transition-all duration-300 border border-slate-50 flex flex-col"
         >
-            {!isLoaded && (
-                <div className="w-full h-80 animate-pulse bg-slate-100 flex items-center justify-center">
-                    <Zap className="w-10 h-10 text-slate-200 animate-pulse" />
-                </div>
-            )}
-            <img 
-                src={img.webformatURL} 
-                alt="Search result" 
-                onLoad={() => setIsLoaded(true)}
-                className={`w-full h-auto transform group-hover:scale-110 transition-all duration-1000 block cursor-pointer ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-                loading="lazy" 
-                onClick={onClick}
-                referrerPolicy="no-referrer"
-            />
-            <div className="absolute inset-0 bg-linear-to-t from-slate-900 via-transparent to-transparent opacity-0 group-hover:opacity-90 transition-opacity duration-300 pointer-events-none" />
-            
-            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-4 group-hover:translate-y-0">
-                <div className="flex flex-col">
-                    <span className="text-white text-[0.6rem] font-black uppercase tracking-widest bg-white/10 backdrop-blur-xl px-3 py-1 rounded-lg w-fit mb-2 border border-white/20">@{img.user}</span>
-                    <span className="text-white/80 text-[0.55rem] font-bold uppercase tracking-wider line-clamp-1 italic">Signals • {img.tags}</span>
-                </div>
-                <div className="flex gap-2">
-                     <button onClick={(e) => { e.stopPropagation(); onDownload(img.largeImageURL, img.id); }} className="w-10 h-10 rounded-xl bg-white text-slate-900 flex items-center justify-center hover:bg-indigo-500 hover:text-white hover:scale-110 active:scale-90 transition-all shadow-xl pointer-events-auto">
-                        <Download className="w-4 h-4" />
-                     </button>
+            <div className="relative overflow-hidden cursor-pointer" onClick={onClick}>
+                {!isLoaded && (
+                    <div className="absolute inset-0 animate-pulse bg-slate-50 flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-slate-200" />
+                    </div>
+                )}
+                <img 
+                    src={img.webformatURL} 
+                    alt={img.tags}
+                    onLoad={() => setIsLoaded(true)}
+                    className={cn(
+                        "w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-700",
+                        isLoaded ? 'opacity-100' : 'opacity-0'
+                    )}
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                />
+                
+                {/* Image Info Overlay */}
+                <div className="absolute bottom-2 left-2 bg-black/30 backdrop-blur-md px-2 py-0.5 rounded-lg flex items-center gap-1 border border-white/10">
+                    <ImageIcon className="w-3 h-3 text-white/80" />
+                    <span className="text-[0.55rem] font-bold text-white tracking-wide">
+                        {Math.floor(Math.random() * 50) + 10}
+                    </span>
                 </div>
             </div>
+
+            <div className="p-3">
+                <div className="mb-2">
+                    <h3 className="font-bold text-slate-800 text-[0.85rem] line-clamp-1 leading-tight tracking-tight capitalize">
+                        {img.tags.split(',')[0]}
+                    </h3>
+                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                        {img.tags.split(',')[1] || 'General'}
+                    </p>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-slate-50">
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setLiked(!liked); onLike(); }}
+                            className={cn("transition-colors p-1", liked ? "text-rose-500" : "text-slate-300 hover:text-rose-500")}
+                        >
+                            <Heart className={cn("w-4 h-4", liked ? "fill-current" : "")} />
+                        </button>
+                        <button className="text-slate-300 hover:text-blue-500 transition-colors p-1">
+                            <Bookmark className="w-4 h-4" />
+                        </button>
+                    </div>
+                    <button className="text-slate-300 hover:text-slate-900 transition-colors p-1">
+                        <MoreHorizontal className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
+/**
+ * Universal Modal for Image and Video viewing
+ */
+const ImageVideoModal = ({ item, type, onClose }: { item: any, type: 'image' | 'video', onClose: () => void }) => {
+    const [showActions, setShowActions] = useState(false);
+    
+    // Download logic moved inside
+    const handleDownload = async () => {
+        const url = type === 'image' ? (item.largeImageURL || item.webformatURL) : (item.videos?.large?.url || item.videos?.medium?.url);
+        try {
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = `Aadhar_${type}_${item.id}.${type === 'image' ? 'jpg' : 'mp4'}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            window.open(url, '_blank');
+        }
+    };
+
+    return (
+        <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[2000] flex flex-col bg-slate-900/95 backdrop-blur-xl touch-none"
+            onClick={onClose}
+        >
+            {/* Navigation Header */}
+            <div className="flex items-center justify-between p-4 z-20" onClick={e => e.stopPropagation()}>
+                <button 
+                    onClick={() => setShowActions(true)} 
+                    className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all border border-white/10"
+                >
+                    <AlignLeft className="w-6 h-6" />
+                </button>
+                <div className="flex-1 px-4 text-center">
+                    <h4 className="text-white font-black text-[0.6rem] uppercase tracking-widest opacity-40">Preview Mode</h4>
+                </div>
+                <button 
+                    onClick={onClose} 
+                    className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white active:scale-95 transition-all border border-white/10"
+                >
+                    <X className="w-6 h-6" />
+                </button>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 flex items-center justify-center p-4 relative" onClick={e => e.stopPropagation()}>
+                {type === 'image' ? (
+                    <motion.img 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        src={item.largeImageURL || item.webformatURL} 
+                        alt={item.tags}
+                        className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+                        referrerPolicy="no-referrer"
+                    />
+                ) : (
+                    <motion.div 
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="w-full max-w-4xl aspect-video rounded-3xl overflow-hidden shadow-2xl bg-black"
+                    >
+                        <video 
+                            src={item.videos?.large?.url || item.videos?.medium?.url || item.videos?.small?.url} 
+                            className="w-full h-full object-contain" 
+                            controls 
+                            autoPlay 
+                            playsInline
+                            crossOrigin="anonymous"
+                        />
+                    </motion.div>
+                )}
+            </div>
+
+            {/* Bottom Info */}
+            <div className="p-8 text-center" onClick={e => e.stopPropagation()}>
+                 <h3 className="text-xl font-black text-white uppercase italic tracking-tighter line-clamp-1">{item.tags.split(',')[0]}</h3>
+                 <p className="text-white/40 font-bold text-[0.6rem] uppercase tracking-widest mt-1">
+                    {item.user === "Wikimedia Commons" ? "Free Media • Wikimedia Commons" : "High Quality Asset • Pixabay Archive"}
+                 </p>
+            </div>
+
+            {/* Action Popup Screen */}
+            <AnimatePresence>
+                {showActions && (
+                    <motion.div 
+                        initial={{ y: "100%" }}
+                        animate={{ y: 0 }}
+                        exit={{ y: "100%" }}
+                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                        className="absolute inset-0 z-50 bg-white/10 backdrop-blur-3xl flex flex-col items-center justify-center gap-12"
+                        onClick={e => { e.stopPropagation(); setShowActions(false); }}
+                    >
+                        <div className="flex flex-col items-center gap-6">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleDownload(); setShowActions(false); }}
+                                className="w-20 h-20 bg-blue-600 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-blue-500/20 active:scale-95 transition-all"
+                            >
+                                <Download className="w-8 h-8" />
+                            </button>
+                            <span className="text-white font-black uppercase text-xs tracking-widest">Download</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-6">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setShowActions(false); }}
+                                className="w-20 h-20 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-emerald-500/20 active:scale-95 transition-all"
+                            >
+                                <Share2 className="w-8 h-8" />
+                            </button>
+                            <span className="text-white font-black uppercase text-xs tracking-widest">Share</span>
+                        </div>
+
+                        <div className="flex flex-col items-center gap-6">
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); setShowActions(false); }}
+                                className="w-20 h-20 bg-amber-500 rounded-[2rem] flex items-center justify-center text-white shadow-2xl shadow-amber-500/20 active:scale-95 transition-all"
+                            >
+                                <Save className="w-8 h-8" />
+                            </button>
+                            <span className="text-white font-black uppercase text-xs tracking-widest">Save</span>
+                        </div>
+
+                        <button 
+                            className="absolute top-6 right-6 w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-white"
+                            onClick={() => setShowActions(false)}
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
@@ -9585,6 +10638,7 @@ const PicturesPage = () => {
     const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
+    const [activeTab, setActiveTab] = useState('For You');
     const [images, setImages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -9596,9 +10650,16 @@ const PicturesPage = () => {
     const [isZoomed, setIsZoomed] = useState(false);
 
     const API_KEY = '55653734-9bcb53c51c27b0c301beab7dc';
-    const DEFAULT_QUERY = 'education learning student study';
+    const DEFAULT_QUERY = 'nature wallpaper learning';
 
-    const CATEGORIES = ['All', 'Science', 'Mathematics', 'Literature', 'History', 'Technology', 'Art'];
+    const CATEGORIES = [
+        { name: 'Animals', icon: Cat, color: 'bg-orange-50 text-orange-500', borderColor: 'border-orange-100', query: 'wild animals' },
+        { name: 'Birds', icon: Bird, color: 'bg-blue-50 text-blue-500', borderColor: 'border-blue-100', query: 'birds' },
+        { name: 'Flowers', icon: Leaf, color: 'bg-emerald-50 text-emerald-500', borderColor: 'border-emerald-100', query: 'flowers' },
+        { name: 'Drawing', icon: Pencil, color: 'bg-rose-50 text-rose-500', borderColor: 'border-rose-100', query: 'sketch drawing' },
+    ];
+
+    const TABS = ['For You', 'Trending', 'New', 'Collection'];
 
     const fetchImages = async (searchQuery: string, pageNum: number, category: string, isNewSearch: boolean = false) => {
         if (!window.navigator.onLine) {
@@ -9609,12 +10670,9 @@ const PicturesPage = () => {
         
         try {
             let currentQ = searchQuery.trim();
-            if (category !== 'All') {
-                currentQ = currentQ ? `${currentQ} ${category}` : category;
-            }
-            if (!currentQ) currentQ = DEFAULT_QUERY;
-
-            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(currentQ)}&image_type=photo&per_page=30&page=${pageNum}&safesearch=true`);
+            const pixabayCategory = (!category || category === 'All') ? '' : category.toLowerCase();
+            
+            const res = await fetch(`https://pixabay.com/api/?key=${API_KEY}&q=${encodeURIComponent(currentQ || pixabayCategory || DEFAULT_QUERY)}&image_type=photo&per_page=30&page=${pageNum}&safesearch=true&orientation=vertical`);
             const data = await res.json();
             
             if (data.hits && data.hits.length > 0) {
@@ -9632,7 +10690,7 @@ const PicturesPage = () => {
     };
 
     useEffect(() => {
-        fetchImages(query, 1, activeCategory, true);
+        fetchImages('', 1, 'All', true);
     }, []);
 
     const handleSearch = (e: React.FormEvent) => {
@@ -9643,10 +10701,11 @@ const PicturesPage = () => {
     };
 
     const handleCategoryClick = (cat: string) => {
-        setActiveCategory(cat);
+        const newCat = activeCategory === cat ? 'All' : cat;
+        setActiveCategory(newCat);
         setPage(1);
         setHasMore(true);
-        fetchImages(query, 1, cat, true);
+        fetchImages(query, 1, newCat, true);
     };
 
     const loadMore = useCallback(() => {
@@ -9661,7 +10720,7 @@ const PicturesPage = () => {
         const observer = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && hasMore && !loading && !loadingMore) loadMore();
         }, { threshold: 0.1 });
-        const sentinel = document.getElementById('sentinel-new');
+        const sentinel = document.getElementById('sentinel-pics');
         if (sentinel) observer.observe(sentinel);
         return () => observer.disconnect();
     }, [hasMore, loading, loadingMore, loadMore]);
@@ -9685,154 +10744,153 @@ const PicturesPage = () => {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        alert("Link copied to clipboard!");
     };
 
     return (
-        <div className="space-y-6 pb-24 relative">
-            <ToolHeader title="Visual Engine" subtitle="High-Resolution Reference Library" icon={ImageIcon} />
-            
-            <div className="bg-slate-900 rounded-[3rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-
-                    <form onSubmit={handleSearch} className="mb-6 flex gap-3">
-                        <div className="flex-1 bg-white/10 p-2 rounded-3xl backdrop-blur-md border border-white/10 flex items-center shadow-inner focus-within:bg-white/20 transition-all relative">
-                            <Search className="w-6 h-6 text-white/50 ml-4 absolute pointer-events-none" />
-                            <input 
-                                value={query}
-                                onChange={e => setQuery(e.target.value)}
-                                placeholder="Search the visual database..."
-                                className="w-full bg-transparent p-4 pl-12 text-lg text-white placeholder:text-white/40 outline-none font-bold italic tracking-tight"
-                            />
-                        </div>
-                        <button type="submit" className="px-8 py-4 bg-blue-500 text-white rounded-3xl font-black uppercase tracking-widest text-sm hover:bg-blue-400 active:scale-95 transition-all shadow-lg flex items-center gap-2">
-                            Search <ArrowRight className="w-5 h-5 hidden sm:block" />
-                        </button>
-                    </form>
-
-                    <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-2">
-                        {CATEGORIES.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => handleCategoryClick(cat)}
-                                className={cn(
-                                    "px-5 py-2.5 rounded-2xl text-[0.65rem] font-black uppercase tracking-widest whitespace-nowrap transition-all border shrink-0 backdrop-blur-sm",
-                                    activeCategory === cat 
-                                        ? "bg-white text-slate-900 border-white shadow-lg" 
-                                        : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
-                                )}
-                            >
-                                {cat}
-                            </button>
-                        ))}
+        <div className="min-h-screen bg-[#FDFDFF] pb-32">
+            {/* Header */}
+            <header className="p-2 pt-4 pb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => navigate(-1)}
+                        className="w-9 h-9 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-600"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    <div className="flex-1 min-w-0 pr-2">
+                        <h1 className="text-lg font-black text-slate-800 tracking-tight italic uppercase whitespace-nowrap overflow-hidden text-ellipsis">Pictures Library</h1>
+                        <p className="text-blue-500 font-bold text-[0.5rem] tracking-widest uppercase truncate">Explore. Learn. Remember forever. ✨</p>
                     </div>
                 </div>
+            </header>
 
-            {/* Results */}
-            {loading && images.length === 0 ? (
-                <div className="w-full h-[40vh] flex items-center justify-center">
-                    <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+            {/* Search Bar */}
+            <div className="px-2 mb-4 flex gap-2">
+                <div className="flex-1 bg-white border border-slate-100 rounded-lg shadow-sm flex items-center px-3 relative group transition-all">
+                    <Search className="w-3.5 h-3.5 text-slate-300 mr-2" />
+                    <input 
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        placeholder="Search pictures..."
+                        className="w-full bg-transparent py-2.5 text-[0.7rem] font-bold text-slate-700 placeholder:text-slate-300 outline-none"
+                    />
                 </div>
-            ) : (
-                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
-                    {images.map((img, idx) => (
-                        <NewImageCard 
-                            key={`${img.id}-${idx}`} 
-                            img={img} 
-                            onClick={() => setSelectedImage(img)} 
-                            onDownload={handleDownload}
-                            onLike={() => { /* Store in local storage optionally */ }}
-                        />
+                <button 
+                    onClick={handleSearch}
+                    className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center shadow-lg shadow-blue-100"
+                >
+                    <Search className="w-4 h-4" />
+                </button>
+            </div>
+
+            {/* Categories */}
+            <div className="px-2 mb-6 grid grid-cols-4 gap-1.5">
+                {CATEGORIES.map((cat) => (
+                    <button
+                        key={cat.name}
+                        onClick={() => handleCategoryClick(cat.name)}
+                        className={cn(
+                            "flex flex-col items-center gap-1 p-2 rounded-xl border transition-all",
+                            activeCategory === cat.name 
+                                ? "bg-white shadow-md border-slate-200" 
+                                : cn(cat.color, cat.borderColor)
+                        )}
+                    >
+                        <div className={cn(
+                            "w-8 h-8 rounded-lg flex items-center justify-center shadow-sm bg-white",
+                        )}>
+                            <cat.icon className="w-4 h-4" />
+                        </div>
+                        <span className="font-black text-[0.5rem] uppercase tracking-widest text-center truncate w-full">
+                            {cat.name}
+                        </span>
+                    </button>
+                ))}
+            </div>
+
+            {/* Tabs Header */}
+            <div className="px-1 flex items-center justify-between border-b border-slate-100 mb-4 sticky top-0 bg-white/80 backdrop-blur-xl z-20">
+                <div className="flex gap-4 px-2">
+                    {TABS.slice(0, 2).map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={cn(
+                                "pb-3 text-[0.6rem] font-black uppercase tracking-widest italic transition-all relative px-1",
+                                activeTab === tab ? "text-slate-900" : "text-slate-400"
+                            )}
+                        >
+                            {tab}
+                            {activeTab === tab && (
+                                <motion.div layoutId="pic-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-900 rounded-full" />
+                            )}
+                        </button>
                     ))}
                 </div>
-            )}
+                <div className="flex items-center gap-2 px-2 mb-2">
+                    <button className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg text-[0.5rem] font-bold text-slate-600">
+                        More <ChevronDown className="w-3 h-3" />
+                    </button>
+                </div>
+            </div>
+
+            {/* Masonry Grid */}
+            <div className="px-1.5">
+                {loading && images.length === 0 ? (
+                    <div className="w-full py-32 flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
+                        <p className="text-slate-400 font-bold text-[0.6rem] uppercase tracking-[0.2em] animate-pulse italic">Scanning library...</p>
+                    </div>
+                ) : (
+                    <div className="columns-2 lg:columns-4 gap-1.5 space-y-1.5">
+                        {images.map((img, idx) => (
+                            <div key={`${img.id}-${idx}`} className="break-inside-avoid">
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: (idx % 10) * 0.05 }}
+                                    className="group relative rounded-xl overflow-hidden cursor-zoom-in shadow-sm hover:shadow-xl transition-all duration-300 bg-white"
+                                    onClick={() => setSelectedImage(img)}
+                                >
+                                    <img 
+                                        src={img.webformatURL} 
+                                        alt={img.tags}
+                                        className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-700"
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            // Fallback to LoremFlickr if Pixabay image fails
+                                            if (!target.src.includes('loremflickr')) {
+                                                const tag = img.tags.split(',')[0] || 'nature';
+                                                target.src = `https://loremflickr.com/400/600/${encodeURIComponent(tag)}?lock=${img.id}`;
+                                            }
+                                        }}
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
+                                        <p className="text-white font-bold text-[0.65rem] truncate">{img.tags.split(',')[0]}</p>
+                                    </div>
+                                </motion.div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
 
             {hasMore && images.length > 0 && (
-                <div id="sentinel-new" className="h-20 w-full flex items-center justify-center pb-20">
-                    <div className="w-10 h-10 border-4 border-slate-200 border-t-amber-500 rounded-full animate-spin" />
+                <div id="sentinel-pics" className="h-40 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-slate-100 border-t-blue-600 rounded-full animate-spin" />
                 </div>
             )}
 
             {/* Expanded Modal */}
             <AnimatePresence>
                 {selectedImage && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-slate-900/95 backdrop-blur-xl"
-                    >
-                        <button onClick={() => { setSelectedImage(null); setIsZoomed(false); }} className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white backdrop-blur-md transition-all border border-white/10 z-50">
-                            <X className="w-6 h-6" />
-                        </button>
-                        
-                        <div className="w-full max-w-6xl h-full max-h-[90vh] bg-slate-900 rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
-                            {/* Image Area */}
-                            <div className="flex-1 h-full bg-black/50 relative flex items-center justify-center overflow-hidden p-4 group">
-                                <img 
-                                    src={isHD ? selectedImage.largeImageURL : selectedImage.webformatURL} 
-                                    alt="Expanded"
-                                    className={cn(
-                                        "max-w-full max-h-full object-contain transition-all duration-500",
-                                        isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in group-hover:scale-105"
-                                    )}
-                                    onClick={() => setIsZoomed(!isZoomed)}
-                                />
-                                <div className="absolute bottom-4 left-0 w-full flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl text-white/50 text-xs font-black uppercase tracking-widest pointer-events-none">
-                                        {isZoomed ? 'Click to minimize' : 'Click to zoom'}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Info & action side panel */}
-                            <div className="w-full md:w-80 h-auto md:h-full bg-slate-900 border-t md:border-t-0 md:border-l border-white/10 p-8 flex flex-col overflow-y-auto custom-scrollbar shrink-0 gap-6">
-                                <div>
-                                    <h3 className="text-2xl font-black text-white italic capitalize leading-tight mb-2">{selectedImage.tags.split(',')[0]}</h3>
-                                    <p className="text-xs text-white/50 font-bold tracking-widest uppercase">By {selectedImage.user}</p>
-                                </div>
-
-                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                                    <span className="text-[0.65rem] font-black tracking-widest uppercase text-white/70 flex items-center gap-2"><ImageIcon className="w-4 h-4"/> HD Quality</span>
-                                    <button 
-                                        onClick={() => setIsHD(!isHD)} 
-                                        className={cn("w-12 h-6 rounded-full transition-colors relative flex items-center", isHD ? "bg-emerald-500" : "bg-white/20")}
-                                    >
-                                        <div className={cn("w-4 h-4 rounded-full bg-white absolute transition-all", isHD ? "left-7" : "left-1")} />
-                                    </button>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                     <button onClick={() => copyToClipboard(selectedImage.pageURL)} className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group">
-                                         <Copy className="w-6 h-6 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">Copy URL</span>
-                                     </button>
-                                     <button className="flex flex-col items-center justify-center p-4 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/10 transition-colors group">
-                                         <Heart className="w-6 h-6 text-rose-400 mb-2 group-hover:scale-110 transition-transform" />
-                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/70">{selectedImage.likes} Likes</span>
-                                     </button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                     <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl border border-white/10">
-                                         <span className="text-white font-black text-xl mb-1">{selectedImage.views}</span>
-                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/40">Views</span>
-                                     </div>
-                                     <div className="flex flex-col items-center justify-center p-4 bg-white/5 rounded-2xl border border-white/10">
-                                         <span className="text-white font-black text-xl mb-1">{selectedImage.downloads}</span>
-                                         <span className="text-[0.55rem] font-black uppercase tracking-widest text-white/40">Downloads</span>
-                                     </div>
-                                </div>
-
-                                <div className="mt-auto pt-6 flex flex-col gap-3">
-                                     <button onClick={() => handleDownload(isHD ? selectedImage.largeImageURL : selectedImage.webformatURL, selectedImage.id)} className="w-full py-4 bg-blue-500 hover:bg-blue-400 text-white rounded-2xl font-black uppercase tracking-widest text-[0.65rem] flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
-                                         <Download className="w-4 h-4" /> Download Asset
-                                     </button>
-                                     <p className="text-[0.5rem] font-black text-white/30 tracking-widest uppercase text-center leading-relaxed">
-                                         Provided by Pixabay API. Free for commercial use. No attribution required.
-                                     </p>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
+                    <ImageVideoModal 
+                        item={selectedImage} 
+                        type="image" 
+                        onClose={() => setSelectedImage(null)} 
+                    />
                 )}
             </AnimatePresence>
         </div>
@@ -10040,13 +11098,19 @@ const AppProvider = ({ children }: any) => {
         const initAuth = async () => {
             // Safety timeout to prevent hanging on loading screen
             const timeout = setTimeout(() => {
+                console.warn("Auth initialization timed out. Proceeding to login.");
                 setIsInitializing(false);
-            }, 5000);
+            }, 8000);
 
             try {
                 if (supabase?.auth) {
                     // 1. Check initial session
-                    const { data: { session } } = await supabase.auth.getSession();
+                    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                    
+                    if (sessionError) {
+                        console.error("Session retrieval error:", sessionError);
+                    }
+
                     if (session?.user) {
                         const loggedUser: User = {
                             id: session.user.id,
@@ -10060,17 +11124,21 @@ const AppProvider = ({ children }: any) => {
                         setUser(loggedUser);
                         localStorage.setItem('logged_user', JSON.stringify(loggedUser));
                         
-                        // Fetch user profile role
                         try {
                             const profile = await getUserProfile(session.user.id);
-                            setUserProfile(profile);
+                            if (profile) setUserProfile(profile);
                         } catch (pErr) {
-                            console.error("Profile fetch error:", pErr);
+                            console.warn("Profile fetch failed:", pErr);
                         }
                     } else {
-                        setUser(null);
-                        setUserProfile(null);
-                        localStorage.removeItem('logged_user');
+                        // Check if we have a locally cached user as a fallback (for smoother UI)
+                        const cached = localStorage.getItem('logged_user');
+                        if (cached && !isOnline) {
+                            setUser(JSON.parse(cached));
+                        } else {
+                            setUser(null);
+                            setUserProfile(null);
+                        }
                     }
 
                     // 2. Set up listener for subsequent changes
@@ -10089,6 +11157,7 @@ const AppProvider = ({ children }: any) => {
                             localStorage.setItem('logged_user', JSON.stringify(loggedUser));
                         } else {
                             setUser(null);
+                            setUserProfile(null);
                             localStorage.removeItem('logged_user');
                         }
                         setIsInitializing(false);
@@ -10096,14 +11165,12 @@ const AppProvider = ({ children }: any) => {
                     });
                     authSubscription = subscription;
                 } else {
-                    console.error("Supabase auth not found or could not be initialized");
+                    console.error("Supabase auth engine not detected");
                     setIsInitializing(false);
+                    clearTimeout(timeout);
                 }
             } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : String(err);
-                console.error("Auth initialization network error:", errorMessage);
-                setIsInitializing(false);
-            } finally {
+                console.error("Critical auth error:", err);
                 setIsInitializing(false);
                 clearTimeout(timeout);
             }

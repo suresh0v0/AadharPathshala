@@ -65,43 +65,58 @@ export const uploadFile = async (bucket, path, file) => {
  * General purpose upload handler for different study materials and MCQs.
  */
 export const handleUpload = async (category, payload) => {
-    switch (category) {
-        case 'Notes':
-        case 'Model Question':
-        case 'Chapter':
-            if (!payload.file) throw new Error(`A valid file is required for ${category} upload`);
-            const publicUrl = await uploadFile('notes', `${category}/${Date.now()}_${payload.file.name}`, payload.file);
-            return await supabase.from('study_hub').insert([{
-                title: payload.title,
-                subject: payload.subject,
-                category: category,
-                file_url: publicUrl,
-                description: payload.description
-            }]).select();
-            
-        case 'Video':
-            return await supabase.from('study_hub').insert([{
-                title: payload.title,
-                subject: payload.subject,
-                category: 'Video',
-                youtube_url: payload.youtube_url,
-                description: payload.description
-            }]).select();
-            
-        case 'Book':
-            return await supabase.from('study_hub').insert([{
-                title: payload.title,
-                subject: payload.subject,
-                category: 'Book',
-                file_url: payload.google_drive_url,
-                description: payload.description
-            }]).select();
+    try {
+        console.log(`Starting upload for category: ${category}`, payload);
+        switch (category) {
+            case 'Notes':
+            case 'Model Question':
+            case 'Chapter':
+                if (!payload.file) throw new Error(`A valid file is required for ${category} upload`);
+                const publicUrl = await uploadFile('notes', `${category}/${Date.now()}_${payload.file.name}`, payload.file);
+                console.log(`File uploaded to storage: ${publicUrl}`);
+                const { data: hubData, error: hubError } = await supabase.from('study_hub').insert([{
+                    title: payload.title,
+                    subject: payload.subject,
+                    category: category,
+                    file_url: publicUrl,
+                    description: payload.description
+                }]).select();
+                if (hubError) throw hubError;
+                return hubData;
+                
+            case 'Video':
+                const { data: videoData, error: videoError } = await supabase.from('study_hub').insert([{
+                    title: payload.title,
+                    subject: payload.subject,
+                    category: 'Video',
+                    youtube_url: payload.youtube_url,
+                    description: payload.description
+                }]).select();
+                if (videoError) throw videoError;
+                return videoData;
+                
+            case 'Book':
+                const { data: bookData, error: bookError } = await supabase.from('study_hub').insert([{
+                    title: payload.title,
+                    subject: payload.subject,
+                    category: 'Book',
+                    file_url: payload.google_drive_url,
+                    description: payload.description
+                }]).select();
+                if (bookError) throw bookError;
+                return bookData;
 
-        case 'MCQs':
-            return await supabase.from('mcq_bank').insert(payload.questions).select();
-            
-        default:
-            throw new Error("Invalid category for upload");
+            case 'MCQs':
+                const { data: mcqData, error: mcqError } = await supabase.from('mcq_bank').insert(payload.questions).select();
+                if (mcqError) throw mcqError;
+                return mcqData;
+                
+            default:
+                throw new Error("Invalid category for upload");
+        }
+    } catch (error) {
+        console.error("HandleUpload Error:", error);
+        throw error;
     }
 };
 
