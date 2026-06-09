@@ -22,12 +22,16 @@ import {
   ShieldCheck, ArrowRight, SearchX, Target, ClipboardList, Settings, Heart, Bookmark, Volume2, ArrowRightLeft, Copy, Save,
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
   Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Film,
-  Gamepad2, Brain, LayoutList, BookCopy, ShieldAlert, Link2, VolumeX, Puzzle
+  Gamepad2, Brain, LayoutList, BookCopy, ShieldAlert, Link2, VolumeX, Puzzle,
+  Eraser, Paperclip
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { VisualsPage } from './components/VisualsPage';
+import { GraphsPage } from './components/GraphsPage';
+import { FocusTimerPage } from './components/FocusTimerPage';
 
 // Set worker for react-pdf (safer loading)
 try {
@@ -53,6 +57,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell, Line
 } from 'recharts';
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
+import { STATIC_MCQS } from './static_mcqs';
 
 const LogoImg = "https://res.cloudinary.com/dtyjlnjjf/image/upload/f_auto,q_auto/9931_fogzow";
 
@@ -173,7 +178,7 @@ const BOOK_LINKS: Record<string, string> = {
     'Account': 'https://drive.google.com/file/d/1QEgiAKkKofFFAxDyVoFD40LgBWe0s8n9/view?usp=drivesdk'
 };
 
-const STATIC_MCQS: Record<string, any[]> = {};
+// STATIC_MCQS is imported from static_mcqs.ts above
 
 // ════════════════════════════════════════════
 // COMPONENTS
@@ -2064,10 +2069,10 @@ const GPACalculator = () => {
                     </div>
                 </div>
 
-                <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden shadow-slate-200/50">
-                    <div className="bg-[#020617] px-8 py-5 flex justify-between items-center">
-                        <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                            <GraduationCap className="w-4 h-4 text-emerald-400" /> Subject Summary
+                <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div className="bg-slate-50 border-b border-slate-100 px-8 py-5 flex justify-between items-center">
+                        <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4 text-emerald-500" /> Subject Summary
                         </h3>
                     </div>
                     <div className="p-4 space-y-2">
@@ -2110,11 +2115,11 @@ const GPACalculator = () => {
     }
 
     return (
-        <div className="space-y-6 animate-fade-up pb-32">
-            <div className="bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden shadow-slate-200/50">
-                <div className="bg-[#020617] px-8 py-5 flex justify-between items-center">
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-emerald-400" /> Subject Grading Grid
+        <div className="space-y-6 animate-fade-up">
+            <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-slate-100 px-8 py-5 flex justify-between items-center">
+                    <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-emerald-500" /> Subject Grading Grid
                     </h3>
                     <div className="flex gap-4">
                         <span className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest">Theory</span>
@@ -2190,7 +2195,7 @@ const GPACalculator = () => {
 
             <button 
                 onClick={() => setView('result')}
-                className="w-full bg-slate-900 text-white p-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl flex items-center justify-center gap-4 group active:scale-95 transition-all"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-5 rounded-[2.5rem] shadow-lg hover:shadow-xl flex items-center justify-center gap-4 group active:scale-95 transition-all cursor-pointer"
             >
                 <span className="text-xl font-black italic uppercase tracking-tighter">Calculate Result</span>
                 <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-amber-500 transition-all">
@@ -2222,36 +2227,384 @@ const ToolHeader = ({ title, subtitle, icon: Icon, onBack }: { title: string; su
     );
 };
 
+const SmartCalculatorLogo = () => {
+    return (
+        <div className="relative w-10 h-10 md:w-11 md:h-11 shrink-0 select-none group flex items-center justify-center">
+            <div className="absolute inset-0 bg-violet-100 rounded-full blur-md opacity-50 group-hover:opacity-85 transition-opacity duration-300" />
+            <div className="relative w-10 h-10 md:w-11 md:h-11 bg-linear-to-tr from-violet-600 to-fuchsia-500 text-white rounded-full flex items-center justify-center shadow-xs">
+                <Calculator className="w-5 h-5 md:w-5.5 md:h-5.5 stroke-[2.25]" />
+            </div>
+        </div>
+    );
+};
+
 const CalculatorSuite = () => {
-    const [searchParams] = useSearchParams();
-    const [tab, setTab] = useState<'gpa' | 'standard'>((searchParams.get('tab') as any) || 'gpa');
+    const navigate = useNavigate();
+    const [view, setView] = useState<'main' | 'gpa'>('main');
+    const [comingSoon, setComingSoon] = useState<string | null>(null);
+
+    const calculators = [
+        {
+            id: 'percentage',
+            title: 'Percentage',
+            subtitle: 'Marks, discounts, percent change',
+            icon: Percent,
+            bgColor: 'bg-violet-50',
+            iconColor: 'text-violet-600',
+        },
+        {
+            id: 'gpa',
+            title: 'GPA Calculator',
+            subtitle: 'Calculate your semester GPA',
+            icon: GraduationCap,
+            bgColor: 'bg-emerald-50',
+            iconColor: 'text-emerald-600',
+        },
+        {
+            id: 'geometry',
+            title: 'Geometry',
+            subtitle: 'Area, perimeter & shape solver',
+            icon: Triangle,
+            bgColor: 'bg-amber-50',
+            iconColor: 'text-amber-600',
+        },
+        {
+            id: 'physics',
+            title: 'Physics',
+            subtitle: 'Solve physics formulas',
+            icon: Orbit,
+            bgColor: 'bg-blue-50',
+            iconColor: 'text-blue-600',
+        },
+        {
+            id: 'chemistry',
+            title: 'Chemistry',
+            subtitle: 'Molar mass, dilution & more',
+            icon: Beaker,
+            bgColor: 'bg-teal-50',
+            iconColor: 'text-teal-600',
+        },
+        {
+            id: 'statistics',
+            title: 'Statistics',
+            subtitle: 'Mean, median, mode & more',
+            icon: BarChart3,
+            bgColor: 'bg-rose-50',
+            iconColor: 'text-rose-600',
+        },
+        {
+            id: 'equation',
+            title: 'Equation Solver',
+            subtitle: 'Solve linear & quadratic eq.',
+            icon: Variable,
+            bgColor: 'bg-purple-50',
+            iconColor: 'text-purple-600',
+        },
+        {
+            id: 'unit',
+            title: 'Unit Converter',
+            subtitle: 'Convert between units',
+            icon: ArrowRightLeft,
+            bgColor: 'bg-sky-50',
+            iconColor: 'text-sky-600',
+        }
+    ];
+
+    const handleCardClick = (id: string, title: string) => {
+        if (id === 'gpa') {
+            setView('gpa');
+        } else {
+            setComingSoon(title);
+        }
+    };
+
+    if (view === 'gpa') {
+        return (
+            <div className="bg-transparent text-slate-800 pb-20 font-sans">
+                <div className="max-w-xl mx-auto space-y-6">
+                    {/* Embedded Back Navigation to Main Calculator */}
+                    <div className="flex items-center gap-4 text-left">
+                        <button 
+                            onClick={() => setView('main')}
+                            className="w-11 h-11 bg-white border border-slate-200 text-slate-500 rounded-xl flex items-center justify-center hover:text-slate-800 hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all cursor-pointer shadow-xs"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-black text-slate-900 leading-none tracking-tight">GPA Calculator</h1>
+                            <p className="text-[0.65rem] font-extrabold text-indigo-650 uppercase tracking-widest mt-1.5">Calculate your academic semester GPA</p>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-slate-100 p-6 rounded-3xl shadow-xs">
+                        <GPACalculator />
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-6 pb-24">
-            <ToolHeader 
-                title="Aadhar Desk" 
-                subtitle="High-Precision Mathematical Tools" 
-                icon={Calculator} 
-            />
-
-            <div className="flex p-2 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-slate-200 shadow-xl max-w-sm mx-auto">
-                <button 
-                    onClick={() => setTab('gpa')}
-                    className={cn(
-                        "flex-1 py-3 md:py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
-                        tab === 'gpa' ? "bg-white text-blue shadow-lg border border-slate-100" : "text-slate-400"
-                    )}
-                >GPA CALC</button>
-                <button 
-                    onClick={() => setTab('standard')}
-                    className={cn(
-                        "flex-1 py-3 md:py-4 rounded-[2rem] font-black text-[0.7rem] uppercase tracking-widest transition-all",
-                        tab === 'standard' ? "bg-white text-blue shadow-lg border border-slate-100" : "text-slate-400"
-                    )}
-                >SCIENTIFIC</button>
+        <div className="bg-transparent flex flex-col items-center pb-20 duration-700 text-slate-800 font-sans">
+            {/* 1. Header Row */}
+            <div className="w-full px-4 py-3 md:py-6 flex items-center justify-between">
+                <div className="flex items-center gap-3 md:gap-5 leading-tight text-left">
+                    <button 
+                        onClick={() => navigate(-1)} 
+                        className="w-10 h-10 border border-slate-200 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer shadow-xs"
+                    >
+                        <ArrowLeft className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <SmartCalculatorLogo />
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                             <h1 className="text-xl md:text-3xl font-black text-slate-900 italic tracking-tight truncate animate-fade-in">Smart Calculator</h1>
+                             <span className="flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 text-indigo-650 rounded-full text-[0.5rem] md:text-[0.62rem] font-bold uppercase tracking-wider shrink-0 shadow-xs">
+                                <Sparkles className="w-2.5 md:w-3.5 h-2.5 md:h-3.5 animate-pulse" /> AI Powered
+                             </span>
+                        </div>
+                        <p className="text-[0.55rem] md:text-[0.7rem] font-black uppercase tracking-widest mt-1 text-indigo-600">Solve academic problems instantly</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 md:gap-4">
+                    <button className="w-10 h-10 border border-slate-200 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:text-indigo-655 active:scale-90 transition-all cursor-pointer shadow-xs">
+                        <Clock className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                    <button className="w-10 h-10 border border-slate-200 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:text-indigo-655 active:scale-90 transition-all cursor-pointer shadow-xs">
+                        <Bookmark className="w-4 h-4 md:w-5 md:h-5" />
+                    </button>
+                </div>
             </div>
 
-            {tab === 'gpa' ? <GPACalculator /> : <StandardCalculator />}
+            {/* 2. Headline & Overview */}
+            <div className="w-full px-4 text-left mt-6 mb-8">
+                <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 tracking-tight">Academic Solvers & Formulae</h2>
+                <p className="text-slate-500 text-sm md:text-base mt-2 max-w-2xl font-medium">Select a calculator tool to begin. Get immediate computations with step-by-step logic powered by clean, robust arithmetic algorithms.</p>
+            </div>
+
+            {/* 3. Calculators Grid */}
+            <div className="w-full px-4 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12 text-left">
+                {calculators.map((calcItems) => (
+                    <div 
+                        key={calcItems.id}
+                        onClick={() => handleCardClick(calcItems.id, calcItems.title)}
+                        className="bg-white border border-slate-100 p-4 md:p-6 rounded-2xl md:rounded-3xl flex flex-col items-start gap-4 shadow-sm hover:shadow-md hover:border-slate-200 transition-all cursor-pointer group active:scale-[0.98] duration-300"
+                    >
+                        <div className={cn("w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", calcItems.bgColor, calcItems.iconColor)}>
+                            {calcItems.id === 'equation' ? (
+                                <span className="font-extrabold italic text-sm md:text-2xl leading-none select-none">x²</span>
+                            ) : (
+                                React.createElement(calcItems.icon as any, { className: "w-4 h-4 md:w-8 md:h-8" })
+                            )}
+                        </div>
+                        <div className="flex flex-col gap-1 md:gap-2">
+                            <span className="text-slate-900 text-sm md:text-lg font-bold tracking-tight group-hover:text-indigo-655 transition-colors">
+                                {calcItems.title}
+                            </span>
+                            <span className="text-slate-400 text-[0.62rem] md:text-xs font-semibold leading-relaxed line-clamp-2">
+                                {calcItems.subtitle}
+                            </span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Subsections: Full Width Vertical Stack */}
+            <div className="w-full px-4 space-y-8 mt-4 text-left">
+                {/* AI Problem Solver Banner */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between shadow-xs relative overflow-hidden group gap-4">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+                    <div className="flex items-center gap-4 md:gap-6">
+                        <div className="w-11 h-11 md:w-14 md:h-14 bg-indigo-50 border border-indigo-100 rounded-xl md:rounded-2xl flex items-center justify-center text-indigo-600 shrink-0">
+                            <Camera className="w-5.5 h-5.5 md:w-7 md:h-7" />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-extrabold text-slate-900 text-sm md:text-lg leading-none">AI Problem Solver</h3>
+                                <span className="bg-indigo-600 text-white font-bold text-[0.45rem] md:text-[0.55rem] tracking-widest uppercase px-2 py-0.5 rounded-full select-none shadow-xs">NEW</span>
+                            </div>
+                            <p className="text-[0.62rem] md:text-xs text-slate-500 font-bold leading-relaxed mt-2 max-w-md">
+                                Take photo or type question and get instant step-by-step solver logic
+                            </p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => navigate('/ai')}
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs tracking-wider uppercase rounded-xl md:rounded-2xl flex items-center gap-1.5 shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
+                    >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>Solve Now</span>
+                    </button>
+                </div>
+
+                {/* Recent Calculations */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-[0.7rem] md:text-xs font-black text-slate-400 tracking-wider uppercase">Recent Calculations</h2>
+                        <button className="text-[0.65rem] md:text-xs font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800">View All</button>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        
+                        <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-2xl md:rounded-3xl flex flex-col justify-between hover:border-slate-200 transition-all h-28 shadow-xs relative group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600 border border-violet-100">
+                                        <Percent className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-[0.55rem] md:text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-wider">Percentage</span>
+                                </div>
+                                <button className="text-slate-400 hover:text-slate-600 text-sm">⋮</button>
+                            </div>
+                            <div className="mt-2 text-left">
+                                <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">91.2%</h3>
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-400 mt-0.5">456 / 500</p>
+                            </div>
+                            <p className="text-[0.45rem] md:text-[0.5rem] font-bold text-slate-400 uppercase mt-1">23 May, 9:20 PM</p>
+                        </div>
+
+                        <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-2xl md:rounded-3xl flex flex-col justify-between hover:border-slate-200 transition-all h-28 shadow-xs relative group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100">
+                                        <Triangle className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-[0.55rem] md:text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-wider">Circle Area</span>
+                                </div>
+                                <button className="text-slate-400 hover:text-slate-600 text-sm">⋮</button>
+                            </div>
+                            <div className="mt-2 text-left">
+                                <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">314.16 cm²</h3>
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-400 mt-0.5">r = 10 cm</p>
+                            </div>
+                            <p className="text-[0.45rem] md:text-[0.5rem] font-bold text-slate-400 uppercase mt-1">23 May, 7:15 PM</p>
+                        </div>
+
+                        <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-2xl md:rounded-3xl flex flex-col justify-between hover:border-slate-200 transition-all h-28 shadow-xs relative group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+                                        <Activity className="w-3.5 h-3.5" />
+                                    </div>
+                                    <span className="text-[0.55rem] md:text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-wider">Speed</span>
+                                </div>
+                                <button className="text-slate-400 hover:text-slate-600 text-sm">⋮</button>
+                            </div>
+                            <div className="mt-2 text-left">
+                                <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">25 m/s</h3>
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-400 mt-0.5">100 m / 4 s</p>
+                            </div>
+                            <p className="text-[0.45rem] md:text-[0.5rem] font-bold text-slate-400 uppercase mt-1">23 May, 6:45 PM</p>
+                        </div>
+
+                        <div className="bg-white border border-slate-100 p-4 md:p-5 rounded-2xl md:rounded-3xl flex flex-col justify-between hover:border-slate-200 transition-all h-28 shadow-xs relative group">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
+                                        <span className="text-[0.55rem] font-extrabold italic">x²</span>
+                                    </div>
+                                    <span className="text-[0.55rem] md:text-[0.65rem] font-extrabold text-slate-400 uppercase tracking-wider">Quad Eq.</span>
+                                </div>
+                                <button className="text-slate-400 hover:text-slate-600 text-sm">⋮</button>
+                            </div>
+                            <div className="mt-2 text-left">
+                                <h3 className="text-base md:text-lg font-black text-slate-900 tracking-tight">x = 2, 3</h3>
+                                <p className="text-[0.55rem] md:text-[0.65rem] font-bold text-slate-400 mt-0.5">x² - 5x + 6 = 0</p>
+                            </div>
+                            <p className="text-[0.45rem] md:text-[0.5rem] font-bold text-slate-400 uppercase mt-1">23 May, 6:30 PM</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Formula Solver Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-[0.7rem] md:text-xs font-black text-slate-400 tracking-wider uppercase">Formula Solver</h2>
+                        <button className="text-[0.65rem] md:text-xs font-black text-indigo-650 uppercase tracking-widest hover:text-indigo-800">View All</button>
+                    </div>
+                    <div className="bg-white border border-slate-100 p-5 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative overflow-hidden shadow-xs hover:border-slate-200 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-14 md:w-16 md:h-16 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center text-amber-600 shadow-inner shrink-0 select-none">
+                                <Zap className="w-5 h-5 text-amber-500" />
+                                <span className="text-[0.45rem] md:text-[0.5rem] font-black uppercase mt-1">Speed</span>
+                            </div>
+                            <div className="space-y-2 min-w-0 text-left">
+                                <div>
+                                    <span className="text-[0.5rem] md:text-[0.55rem] font-black text-slate-400 uppercase tracking-wider block">Formula</span>
+                                    <span className="text-sm md:text-lg font-bold text-slate-800 truncate block">
+                                        Speed = <span className="underline decoration-indigo-500 decoration-2 underline-offset-4 font-extrabold">Dist</span> / <span className="underline decoration-violet-500 decoration-2 underline-offset-4 font-extrabold">Time</span>
+                                    </span>
+                                </div>
+                                <div className="flex gap-4">
+                                    <div>
+                                        <span className="text-[0.45rem] md:text-[0.5rem] font-black text-slate-400 uppercase block leading-none">Distance</span>
+                                        <span className="text-[0.65rem] md:text-sm font-bold text-slate-600 leading-none">100 m</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[0.45rem] md:text-[0.5rem] font-black text-slate-400 uppercase block leading-none">Time</span>
+                                        <span className="text-[0.65rem] md:text-sm font-bold text-slate-600 leading-none">20 s</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col items-end sm:justify-center border-t sm:border-t-0 sm:border-l border-slate-105 pt-4 sm:pt-0 sm:pl-6 shrink-0">
+                            <span className="text-[0.45rem] md:text-[0.5rem] font-black text-slate-400 uppercase tracking-wider block">Result Speed</span>
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="text-emerald-600 font-black text-[0.6rem] md:text-xs uppercase bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-full select-none">5 m/s</span>
+                                <button className="text-[0.6rem] md:text-xs font-black text-indigo-650 hover:text-indigo-800 flex items-center gap-0.5 uppercase tracking-wider cursor-pointer">
+                                    <span>Steps</span>
+                                    <ChevronRight className="w-3 md:w-4 h-3 md:h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Coming Soon Popover Dialog */}
+            <AnimatePresence>
+                {comingSoon && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm"
+                    >
+                        <motion.div 
+                            initial={{ scale: 0.95, y: 10 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 10 }}
+                            className="bg-white border border-slate-100 rounded-[2rem] p-8 max-w-xs w-full text-center shadow-2xl relative"
+                        >
+                            <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center text-violet-600 mx-auto mb-4">
+                                <Sparkles className="w-7 h-7 animate-pulse" />
+                            </div>
+                            <h3 className="text-base font-extrabold text-slate-950 tracking-tight">
+                                {comingSoon} Solver
+                            </h3>
+                            <p className="text-xs font-semibold text-slate-500 mt-2 leading-relaxed">
+                                We are crafting an AI-integrated solver for {comingSoon.toLowerCase()} formulas. This feature is releasing shortly! For now, try our fully-interactive GPA Calculator.
+                            </p>
+                            <div className="mt-6 flex flex-col gap-2">
+                                <button 
+                                    onClick={() => {
+                                        setComingSoon(null);
+                                        setView('gpa');
+                                    }}
+                                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl shadow-md active:scale-95 transition-all cursor-pointer"
+                                >
+                                    Try GPA Calculator
+                                </button>
+                                <button 
+                                    onClick={() => setComingSoon(null)}
+                                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-xs uppercase tracking-widest rounded-xl active:scale-95 transition-all cursor-pointer"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -2328,7 +2681,7 @@ const HomePage = () => {
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
-                        { id: 'todo', label: 'Task Stream', icon: ClipboardList, path: '/tools/todo', color: 'indigo' },
+                        { id: 'timer', label: 'Focus Timer', icon: Timer, path: '/tools/timer', color: 'rose' },
                         { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'purple' },
                         { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
                         { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, path: '/tools/nepali-dictionary', color: 'amber' },
@@ -2472,20 +2825,17 @@ const AadharToolkit = () => {
 
     const tools = [
         { id: 'hub', label: 'Study Hub', icon: BookOpen, color: 'indigo', path: '/hub' },
+        { id: 'visuals', label: 'Visuals', icon: Palette, color: 'pink', path: '/tools/visuals' },
         { id: 'dictionary', label: 'Dictionary', icon: Book, color: 'rose', path: '/tools/dictionary' },
         { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, color: 'amber', path: '/tools/nepali-dictionary' },
-        { id: 'pictures', label: 'Pictures', icon: ImageIcon, color: 'pink', path: '/tools/pictures' },
         { id: 'notepad', label: 'Mind Log', icon: Edit3, color: 'orange', path: '/tools/notes' },
         { id: 'timer', label: 'Focus Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
         { id: 'formulas', label: 'Formula Bank', icon: Sigma, color: 'purple', path: '/tools/formulas' },
+        { id: 'graphs', label: 'Graphs', icon: LineChart, color: 'emerald', path: '/tools/graphs' },
         { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'blue', path: '/tools/calendar' },
         ...(isToolsPage ? [
-            { id: 'calculator', label: 'Scientific Calc', icon: Calculator, color: 'amber', path: '/tools/calculator?tab=standard' },
+            { id: 'smart-calculator', label: 'Smart Calculator', icon: Calculator, color: 'violet', path: '/tools/calculator' },
             { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
-            { id: 'translate', label: 'Translator', icon: Languages, color: 'blue', path: '/tools/translator' },
-            { id: 'gpa', label: 'GPA Estimate', icon: Activity, color: 'rose', path: '/tools/calculator?tab=gpa' },
-            { id: 'videos', label: 'Videos', icon: Video, color: 'teal', path: '/tools/videos' },
-            { id: 'todo', label: 'To-Do Pulse', icon: ListChecks, color: 'indigo', path: '/tools/todo' },
         ] : []),
     ];
 
@@ -2499,13 +2849,10 @@ const AadharToolkit = () => {
                 </div>
             )}
             {isToolsPage && (
-                <header className="mb-8 pt-4 flex items-center justify-between">
+                <header className="mb-8 pt-4">
                     <div className="space-y-1">
                         <h1 className="text-4xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Toolkit</h1>
                     </div>
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 shadow-sm border border-slate-100 active:scale-90 transition-all">
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
                 </header>
             )}
 
@@ -2520,12 +2867,14 @@ const AadharToolkit = () => {
                         >
                             <div className={cn(
                                 "w-9 h-9 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
+                                t.color === 'pink' ? "bg-pink-50 text-pink-600" :
                                 t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
                                 t.color === 'blue' ? "bg-blue-50 text-blue" :
                                 t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
                                 t.color === 'rose' ? "bg-rose-50 text-rose-500" :
                                 t.color === 'amber' ? "bg-amber-50 text-amber-600" :
                                 t.color === 'purple' ? "bg-purple-50 text-purple-600" :
+                                t.color === 'violet' ? "bg-violet-50 text-violet-600" :
                                 t.color === 'orange' ? "bg-orange-50 text-orange-600" :
                                 "bg-teal-50 text-teal-600"
                             )}>
@@ -4076,7 +4425,7 @@ const MCQTestSelection = () => {
     const [questionCount, setQuestionCount] = useState(30);
     const config = SUBJECTS_CONFIG[name as SubjectType] || SUBJECTS_CONFIG['English'];
     
-    const staticSets: any[] = [];
+    const staticSets: any[] = STATIC_MCQS[name as string] || [];
     const dynamicSets = liveMaterials
         .filter(m => m.subject === name && m.type === 'mcq')
         .map(m => {
@@ -4098,88 +4447,272 @@ const MCQTestSelection = () => {
 
     const sets = [...staticSets, ...dynamicSets, ...adminSets];
 
+    // Animation variants for staggering sets list
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.08
+            }
+        }
+    };
+
+    const cardVariants = {
+        hidden: { opacity: 0, y: 30, scale: 0.95 },
+        show: { 
+            opacity: 1, 
+            y: 0, 
+            scale: 1,
+            transition: { type: "spring", stiffness: 260, damping: 20 }
+        }
+    };
+
     return (
-        <div className="space-y-10 animate-fade-up pb-24">
-            <header className="flex items-center justify-between">
-                <button onClick={() => navigate(`/hub/${name}`)} className="w-12 h-12 bg-white rounded-2xl border border-slate-100 flex items-center justify-center text-slate-400">
+        <div className="space-y-10 pb-24 max-w-4xl mx-auto px-4 relative overflow-hidden min-h-screen">
+            {/* Ambient Background Particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-transparent">
+                <motion.div 
+                    animate={{ 
+                        y: [-20, 20, -20],
+                        x: [-10, 10, -10],
+                        scale: [1, 1.1, 1]
+                    }}
+                    transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-10 left-5 w-48 h-48 bg-pink-500/10 rounded-full blur-3xl"
+                />
+                <motion.div 
+                    animate={{ 
+                        y: [20, -20, 20],
+                        x: [10, -10, 10],
+                        scale: [1.1, 0.9, 1.1]
+                    }}
+                    transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/2 right-10 w-72 h-72 bg-indigo-500/10 rounded-full blur-3xl"
+                />
+                <motion.div 
+                    animate={{ 
+                        rotate: 360
+                    }}
+                    transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                    className="absolute bottom-20 left-12 w-64 h-64 bg-cyan-450/10 rounded-full blur-3xl opacity-60"
+                />
+            </div>
+
+            {/* Header section with back navigation and page badge */}
+            <motion.header 
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex items-center justify-between relative z-10"
+            >
+                <button 
+                    onClick={() => navigate(`/hub/${name}`)} 
+                    className="w-12 h-12 bg-white rounded-2xl border border-slate-150 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg transition-all duration-300 pointer-events-auto"
+                >
                     <ArrowLeft className="w-6 h-6" />
                 </button>
-                <div className="px-4 py-1.5 bg-slate-900 text-white rounded-full text-[0.6rem] font-black uppercase tracking-widest">
-                    Select MCQ Set
+                <div className="px-5 py-2 bg-gradient-to-r from-pink-550 via-purple-650 to-indigo-650 text-white rounded-full text-[0.65rem] font-black uppercase tracking-widest shadow-lg shadow-purple-500/30 animate-pulse">
+                    ✨ Advanced MCQ Arena
                 </div>
-            </header>
+            </motion.header>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black italic tracking-tighter uppercase text-slate-900 leading-tight">{name} Tests</h1>
-                    <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-[0.3em]">Verified Official Question Sets</p>
+            {/* Quick stats & welcome box */}
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="relative overflow-hidden bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-950 p-8 rounded-[2.5rem] text-white border-2 border-white/20 shadow-2xl shadow-indigo-950/40 relative z-10"
+            >
+                {/* Background ambient glowing spheres */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/25 rounded-full blur-3xl -mr-32 -mt-32" />
+                <div className="absolute bottom-0 left-1/4 w-48 h-48 bg-pink-500/20 rounded-full blur-3xl -ml-24 -mb-24" />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="space-y-2 text-left">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-black uppercase bg-white/20 text-indigo-200 px-3 py-1 rounded-full tracking-wider border border-white/10 animate-bounce">
+                                {name} Subject MCQ
+                            </span>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none bg-gradient-to-r from-cyan-300 via-pink-200 to-amber-300 bg-clip-text text-transparent">
+                            {name} Tests
+                        </h1>
+                        <p className="text-[0.7rem] font-bold text-slate-300 uppercase tracking-[0.25em]">
+                            Challenge yourself with official model question sets
+                        </p>
+                    </div>
+
+                    <motion.button 
+                        whileHover={{ scale: 1.05, rotate: [0, -1, 1, 0] }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setUseTimer(!useTimer)}
+                        className={cn(
+                            "flex items-center gap-3 px-6 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-lg shrink-0 border-2",
+                            useTimer 
+                                ? "bg-gradient-to-tr from-amber-500 to-orange-500 text-white border-transparent shadow-orange-500/30" 
+                                : "bg-white/10 border-white/10 text-slate-300 hover:bg-white/15"
+                        )}
+                    >
+                        <Timer className={cn("w-5 h-5", useTimer ? "animate-spin" : "")} />
+                        Timer: {useTimer ? "Enabled (1 min/q)": "Disabled"}
+                    </motion.button>
+                </div>
+            </motion.div>
+
+            {/* Questions count selector */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="bg-white/70 backdrop-blur-md p-8 rounded-[2.5rem] border border-slate-200/60 shadow-xl space-y-5 relative z-10"
+            >
+                <div className="text-center space-y-1">
+                    <label className="text-xs font-black uppercase bg-linear-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent block tracking-widest">
+                        Choose Session Length
+                    </label>
+                    <p className="text-[0.65rem] font-bold text-slate-400 uppercase tracking-wider">
+                        Tailor testing parameters to match your schedule
+                    </p>
                 </div>
                 
-                <button 
-                    onClick={() => setUseTimer(!useTimer)}
-                    className={cn(
-                        "flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-[0.65rem] uppercase tracking-widest transition-all",
-                        useTimer ? "bg-amber-50 text-amber-600 border border-amber-200" : "bg-slate-100 text-slate-400 border border-slate-200"
-                    )}
-                >
-                    <Timer className={cn("w-4 h-4", useTimer ? "animate-pulse" : "")} />
-                    Timer: {useTimer ? "Enabled" : "Disabled"}
-                </button>
-            </div>
-
-            <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
-                <label className="text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest text-center">Select Number of Questions</label>
-                <div className="flex gap-3 max-w-sm mx-auto">
+                <div className="flex gap-4 max-w-md mx-auto">
                     {[5, 10, 20, 30].map((c) => (
-                        <button
+                        <motion.button
                             key={c}
+                            whileHover={{ scale: 1.1, y: -4, rotate: [0, -1, 1, 0] }}
+                            whileTap={{ scale: 0.95 }}
                             onClick={() => setQuestionCount(c)}
                             className={cn(
-                                "flex-1 py-3 rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
+                                "flex-1 py-4 rounded-2xl border-2 font-black text-sm md:text-base transition-all shadow-md",
                                 questionCount === c 
-                                    ? cn("text-white border-transparent bg-linear-to-br shadow-lg", config.gradient, getBrandColors(config.color).shadow)
-                                    : "bg-slate-50 text-slate-400 border-slate-100 hover:border-slate-200"
+                                    ? "text-white border-transparent bg-gradient-to-br from-indigo-500 via-purple-500 via-pink-500 to-orange-500 shadow-pink-500/30 shadow-xl scale-105"
+                                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:bg-slate-50"
                             )}
                         >
-                            {c}
-                        </button>
+                            {c} <span className="text-[10px] md:text-xs font-extrabold opacity-85 block md:inline md:ml-0.5">Q</span>
+                        </motion.button>
                     ))}
                 </div>
-            </div>
+            </motion.div>
 
+            {/* Set Lists Grid */}
             {sets.length > 0 ? (
-                <div className="grid grid-cols-1 gap-4">
-                    {sets.map((set, idx) => (
-                        <button 
-                            key={idx}
-                            onClick={() => navigate(`/hub/${name}/mcq-test/${idx}?timer=${useTimer}&count=${questionCount}`)}
-                            className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-xl flex items-center justify-between group hover:border-blue transition-all"
-                        >
-                            <div className="flex items-center gap-6">
-                                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl group-hover:scale-110 transition-transform bg-linear-to-br", config.gradient, "text-white")}>
-                                    {idx + 1}
+                <motion.div 
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="show"
+                    className="grid grid-cols-1 gap-6 relative z-10"
+                >
+                    {sets.map((set, idx) => {
+                        // Cycling visually beautiful theme cards
+                        const themes = [
+                            {
+                                bg: "bg-gradient-to-tr from-cyan-500 via-sky-600 to-indigo-650",
+                                shadow: "hover:shadow-cyan-500/25",
+                                text: "text-white",
+                                badgeBg: "bg-white/15 border border-white/10 text-cyan-100",
+                                badgeSpecial: "bg-pink-500/20 border border-pink-500/30 text-pink-200",
+                                indicatorBg: "bg-white/10 text-cyan-200 border border-white/10",
+                                playBtn: "bg-white text-indigo-600 hover:bg-cyan-50"
+                            },
+                            {
+                                bg: "bg-gradient-to-tr from-rose-500 via-pink-600 to-purple-650",
+                                shadow: "hover:shadow-rose-500/25",
+                                text: "text-white",
+                                badgeBg: "bg-white/15 border border-white/10 text-rose-100",
+                                badgeSpecial: "bg-amber-500/20 border border-amber-500/30 text-amber-200",
+                                indicatorBg: "bg-white/10 text-rose-200 border border-white/10",
+                                playBtn: "bg-white text-rose-600 hover:bg-rose-50"
+                            },
+                            {
+                                bg: "bg-gradient-to-tr from-amber-500 via-orange-550 to-rose-600",
+                                shadow: "hover:shadow-orange-500/25",
+                                text: "text-white",
+                                badgeBg: "bg-white/15 border border-white/10 text-amber-100",
+                                badgeSpecial: "bg-cyan-500/20 border border-cyan-500/30 text-cyan-200",
+                                indicatorBg: "bg-white/10 text-amber-200 border border-white/10",
+                                playBtn: "bg-white text-orange-600 hover:bg-amber-50"
+                            },
+                            {
+                                bg: "bg-gradient-to-tr from-violet-600 via-fuchsia-600 to-indigo-700",
+                                shadow: "hover:shadow-fuchsia-500/25",
+                                text: "text-white",
+                                badgeBg: "bg-white/15 border border-white/10 text-fuchsia-100",
+                                badgeSpecial: "bg-emerald-500/20 border border-emerald-500/30 text-emerald-200",
+                                indicatorBg: "bg-white/10 text-fuchsia-200 border border-white/10",
+                                playBtn: "bg-white text-purple-600 hover:bg-fuchsia-10"
+                            }
+                        ];
+                        const theme = themes[idx % themes.length];
+
+                        return (
+                            <motion.button 
+                                key={idx}
+                                variants={cardVariants}
+                                whileHover={{ y: -8, scale: 1.02 }}
+                                onClick={() => navigate(`/hub/${name}/mcq-test/${idx}?timer=${useTimer}&count=${questionCount}`)}
+                                className={cn(
+                                    "p-8 rounded-[3rem] border border-transparent shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 group transition-all text-left",
+                                    theme.bg,
+                                    theme.shadow
+                                )}
+                            >
+                                <div className="flex items-center gap-6 w-full sm:w-auto">
+                                    <div className={cn(
+                                        "w-16 h-16 rounded-[1.5rem] flex items-center justify-center font-black text-2xl shadow-lg transition-transform duration-500 shrink-0 group-hover:rotate-12 group-hover:scale-110",
+                                        theme.indicatorBg
+                                    )}>
+                                        {idx + 1}
+                                    </div>
+                                    <div className="space-y-2 text-left">
+                                        <div className="flex items-center gap-2">
+                                            <span className={cn("px-2.5 py-0.5 text-[0.55rem] font-black uppercase rounded-md tracking-wider", theme.badgeBg)}>
+                                                SET {idx + 1}
+                                            </span>
+                                            {set.questions.length >= 20 ? (
+                                                <span className={cn("px-2.5 py-0.5 text-[0.55rem] font-black uppercase rounded-md tracking-wider animate-pulse", theme.badgeSpecial)}>
+                                                    🔥 Full Length
+                                                </span>
+                                            ) : (
+                                                <span className="px-2.5 py-0.5 bg-white/10 text-white border border-white/15 text-[0.55rem] font-black uppercase rounded-md tracking-wider">
+                                                    ⭐ Concept Booster
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h3 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-white drop-shadow-sm group-hover:translate-x-1 transition-transform duration-300">
+                                            {set.setName}
+                                        </h3>
+                                        <p className="text-[0.68rem] font-bold text-white/80 uppercase tracking-widest flex items-center gap-2">
+                                            <span>📋 {set.questions.length} Questions Available</span>
+                                            <span>•</span>
+                                            <span>⏱️ 1 Min / Question</span>
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="text-left">
-                                    <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tighter leading-none">{set.setName}</h3>
-                                    <p className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest mt-2">{set.questions.length} Questions • 30 Mins</p>
+                                
+                                <div className={cn(
+                                    "w-full sm:w-14 sm:h-14 py-4 sm:py-0 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 shrink-0 group-hover:scale-115 active:scale-95",
+                                    theme.playBtn
+                                )}>
+                                    <Play className="w-6 h-6 fill-current animate-bounce" />
                                 </div>
-                            </div>
-                            <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-blue group-hover:text-white transition-all">
-                                <Play className="w-5 h-5 fill-current" />
-                            </div>
-                        </button>
-                    ))}
-                </div>
+                            </motion.button>
+                        );
+                    })}
+                </motion.div>
             ) : (
-                <div className="bg-slate-50 p-12 rounded-[3.5rem] border-2 border-dashed border-slate-200 text-center space-y-4">
-                    <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-lg">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-slate-50 p-12 rounded-[3.5rem] border-2 border-dashed border-slate-200 text-center space-y-4 shadow-inner relative z-10"
+                >
+                    <div className="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-lg animate-bounce">
                         <AlertTriangle className="w-10 h-10 text-amber-500" />
                     </div>
                     <div>
-                        <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-800">Coming Soon</h3>
-                        <p className="text-[0.7rem] font-black text-slate-400 uppercase tracking-widest mt-1 max-w-xs mx-auto">Admin is preparing verified MCQ sets for {name}. Please check back later!</p>
+                        <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800">Coming Soon</h3>
+                        <p className="text-slate-400 font-bold text-[0.7rem] uppercase tracking-widest mt-1 max-w-xs mx-auto">Admin is preparing verified MCQ sets for {name}. Please check back later!</p>
                     </div>
-                </div>
+                </motion.div>
             )}
         </div>
     );
@@ -4188,12 +4721,16 @@ const MCQTestSelection = () => {
 /* ── MCQ TEST PLAYER ── */
 const MCQTestPlayer = () => {
     const { name, setIndex } = useParams();
-    const { data, liveMaterials } = useApp();
+    const { data, liveMaterials, addTestResult } = useApp();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [status, setStatus] = useState<'quiz' | 'result'>('quiz');
     const [currentIdx, setCurrentIdx] = useState(0);
     const [answers, setAnswers] = useState<Record<number, string>>({});
+    const [showExplanation, setShowExplanation] = useState(false);
+    
+    // Practice Mode switcher inside the active test! Let's allow study vs test mode
+    const [testMode, setTestMode] = useState<'exam' | 'practice'>('practice');
     
     const isTimerEnabled = searchParams.get('timer') !== 'false';
     const countParam = parseInt(searchParams.get('count') || '30');
@@ -4213,7 +4750,6 @@ const MCQTestPlayer = () => {
 
     // 1 minute per question for timer
     const [timer, setTimer] = useState(countParam * 60); 
-    const { addTestResult } = useApp();
 
     // Slice questions array up to the requested count
     const questions = (setData?.questions || []).slice(0, countParam);
@@ -4235,7 +4771,7 @@ const MCQTestPlayer = () => {
 
     if (!setData) return (
         <div className="flex flex-col items-center justify-center p-20 text-center space-y-6">
-            <Bot className="w-16 h-16 text-blue pb-4 animate-bounce" />
+            <Loader2 className="w-16 h-16 text-indigo-600 animate-spin pb-4" />
             <h1 className="text-2xl font-black uppercase text-slate-800">Initializing Intelligence Test</h1>
             <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Constructing Query Node...</p>
             <button onClick={() => navigate(-1)} className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest">Go Back</button>
@@ -4248,161 +4784,542 @@ const MCQTestPlayer = () => {
 
     const timeTaken = (countParam * 60) - timer;
 
+    // Trigger saving of results exactly once
+    const hasSaved = useRef(false);
     useEffect(() => {
-        if (status === 'result') {
+        if (status === 'result' && !hasSaved.current) {
             addTestResult(score, questions.length, timeTaken);
+            hasSaved.current = true;
         }
-    }, [status]);
+    }, [status, score, questions.length, timeTaken, addTestResult]);
+
+    // Track state of current question feedback for practice mode
+    const selectedOption = answers[currentIdx];
+    const currentQuestion = questions[currentIdx];
+    const isCorrectInPractice = selectedOption === currentQuestion?.correct;
+
+    // Performance criteria for results screen
+    const accuracy = Math.round((score / questions.length) * 100);
+    
+    let rankTitle = "📖 Smart Learner";
+    let rankColor = "text-blue-500 bg-blue-50 border-blue-150";
+    let scoreColor = "from-blue-500 via-indigo-550 to-indigo-600";
+    if (accuracy === 100) {
+        rankTitle = "👑 Ultimate Grandmaster";
+        rankColor = "text-amber-650 bg-amber-50 border-amber-200";
+        scoreColor = "from-amber-400 via-orange-500 to-yellow-500";
+    } else if (accuracy >= 85) {
+        rankTitle = "🔥 Elite High-Flyer";
+        rankColor = "text-rose-600 bg-rose-50 border-rose-200";
+        scoreColor = "from-rose-500 via-pink-600 to-violet-600";
+    } else if (accuracy >= 65) {
+        rankTitle = "⚡ Specialized Solver";
+        rankColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+        scoreColor = "from-emerald-500 via-teal-600 to-cyan-600";
+    }
+
+    const progressPercent = ((currentIdx + 1) / questions.length) * 100;
 
     return (
-        <div className="animate-fade-up pb-24">
+        <div className="max-w-4xl mx-auto px-4 pb-24 relative overflow-hidden min-h-screen">
+            {/* Ambient Background Particles */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-transparent">
+                <motion.div 
+                    animate={{ 
+                        y: [20, -20, 20],
+                        scale: [1, 1.15, 1],
+                        rotate: [0, 90, 0]
+                    }}
+                    transition={{ duration: 16, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -top-12 -left-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"
+                />
+                <motion.div 
+                    animate={{ 
+                        x: [10, -15, 10],
+                        scale: [1.1, 0.9, 1.1],
+                        rotate: [0, -90, 0]
+                    }}
+                    transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute top-1/3 -right-20 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-3xl"
+                />
+                <motion.div 
+                    animate={{ 
+                        y: [-30, 30, -30],
+                        scale: [0.95, 1.1, 0.95]
+                    }}
+                    transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute -bottom-20 left-1/3 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl"
+                />
+            </div>
+
             {status === 'quiz' ? (
-                <div className="space-y-6 md:space-y-8">
-                    <header className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white bg-linear-to-br", config.gradient)}>
-                                {isTimerEnabled ? <Timer className="w-5 h-5 animate-pulse" /> : <ClipboardCheck className="w-5 h-5" />}
+                <div className="space-y-6 md:space-y-10 relative z-10">
+                    {/* Header bar controls */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/80 backdrop-blur-md p-5 rounded-[2.5rem] border border-slate-200/60 shadow-xl">
+                        <div className="flex items-center justify-between md:justify-start gap-4 w-full md:w-auto">
+                            {/* Mode controls */}
+                            <div className="flex gap-1.5 p-1 bg-slate-100 rounded-2xl border border-slate-200/40">
+                                <button 
+                                    onClick={() => setTestMode('practice')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-[0.62rem] font-black uppercase tracking-wider transition-all",
+                                        testMode === 'practice' 
+                                            ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-indigo-500/20" 
+                                            : "text-slate-400 hover:text-slate-705"
+                                    )}
+                                >
+                                    🎓 Study Mode
+                                </button>
+                                <button 
+                                    onClick={() => setTestMode('exam')}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-[0.62rem] font-black uppercase tracking-wider transition-all",
+                                        testMode === 'exam' 
+                                            ? "bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-md shadow-rose-500/20" 
+                                            : "text-slate-400 hover:text-slate-705"
+                                    )}
+                                >
+                                    🔥 Exam Mode
+                                </button>
                             </div>
-                            <div className="text-2xl md:text-3xl font-black italic tracking-tighter text-slate-900 tabular-nums">
-                                {isTimerEnabled ? formatTime(timer) : "Practice Mode"}
+
+                            {/* Timer badge */}
+                            <div className="flex items-center gap-2">
+                                <motion.div 
+                                    animate={isTimerEnabled && timer <= 20 ? { scale: [1, 1.05, 1], rotate: [-1, 1, -1] } : {}}
+                                    transition={{ repeat: Infinity, duration: 0.5 }}
+                                    className={cn(
+                                        "px-4 py-2 rounded-2xl flex items-center gap-2 font-black tracking-widest text-[#020617] text-sm tabular-nums shadow-md border",
+                                        !isTimerEnabled ? "bg-slate-50 text-slate-400 border-slate-100" :
+                                        timer > 60 ? "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/30" :
+                                        timer > 20 ? "bg-amber-50 text-amber-605 border-amber-200 animate-pulse shadow-amber-100/30" :
+                                        "bg-rose-50 text-rose-600 border-rose-205 shadow-rose-100/30 text-rose-700 font-extrabold"
+                                    )}
+                                >
+                                    <Timer className={cn("w-4 h-4", isTimerEnabled ? "animate-spin" : "")} />
+                                    {isTimerEnabled ? formatTime(timer) : "No Limit"}
+                                </motion.div>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => { if(confirm("End test?")) setStatus('result'); }}
-                            className="px-5 py-2 bg-rose-500 text-white rounded-xl font-black text-[0.6rem] uppercase tracking-widest shadow-lg active:scale-95 transition-all"
-                        >
-                            End Test
-                        </button>
-                    </header>
 
-                    <div className="grid grid-cols-10 gap-1 overflow-x-auto pb-4 scrollbar-hide">
+                        {/* End Test Button */}
+                        <motion.button 
+                            whileHover={{ scale: 1.05, rotate: [0, -1, 1, 0] }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => { if(confirm("Are you sure you want to grade and submit this test?")) setStatus('result'); }}
+                            className="w-full md:w-auto px-6 py-3.5 bg-gradient-to-r from-rose-500 via-pink-650 to-red-650 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-500/30 border border-white/15"
+                        >
+                            End Session
+                        </motion.button>
+                    </div>
+
+                    {/* Progress strip */}
+                    <div className="space-y-3 bg-white/60 p-4 rounded-3xl border border-slate-200/40">
+                        <div className="flex items-center justify-between text-[0.65rem] font-black text-slate-500 uppercase tracking-widest px-2">
+                            <span className="flex items-center gap-1.5"><GraduationCap className="w-3.5 h-3.5 text-indigo-500 inline" /> {name} Progress Tracker</span>
+                            <span className="bg-slate-200/80 px-2 py-0.5 rounded-md text-[10px] text-slate-700 font-extrabold">Q {currentIdx + 1} of {questions.length} ({Math.round(progressPercent)}%)</span>
+                        </div>
+                        {/* Dynamic Neon Progress bar */}
+                        <div className="h-5 bg-slate-100/90 rounded-full border border-slate-200/50 overflow-hidden p-[3px] shadow-inner relative">
+                            <motion.div 
+                                className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-violet-500 via-pink-500 to-orange-500 shadow-[0_0_12px_rgba(139,92,246,0.6)]"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progressPercent}%` }}
+                                transition={{ type: "spring", stiffness: 90, damping: 14 }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Quick navigation slide */}
+                    <div className="flex items-center gap-2 overflow-x-auto pb-3.5 scrollbar-hide py-1.5 px-1 bg-white/40 rounded-3xl border border-slate-105">
                         {questions.map((_: any, idx: number) => (
-                            <button 
+                            <motion.button 
                                 key={idx}
-                                onClick={() => setCurrentIdx(idx)}
+                                whileHover={{ scale: 1.15, y: -2 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                    setCurrentIdx(idx);
+                                    setShowExplanation(false);
+                                }}
                                 className={cn(
-                                    "w-9 h-9 rounded-lg font-black text-[0.6rem] transition-all border shrink-0",
-                                    currentIdx === idx ? "bg-slate-900 text-white border-slate-900 scale-105" : 
-                                    answers[idx] ? "bg-blue/10 text-blue border-blue/20" : "bg-white text-slate-400 border-slate-100"
+                                    "w-11 h-11 rounded-xl font-black text-xs transition-all border shrink-0 flex items-center justify-center shadow-md active:scale-95",
+                                    currentIdx === idx ? "bg-gradient-to-br from-indigo-900 to-slate-950 text-white border-indigo-900 scale-110 shadow-indigo-950/20" : 
+                                    answers[idx] ? "bg-gradient-to-tr from-cyan-50 to-indigo-50 text-indigo-605 border-indigo-200/50" : "bg-white text-slate-400 border-slate-150 hover:bg-slate-50"
                                 )}
                             >
                                 {idx + 1}
-                            </button>
+                            </motion.button>
                         ))}
                     </div>
 
-                    <div className="bg-white p-5 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border-2 md:border-4 border-slate-50 shadow-2xl space-y-6 md:space-y-10 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-8 opacity-5">
-                            <GraduationCap className="w-32 h-32" />
-                        </div>
-                        
-                        <div className="space-y-3 relative z-10">
-                            <span className="px-3 py-1 bg-slate-900 text-white rounded-full text-[0.55rem] font-black uppercase tracking-widest">
-                                Q {currentIdx + 1} / {questions.length}
-                            </span>
-                            <h2 className="text-xl md:text-3xl font-black text-slate-800 leading-tight italic tracking-tighter uppercase whitespace-pre-wrap">
-                                {questions[currentIdx].q}
-                            </h2>
-                        </div>
+                    {/* Main Question Card with sliding deck */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={currentIdx}
+                            initial={{ opacity: 0, x: 50, scale: 0.97, y: 15 }}
+                            animate={{ opacity: 1, x: 0, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -50, scale: 0.97, y: -15 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                            className="bg-white/90 backdrop-blur-sm p-6 md:p-12 rounded-[3.5rem] border-3 border-transparent shadow-2xl space-y-8 relative overflow-hidden"
+                            style={{
+                                borderImage: 'linear-gradient(to bottom right, rgba(239, 68, 68, 0.2), rgba(124, 58, 237, 0.2), rgba(6, 182, 212, 0.2)) 1'
+                            }}
+                        >
+                            {/* Decorative background details */}
+                            <div className="absolute top-0 right-0 p-8 opacity-[0.05] pointer-events-none">
+                                <GraduationCap className="w-48 h-48 text-indigo-900" />
+                            </div>
 
-                        <div className="grid grid-cols-1 gap-3 md:gap-4 relative z-10">
-                            {['a', 'b', 'c', 'd'].map(opt => (
-                                <button
-                                    key={opt}
-                                    onClick={() => setAnswers(prev => ({ ...prev, [currentIdx]: opt }))}
-                                    className={cn(
-                                        "p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border-2 text-left transition-all flex items-center gap-4 md:gap-5 group active:scale-95",
-                                        answers[currentIdx] === opt ? 
-                                        "bg-blue border-blue shadow-lg translate-x-1 md:translate-x-2" : 
-                                        "bg-slate-50 border-transparent hover:border-slate-200"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center font-black uppercase transition-all shadow-sm",
-                                        answers[currentIdx] === opt ? "bg-white text-blue" : "bg-white text-slate-400 group-hover:scale-110"
-                                    )}>
-                                        {opt}
-                                    </div>
-                                    <span className={cn(
-                                        "font-bold text-base md:text-lg",
-                                        answers[currentIdx] === opt ? "text-white" : "text-slate-600"
-                                    )}>
-                                        {questions[currentIdx][opt as 'a'|'b'|'c'|'d']}
+                            <div className="space-y-4 text-left">
+                                <div className="flex items-center gap-2">
+                                    <span className="px-4 py-1.5 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-650 text-white rounded-full text-[0.62rem] font-black uppercase tracking-widest shadow-md">
+                                        Question {currentIdx + 1}
                                     </span>
-                                </button>
-                            ))}
-                        </div>
+                                    {testMode === 'practice' && answers[currentIdx] && (
+                                        <span className={cn(
+                                            "px-4 py-1.5 text-[0.62rem] font-black uppercase tracking-widest rounded-full shadow-md",
+                                            isCorrectInPractice ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+                                        )}>
+                                            {isCorrectInPractice ? "🎯 Correct Answer!" : "❌ Incorrect"}
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="text-xl md:text-3xl font-black text-slate-900 leading-tight italic tracking-tight uppercase whitespace-pre-wrap">
+                                    {currentQuestion.q}
+                                </h2>
+                            </div>
 
-                        <div className="flex gap-3 md:gap-4 pt-6 md:pt-10">
-                            <button 
-                                disabled={currentIdx === 0}
-                                onClick={() => setCurrentIdx(prev => prev - 1)}
-                                className="flex-1 py-4 md:py-5 bg-slate-100 text-slate-400 rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] disabled:opacity-50"
-                            >
-                                Back
-                            </button>
-                            {currentIdx === questions.length - 1 ? (
-                                <button 
-                                    onClick={() => setStatus('result')}
-                                    className="flex-3 py-4 md:py-5 bg-emerald-500 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-emerald-500/20"
+                            {/* Option buttons with vibrant neon specific colors */}
+                            <div className="grid grid-cols-1 gap-4 text-left">
+                                {['a', 'b', 'c', 'd'].map((opt, optIdx) => {
+                                    const optionValue = currentQuestion[opt as 'a'|'b'|'c'|'d'];
+                                    const isSelected = selectedOption === opt;
+                                    const isThisCorrect = currentQuestion.correct === opt;
+
+                                    // Custom color profiles for active selections
+                                    const selectThemes = [
+                                        { bg: "from-purple-500 to-indigo-600", border: "border-purple-300", shadow: "shadow-purple-500/20", bubble: "bg-purple-100 text-purple-600" },
+                                        { bg: "from-cyan-500 to-sky-600", border: "border-cyan-300", shadow: "shadow-cyan-500/20", bubble: "bg-cyan-100 text-cyan-600" },
+                                        { bg: "from-pink-500 to-rose-600", border: "border-pink-300", shadow: "shadow-pink-500/20", bubble: "bg-pink-100 text-pink-600" },
+                                        { bg: "from-amber-500 to-orange-600", border: "border-amber-300", shadow: "shadow-orange-500/20", bubble: "bg-amber-100 text-amber-600" }
+                                    ];
+                                    const selectTheme = selectThemes[optIdx % selectThemes.length];
+
+                                    // Idle outline styling: vibrant gradients on hover
+                                    const idleThemes = [
+                                        "bg-white hover:bg-purple-50/40 border-slate-100 hover:border-purple-200 text-slate-700",
+                                        "bg-white hover:bg-cyan-50/40 border-slate-100 hover:border-cyan-200 text-slate-700",
+                                        "bg-white hover:bg-pink-50/40 border-slate-100 hover:border-pink-200 text-slate-700",
+                                        "bg-white hover:bg-amber-50/40 border-slate-100 hover:border-amber-200 text-slate-700"
+                                    ];
+                                    const idleTheme = idleThemes[optIdx % idleThemes.length];
+
+                                    let optionClass = idleTheme;
+                                    let numberClass = "bg-slate-100 text-slate-400 group-hover:scale-110";
+                                    let textClass = "text-slate-700";
+
+                                    if (isSelected) {
+                                        if (testMode === 'practice') {
+                                            if (isCorrectInPractice) {
+                                                optionClass = "bg-gradient-to-r from-emerald-500 to-teal-600 border-transparent text-white shadow-xl shadow-emerald-500/30 scale-[1.015]";
+                                                numberClass = "bg-white text-emerald-600";
+                                                textClass = "text-white";
+                                            } else {
+                                                optionClass = "bg-gradient-to-r from-rose-500 to-pink-600 border-transparent text-white shadow-xl shadow-rose-500/30 scale-[1.015]";
+                                                numberClass = "bg-white text-rose-600";
+                                                textClass = "text-white";
+                                            }
+                                        } else {
+                                            // Exam Mode active selection (no immediate checking)
+                                            optionClass = `bg-gradient-to-r ${selectTheme.bg} border-transparent text-white shadow-xl ${selectTheme.shadow} scale-[1.015]`;
+                                            numberClass = "bg-white text-indigo-705";
+                                            textClass = "text-white";
+                                        }
+                                    } else {
+                                        // Show correct target option in Practice mode if user made an incorrect selection
+                                        if (testMode === 'practice' && selectedOption && isThisCorrect) {
+                                            optionClass = "bg-emerald-50/90 border-2 border-emerald-400 text-emerald-900 shadow-md";
+                                            numberClass = "bg-emerald-500 text-white";
+                                            textClass = "text-emerald-950 font-black";
+                                        }
+                                    }
+
+                                    return (
+                                        <motion.button
+                                            key={opt}
+                                            whileHover={{ scale: selectedOption && testMode === 'practice' ? 1 : 1.03, y: -2 }}
+                                            whileTap={{ scale: selectedOption && testMode === 'practice' ? 1 : 0.98 }}
+                                            disabled={testMode === 'practice' && !!selectedOption}
+                                            onClick={() => setAnswers(prev => ({ ...prev, [currentIdx]: opt }))}
+                                            className={cn(
+                                                "p-5 md:p-6 rounded-[2.25rem] border-2 text-left transition-all flex items-center gap-4 md:gap-6 group relative overflow-hidden active:scale-95",
+                                                optionClass
+                                            )}
+                                        >
+                                            {/* Beautiful circle design */}
+                                            <div className={cn(
+                                                "w-11 h-11 rounded-2xl flex items-center justify-center font-black uppercase transition-transform duration-300 shadow-inner shrink-0 text-base md:text-lg",
+                                                numberClass
+                                            )}>
+                                                {opt}
+                                            </div>
+                                            <span className={cn(
+                                                "font-black text-sm md:text-lg leading-snug w-full tracking-tight text-left select-none uppercase italic",
+                                                textClass
+                                            )}>
+                                                {optionValue}
+                                            </span>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Accordion explanation for Practice Mode */}
+                            {testMode === 'practice' && selectedOption && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="pt-6 border-t border-slate-100 text-left"
                                 >
-                                    Finish
-                                </button>
-                            ) : (
-                                <button 
-                                    onClick={() => setCurrentIdx(prev => prev + 1)}
-                                    className="flex-3 py-4 md:py-5 bg-slate-900 text-white rounded-xl md:rounded-2xl font-black uppercase tracking-widest text-[0.6rem] shadow-lg shadow-slate-900/20"
-                                >
-                                    Continue
-                                </button>
+                                    <button 
+                                        onClick={() => setShowExplanation(!showExplanation)}
+                                        className="flex items-center justify-between w-full py-2 text-slate-500 hover:text-slate-850 transition-colors"
+                                    >
+                                        <span className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                                            <Sparkles className="w-4.5 h-4.5 text-amber-500 inline animate-bounce" /> Learn Core Conception
+                                        </span>
+                                        {showExplanation ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                    </button>
+
+                                    {showExplanation && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="mt-4 p-6 bg-amber-50/60 border border-amber-200/50 rounded-3xl space-y-2 shadow-inner"
+                                        >
+                                            <p className="text-xs font-black text-amber-600 uppercase tracking-widest">Aadhar Explanation Protocol</p>
+                                            <p className="text-sm md:text-base text-slate-700 leading-relaxed font-bold">
+                                                {currentQuestion.explanation || "No explanation provided for this question."}
+                                            </p>
+                                        </motion.div>
+                                    )}
+                                </motion.div>
                             )}
-                        </div>
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* Continue / Back deck navigation controls */}
+                    <div className="flex gap-4 pt-4">
+                        <button 
+                            disabled={currentIdx === 0}
+                            onClick={() => {
+                                    setCurrentIdx(prev => prev - 1);
+                                    setShowExplanation(false);
+                            }}
+                            className="flex-1 py-4 bg-slate-100/90 hover:bg-slate-200 border border-slate-200/50 text-slate-500 rounded-2xl font-black uppercase tracking-widest text-xs disabled:opacity-40 transition-all active:scale-95 shadow-sm"
+                        >
+                            Previous
+                        </button>
+                        {currentIdx === questions.length - 1 ? (
+                            <motion.button 
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setStatus('result')}
+                                className="flex-[2.5] py-4 bg-gradient-to-r from-emerald-500 via-teal-650 to-indigo-650 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-emerald-500/25 border border-white/15 active:scale-95 transition-all text-center"
+                            >
+                                Finish & Grade Exam
+                            </motion.button>
+                        ) : (
+                            <motion.button 
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                    setCurrentIdx(prev => prev + 1);
+                                    setShowExplanation(false);
+                                }}
+                                className="flex-[2.5] py-4 bg-slate-900 border border-slate-950 text-white hover:bg-indigo-950 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-slate-900/20 active:scale-95 transition-all text-center"
+                            >
+                                Next Question
+                            </motion.button>
+                        )}
                     </div>
                 </div>
             ) : (
-                <div className="max-w-md mx-auto space-y-8 text-center pt-10">
-                    <div className="relative inline-block">
-                        <div className={cn("w-32 h-32 rounded-[3rem] p-1 animate-pulse bg-linear-to-br", config.gradient)}>
-                            <div className="w-full h-full bg-white rounded-[2.8rem] flex items-center justify-center">
-                                <Trophy className="w-16 h-16 text-amber-500" />
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <h1 className="text-5xl font-black italic tracking-tighter text-slate-900 uppercase leading-none">Evaluation</h1>
-                        <p className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest">Score Data Synced to Profile</p>
-                    </div>
-
-                    <div className="bg-white p-10 rounded-[3.5rem] border border-slate-100 shadow-2xl space-y-6">
-                        <div className="flex justify-center items-baseline gap-2">
-                            <span className="text-7xl font-black text-slate-900 tracking-tighter italic">{score}</span>
-                            <span className="text-2xl font-black text-slate-300">/ {questions.length}</span>
-                        </div>
-                        <div className="h-4 bg-slate-100 rounded-full overflow-hidden">
-                            <div 
-                                className={cn("h-full transition-all duration-1000 bg-linear-to-br", config.gradient)} 
-                                style={{ width: `${(score / questions.length) * 100}%` }} 
-                            />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-slate-50 p-4 rounded-2xl">
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Accuracy</p>
-                                <p className="text-xl font-black text-slate-800 italic tracking-tighter leading-none">{Math.round((score / questions.length) * 100)}%</p>
-                            </div>
-                            <div className="bg-slate-50 p-4 rounded-2xl">
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Time Remaining</p>
-                                <p className="text-xl font-black text-slate-800 italic tracking-tighter leading-none">{formatTime(timer)}</p>
-                            </div>
-                        </div>
+                <div className="max-w-2xl mx-auto space-y-10 text-center pt-8 relative z-10">
+                    {/* CONFETTI FLUTTER (various floating star particles) */}
+                    <div className="absolute inset-x-0 top-0 bottom-24 overflow-hidden pointer-events-none z-10">
+                        {Array.from({ length: 25 }).map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ 
+                                    opacity: 1, 
+                                    y: "110%", 
+                                    x: `${Math.random() * 100}%`,
+                                    scale: Math.random() * 0.5 + 0.5,
+                                    rotate: 0 
+                                }}
+                                animate={{ 
+                                    opacity: 0, 
+                                    y: "-10%", 
+                                    rotate: 360,
+                                    x: `${Math.random() * 100}%`
+                                }}
+                                transition={{ 
+                                    duration: Math.random() * 4 + i * 0.15, 
+                                    repeat: Infinity, 
+                                    ease: "linear",
+                                    delay: Math.random() * 2.5 
+                                }}
+                                className="absolute text-2xl"
+                            >
+                                {['✨', '⭐', '🎈', '🎉', '🌟', '🧁', '🌸', '🦖'][i % 8]}
+                            </motion.div>
+                        ))}
                     </div>
 
                     <div className="space-y-4">
-                        <button onClick={() => setStatus('quiz')} className={cn("w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl bg-linear-to-br", config.gradient)}>Retake Intelligence Test</button>
-                        <button onClick={() => navigate(`/hub/${name}`)} className="w-full py-6 bg-linear-to-r from-rose-500 to-pink-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-rose-500/20 group flex items-center justify-center gap-3">
+                        <div className="relative inline-block">
+                            {/* Colorful glow wrapper */}
+                            <motion.div 
+                                animate={{ rotate: [0, 5, -5, 0] }}
+                                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+                                className={cn("w-36 h-36 rounded-[3.5rem] p-1.5 bg-gradient-to-tr shadow-2xl relative z-10 flex items-center justify-center", scoreColor)}
+                            >
+                                <div className="w-full h-full bg-white rounded-[3.15rem] flex items-center justify-center">
+                                    <Trophy className="w-16 h-16 text-amber-500 animate-bounce" />
+                                </div>
+                            </motion.div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <h1 className="text-5xl font-black italic tracking-tighter text-slate-900 uppercase leading-none bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
+                                Evaluation Finished
+                            </h1>
+                            <div className="flex justify-center">
+                                <span className={cn("px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border-2 shadow-md animate-pulse", rankColor)}>
+                                    {rankTitle}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Analytical Scoreboard */}
+                    <div className="bg-white p-8 md:p-12 rounded-[3.5rem] border border-slate-205/60 shadow-2xl space-y-8 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-cyan-400 via-purple-650 via-pink-500 to-orange-400 animate-pulse" />
+                        
+                        <div className="flex flex-col items-center gap-2">
+                            <span className="text-[0.62rem] font-black text-slate-400 uppercase tracking-[0.25em]">Accuracy Register</span>
+                            <div className="flex justify-center items-baseline gap-2">
+                                <span className="text-8xl font-black text-slate-950 tracking-tighter italic tabular-nums leading-none">{score}</span>
+                                <span className="text-3xl font-black text-slate-300">/ {questions.length}</span>
+                            </div>
+                        </div>
+
+                        {/* Ring Progress Indicator */}
+                        <div className="h-6 bg-slate-100 p-1 rounded-full overflow-hidden shadow-inner relative">
+                            <motion.div 
+                                className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 via-pink-500 to-orange-400" 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${accuracy}%` }}
+                                transition={{ duration: 1.5, ease: "easeOut" }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-gradient-to-tr from-purple-50 to-indigo-50/50 p-5 rounded-2xl border-2 border-purple-100/50 flex flex-col justify-center text-center shadow-sm">
+                                <p className="text-[0.6rem] font-black text-purple-400 uppercase tracking-widest mb-1.5">Statistical Accuracy</p>
+                                <p className="text-2xl font-black text-purple-900 italic tracking-tighter leading-none">{accuracy}%</p>
+                            </div>
+                            <div className="bg-gradient-to-tr from-rose-50 to-pink-50/50 p-5 rounded-2xl border-2 border-rose-100/50 flex flex-col justify-center text-center shadow-sm">
+                                <p className="text-[0.6rem] font-black text-rose-450 uppercase tracking-widest mb-1.5">Elapsed Duration</p>
+                                <p className="text-2xl font-black text-rose-905 italic tracking-tighter leading-none">{formatTime(timeTaken)}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* QUESTIONS REVIEW SECTION */}
+                    <div className="bg-white p-6 md:p-8 rounded-[3rem] border border-slate-200/60 shadow-xl text-left space-y-6">
+                        <div className="border-b border-slate-100 pb-4">
+                            <h3 className="text-xl font-black uppercase text-slate-950 italic tracking-tight flex items-center gap-2">
+                                📑 Comprehensive Exam Review
+                            </h3>
+                            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                Double check your detailed selected options and explanations
+                            </p>
+                        </div>
+
+                        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {questions.map((q: any, qIdx: number) => {
+                                const selected = answers[qIdx];
+                                const isCorrect = selected === q.correct;
+
+                                return (
+                                    <div key={qIdx} className="p-5 bg-slate-50 border border-slate-200/50 rounded-2xl space-y-3">
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="space-y-1 text-left">
+                                                <span className="px-2 py-0.5 rounded-md text-[9px] font-black bg-slate-900 text-white uppercase tracking-wider">
+                                                    Q {qIdx + 1}
+                                                </span>
+                                                <h4 className="text-sm font-black text-slate-800 leading-snug whitespace-pre-wrap">
+                                                    {q.q}
+                                                </h4>
+                                            </div>
+                                            <span className={cn(
+                                                "w-7 h-7 rounded-full flex items-center justify-center shrink-0 shadow-sm text-white",
+                                                isCorrect ? "bg-emerald-500" : "bg-rose-500"
+                                            )}>
+                                                {isCorrect ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                                            </span>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold">
+                                            <div className={cn("p-2.5 rounded-lg border", isCorrect ? "bg-emerald-50/80 border-emerald-100 text-emerald-850" : "bg-rose-50/80 border-rose-100 text-rose-850")}>
+                                                <p className="text-[8px] uppercase tracking-widest font-black text-slate-400">Your Choice</p>
+                                                <p className="font-bold">{selected ? `${selected.toUpperCase()}: ${q[selected as 'a'|'b'|'c'|'d']}` : "Skipped"}</p>
+                                            </div>
+                                            <div className="p-2.5 rounded-lg border bg-emerald-50/80 border-emerald-100 text-emerald-800">
+                                                <p className="text-[8px] uppercase tracking-widest font-black text-emerald-600">Correct Target</p>
+                                                <p className="font-bold">{q.correct.toUpperCase()}: {q[q.correct as 'a'|'b'|'c'|'d']}</p>
+                                            </div>
+                                        </div>
+
+                                        {q.explanation && (
+                                            <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-lg text-xs leading-relaxed text-slate-705 font-medium italic">
+                                                <strong>Focus Concept:</strong> {q.explanation}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Navigation buttons */}
+                    <div className="space-y-4">
+                        <motion.button 
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                                hasSaved.current = false;
+                                setAnswers({});
+                                setCurrentIdx(0);
+                                setTimer(countParam * 60);
+                                setStatus('quiz');
+                            }} 
+                            className="w-full py-6 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-xl bg-gradient-to-r from-violet-600 via-indigo-650 to-indigo-755 hover:shadow-indigo-500/20 active:scale-95"
+                        >
+                            Retake Intelligence Test
+                        </motion.button>
+                        
+                        <motion.button 
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => navigate(`/hub/${name}`)} 
+                            className="w-full py-6 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-sm shadow-lg shadow-rose-500/20 group flex items-center justify-center gap-3 active:scale-95"
+                        >
                             <Home className="w-5 h-5 group-hover:-translate-y-1 transition-transform" />
                             Return to Hub
-                        </button>
+                        </motion.button>
                     </div>
                 </div>
             )}
@@ -6259,8 +7176,9 @@ const DigitalTextbookList = () => {
 
 
 
-/* ── TRANSLATOR TOOL ── */
-const TranslatorPage = () => {
+
+
+const TranslatorPage_old = () => {
     const navigate = useNavigate();
     const [text, setText] = useState('');
     const [translated, setTranslated] = useState('');
@@ -6561,19 +7479,19 @@ const DictionaryPage = () => {
                         <motion.div 
                             animate={{ x: [0, -10, 0] }}
                             transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                            className="bg-indigo-600 p-6 md:p-10 rounded-[2.5rem] shadow-xl text-white flex flex-col gap-4 relative overflow-hidden"
+                            className="bg-gradient-to-tr from-purple-600 to-indigo-700 p-6 md:p-10 rounded-[2.5rem] shadow-xl text-white flex flex-col gap-4 relative overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 opacity-10 rotate-12">
-                                <Zap className="w-full h-full" />
+                            <div className="absolute top-0 right-0 w-32 h-32 opacity-15 rotate-12">
+                                <Trophy className="w-full h-full" />
                             </div>
                             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-white shadow-inner">
-                                <Languages className="w-6 h-6" />
+                                <Sparkles className="w-6 h-6" />
                             </div>
                             <h3 className="text-lg md:text-2xl font-black italic leading-tight">
-                                Transform your Nepali notes into English perfectly with our AI Translator tool.
+                                Challenge yourself with our brand new vibrant MCQ Tests! Overhaul your test prep now.
                             </h3>
                             <div className="flex items-center gap-2 mt-auto">
-                                <span className="px-3 py-1 bg-white/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">Translation Pro</span>
+                                <span className="px-3 py-1 bg-white/20 rounded-full text-[0.6rem] font-black uppercase tracking-widest">Aadhar MCQs</span>
                             </div>
                         </motion.div>
                     </div>
@@ -6750,211 +7668,7 @@ const DictionaryPage = () => {
 
 
 
-const StudyTimer = () => {
-    const navigate = useNavigate();
-    const [time, setTime] = useState(25 * 60);
-    const [isActive, setIsActive] = useState(false);
-    const [mode, setMode] = useState<'focus' | 'break' | 'long_break'>('focus');
-    const [totalSeconds, setTotalSeconds] = useState(25 * 60);
 
-    const MODES = {
-        focus: { 
-            name: 'DEEP FOCUS', 
-            time: 25 * 60, 
-            color: 'rose', 
-            icon: Target, 
-            gradient: 'from-rose-500 to-pink-600',
-            bg: 'bg-rose-500'
-        },
-        break: { 
-            name: 'BRAIN REST', 
-            time: 5 * 60, 
-            color: 'emerald', 
-            icon: Coffee, 
-            gradient: 'from-emerald-500 to-teal-600',
-            bg: 'bg-emerald-500'
-        },
-        long_break: { 
-            name: 'EXTENDED RECHARGE', 
-            time: 15 * 60, 
-            color: 'blue', 
-            icon: Wind, 
-            gradient: 'from-blue-500 to-indigo-600',
-            bg: 'bg-blue-500'
-        }
-    };
-
-    useEffect(() => {
-        let interval: any;
-        if (isActive && time > 0) {
-            interval = setInterval(() => setTime(t => t - 1), 1000);
-        } else if (isActive && time === 0) {
-            setIsActive(false);
-            const nextMode = mode === 'focus' ? 'break' : 'focus';
-            handleModeChange(nextMode);
-            alert(mode === 'focus' ? "Focus session complete! Take a break." : "Break over! Ready for another session?");
-        }
-        return () => clearInterval(interval);
-    }, [isActive, time, mode]);
-
-    const handleModeChange = (newMode: 'focus' | 'break' | 'long_break') => {
-        setIsActive(false);
-        setMode(newMode);
-        const newTime = MODES[newMode].time;
-        setTime(newTime);
-        setTotalSeconds(newTime);
-    };
-
-    const progress = totalSeconds > 0 ? (time / totalSeconds) * 100 : 0;
-    const currentMode = MODES[mode];
-
-    return (
-        <div className="space-y-6 animate-fade-up pb-32">
-            <ToolHeader title="Focus Mind" subtitle="Science-Based Productivity" icon={Target} />
-
-            <div className="relative flex flex-col items-center justify-center pt-8 pb-12">
-                {/* Mode Selector Capsules */}
-                <div className="flex gap-2 p-1.5 bg-slate-100 rounded-[2.5rem] mb-12 shadow-inner border border-slate-50">
-                    {(Object.keys(MODES) as Array<keyof typeof MODES>).map((m) => (
-                        <button
-                            key={m}
-                            onClick={() => handleModeChange(m)}
-                            className={cn(
-                                "px-5 py-2.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest transition-all",
-                                mode === m 
-                                    ? "bg-white text-slate-900 shadow-md scale-105" 
-                                    : "text-slate-400 hover:text-slate-600"
-                            )}
-                        >
-                            {m.replace('_', ' ')}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Circular Timer Display */}
-                <div className="relative group">
-                    <div className={cn(
-                        "w-72 h-72 md:w-80 md:h-80 rounded-full flex flex-col items-center justify-center shadow-[0_32px_64px_-15px_rgba(0,0,0,0.2)] transition-all duration-1000 border-[12px] relative z-10",
-                        mode === 'focus' ? "border-rose-50" : mode === 'break' ? "border-emerald-50" : "border-blue-50",
-                        "bg-white"
-                    )}>
-                        {/* Progress Liquid fill style or simple ring */}
-                        <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none scale-105">
-                            <circle
-                                cx="50%"
-                                cy="50%"
-                                r="48%"
-                                className={cn(
-                                    "fill-none stroke-[8px] transition-all duration-1000 ease-linear",
-                                    mode === 'focus' ? "stroke-rose-500" : mode === 'break' ? "stroke-emerald-500" : "stroke-blue-500"
-                                )}
-                                strokeDasharray="301.59"
-                                strokeDashoffset={(301.59 - (progress * 301.59 / 100)).toString()}
-                                strokeLinecap="round"
-                            />
-                        </svg>
-
-                        <div className="relative z-20 flex flex-col items-center">
-                            <div className={cn(
-                                "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 text-white shadow-lg transition-colors duration-1000",
-                                currentMode.bg
-                            )}>
-                                <currentMode.icon className="w-6 h-6" />
-                            </div>
-                            <p className="text-[0.65rem] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">{currentMode.name}</p>
-                            <h2 className="text-7xl font-black text-slate-900 tracking-tighter leading-none tabular-nums">
-                                {Math.floor(time / 60)}:{(time % 60).toString().padStart(2, '0')}
-                            </h2>
-                        </div>
-                    </div>
-
-                    {/* Background Decorative Rings */}
-                    <div className={cn(
-                        "absolute inset-0 rounded-full scale-110 opacity-20 blur-2xl transition-colors duration-1000",
-                        currentMode.bg
-                    )} />
-                </div>
-            </div>
-            
-            {/* Main Controls */}
-            <div className="max-w-sm mx-auto space-y-8">
-                <div className="flex justify-center items-center gap-6">
-                    <button 
-                        onClick={() => setTime(t => Math.max(0, t - 60))} 
-                        className="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
-                    >
-                        <ChevronDown className="w-6 h-6" />
-                    </button>
-
-                    <button 
-                        onClick={() => setIsActive(!isActive)} 
-                        className={cn(
-                            "w-24 h-24 rounded-full shadow-2xl flex items-center justify-center transition-all duration-500 hover:scale-110 active:scale-95 group",
-                            isActive ? "bg-slate-900" : currentMode.bg
-                        )}
-                    >
-                        {isActive ? (
-                            <Pause className="w-10 h-10 text-white fill-current" />
-                        ) : (
-                            <Play className="w-10 h-10 text-white ml-2 fill-current" />
-                        )}
-                    </button>
-
-                    <button 
-                        onClick={() => setTime(t => t + 60)} 
-                        className="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-all active:scale-90"
-                    >
-                        <ChevronUp className="w-6 h-6" />
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <button 
-                        onClick={() => handleModeChange(mode)}
-                        className="flex items-center justify-center gap-3 py-5 bg-white border border-slate-100 rounded-3xl text-slate-400 font-black uppercase tracking-widest text-[0.6rem] hover:bg-slate-50 transition-all shadow-sm group"
-                    >
-                        <RotateCcw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" />
-                        Restart
-                    </button>
-                    <div className="flex items-center justify-center gap-3 py-5 bg-slate-900 rounded-3xl text-white font-black uppercase tracking-widest text-[0.6rem] shadow-xl">
-                        <Flame className="w-4 h-4 text-orange-400" />
-                        {Math.floor(totalSeconds / 60)}m Goal
-                    </div>
-                </div>
-            </div>
-
-            {/* Quick Presets Section */}
-            <div className="max-w-md mx-auto pt-8">
-                <div className="flex items-center gap-3 mb-6 px-4">
-                    <div className="h-px flex-1 bg-slate-100" />
-                    <span className="text-[0.6rem] font-black text-slate-300 uppercase tracking-widest">Scientific Presets</span>
-                    <div className="h-px flex-1 bg-slate-100" />
-                </div>
-                <div className="grid grid-cols-3 gap-3 px-2">
-                    {[
-                        { label: 'Hyper Focus', time: 50, icon: '⚡' },
-                        { label: 'Pomodoro', time: 25, icon: '🍅' },
-                        { label: 'Micro Rest', time: 10, icon: '☕' }
-                    ].map((p) => (
-                        <button
-                            key={p.label}
-                            onClick={() => {
-                                setTime(p.time * 60);
-                                setTotalSeconds(p.time * 60);
-                                setIsActive(false);
-                            }}
-                            className="p-4 bg-white border border-slate-100 rounded-[2rem] hover:border-blue/30 hover:shadow-lg transition-all group flex flex-col items-center"
-                        >
-                            <span className="text-lg mb-1 group-hover:scale-110 transition-transform">{p.icon}</span>
-                            <span className="text-slate-800 font-black text-xs">{p.time}m</span>
-                            <span className="text-[0.5rem] text-slate-400 font-bold uppercase tracking-widest mt-1">{p.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const ExamCalendar = () => {
     const navigate = useNavigate();
@@ -8103,226 +8817,1406 @@ const NotePadPage = () => {
     const { addToast } = useToast();
     const navigate = useNavigate();
     const { user } = useApp();
+    
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result as string;
+            
+            // Create a new note with this uploaded drawing/diagram!
+            const noteData = {
+                id: 'upload_' + Date.now(),
+                user_id: user?.id || 'guest',
+                title: 'Diagram',
+                content: 'User-uploaded sketch/notes diagram.',
+                imageUrl: dataUrl,
+                date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                category: 'Notes',
+                pin: false,
+                created_at: new Date().toISOString()
+            };
+
+            const updated = [noteData, ...notes];
+            setNotes(updated);
+            localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updated));
+            addToast("Diagram uploaded successfully!", "success");
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Default initial template data matching the visual screenshot
+    const defaultTemplates = [
+        {
+            id: 'note_physics',
+            title: 'Physics Notes',
+            content: 'Key points about Newton\'s laws of motion:\n1. Law of Inertia: Body remains at rest unless acted on by external force.\n2. F = ma: Force is proportional to acceleration.\n3. Action & Reaction: Equal and opposite reactions act on opposite bodies.',
+            date: 'Today, 9:20 AM',
+            category: 'Physics',
+            pin: true,
+            created_at: new Date().toISOString()
+        },
+        {
+            id: 'note_math',
+            title: 'Math Formula',
+            content: 'Quadratic Equation Standard Form: ax² + bx + c = 0.\nRoots are solved via quadratic formula:\nx = [-b ± √(b² - 4ac)] / 2a.\nIf discriminant D = b² - 4ac > 0, roots are real and distinct.',
+            date: 'Yesterday, 6:45 PM',
+            category: 'Math',
+            pin: true,
+            created_at: new Date(Date.now() - 86400000).toISOString()
+        },
+        {
+            id: 'note_diagram',
+            title: 'Diagram',
+            content: 'Free body vector diagram of mechanical block slide.',
+            imageUrl: 'https://images.unsplash.com/photo-1453733190148-c44698c26588?w=500&auto=format&fit=crop',
+            date: 'Yesterday, 4:30 PM',
+            category: 'Notes',
+            pin: false,
+            created_at: new Date(Date.now() - 120000000).toISOString()
+        },
+        {
+            id: 'note_important',
+            title: 'Important Note',
+            content: 'SEE 2083 board exam preparation: Ensure focusing 2 model paper questions per week. Complete Science physical science numericals and Maths trigonometry modules.',
+            date: '2 May, 10:15 AM',
+            category: 'Important',
+            pin: false,
+            created_at: new Date(Date.now() - 250000000).toISOString()
+        }
+    ];
+
+    // State initialization
     const [notes, setNotes] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Form and Interactive states
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
-    const [mode, setMode] = useState<'editor' | 'library'>('library');
-    const [tag, setTag] = useState('General');
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [tag, setTag] = useState('Physics');
+    const [activeMood, setActiveMood] = useState<'motivated' | 'calm' | 'thoughtful' | 'tired' | 'stressed'>('motivated');
+    
+    // Interactive Features Overlay Toggles
+    const [isWhiteboardOpen, setIsWhiteboardOpen] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingSecs, setRecordingSecs] = useState(0);
+    const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toLocaleDateString());
+    const [isOptionsMenuOpen, setIsOptionsMenuOpen] = useState(false);
+    const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+    const [viewingNote, setViewingNote] = useState<any | null>(null);
+    const [isTagPickerOpen, setIsTagPickerOpen] = useState(false);
+    const [noteIdToDelete, setNoteIdToDelete] = useState<string | null>(null);
 
-    const MAX_NOTES = 50;
+    // Canvas drawing states
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [isCanvasDrawing, setIsCanvasDrawing] = useState(false);
+    const [canvasColor, setCanvasColor] = useState('#8B5CF6');
+    const [brushSize, setBrushSize] = useState(4);
+    const [isEraserMode, setIsEraserMode] = useState(false);
 
+    // Sync from localstorage or initialize default templates
     useEffect(() => {
-        const local = localStorage.getItem(`notes_${user?.id || 'guest'}`);
-        if (local) setNotes(JSON.parse(local));
+        const key = `notes_${user?.id || 'guest'}`;
+        const local = localStorage.getItem(key);
+        if (local) {
+            setNotes(JSON.parse(local));
+        } else {
+            setNotes(defaultTemplates);
+            localStorage.setItem(key, JSON.stringify(defaultTemplates));
+        }
         setIsLoading(false);
     }, [user]);
 
-    const saveNote = async () => {
-        if (!title.trim() && !content.trim()) return;
+    // Timer effect for simulated voice transcriber recorder
+    useEffect(() => {
+        let interval: any;
+        if (isRecording) {
+            interval = setInterval(() => {
+                setRecordingSecs(s => s + 1);
+            }, 1000);
+        } else {
+            setRecordingSecs(0);
+        }
+        return () => clearInterval(interval);
+    }, [isRecording]);
 
-        const noteData: any = { 
-            id: editingId || 'note_' + Date.now(),
-            user_id: user?.id || 'guest', 
-            title: title || 'Brain Dump', 
-            content: content, 
-            date: new Date().toLocaleDateString(),
-            category: tag,
+    // Save notes
+    const handleSaveNote = (customContent?: string, customTitle?: string, customTag?: string) => {
+        const textToSave = customContent ?? content;
+        const noteTitle = customTitle ?? title;
+        const noteTag = customTag ?? tag;
+
+        if (!textToSave.trim() && !noteTitle.trim()) {
+            addToast("Please fill standard reflection details or text.", "error");
+            return;
+        }
+
+        const cleanTitle = noteTitle.trim() || (textToSave.length > 25 ? textToSave.slice(0, 22) + "..." : "Reflections");
+        
+        const noteData: any = {
+            id: editingNoteId || 'note_' + Date.now(),
+            user_id: user?.id || 'guest',
+            title: cleanTitle,
+            content: textToSave,
+            isSvg: textToSave.includes('<svg') || textToSave.includes('<div') ? true : false,
+            date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            category: noteTag,
+            pin: false,
             created_at: new Date().toISOString()
         };
 
         let updatedList;
-        if (editingId) {
-            updatedList = notes.map(n => n.id === editingId ? noteData : n);
-            addToast("Note updated locally.", "success");
+        if (editingNoteId) {
+            updatedList = notes.map(n => n.id === editingNoteId ? noteData : n);
+            addToast("Log updated successfully.", "success");
         } else {
             updatedList = [noteData, ...notes];
-            addToast("Note saved locally.", "success");
+            addToast("Thought memory successfully committed.", "success");
         }
-        
+
         setNotes(updatedList);
         localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updatedList));
+
+        // Reset
+        setTitle('');
+        setContent('');
+        setEditingNoteId(null);
+    };
+
+    // Quick Action Triggers
+    const triggerQuickNote = () => {
+        const textElem = document.getElementById('composer-textarea');
+        if (textElem) {
+            textElem.focus();
+            textElem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        addToast("Write your thoughts down!", "success");
+    };
+
+    const triggerVoiceNote = () => {
+        setIsRecording(true);
+        addToast("Started high-fidelity voice log simulation...", "success");
         
-        setTitle('');
-        setContent('');
-        setEditingId(null);
-        setMode('library');
+        // Auto transcribe simulation
+        setTimeout(() => {
+            setContent(prev => {
+                const text = "Voice recording: Key physics concept verified. Sound waves represent longitudinal mechanical propagation in material medium.";
+                return prev ? prev + "\n" + text : text;
+            });
+            setIsRecording(false);
+            addToast("Voice transcribed successfully!", "success");
+        }, 5000);
     };
 
-    const startEdit = (note: any) => {
-        setTitle(note.title);
-        setContent(note.content);
-        setTag(note.category || 'General');
-        setEditingId(note.id);
-        setMode('editor');
+    const handleUploadMock = () => {
+        fileInputRef.current?.click();
     };
 
-    const deleteNote = (id: string, e: React.MouseEvent) => {
+    // Canvas drawing handler methods
+    const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if ('touches' in e) {
+            if (e.touches.length === 0) return;
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = (clientX - rect.left) * (canvas.width / rect.width);
+        const y = (clientY - rect.top) * (canvas.height / rect.height);
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setIsCanvasDrawing(true);
+
+        // Prevent window scrolling on touch devices
+        if ('touches' in e) {
+            e.preventDefault();
+        }
+    };
+
+    const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+        if (!isCanvasDrawing) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if ('touches' in e) {
+            if (e.touches.length === 0) return;
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+
+        const x = (clientX - rect.left) * (canvas.width / rect.width);
+        const y = (clientY - rect.top) * (canvas.height / rect.height);
+
+        ctx.strokeStyle = isEraserMode ? '#FFFFFF' : canvasColor;
+        ctx.lineWidth = brushSize;
+        ctx.lineTo(x, y);
+        ctx.stroke();
+
+        if ('touches' in e) {
+            e.preventDefault();
+        }
+    };
+
+    const stopDrawing = () => {
+        setIsCanvasDrawing(false);
+    };
+
+    const handleSaveDrawing = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const dataUrl = canvas.toDataURL();
+
+        const noteData = {
+            id: 'draw_' + Date.now(),
+            user_id: user?.id || 'guest',
+            title: 'Diagram Sketch',
+            content: 'Handwritten diagram sketch on whiteboard.',
+            imageUrl: dataUrl,
+            date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            category: 'Notes',
+            pin: false,
+            created_at: new Date().toISOString()
+        };
+
+        const updated = [noteData, ...notes];
+        setNotes(updated);
+        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updated));
+        addToast("Canvas drawing saved successfully!", "success");
+        setIsWhiteboardOpen(false);
+    };
+
+    const handleDeleteNote = (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this log?")) return;
-        const remaining = notes.filter(n => n.id !== id);
-        setNotes(remaining);
-        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(remaining));
-        addToast("Log deleted locally.", "success");
+        setNoteIdToDelete(id);
     };
 
-    const newNote = () => {
-        setTitle('');
-        setContent('');
-        setEditingId(null);
-        setMode('editor');
+    const executeDeleteNote = () => {
+        if (!noteIdToDelete) return;
+        const updated = notes.filter(n => n.id !== noteIdToDelete);
+        setNotes(updated);
+        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updated));
+        addToast("Thought log deleted.", "success");
+        setNoteIdToDelete(null);
     };
 
-    const tags = ['Science', 'Maths', 'English', 'Nepali', 'Social', 'Personal'];
+    const togglePinNote = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const updated = notes.map(n => n.id === id ? { ...n, pin: !n.pin } : n);
+        setNotes(updated);
+        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(updated));
+        addToast("Pin toggled successfully.", "success");
+    };
+
+    // Tags details
+    const tagsList = ['Physics', 'Math', 'Science', 'Important', 'Personal'];
+
+    // Moods config for score updates
+    const moodsConfig = {
+        motivated: { label: 'Motivated!', score: 92, emoji: '😀', text: 'You\'re feeling', gradient: 'bg-gradient-to-br from-[#8E51FF] via-[#7B3FE4] to-[#6366F1]' },
+        calm: { label: 'Calm & Mindful', score: 85, emoji: '😌', text: 'You\'re feeling', gradient: 'bg-gradient-to-br from-[#6366F1] via-[#4F46E5] to-[#3B82F6]' },
+        thoughtful: { label: 'Philosophical', score: 75, emoji: '🤔', text: 'You\'re feeling', gradient: 'bg-gradient-to-br from-[#3B82F6] via-[#2563EB] to-[#1E40AF]' },
+        tired: { label: 'Low Energy', score: 45, emoji: '😔', text: 'You\'re feeling', gradient: 'bg-gradient-to-br from-[#EAB308] via-[#D97706] to-[#B45309]' },
+        stressed: { label: 'Overwhelmed', score: 30, emoji: '😡', text: 'You\'re feeling', gradient: 'bg-gradient-to-br from-[#EF4444] via-[#DC2626] to-[#991B1B]' },
+    };
+
+    const currentMoodConfig = moodsConfig[activeMood];
 
     return (
-        <div className="space-y-10 animate-fade-up pb-32 max-w-4xl mx-auto px-4 md:px-0">
-            <ToolHeader title="Smart Mind Log" subtitle="Thought Capture Engine" icon={Edit3} />
-
-            <div className="flex bg-slate-100 p-1 rounded-2xl w-full sm:w-auto overflow-x-auto custom-scrollbar shadow-inner mt-[-20px]">
+        <div className="min-h-screen bg-[#F8FAFC] pb-24 text-slate-800">
+            {/* Header top section exactly like the photo */}
+            <header className="px-4 py-5 max-w-5xl mx-auto flex items-center justify-between">
+                <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setMode('library')}
-                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none", mode === 'library' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
+                        onClick={() => navigate('/tools')}
+                        className="w-10 h-10 border border-slate-200 bg-white rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none shrink-0"
                     >
-                        Archives
+                        <ArrowLeft className="w-4 h-4 text-slate-600" />
                     </button>
-                    <button 
-                        onClick={newNote}
-                        className={cn("px-6 py-3 rounded-xl text-[0.65rem] font-black uppercase tracking-widest transition-all whitespace-nowrap flex-1 sm:flex-none", mode === 'editor' ? "bg-white text-amber-600 shadow-md border border-slate-200" : "text-slate-400 hover:text-slate-600")}
-                    >
-                        Compose
-                    </button>
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-2">
+                            Mind Log
+                        </h1>
+                        <p className="text-[11px] sm:text-xs text-slate-400 font-bold tracking-tight">
+                            Capture your thoughts, ideas & learning
+                        </p>
+                    </div>
                 </div>
-            
-            <AnimatePresence mode="wait">
-                {mode === 'editor' ? (
-                    <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="space-y-6"
+
+                <div className="flex items-center gap-2 relative">
+                    <button 
+                        onClick={() => setIsCalendarOpen(true)}
+                        className="w-10 h-10 border border-slate-150 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none shrink-0"
+                        title="Calendar Dates"
                     >
-                        <div className="bg-white p-6 md:p-10 rounded-[3rem] border border-amber-100 shadow-2xl space-y-8 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-50 rounded-full -mr-32 -mt-32 blur-3xl opacity-50 pointer-events-none group-hover:scale-110 transition-transform duration-700" />
-                            
-                            <div className="relative z-10 space-y-6">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                                    <div className="flex gap-2 bg-slate-50 p-1.5 rounded-2xl overflow-x-auto custom-scrollbar border border-slate-100 shadow-inner w-full">
-                                        {tags.map(t => (
-                                            <button 
-                                                key={t} 
-                                                onClick={() => setTag(t)}
-                                                className={cn(
-                                                    "px-4 py-2 rounded-xl text-[0.55rem] font-black uppercase tracking-widest transition-all shrink-0 border",
-                                                    tag === t ? "bg-slate-900 text-white border-slate-800 shadow-md" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-                                                )}
-                                            >
-                                                {t}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
+                        <Calendar className="w-4 h-4 text-slate-600" />
+                    </button>
+                    <button 
+                        onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
+                        className="w-10 h-10 border border-slate-150 bg-white rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 active:scale-95 transition-all shadow-xs cursor-pointer focus:outline-none shrink-0"
+                    >
+                        <MoreVertical className="w-4 h-4 text-slate-600" />
+                    </button>
 
-                                <div className="p-1 focus-within:border-amber-400 transition-all rounded-2xl border-2 border-transparent hover:border-slate-50 focus-within:bg-slate-50/30">
-                                    <input 
-                                        value={title}
-                                        onChange={e => setTitle(e.target.value)}
-                                        placeholder="Entry Headline..." 
-                                        className="w-full bg-transparent p-4 text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-900 placeholder:text-slate-300 outline-none"
-                                    />
-                                </div>
+                    {/* Pop options menu option exact */}
+                    <AnimatePresence>
+                        {isOptionsMenuOpen && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute right-0 top-12 w-48 bg-white border border-slate-100 rounded-2xl shadow-xl py-2 z-50 overflow-hidden"
+                            >
+                                <button 
+                                    onClick={() => {
+                                        setNotes(defaultTemplates);
+                                        localStorage.setItem(`notes_${user?.id || 'guest'}`, JSON.stringify(defaultTemplates));
+                                        addToast("Reset logs to template mocks.", "success");
+                                        setIsOptionsMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2"
+                                >
+                                    <RotateCcw className="w-4 h-4 text-slate-400" /> Reset Templates
+                                </button>
+                                <button 
+                                    onClick={() => {
+                                        setNotes([]);
+                                        localStorage.removeItem(`notes_${user?.id || 'guest'}`);
+                                        addToast("Cleared all active logs.", "success");
+                                        setIsOptionsMenuOpen(false);
+                                    }}
+                                    className="w-full text-left px-4 py-2.5 text-xs font-bold text-rose-500 hover:bg-rose-50 flex items-center gap-2 border-t border-slate-50"
+                                >
+                                    <Trash2 className="w-4 h-4" /> Clear All Data
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </header>
 
-                                <RichTextEditor value={content} onChange={setContent} />
+            <main className="px-3 sm:px-4 max-w-5xl mx-auto space-y-6">
+                
+                {/* 1. Today's Mood Grid Area */}
+                <div className="bg-white border border-slate-100/90 rounded-[2.5rem] p-5 sm:p-6 shadow-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                        {/* Left part Mood selection */}
+                        <div className="md:col-span-7 flex flex-col justify-between space-y-4">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                                    Today's Mood
+                                </h3>
+                                <p className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                                    How are you feeling?
+                                </p>
+                            </div>
+
+                            {/* 5 click Emojis list */}
+                            <div className="flex items-center gap-2.5 sm:gap-4 py-2">
+                                {Object.entries(moodsConfig).map(([key, item]) => {
+                                    const active = activeMood === key;
+                                    return (
+                                        <button
+                                            key={key}
+                                            onClick={() => {
+                                                setActiveMood(key as any);
+                                                addToast(`Mood updated: ${item.label}`, "success");
+                                            }}
+                                            className={`w-11 h-11 sm:w-13 sm:h-13 text-2xl sm:text-3xl rounded-2xl flex items-center justify-center transition-all cursor-pointer active:scale-90 border-2 select-none hover:scale-105 duration-200 ${
+                                                active 
+                                                    ? 'bg-slate-50 border-indigo-500 shadow-sm scale-105' 
+                                                    : 'bg-white border-slate-100 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            {item.emoji}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </div>
 
-                        <button 
-                            onClick={saveNote}
-                            disabled={!title.trim() && !content.trim()}
-                            className="w-full bg-linear-to-r from-amber-500 to-orange-600 text-white p-6 md:p-8 rounded-[2.5rem] shadow-xl shadow-amber-500/20 flex items-center justify-center gap-4 group active:scale-95 transition-all disabled:opacity-50 hover:shadow-2xl hover:shadow-amber-500/30"
-                        >
-                            <span className="text-xl font-black italic uppercase tracking-tighter">Commit to Memory</span>
-                            <CheckCircle2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                        </button>
-                    </motion.div>
-                ) : (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="space-y-8"
-                    >
-                         <button 
-                            onClick={newNote}
-                            className="w-full md:hidden bg-linear-to-r from-amber-500 to-orange-600 text-white p-5 rounded-[2rem] shadow-xl flex items-center justify-center gap-3 font-black text-sm uppercase tracking-widest active:scale-95 transition-all mb-4"
-                        >
-                            <Plus className="w-5 h-5" /> Initiate New Entry
-                        </button>
+                        {/* Right part: Feeling Card gradient exactly matched to mockup description */}
+                        <div className="md:col-span-5">
+                            <motion.div 
+                                layout
+                                className={`h-full min-h-[120px] rounded-3xl p-5 text-white flex items-center justify-between shadow-md transition-all duration-300 relative overflow-hidden group ${currentMoodConfig.gradient}`}
+                            >
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:scale-110 transition-all pointer-events-none" />
+                                
+                                <div className="space-y-1.5 z-10">
+                                    <span className="text-[10px] font-black uppercase text-white/70 tracking-widest block font-sans">
+                                        {currentMoodConfig.text}
+                                    </span>
+                                    <h4 className="text-xl font-black tracking-tight leading-none drop-shadow-xs">
+                                        {activeMood === 'motivated' ? '🔥 ' : ''}{currentMoodConfig.label}
+                                    </h4>
+                                    <span className="text-[10px] font-bold text-white/80 block pt-1.5 font-mono">
+                                        Focus Score
+                                    </span>
+                                </div>
 
-                        {notes.length === 0 && !isLoading && (
-                            <div className="text-center py-24 bg-white rounded-[4rem] border border-dashed border-slate-200">
-                                <Search className="w-16 h-16 text-slate-200 mx-auto mb-6" />
-                                <p className="text-slate-400 font-black uppercase tracking-[0.2em] text-xs">No active logs found in memory.</p>
-                                <button onClick={newNote} className="mt-8 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-colors active:scale-95">Start Writing</button>
-                            </div>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {notes.map((n, i) => {
-                                return (
-                                <motion.div 
-                                    key={n.id} 
-                                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    transition={{ delay: i * 0.05 }}
-                                    onClick={() => startEdit(n)}
-                                    className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 shadow-lg hover:shadow-xl group hover:border-amber-300 transition-all relative overflow-hidden cursor-pointer active:scale-95 flex flex-col h-full"
+                                {/* Donut Progress Chart Circular layout representing focus score */}
+                                <div className="relative w-20 h-20 flex items-center justify-center shrink-0 z-10">
+                                    <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                                        <circle
+                                            cx="18"
+                                            cy="18"
+                                            r="15"
+                                            className="fill-none stroke-white/20 stroke-[3.5px]"
+                                        />
+                                        <circle
+                                            cx="18"
+                                            cy="18"
+                                            r="15"
+                                            className="fill-none stroke-white stroke-[3.5px] transition-all duration-500 ease-out"
+                                            strokeDasharray="94.25"
+                                            strokeDashoffset={(94.25 - (currentMoodConfig.score * 94.25 / 100)).toString()}
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    <span className="absolute text-xs font-black tracking-tight font-mono">
+                                        {currentMoodConfig.score}%
+                                    </span>
+                                </div>
+                            </motion.div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 2. Composer Core box: "What's on your mind today?" */}
+                <div className="bg-white border border-slate-100 rounded-[2.5rem] p-5 sm:p-6 shadow-xs relative">
+                    <div className="space-y-4">
+                        <div>
+                            <span className="text-xs font-black text-indigo-500 uppercase tracking-widest block mb-0.5">
+                                What's on your mind today?
+                            </span>
+                            <p className="text-[11px] font-semibold text-slate-400">
+                                Write your thoughts, ideas or daily reflections...
+                            </p>
+                        </div>
+
+                        {/* Title Optional bar */}
+                        <div className="flex gap-2 bg-slate-50 rounded-xl p-1.5 border border-slate-100/50">
+                            <input
+                                type="text"
+                                value={title}
+                                placeholder="Logs Title (e.g. Physics Revision, Math Problem)"
+                                onChange={e => setTitle(e.target.value)}
+                                className="w-full bg-transparent px-3 py-1.5 border-0 text-xs font-bold text-slate-800 outline-none placeholder:text-slate-400"
+                            />
+                            <div className="flex items-center gap-1 shrink-0 px-2">
+                                <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Tag:</span>
+                                <button
+                                    onClick={() => setIsTagPickerOpen(true)}
+                                    className="bg-white border border-slate-150 rounded-lg text-[10px] font-black text-slate-600 px-2 py-0.5 outline-none cursor-pointer flex items-center gap-1 hover:border-indigo-300 hover:text-indigo-600 transition-all font-mono"
                                 >
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-all duration-700 pointer-events-none" />
-                                    <div className="relative z-10 flex flex-col h-full">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className="flex flex-col">
-                                                <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[0.55rem] font-black uppercase tracking-widest w-fit mb-3">{n.category}</span>
-                                                <h3 className="text-xl md:text-2xl font-black text-slate-900 uppercase italic tracking-tighter leading-tight group-hover:text-amber-600 transition-colors line-clamp-2">{n.title}</h3>
+                                    <span>{tag}</span>
+                                    <ChevronDown className="w-3 h-3 text-slate-400" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Text reflections canvas area */}
+                        <textarea
+                            id="composer-textarea"
+                            rows={4}
+                            maxLength={1000}
+                            value={content}
+                            placeholder="Write down notes, code snippets, formula outlines, or sketch diagrams to keep track..."
+                            onChange={e => setContent(e.target.value)}
+                            className="w-full bg-[#fcfdfe] p-4 rounded-2xl border border-slate-100 text-slate-700 text-sm font-medium leading-relaxed outline-none focus:bg-white focus:border-indigo-200 transition-all shadow-inner placeholder:text-slate-300 resize-none"
+                        />
+
+                        {/* Composer actions banner bar */}
+                        <div className="flex items-center justify-between pt-2">
+                            {/* Char counts display indicator */}
+                            <span className="text-[10px] font-mono font-black text-slate-400">
+                                {content.length}/1000
+                            </span>
+
+                            {/* Icons array */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={triggerVoiceNote}
+                                    className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all cursor-pointer ${
+                                        isRecording 
+                                            ? 'bg-rose-50 border-rose-100 text-rose-600 animate-pulse' 
+                                            : 'bg-indigo-50/50 border-indigo-100/40 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700'
+                                    }`}
+                                    title="Voice Notes simulated"
+                                >
+                                    <Mic className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={handleUploadMock}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50/50 border border-indigo-100/40 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
+                                    title="Mock attach diagrams"
+                                >
+                                    <ImageIcon className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={triggerQuickNote}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-indigo-50/50 border border-indigo-100/40 text-indigo-500 hover:bg-indigo-50 hover:text-indigo-700 transition-all cursor-pointer"
+                                    title="Focus details"
+                                >
+                                    <Paperclip className="w-4 h-4" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        addToast("AI analysis running on thoughts...", "success");
+                                        setTimeout(() => {
+                                            addToast("AI Insight updated successfully based on your composed log!", "success");
+                                        }, 1000);
+                                    }}
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center bg-violet-605/10 border border-violet-100 text-[#8B5CF6] hover:bg-[#8B5CF6] hover:text-white transition-all cursor-pointer"
+                                    title="AI spline analyser"
+                                >
+                                    <Brain className="w-4 h-4" />
+                                </button>
+
+                                {/* Save Button */}
+                                <button
+                                    onClick={() => handleSaveNote()}
+                                    className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-xs active:scale-95 transition-all cursor-pointer border-0 flex items-center gap-1.5"
+                                >
+                                    <span>Save Entry</span>
+                                    <Check className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Your Mind Space Slider/Grid exact */}
+                <div className="space-y-3 pt-2">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                            Your Mind Space
+                        </h3>
+                        <button
+                            onClick={() => {
+                                addToast("Opening Mind Log Archives Space", "success");
+                            }}
+                            className="text-xs font-bold text-indigo-605 text-indigo-600 hover:underline cursor-pointer"
+                        >
+                            View all
+                        </button>
+                    </div>
+
+                    {/* Responsive Horizon Scroll layout for Mind Space nodes card matching the mobile-friendly mockup height and sizes */}
+                    <div 
+                        className="flex overflow-x-auto gap-3.5 py-2 pb-4 px-1 scrollbar-none -mx-4 px-4 snap-x snap-mandatory touch-pan-x"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+                    >
+                        {notes.slice(0, 4).map((item) => {
+                            // Find card layout color values based on tags
+                            let cardTheme = {
+                                bg: 'bg-[#EEF1FF] border-slate-100',
+                                bgHover: 'hover:bg-[#E2E6FF]',
+                                badge: 'bg-[#DCE3FF] text-[#4f46e5]',
+                                text: 'text-slate-800',
+                                iconColor: 'text-[#4f46e5]',
+                                icon: StickyNote
+                            };
+
+                            const checkTag = item.category?.toLowerCase() || '';
+                            if (checkTag.includes('physics')) {
+                                cardTheme = {
+                                    bg: 'bg-[#EEF1FF] border-indigo-100/50',
+                                    bgHover: 'hover:bg-[#e0e4ff]',
+                                    badge: 'bg-[#DCE3FF] text-indigo-700 font-extrabold',
+                                    text: 'text-indigo-950',
+                                    iconColor: 'text-indigo-600',
+                                    icon: StickyNote
+                                };
+                            } else if (checkTag.includes('math')) {
+                                cardTheme = {
+                                    bg: 'bg-[#FFF5EE] border-orange-100/50',
+                                    bgHover: 'hover:bg-[#ffe3d1]',
+                                    badge: 'bg-[#FFEAD2] text-orange-700 font-extrabold',
+                                    text: 'text-orange-950',
+                                    iconColor: 'text-orange-500',
+                                    icon: BookMarked
+                                };
+                            } else if (checkTag.includes('notes') || checkTag.includes('science')) {
+                                cardTheme = {
+                                    bg: 'bg-[#E8FAF4] border-emerald-100/40',
+                                    bgHover: 'hover:bg-[#d5f5ea]',
+                                    badge: 'bg-[#CCFBF1] text-emerald-800 font-extrabold',
+                                    text: 'text-[#064E3B]',
+                                    iconColor: 'text-emerald-500',
+                                    icon: ImageIcon
+                                };
+                            } else if (checkTag.includes('important') || checkTag.includes('personal')) {
+                                cardTheme = {
+                                    bg: 'bg-[#FFF0F4] border-rose-100/40',
+                                    bgHover: 'hover:bg-[#ffdce5]',
+                                    badge: 'bg-[#FFE4E6] text-rose-700 font-extrabold',
+                                    text: 'text-rose-950',
+                                    iconColor: 'text-rose-500',
+                                    icon: ShieldAlert
+                                };
+                            }
+
+                            return (
+                                <motion.div
+                                    key={item.id}
+                                    layoutId={item.id}
+                                    onClick={() => setViewingNote(item)}
+                                    className={`w-[145px] sm:w-[165px] min-w-[145px] sm:min-w-[165px] h-[205px] sm:h-[220px] rounded-[1.8rem] p-4 border shadow-xs hover:shadow-md transition-all relative overflow-hidden group cursor-pointer flex flex-col justify-between shrink-0 snap-start ${cardTheme.bg} ${cardTheme.bgHover}`}
+                                >
+                                    {/* Top row with tag icon and pin action */}
+                                    <div className="flex items-center justify-between w-full">
+                                        <div className={`w-7 h-7 rounded-xl flex items-center justify-center bg-white/70 ${cardTheme.iconColor} shadow-3xs`}>
+                                            <cardTheme.icon className="w-3.5 h-3.5" />
+                                        </div>
+                                        <button
+                                            onClick={(e) => togglePinNote(item.id, e)}
+                                            className={`w-7 h-7 rounded-xl flex items-center justify-center transition-all ${
+                                                item.pin ? 'bg-transparent scale-105' : 'bg-transparent opacity-0 group-hover:opacity-100 hover:opacity-100'
+                                            } ${cardTheme.iconColor}`}
+                                        >
+                                            <Pin className={`w-3.5 h-3.5 ${item.pin ? 'fill-current rotate-45' : ''}`} />
+                                        </button>
+                                    </div>
+
+                                    {/* Card main text or thumbnail area */}
+                                    <div className="flex-1 flex flex-col justify-start mt-2.5 overflow-hidden">
+                                        {item.imageUrl ? (
+                                            <div className="w-full h-[68px] sm:h-[75px] rounded-xl overflow-hidden mb-1.5 border border-slate-100 bg-slate-50 shadow-2xs shrink-0">
+                                                <img 
+                                                    src={item.imageUrl} 
+                                                    alt={item.title} 
+                                                    className="w-full h-full object-cover filter saturate-[0.8] group-hover:saturate-100 group-hover:scale-105 transition-all duration-300"
+                                                    referrerPolicy="no-referrer"
+                                                />
                                             </div>
-                                            <button 
-                                                onClick={(e) => deleteNote(n.id, e)} 
-                                                className="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90"
-                                            >
-                                                <Trash2 className="w-5 h-5" />
-                                            </button>
+                                        ) : null}
+
+                                        <div className="space-y-0.5">
+                                            <h4 className="text-[11px] sm:text-xs font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase tracking-tight leading-snug truncate">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-[9px] font-bold text-slate-400 font-mono tracking-tight leading-none">
+                                                {item.date || 'Today, 9:00 AM'}
+                                            </p>
                                         </div>
 
-                                        {n.content && typeof n.content === 'string' && n.content.startsWith('data:image') ? (
-                                            <div className="flex-1 w-full bg-slate-50 rounded-2xl mb-6 flex items-center justify-center p-2 border border-slate-100 min-h-[150px]">
-                                                <img src={n.content} alt={n.title} className="w-full h-full object-contain filter saturate-[0.8] group-hover:saturate-100 transition-all" />
-                                            </div>
-                                        ) : (
-                                            <div 
-                                                className="text-sm text-slate-600 font-medium leading-relaxed line-clamp-4 mb-6 bg-slate-50 p-5 rounded-2xl flex-1 border border-slate-100 shadow-inner group-hover:bg-white transition-colors"
-                                                dangerouslySetInnerHTML={{ __html: n.content }} 
-                                            />
+                                        {/* Brief body summary (only shown for non-image items to keep clean structure) */}
+                                        {!item.imageUrl && (
+                                            <p className="text-[10px] text-slate-500 font-medium leading-relaxed line-clamp-3 mt-1.5 overflow-hidden">
+                                                {item.content || 'Notes detail snippet.'}
+                                            </p>
                                         )}
+                                    </div>
+
+                                    {/* Card Footer badges */}
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider ${cardTheme.badge}`}>
+                                            #{item.category || 'General'}
+                                        </span>
                                         
-                                        <div className="flex justify-between items-center mt-auto pt-4 border-t border-slate-50">
-                                            <div className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                <Calendar className="w-3.5 h-3.5 text-amber-500" /> {new Date(n.created_at || Date.now()).toLocaleDateString()}
-                                            </div>
-                                            <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-amber-500 group-hover:text-white group-hover:-rotate-12 transition-all">
-                                                <Edit3 className="w-5 h-5" />
-                                            </div>
+                                        {/* Hidden edit actions that reveal on hover */}
+                                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity z-10">
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingNoteId(item.id);
+                                                    setTitle(item.title);
+                                                    setContent(item.content);
+                                                    setTag(item.category);
+                                                    triggerQuickNote();
+                                                }}
+                                                className="w-5 h-5 rounded bg-white text-slate-600 hover:text-indigo-600 flex items-center justify-center shadow-3xs"
+                                                title="Edit note"
+                                            >
+                                                <Edit3 className="w-3 h-3" />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handleDeleteNote(item.id, e)}
+                                                className="w-5 h-5 rounded bg-white text-rose-500 hover:text-rose-700 flex items-center justify-center shadow-3xs"
+                                                title="Delete note"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
                                         </div>
                                     </div>
                                 </motion.div>
-                            )})}
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* 4. Quick Selection Pill Buttons list exactly */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-2">
+                    <button 
+                        onClick={triggerQuickNote}
+                        className="bg-white border border-slate-100 p-3 sm:p-4 rounded-2xl flex items-center justify-center gap-2 hover:border-indigo-400 active:scale-95 transition-all text-xs font-black uppercase text-slate-700 shadow-2xs group cursor-pointer"
+                    >
+                        <span className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500 text-xs">📝</span>
+                        Quick Note
+                    </button>
+                    <button 
+                        onClick={triggerVoiceNote}
+                        className="bg-white border border-slate-100 p-3 sm:p-4 rounded-2xl flex items-center justify-center gap-2 hover:border-indigo-400 active:scale-95 transition-all text-xs font-black uppercase text-slate-700 shadow-2xs group cursor-pointer"
+                    >
+                        <span className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500 text-xs">🎙️</span>
+                        Voice Note
+                    </button>
+                    <button 
+                        onClick={handleUploadMock}
+                        className="bg-white border border-slate-100 p-3 sm:p-4 rounded-2xl flex items-center justify-center gap-2 hover:border-indigo-400 active:scale-95 transition-all text-xs font-black uppercase text-slate-700 shadow-2xs group cursor-pointer"
+                    >
+                        <span className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500 text-xs">☁️</span>
+                        Upload
+                    </button>
+                    <button 
+                        onClick={() => setIsWhiteboardOpen(true)}
+                        className="bg-white border border-slate-100 p-3 sm:p-4 rounded-2xl flex items-center justify-center gap-2 hover:border-indigo-400 active:scale-95 transition-all text-xs font-black uppercase text-slate-700 shadow-2xs group cursor-pointer"
+                    >
+                        <span className="w-5 h-5 rounded-md bg-indigo-50 flex items-center justify-center text-indigo-500 text-xs">🎨</span>
+                        Draw
+                    </button>
+                </div>
+
+                {/* 5. Split Row Analytics: Streak & This Week */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
+                    
+                    {/* Mind Log Streak segment bar */}
+                    <div className="md:col-span-6 bg-white border border-slate-100 rounded-[2.5rem] p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between pb-3">
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 leading-none">
+                                <span className="text-sm">🔥</span> Mind Log Streak
+                            </h4>
+                            <ArrowRight className="w-4 h-4 text-slate-350 hover:translate-x-0.5 transition-transform cursor-pointer" />
                         </div>
-                    </motion.div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                                    12 Days
+                                </h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1 font-serif italic">
+                                    Keep going strong!
+                                </p>
+                            </div>
+
+                            {/* Streak indicator segmented block element exactly like photo */}
+                            <div className="grid grid-cols-10 gap-1 sm:gap-1.5 py-1.5">
+                                {Array.from({ length: 10 }).map((_, i) => (
+                                    <div 
+                                        key={i}
+                                        className={`h-2 sm:h-2.5 rounded-full ${
+                                            i < 7 
+                                                ? 'bg-gradient-to-r from-orange-500 to-amber-500 animate-pulse shadow-[0_0_8px_rgba(249,115,22,0.2)]' 
+                                                : 'bg-slate-100 border border-slate-50'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Weekly progress entries and CSS bar chart */}
+                    <div className="md:col-span-6 bg-white border border-slate-100 rounded-[2.5rem] p-5 shadow-xs flex flex-col justify-between">
+                        <div className="flex items-center justify-between pb-2">
+                            <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">
+                                This Week
+                            </h4>
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                            {/* Value left */}
+                            <div className="col-span-4">
+                                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none">
+                                    6 Entries
+                                </h2>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                                    Active Study Logs
+                                </p>
+                            </div>
+
+                            {/* Mini 3D aesthetic column charts right */}
+                            <div className="col-span-8 flex items-end justify-between h-20 px-2">
+                                {[
+                                    { day: 'M', entries: 3, h: '45%' },
+                                    { day: 'T', entries: 5, h: '75%' },
+                                    { day: 'W', entries: 2, h: '30%' },
+                                    { day: 'T', entries: 4, h: '60%' },
+                                    { day: 'F', entries: 6, h: '90%' },
+                                    { day: 'S', entries: 1, h: '15%' },
+                                    { day: 'S', entries: 0, h: '5%' }
+                                ].map((col, idx) => (
+                                    <div key={idx} className="flex flex-col items-center gap-1.5 flex-1 group relative">
+                                        
+                                        {/* CSS Tooltip */}
+                                        <div className="absolute -top-10 scale-0 group-hover:scale-100 bg-slate-900 text-white text-[9px] px-2 py-1 rounded-md font-mono z-25 transition-all whitespace-nowrap pointer-events-none shadow-md">
+                                            {col.entries} logs
+                                        </div>
+
+                                        {/* Active pillar bar */}
+                                        <div className="w-2.5 sm:w-3 bg-slate-100 rounded-full h-14 flex items-end overflow-hidden cursor-pointer">
+                                            <div 
+                                                className={`w-full rounded-full transition-all duration-700 bg-gradient-to-t ${
+                                                    col.entries > 4 
+                                                        ? 'from-emerald-500 to-teal-400' 
+                                                        : col.entries > 1 
+                                                            ? 'from-indigo-500 to-indigo-400' 
+                                                            : 'from-orange-500 to-amber-400'
+                                                }`}
+                                                style={{ height: col.h }}
+                                            />
+                                        </div>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">
+                                            {col.day}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6. AI Insight Banner exactly like photo with premium companion robot vector */}
+                <div className="bg-[#EEF2FF]/80 border border-slate-100 rounded-[2.5rem] p-5.5 sm:p-6 shadow-xs relative overflow-hidden flex items-center justify-between group">
+                    <div className="absolute top-0 right-0 w-48 h-48 bg-indigo-200/20 rounded-full -mr-24 -mt-24 blur-2xl pointer-events-none" />
+                    
+                    <div className="space-y-3 z-10 max-w-lg">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-[#8B5CF6]/15 flex items-center justify-center text-indigo-600">
+                                <Brain className="w-4.5 h-4.5 animate-pulse text-[#8B5CF6]" />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-black text-indigo-950 uppercase tracking-tight leading-none">
+                                    AI Insight
+                                </h4>
+                                <span className="text-[10px] font-bold text-indigo-400 block pt-0.5">
+                                    Based on your logs this week
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Bullets lists layout exact */}
+                        <ul className="space-y-2 pl-1">
+                            <li className="text-xs font-semibold text-slate-75 *0 text-slate-600 flex items-start gap-2">
+                                <span className="text-slate-450">•</span>
+                                You studied Physics 3 times this week.
+                            </li>
+                            <li className="text-xs font-semibold text-slate-75 *0 text-slate-600 flex items-start gap-2">
+                                <span className="text-slate-450">•</span>
+                                Your focus time increased by 15%.
+                            </li>
+                            <li className="text-xs font-semibold text-slate-75 *0 text-slate-600 flex items-start gap-2">
+                                <span className="text-indigo-600">•</span>
+                                Suggested next topic: <span className="text-indigo-600 font-extrabold underline decoration-dashed select-all">Work, Energy & Power</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {/* Cute floating animated robot 3D Vector illustration on the right */}
+                    <div className="hidden sm:flex flex-col items-center justify-center select-none pl-4 relative shrink-0">
+                        <svg viewBox="0 0 120 120" className="w-24 h-24 drop-shadow-xl animate-bounce duration-[3500ms]">
+                            {/* head chassis scale */}
+                            <rect x="35" y="32" width="50" height="36" rx="12" fill="#EEF2FF" stroke="#818CF8" strokeWidth="2" />
+                            {/* ears node */}
+                            <circle cx="32" cy="50" r="4" fill="#818CF8" />
+                            <circle cx="88" cy="50" r="4" fill="#818CF8" />
+                            {/* screen plate */}
+                            <rect x="42" y="38" width="36" height="23" rx="7" fill="#1E1B4B" />
+                            {/* glowing neon cyan lights eyes */}
+                            <ellipse cx="51" cy="49" r="3" fill="#38BDF8" className="animate-pulse" />
+                            <ellipse cx="69" cy="49" r="3" fill="#38BDF8" className="animate-pulse" />
+                            {/* antenna and top crown */}
+                            <line x1="60" y1="32" x2="60" y2="18" stroke="#818CF8" strokeWidth="2" />
+                            <circle cx="60" cy="16" r="3.5" fill="#6366F1" />
+                            {/* body plate link */}
+                            <rect x="40" y="73" width="40" height="32" rx="9" fill="#EEF2FF" stroke="#818CF8" strokeWidth="2" />
+                            {/* core energy reactor chest */}
+                            <circle cx="60" cy="89" r="6" fill="#6366F1" stroke="#38BDF8" strokeWidth="1" />
+                            <circle cx="60" cy="89" r="2.5" fill="#38BDF8" className="animate-ping" />
+                            {/* robot micro hands joint outlines */}
+                            <path d="M35,80 Q24,84 25,92" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" fill="none" />
+                            <path d="M85,80 Q96,84 95,92" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" fill="none" />
+                        </svg>
+                    </div>
+                </div>
+
+                {/* 7. Recent Entries listing exact visual */}
+                <div className="space-y-3 pt-2">
+                    <h3 className="text-base font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+                        Recent Entries
+                    </h3>
+
+                    <div className="space-y-3">
+                        {notes.length === 0 ? (
+                            <div className="text-center py-10 bg-white rounded-3xl border border-slate-100">
+                                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none">No active study logs yet.</p>
+                            </div>
+                        ) : (
+                            notes.map((item) => (
+                                <div 
+                                    key={item.id}
+                                    onClick={() => setViewingNote(item)}
+                                    className="bg-white border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-4 cursor-pointer hover:border-indigo-200 active:scale-98 transition-all shadow-2xs group"
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0 text-lg">
+                                            {item.isSvg ? '📐' : item.category === 'Physics' ? '⚛️' : item.category === 'Math' ? '📐' : '📝'}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h4 className="text-xs sm:text-sm font-black text-slate-800 group-hover:text-indigo-600 transition-colors uppercase tracking-tight truncate">
+                                                {item.title}
+                                            </h4>
+                                            <p className="text-[10px] font-extrabold text-slate-400 font-mono mt-0.5">
+                                                {item.date || 'Today, 8:50 PM'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-black uppercase text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                            {item.category || 'General'}
+                                        </span>
+                                        <button 
+                                            onClick={(e) => handleDeleteNote(item.id, e)}
+                                            className="w-8 h-8 rounded-lg text-slate-450 hover:text-rose-500 hover:bg-rose-50/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                                            title="Delete entry"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        <ArrowRight className="w-4 h-4 text-slate-350" />
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+
+            </main>
+
+            {/* Premium WHITEBOARD INTERACTIVE CANVAS popup modal exactly */}
+            <AnimatePresence>
+                {isWhiteboardOpen && (
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-[2.5rem] border border-slate-100 w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col"
+                        >
+                            {/* Modal Header bar options */}
+                            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xl">🎨</span>
+                                    <div>
+                                        <h3 className="text-sm font-black text-slate-900 uppercase">Interactive Whiteboard Studio</h3>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Draw diagrams or notes on custom canvas</span>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsWhiteboardOpen(false)}
+                                    className="w-8 h-8 rounded-full bg-white border border-slate-150 text-slate-500 hover:text-slate-900 flex items-center justify-center hover:scale-105 active:scale-95 transition-all outline-none"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Main canvas viewport frame */}
+                            <div className="p-5 flex-1 flex flex-col gap-4">
+                                <div className="border border-slate-150 rounded-2xl overflow-hidden bg-white shadow-inner flex items-center justify-center relative touch-none min-h-[280px]">
+                                    <canvas
+                                        ref={canvasRef}
+                                        width={560}
+                                        height={320}
+                                        onMouseDown={startDrawing}
+                                        onMouseMove={draw}
+                                        onMouseUp={stopDrawing}
+                                        onMouseLeave={stopDrawing}
+                                        onTouchStart={startDrawing}
+                                        onTouchMove={draw}
+                                        onTouchEnd={stopDrawing}
+                                        className="bg-white w-full h-[280px] cursor-crosshair block"
+                                    />
+                                    {isEraserMode && (
+                                        <div className="absolute top-2 left-2 bg-rose-500 text-white text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest pointer-events-none animate-pulse">
+                                            🧽 ERASER ENABLED
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Controls tool belt options */}
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                    {/* Left segment colors and brush slider */}
+                                    <div className="flex items-center gap-3.5 flex-wrap">
+                                        <div className="flex items-center gap-1.5">
+                                            {['#8B5CF6', '#10B981', '#3B82F6', '#EF4444', '#F59E0B', '#0F172A'].map((c) => (
+                                                <button
+                                                    key={c}
+                                                    onClick={() => {
+                                                        setCanvasColor(c);
+                                                        setIsEraserMode(false);
+                                                    }}
+                                                    className={`w-6 h-6 rounded-full border-2 transition-transform cursor-pointer hover:scale-110 active:scale-95 ${
+                                                        canvasColor === c && !isEraserMode ? 'border-indigo-600 scale-105' : 'border-white'
+                                                    }`}
+                                                    style={{ backgroundColor: c }}
+                                                />
+                                            ))}
+                                        </div>
+
+                                        <div className="w-px h-6 bg-slate-200" />
+
+                                        {/* Size slider bar */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">Brush: {brushSize}px</span>
+                                            <input 
+                                                type="range" 
+                                                min="2" 
+                                                max="12" 
+                                                step="1"
+                                                value={brushSize}
+                                                onChange={e => setBrushSize(parseInt(e.target.value))}
+                                                className="w-16 sm:w-24 h-1 accent-indigo-505 cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Right segment brush actions button */}
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setIsEraserMode(!isEraserMode)}
+                                            className={`px-3.5 py-1.5 rounded-xl border text-[10px] font-black uppercase flex items-center gap-1 cursor-pointer transition-all ${
+                                                isEraserMode 
+                                                    ? 'bg-rose-100 border-rose-200 text-rose-700 shadow-inner' 
+                                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            <Eraser className="w-3.5 h-3.5" /> Eraser
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const canvas = canvasRef.current;
+                                                if (canvas) {
+                                                    const ctx = canvas.getContext('2d');
+                                                    if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                                }
+                                                addToast("Canvas cleared.", "success");
+                                            }}
+                                            className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-[10px] font-black uppercase flex items-center gap-1 cursor-pointer"
+                                        >
+                                            ✕ Clear
+                                        </button>
+                                        <button
+                                            onClick={handleSaveDrawing}
+                                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-xs flex items-center gap-1.5 active:scale-95 transition-all border-0"
+                                        >
+                                            Save Diagram <Check className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
+
+            {/* Note viewing modal detail popup */}
+            <AnimatePresence>
+                {viewingNote && (
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white rounded-3xl border border-slate-100 w-full max-w-lg overflow-hidden shadow-2xl flex flex-col p-6 space-y-4"
+                        >
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <span className="px-2.5 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-black uppercase tracking-wider">
+                                    {viewingNote.category}
+                                </span>
+                                <button 
+                                    onClick={() => setViewingNote(null)}
+                                    className="w-7 h-7 rounded-lg bg-slate-50 border border-slate-200 text-slate-400 flex items-center justify-center text-xs hover:text-slate-800"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <div className="space-y-1">
+                                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+                                    {viewingNote.title}
+                                </h3>
+                                <p className="text-[10px] text-slate-400 font-mono">
+                                    Recorded on: {viewingNote.date}
+                                </p>
+                            </div>
+
+                            <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 flex-1 overflow-y-auto max-h-[300px]">
+                                {viewingNote.imageUrl && (
+                                    <div className="w-full h-44 overflow-hidden rounded-xl mb-3 border border-slate-200">
+                                        <img src={viewingNote.imageUrl} alt={viewingNote.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    </div>
+                                )}
+                                {viewingNote.isSvg ? (
+                                    <div dangerouslySetInnerHTML={{ __html: viewingNote.content }} />
+                                ) : (
+                                    <p className="text-sm font-medium text-slate-650 leading-relaxed whitespace-pre-wrap select-all">
+                                        {viewingNote.content}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-50">
+                                <button
+                                    onClick={() => {
+                                        setEditingNoteId(viewingNote.id);
+                                        setTitle(viewingNote.title);
+                                        setContent(viewingNote.content);
+                                        setTag(viewingNote.category);
+                                        setViewingNote(null);
+                                        triggerQuickNote();
+                                    }}
+                                    className="px-4 py-2 text-xs font-black uppercase border border-slate-200 rounded-xl bg-white text-slate-700 hover:bg-slate-50 cursor-pointer active:scale-95 transition-all"
+                                >
+                                    Edit Log
+                                </button>
+                                <button
+                                    onClick={() => setViewingNote(null)}
+                                    className="px-4 py-2 text-xs font-black uppercase text-white rounded-xl bg-indigo-600 hover:bg-indigo-700 cursor-pointer border-0 active:scale-95 transition-all"
+                                >
+                                    Close Window
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Custom Interactive calendar popup dates */}
+            <AnimatePresence>
+                {isCalendarOpen && (
+                    <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-2xs z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ scale: 0.95, y: 15, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.95, y: 15, opacity: 0 }}
+                            className="bg-white rounded-3xl border border-slate-100 p-6 w-full max-w-sm shadow-2xl space-y-4"
+                        >
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <h3 className="font-black text-sm text-slate-800 flex items-center gap-1">
+                                    🗓️ Log Calendar History
+                                </h3>
+                                <button 
+                                    onClick={() => setIsCalendarOpen(false)}
+                                    className="w-7 h-7 bg-slate-50 border border-slate-100 text-slate-400 hover:text-slate-900 rounded-lg flex items-center justify-center text-xs"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+
+                            <p className="text-[11px] text-slate-400 font-medium">Verify study history slots or pick custom schedule dates:</p>
+
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-2">
+                                <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black text-slate-400 uppercase tracking-wider pb-1 border-b border-slate-200/50">
+                                    {['M','T','W','T','F','S','S'].map((dl, i) => <span key={i}>{dl}</span>)}
+                                </div>
+                                <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold font-mono">
+                                    {Array.from({ length: 31 }).map((_, i) => {
+                                        const dayNum = i + 1;
+                                        const active = dayNum === 1 || dayNum === 2 || dayNum === 12 || dayNum === 15 || dayNum === 26 || dayNum === 28;
+                                        return (
+                                            <button
+                                                key={i}
+                                                onClick={() => {
+                                                    setSelectedDate(`2026-06-${dayNum.toString().padStart(2, '0')}`);
+                                                    addToast(`History view selected: Day ${dayNum}`, "success");
+                                                    setIsCalendarOpen(false);
+                                                }}
+                                                className={`py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                                                    active 
+                                                        ? 'bg-gradient-to-r from-indigo-500 to-indigo-650 text-white shadow-xs scale-102' 
+                                                        : 'hover:bg-indigo-50/50 text-slate-500 hover:text-slate-900'
+                                                }`}
+                                            >
+                                                {dayNum}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={() => setIsCalendarOpen(false)}
+                                className="w-full py-2.5 bg-indigo-650 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-xs active:scale-95 border-0"
+                            >
+                                Apply Dates filter
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Custom Category Picker Overlay */}
+            <AnimatePresence>
+                {isTagPickerOpen && (
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsTagPickerOpen(false)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+                        />
+                        <motion.div 
+                            initial={{ y: "100%", opacity: 0.5 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: "100%", opacity: 0.5 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+                            className="bg-white w-full sm:max-w-md rounded-t-[2.2rem] sm:rounded-b-[2.2rem] sm:rounded-[2.2rem] overflow-hidden shadow-2xl relative z-10 p-5 pb-8 sm:pb-5 space-y-4"
+                        >
+                            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-2 sm:hidden" />
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest font-sans">
+                                    Select Subject Tag
+                                </h3>
+                                <button 
+                                    onClick={() => setIsTagPickerOpen(false)}
+                                    className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-450 hover:text-slate-705 text-slate-400 hover:text-slate-700 active:scale-90"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="space-y-1">
+                                {tagsList.map((t) => {
+                                    const isSelected = tag === t;
+                                    return (
+                                        <button
+                                            key={t}
+                                            onClick={() => {
+                                                setTag(t);
+                                                addToast(`Tag changed to ${t}`, "success");
+                                                setIsTagPickerOpen(false);
+                                            }}
+                                            className={`w-full flex items-center justify-between py-3.5 px-3 rounded-2xl transition-all cursor-pointer text-left border-0 ${
+                                                isSelected ? 'bg-slate-50 font-bold' : 'bg-transparent hover:bg-slate-50/50'
+                                            }`}
+                                        >
+                                            <span className={`text-[15px] ${isSelected ? 'text-indigo-650 font-extrabold text-slate-900' : 'text-slate-700 font-medium'}`}>
+                                                {t}
+                                            </span>
+                                            <div className="flex items-center justify-center shrink-0">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                                                    isSelected ? 'border-[#EF4444]' : 'border-slate-300'
+                                                }`}>
+                                                    {isSelected && (
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-[#EF4444]" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Custom Deletion Confirmation Popup */}
+            <AnimatePresence>
+                {noteIdToDelete && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setNoteIdToDelete(null)}
+                            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+                        />
+                        <motion.div 
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white w-full max-w-sm rounded-[2.2rem] p-6 text-center space-y-4 shadow-2xl relative z-10 border border-slate-100"
+                        >
+                            <div className="w-12 h-12 rounded-full bg-rose-50 flex items-center justify-center mx-auto text-rose-500">
+                                <Trash2 className="w-5 h-5" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <h3 className="text-base font-black text-slate-900">
+                                    Delete This Log?
+                                </h3>
+                                <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                                    Are you sure you want to permanently erase this thought log? This action is absolute and cannot be undone.
+                                </p>
+                            </div>
+                            <div className="flex gap-2.5 pt-2">
+                                <button
+                                    onClick={() => setNoteIdToDelete(null)}
+                                    className="flex-1 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200/60 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 border-0"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={executeDeleteNote}
+                                    className="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer active:scale-95 border-0"
+                                >
+                                    Delete Log
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Giant floating action button exact */}
+            <div className="fixed bottom-24 right-5 sm:right-8 z-40">
+                <button
+                    onClick={triggerQuickNote}
+                    className="w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-75 *0 text-white shadow-xl hover:shadow-2xl flex items-center justify-center text-2xl active:scale-95 duration-200 cursor-pointer border-0 float-right group"
+                    title="Draft Entry reflections"
+                >
+                    <Plus className="w-6 h-6 text-white group-hover:rotate-90 transition-transform" />
+                </button>
+            </div>
+
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="image/*" 
+                className="hidden" 
+            />
         </div>
     );
 };
 
-const TodoListPage = () => {
+
+
+const TodoListPage_old = () => {
     const navigate = useNavigate();
     const [tasks, setTasks] = useState<{id: string, text: string, done: boolean, priority: 'low' | 'medium' | 'high', category: string}[]>([]);
     const [newTask, setNewTask] = useState("");
@@ -10937,16 +12831,17 @@ const AppContent = () => {
                 <Route path="/tools/notes" element={<NotePadPage />} />
                 <Route path="/tools/dictionary" element={<DictionaryPage />} />
                 <Route path="/tools/nepali-dictionary" element={<NepaliDictionaryPage />} />
-                <Route path="/tools/timer" element={<StudyTimer />} />
+                <Route path="/tools/timer" element={<FocusTimerPage />} />
+                <Route path="/tools/timer/fullscreen" element={<FocusTimerPage />} />
                 <Route path="/tools/calendar" element={<ExamCalendar />} />
                 <Route path="/tools/formulas" element={<FormulaBankPage />} />
-                <Route path="/tools/videos" element={<VideoSectionPage />} />
-                <Route path="/tools/todo" element={<TodoListPage />} />
+                <Route path="/tools/videos" element={<VisualsPage />} />
                 <Route path="/tools/words" element={<WordCounterPage />} />
                 <Route path="/tools/periodic-table" element={<PeriodicTablePage />} />
-                <Route path="/tools/translator" element={<TranslatorPage />} />
                 <Route path="/tools/flashcards" element={<FlashcardApp />} />
-                <Route path="/tools/pictures" element={<PicturesPage />} />
+                <Route path="/tools/pictures" element={<VisualsPage />} />
+                <Route path="/tools/visuals" element={<VisualsPage />} />
+                <Route path="/tools/graphs" element={<GraphsPage />} />
             </Routes>
         </Layout>
     );
