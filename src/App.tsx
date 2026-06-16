@@ -23,7 +23,7 @@ import {
   BookMarked, Layout as LayoutIcon, Star, Share2, MoreVertical, Palette, Tag, AlignLeft, Layers,
   Wrench, BellRing, FileQuestion, Moon, Sun, Youtube, Beaker, LayoutGrid, Type, Box, Film,
   Gamepad2, Brain, LayoutList, BookCopy, ShieldAlert, Link2, VolumeX, Puzzle,
-  Eraser, Paperclip
+  Eraser, Paperclip, Menu, Mail, Briefcase, GitMerge, HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -59,7 +59,7 @@ import {
 import { AppData, User, SubjectData, NewsItem, SubjectType, Chapter, LeaderboardEntry, CalendarEvent } from './types.ts';
 import { STATIC_MCQS } from './static_mcqs';
 
-const LogoImg = "https://res.cloudinary.com/dtyjlnjjf/image/upload/f_auto,q_auto/9931_fogzow";
+const LogoImg = "/logo.png";
 
 /**
  * Utility for Tailwind classes
@@ -189,9 +189,31 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { user, setUser, userProfile } = useApp();
 
+  // New fully functional states for sliding left drawer and notification popover requested by user
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
+  const [notifications, setNotifications] = useState([
+    { id: 1, title: '2083 Model Questions Released!', desc: 'Science Class 10 full syllabus sample trial matches released officially.', time: '10 min ago', read: false },
+    { id: 2, title: 'MCQ Daily Battle Challenge', desc: 'A new general knowledge and mathematics contest is live. Play now!', time: '2 hours ago', read: false },
+    { id: 3, title: 'High-yield interactive study cards', desc: 'Class 10 Physics & Computer Science notes and videos uploaded.', time: 'Yesterday', read: false }
+  ]);
+
   useEffect(() => {
      window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // Disable body scrolling when three-line drawer menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
@@ -206,13 +228,34 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       try {
           await supabase.auth.signOut();
           localStorage.removeItem('logged_user');
+          setUser(null);
           navigate('/');
       } catch (err) {
           console.error("Logout error:", err);
-          // Force logout in app state anyway
+          // Force state clean up
           setUser(null);
+          localStorage.removeItem('logged_user');
           navigate('/');
       }
+  };
+
+  const handleToggleNotif = () => {
+    setIsNotifOpen(!isNotifOpen);
+    if (!isNotifOpen) {
+      setHasUnread(false); // Mark red dot as read when opening
+    }
+  };
+
+  const handleMarkAllRead = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setHasUnread(false);
+  };
+
+  const handleClearAllNotif = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications([]);
+    setHasUnread(false);
   };
 
   const isAdminMode = location.pathname.startsWith('/admin-portal');
@@ -220,12 +263,34 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC]">
       {!isAdminMode && (
-        <header className="fixed top-0 w-full z-[1000] backdrop-blur-md border-b px-6 py-4 bg-white/80 border-slate-100">
-          <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center">
-            <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-500 mt-2" onClick={() => navigate('/')}>
-              <Logo size="sm" />
+        <header className="fixed top-0 w-full z-[1000] backdrop-blur-md border-b px-4 py-3 bg-white border-slate-100">
+          <div className="max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto flex justify-between items-center relative">
+            {/* Left side: Menu icon + Logo */}
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setIsMenuOpen(true)}
+                className="text-slate-600 hover:text-blue-600 p-1.5 rounded-lg active:scale-95 transition-all outline-none"
+              >
+                <Menu className="w-5.5 h-5.5 stroke-[2.25]" />
+              </button>
+              <div className="logo cursor-pointer flex items-center gap-2 group transition-all duration-300" onClick={() => navigate('/')}>
+                <Logo size="sm" />
+              </div>
             </div>
-            <div className="flex items-center gap-4">
+            
+            {/* Right side: Bell icon with red dot + Profile avatar with green dot */}
+            <div className="flex items-center gap-3">
+               {/* Notification Bell */}
+               <button 
+                onClick={handleToggleNotif}
+                className="relative w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-all border border-slate-100/50 outline-none"
+               >
+                  <Bell className="w-5 h-5 stroke-[2.25]" />
+                  {hasUnread && notifications.some(n => !n.read) && (
+                    <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full animate-pulse" />
+                  )}
+               </button>
+               
                {user && location.pathname !== '/profile' && (
                  <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-[#1D4ED8] flex items-center justify-center text-white relative group shadow-lg hover:ring-4 hover:ring-blue/20 transition-all">
                     <UserIcon className="w-5 h-5 fill-current" />
@@ -237,69 +302,291 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                     <LogOut className="w-5 h-5 fill-current ml-0.5" />
                  </button>
                )}
+               {!user && (
+                 <button onClick={() => navigate('/profile')} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:ring-2 hover:ring-slate-200 transition-all">
+                    <UserIcon className="w-5 h-5" />
+                 </button>
+               )}
             </div>
+
+            {/* Notification Dropdown Popover */}
+            <AnimatePresence>
+              {isNotifOpen && (
+                <>
+                  {/* Backdrop to close click outside */}
+                  <div className="fixed inset-0 z-[1500]" onClick={() => setIsNotifOpen(false)} />
+                  
+                  <motion.div 
+                    initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 12, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-13 w-[320px] max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-2xl border border-slate-100 z-[1600] flex flex-col overflow-hidden text-slate-800"
+                  >
+                    <div className="p-3.5 bg-slate-50 border-b border-slate-100 flex justify-between items-center text-left">
+                      <span className="font-extrabold text-xs text-slate-800 flex items-center gap-1.5">
+                        <Bell className="w-4 h-4 text-blue-600" /> Announcements & Alerts
+                      </span>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={handleMarkAllRead}
+                          className="text-[10px] font-extrabold text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          Mark Read
+                        </button>
+                        <span className="text-slate-300">|</span>
+                        <button 
+                          onClick={handleClearAllNotif}
+                          className="text-[10px] font-extrabold text-rose-500 hover:text-rose-700 transition-colors"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="max-h-[280px] overflow-y-auto divide-y divide-slate-100 custom-scrollbar text-left">
+                      {notifications.length === 0 ? (
+                        <div className="py-8 px-4 text-center text-slate-400 space-y-2">
+                          <CheckCircle className="w-8 h-8 text-green-500/80 mx-auto" />
+                          <p className="text-xs font-bold font-sans text-slate-700">All alerts cleared!</p>
+                          <p className="text-[10px] text-slate-400 font-bold">No new school notices or matching battles are currently pending.</p>
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div 
+                            key={notif.id} 
+                            onClick={() => {
+                              setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                            }}
+                            className={cn(
+                              "p-3.5 hover:bg-slate-50 transition-colors cursor-pointer relative",
+                              !notif.read && "bg-blue-50/15"
+                            )}
+                          >
+                            {!notif.read && (
+                              <span className="absolute top-5 left-3.5 w-1.75 h-1.75 rounded-full bg-blue-600" />
+                            )}
+                            <div className={cn("space-y-0.5 pl-4.5")}>
+                              <div className="flex justify-between items-start gap-1">
+                                <h4 className={cn("text-[11.5px] text-slate-800 tracking-tight leading-snug font-extrabold", notif.read && "font-bold text-slate-600")}>
+                                  {notif.title}
+                                </h4>
+                                <span className="text-[8px] text-slate-400 shrink-0 font-bold">
+                                  {notif.time}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 leading-normal font-medium">
+                                {notif.desc}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    
+                    <div className="p-2.5 bg-slate-50 border-t border-slate-100 text-center">
+                      <button 
+                        onClick={() => {
+                          setIsNotifOpen(false);
+                          navigate('/news');
+                        }}
+                        className="text-[10px] font-black text-blue-600 hover:text-blue-800"
+                      >
+                        See Board News Board 📰
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
         </header>
       )}
+
+      {/* Slide-out left navigation drawer Menu */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-xs z-[2000]"
+            />
+            
+            {/* Draw Side panel wrapper */}
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '-100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 180 }}
+              className="fixed top-0 left-0 bottom-0 w-[290px] bg-white z-[2001] shadow-[24px_0_64px_rgba(15,23,42,0.15)] flex flex-col justify-between text-left"
+            >
+              <div className="flex-1 flex flex-col overflow-y-auto">
+                {/* Drawer header graphic profile banner */}
+                <div className="bg-[#1D4ED8] p-5 pt-7 text-white flex flex-col gap-4 relative overflow-hidden">
+                  <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/5 rounded-full pointer-events-none" />
+                  <div className="flex justify-between items-center relative z-10">
+                    <Logo size="sm" className="text-white brightness-200" />
+                    <button 
+                      onClick={() => setIsMenuOpen(false)}
+                      className="p-1 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  {/* Current Active User Info */}
+                  <div className="pt-2 flex items-center gap-3 relative z-10 select-none">
+                    <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white font-black text-base shadow-sm">
+                      {user ? user.name.slice(0, 2).toUpperCase() : "AP"}
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm tracking-tight truncate max-w-[170px]">
+                        {user ? user.name : "Guest Scholar"}
+                      </h4>
+                      <p className="text-[11px] text-blue-105 font-bold flex items-center gap-1 mt-0.5">
+                        <Flame className="w-3.5 h-3.5 text-orange-400 fill-orange-400" />
+                        Streak: {user ? user.streak : 0} days
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Navigation Links list */}
+                <div className="p-4 space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-3 pb-2 select-none">Learning Modules</span>
+                  
+                  {[
+                    { label: 'Home Dashboard', path: '/', icon: Home },
+                    { label: 'Interactive Learning Hub', path: '/hub', icon: BookOpen },
+                    { label: 'AI Homework Assistant', path: '/ai', icon: Bot },
+                    { label: 'Smart Mathematical Tools', path: '/tools', icon: ToolLayout },
+                    { label: 'MCQ Live Quiz Battle', path: '/mock', icon: ListChecks },
+                    { label: 'Aadhar Notices & News', path: '/news', icon: Newspaper },
+                    { label: 'Academic Student Profile', path: '/profile', icon: UserIcon },
+                  ].map((item) => {
+                    const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+                    const ItemIcon = item.icon;
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          navigate(item.path);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-black text-slate-650 hover:bg-slate-50 transition-all text-left",
+                          isActive && "bg-blue-50 text-blue-700 hover:bg-blue-50/80 font-black"
+                        )}
+                      >
+                        <ItemIcon className={cn("w-4.5 h-4.5 text-slate-400 shrink-0", isActive && "text-blue-600")} />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                  
+                  <div className="h-[1px] bg-slate-100 my-4" />
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-3 pb-2 select-none">App Management</span>
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/admin-portal');
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition-all text-left",
+                      location.pathname.startsWith('/admin-portal') && "bg-blue-50 text-blue-700"
+                    )}
+                  >
+                    <SlidersHorizontal className="w-4.5 h-4.5 text-slate-400 shrink-0" />
+                    <span>Administrative Portal</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Bottom logout panel */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 select-none">
+                {user ? (
+                  <button 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-black transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out Session</span>
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      navigate('/profile');
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black transition-colors"
+                  >
+                    <UserIcon className="w-4 h-4" />
+                    <span>Sign In to Learn</span>
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {isAdminMode ? (
         children
       ) : (
         <main className={cn(
-          "max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-4",
-          location.pathname === '/ai' ? "pb-0 pt-0" : "pb-32 min-h-screen pt-24"
+          "max-w-[620px] md:max-w-4xl lg:max-w-6xl mx-auto px-3 sm:px-4",
+          location.pathname === '/ai' ? "pb-0 pt-0" : "pb-24 min-h-screen pt-[72px]"
         )}>
           {children}
         </main>
       )}
 
       {!isAdminMode && location.pathname !== '/profile' && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-white/95 border-t border-slate-100 backdrop-blur-3xl z-[1000] px-4 py-3">
-          <div className="max-w-[620px] md:max-w-xl lg:max-w-2xl mx-auto flex justify-between items-center px-2">
+        <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-[1000] px-4 py-1.5 shadow-[0_-10px_25px_rgba(0,0,0,0.03)]">
+          <div className="max-w-[480px] mx-auto flex justify-between items-center px-1">
             {navItems.map((item) => {
-            const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-            const Icon = item.icon;
-            
-            // Map icons to specific colors for Better Logo feel
-            const iconColors: Record<string, string> = {
-                'Home': 'bg-rose-500',
-                'Hub': 'bg-blue-500',
-                'AI Tutor': 'bg-purple-500',
-                'Tools': 'bg-emerald-500',
-                'Battle': 'bg-orange-500',
-                'News': 'bg-cyan-500'
-            };
-            const activeColor = iconColors[item.label] || 'bg-slate-900';
-
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className="relative flex flex-col items-center gap-1"
-              >
-                <div 
-                  className={cn(
-                    "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-300 relative shadow-sm",
-                    isActive 
-                      ? `${activeColor} text-white shadow-md ring-2 ring-white` 
-                      : "bg-transparent text-slate-400 group-hover:bg-slate-50"
-                  )}
+              const isActive = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
+              const Icon = item.icon;
+              
+              return (
+                <button
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className="flex-1 flex flex-col items-center justify-center py-1 relative group cursor-pointer"
                 >
-                  <Icon className={cn("w-5 h-5", isActive && "scale-110")} />
-                </div>
-                <span 
-                  className={cn(
-                    "text-[0.55rem] md:text-[0.6rem] font-black uppercase tracking-wider md:tracking-widest mt-1 text-center transition-colors duration-300",
-                    isActive ? "text-slate-900" : "text-slate-400"
+                  <div className={cn(
+                    "flex items-center justify-center mb-0.5 transition-all text-slate-400 group-hover:text-slate-600",
+                    isActive && "text-[#1D4ED8]"
+                  )}>
+                    <Icon className="w-5 h-5 stroke-[2]" />
+                  </div>
+                  <span className={cn(
+                    "text-[10px] font-black tracking-tight transition-colors duration-200 text-slate-400 group-hover:text-slate-500",
+                    isActive && "text-[#1D4ED8]"
+                  )}>
+                    {item.label}
+                  </span>
+                  
+                  {/* Active dot/dash indicator */}
+                  {isActive && (
+                    <motion.div 
+                      layoutId="activeTabUnderline"
+                      className="absolute -bottom-1.5 w-5 h-0.75 bg-[#1D4ED8] rounded-full" 
+                      transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    />
                   )}
-                >
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       )}
 
       {/* Floating Admin Button Removed as requested */}
@@ -313,6 +600,18 @@ const MockTest = () => {
     const navigate = useNavigate();
     const storageKey = `aadhar_mock_${user?.id || 'guest'}`;
 
+    // --- State variables for entire Battle Zone ---
+    const [activeSection, setActiveSection] = useState<'lobby' | 'board-trial' | 'formula-rush' | 'molecule-fusion' | 'grammar-rush'>('lobby');
+    const [battleRating, setBattleRating] = useState(() => {
+        const saved = localStorage.getItem('aadhar_battle_rating');
+        return saved ? parseInt(saved) : 1240;
+    });
+    const [matchesPlayed, setMatchesPlayed] = useState(() => {
+        const saved = localStorage.getItem('aadhar_battle_matches');
+        return saved ? parseInt(saved) : 18;
+    });
+
+    // --- Preservation of Trial state ---
     const [status, setStatus] = useState<'setup' | 'quiz' | 'result' | 'review'>(() => {
         const saved = localStorage.getItem(`${storageKey}_status`);
         return saved ? saved as any : 'setup';
@@ -335,6 +634,28 @@ const MockTest = () => {
     });
     const [loading, setLoading] = useState(false);
 
+    // --- Game 2: Formula Speed Run State ---
+    const [formulaScore, setFormulaScore] = useState(0);
+    const [formulaIdx, setFormulaIdx] = useState(0);
+    const [formulaTimer, setFormulaTimer] = useState(30);
+    const [formulaGameStatus, setFormulaGameStatus] = useState<'idle' | 'playing' | 'completed'>('idle');
+    const [formulaQuestions, setFormulaQuestions] = useState<any[]>([]);
+
+    // --- Game 3: Molecule Builder State ---
+    const [moleculeIdx, setMoleculeIdx] = useState(0);
+    const [moleculeScore, setMoleculeScore] = useState(0);
+    const [moleculeGameStatus, setMoleculeGameStatus] = useState<'idle' | 'playing' | 'completed'>('idle');
+    const [selectedAtoms, setSelectedAtoms] = useState<Record<string, number>>({ H: 0, O: 0, N: 0, C: 0, Na: 0, Cl: 0 });
+    const [moleculeMessage, setMoleculeMessage] = useState('');
+
+    // --- Game 4: Grammar Rush State ---
+    const [grammarScore, setGrammarScore] = useState(0);
+    const [grammarIdx, setGrammarIdx] = useState(0);
+    const [grammarTimer, setGrammarTimer] = useState(30);
+    const [grammarGameStatus, setGrammarGameStatus] = useState<'idle' | 'playing' | 'completed'>('idle');
+    const [grammarQuestionsList, setGrammarQuestionsList] = useState<any[]>([]);
+
+    // Save states
     useEffect(() => {
         localStorage.setItem(`${storageKey}_status`, status);
         localStorage.setItem(`${storageKey}_settings`, JSON.stringify(settings));
@@ -343,6 +664,165 @@ const MockTest = () => {
         localStorage.setItem(`${storageKey}_timer`, timer.toString());
     }, [status, settings, questions, currentIdx, timer, storageKey]);
 
+    useEffect(() => {
+        localStorage.setItem('aadhar_battle_rating', battleRating.toString());
+        localStorage.setItem('aadhar_battle_matches', matchesPlayed.toString());
+    }, [battleRating, matchesPlayed]);
+
+    const incrementRating = (pts: number) => {
+        setBattleRating(prev => prev + pts);
+        setMatchesPlayed(prev => prev + 1);
+    };
+
+    // --- GAME 2 HELPERS (Formula Speed Run) ---
+    const startFormulaGame = () => {
+        setFormulaScore(0);
+        setFormulaIdx(0);
+        setFormulaTimer(30);
+        setFormulaGameStatus('playing');
+        
+        const formulaPool = [
+            { prompt: 'Area of a Circle', correct: '\\pi r^2', choices: ['2\\pi r', '\\pi r^2', '\\frac{4}{3}\\pi r^3', '\\pi d'] },
+            { prompt: 'Einstein\'s Mass-Energy Equivalence', correct: 'E = mc^2', choices: ['E = hf', 'E = mc^2', 'F = ma', 'p = mv'] },
+            { prompt: 'Sulfuric Acid', correct: 'H_2SO_4', choices: ['HCl', 'HNO_3', 'H_2SO_4', 'H_2O'] },
+            { prompt: 'Newton\'s Second Law', correct: 'F = ma', choices: ['F = qE', 'p = mv', 'W = Fd', 'F = ma'] },
+            { prompt: 'Pythagorean Theorem', correct: 'a^2 + b^2 = c^2', choices: ['a^2 + b^2 = c^2', 'A = bh', 'C = 2\\pi r', 'v = d/t'] },
+            { prompt: 'Water Molecule Structure', correct: 'H_2O', choices: ['CO_2', 'H_2O', 'NaCl', 'CH_4'] },
+            { prompt: 'Photosynthesis Sugar', correct: 'C_6H_{12}O_6', choices: ['C_6H_{12}O_6', 'CO_2', 'H_2O', 'O_2'] }
+        ];
+        const shuffled = [...formulaPool].sort(() => 0.5 - Math.random()).slice(0, 5);
+        setFormulaQuestions(shuffled);
+    };
+
+    const selectFormulaAnswer = (ans: string) => {
+        let sc = formulaScore;
+        if (ans === formulaQuestions[formulaIdx].correct) {
+            sc = formulaScore + 1;
+            setFormulaScore(sc);
+        }
+        if (formulaIdx < 4) {
+            setFormulaIdx(prev => prev + 1);
+        } else {
+            setFormulaGameStatus('completed');
+            incrementRating(sc * 10);
+        }
+    };
+
+    useEffect(() => {
+        let tm: any;
+        if (activeSection === 'formula-rush' && formulaGameStatus === 'playing' && formulaTimer > 0) {
+            tm = setTimeout(() => setFormulaTimer(t => t - 1), 1000);
+        } else if (formulaTimer === 0 && formulaGameStatus === 'playing') {
+            setFormulaGameStatus('completed');
+            incrementRating(formulaScore * 10);
+        }
+        return () => clearTimeout(tm);
+    }, [formulaTimer, formulaGameStatus, activeSection]);
+
+    // --- GAME 3 HELPERS (Molecular Fusion Lab) ---
+    const compoundLibrary = [
+        { name: 'Water', chemical: 'H_2O', tip: 'Needs 2 Hydrogen (H) and 1 Oxygen (O)', target: { H: 2, O: 1 } },
+        { name: 'Carbon Dioxide', chemical: 'CO_2', tip: 'Needs 1 Carbon (C) and 2 Oxygen (O)', target: { C: 1, O: 2 } },
+        { name: 'Ammonia', chemical: 'NH_3', tip: 'Needs 1 Nitrogen (N) and 3 Hydrogen (H)', target: { N: 1, H: 3 } },
+        { name: 'Table Salt', chemical: 'NaCl', tip: 'Needs 1 Sodium (Na) and 1 Chlorine (Cl)', target: { Na: 1, Cl: 1 } },
+        { name: 'Methane', chemical: 'CH_4', tip: 'Needs 1 Carbon (C) and 4 Hydrogen (H)', target: { C: 1, H: 4 } }
+    ];
+
+    const startMoleculeGame = () => {
+        setMoleculeIdx(0);
+        setMoleculeScore(0);
+        setMoleculeGameStatus('playing');
+        setMoleculeMessage('');
+        clearAtoms();
+    };
+
+    const tapAtom = (symbol: string) => {
+        setSelectedAtoms(prev => ({
+            ...prev,
+            [symbol]: (prev[symbol] || 0) + 1
+        }));
+    };
+
+    const clearAtoms = () => {
+        setSelectedAtoms({ H: 0, O: 0, N: 0, C: 0, Na: 0, Cl: 0 });
+        setMoleculeMessage('');
+    };
+
+    const evaluateSynthesis = () => {
+        const target = compoundLibrary[moleculeIdx].target as Record<string, number>;
+        let isCorrect = true;
+        
+        for (const [key, value] of Object.entries(target)) {
+            if (selectedAtoms[key] !== value) {
+                isCorrect = false;
+            }
+        }
+        for (const [key, value] of Object.entries(selectedAtoms)) {
+            if (value > 0 && !(key in target)) {
+                isCorrect = false;
+            }
+        }
+
+        if (isCorrect) {
+            const sc = moleculeScore + 1;
+            setMoleculeScore(sc);
+            setMoleculeMessage('🎉 SUCCESS! Synthesized successfully in our fusion reactor chambers!');
+            setTimeout(() => {
+                if (moleculeIdx < 4) {
+                    setMoleculeIdx(prev => prev + 1);
+                    clearAtoms();
+                } else {
+                    setMoleculeGameStatus('completed');
+                    incrementRating(sc * 15);
+                }
+            }, 1500);
+        } else {
+            setMoleculeMessage('❌ CORRUPTION! Compound unstable. Check stoichiometry ratio and retry!');
+        }
+    };
+
+    // --- GAME 4 HELPERS (Grammar Sprint) ---
+    const grammarPool = [
+        { q: 'Identify the perfect passive aspect: \"Many songs _____ by him.\"', correct: 'have been sung', choices: ['have sung', 'have been sung', 'are singing', 'sung'] },
+        { q: 'The school, _____ was built in 2020, has modern computer labs.', correct: 'which', choices: ['who', 'which', 'whom', 'where'] },
+        { q: 'If the clouds clear up, we _____ play football.', correct: 'will', choices: ['will', 'would', 'should', 'can'] },
+        { q: 'Choose correct word choice: A pack of wolves _____ seen in the forest.', correct: 'was', choices: ['were', 'was', 'are', 'been'] },
+        { q: 'Identify grammar category: \"म भात खान्छु\" translates Active Voice as:', correct: 'कर्तृवाच्य (Active)', choices: ['कर्तृवाच्य (Active)', 'कर्मवाच्य (Passive)', 'भाववाच्य (Impersonal)', 'None'] }
+    ];
+
+    const startGrammarGame = () => {
+        setGrammarScore(0);
+        setGrammarIdx(0);
+        setGrammarTimer(30);
+        setGrammarGameStatus('playing');
+        setGrammarQuestionsList([...grammarPool].sort(() => 0.5 - Math.random()));
+    };
+
+    const selectGrammarAnswer = (ans: string) => {
+        let sc = grammarScore;
+        if (ans === grammarQuestionsList[grammarIdx].correct) {
+            sc = grammarScore + 1;
+            setGrammarScore(sc);
+        }
+        if (grammarIdx < 4) {
+            setGrammarIdx(prev => prev + 1);
+        } else {
+            setGrammarGameStatus('completed');
+            incrementRating(sc * 10);
+        }
+    };
+
+    useEffect(() => {
+        let tm: any;
+        if (activeSection === 'grammar-rush' && grammarGameStatus === 'playing' && grammarTimer > 0) {
+            tm = setTimeout(() => setGrammarTimer(t => t - 1), 1000);
+        } else if (grammarTimer === 0 && grammarGameStatus === 'playing') {
+            setGrammarGameStatus('completed');
+            incrementRating(grammarScore * 10);
+        }
+        return () => clearTimeout(tm);
+    }, [grammarTimer, grammarGameStatus, activeSection]);
+
     const clearMockTest = () => {
         setStatus('setup');
         setQuestions([]);
@@ -350,7 +830,7 @@ const MockTest = () => {
         setTimer(0);
     };
 
-    const currentSubjectConfig = SUBJECTS_CONFIG[settings.subject];
+    const currentSubjectConfig = SUBJECTS_CONFIG[settings.subject] || SUBJECTS_CONFIG['English'];
 
     const startTest = async () => {
         if (!window.navigator.onLine) {
@@ -409,7 +889,10 @@ const MockTest = () => {
         updated[currentIdx].userChoice = choice;
         setQuestions(updated);
         if (currentIdx < questions.length - 1) setCurrentIdx(currentIdx + 1);
-        else setStatus('result');
+        else {
+            setStatus('result');
+            incrementRating(30);
+        }
     };
 
     const score = questions.filter(q => q.userChoice === q.correct).length;
@@ -420,122 +903,733 @@ const MockTest = () => {
     }, [status]);
 
     return (
-        <div className="space-y-6 animate-fade-up">
-            <div className="flex items-center gap-3">
-                <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-colors duration-500 bg-linear-to-br text-white",
-                    currentSubjectConfig.gradient
-                )}>
-                    <ListChecks className="w-6 h-6" />
-                </div>
-                <h1 className="text-2xl font-black italic tracking-tighter uppercase text-slate-800 leading-none">Battle Ground</h1>
-            </div>
-
-            {status === 'setup' && (
-                <div className="bg-white p-5 md:p-8 rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-xl space-y-6 md:space-y-8 relative overflow-hidden">
-                    <div className={cn("absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-10 transition-colors duration-700", `bg-${currentSubjectConfig.color}-500`)} />
+        <div className="space-y-6 pb-20 max-w-md mx-auto px-2">
+            
+            {/* LOBBY SECTION */}
+            {activeSection === 'lobby' && (
+                <div className="space-y-6 animate-fade-up">
                     
-                    <div className={cn("p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] text-center text-white relative shadow-2xl transition-all duration-700 bg-linear-to-br shadow-emerald-500/20", currentSubjectConfig.gradient)}>
-                        <Sparkles className="w-10 h-10 md:w-16 md:h-16 text-white/50 mx-auto mb-2 md:mb-4 animate-pulse" />
-                        <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase">Board Trial Ready</h2>
-                        <p className="text-[0.6rem] md:text-[0.65rem] font-bold text-white/60 uppercase mt-2 tracking-[0.2em] leading-relaxed">Synthesizing {settings.subject} Challenges</p>
+                    {/* Immersive Cyberpunk / Vibrant header */}
+                    <div className="bg-gradient-to-r from-violet-600 via-fuchsia-600 to-indigo-600 p-6 md:p-8 rounded-[2.5rem] text-white relative overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-6 min-h-[170px] shadow-2xl border border-white/10 text-left">
+                        {/* Shimmer animations background */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse" />
+                        <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
+                        
+                        <div className="space-y-2 z-10 max-w-sm">
+                            <div className="flex items-center gap-2">
+                                <span className="bg-white/10 px-2.5 py-1 rounded-full text-[8px] font-black tracking-widest uppercase text-fuchsia-300">SEE ARENA PROTOCOLS</span>
+                            </div>
+                            <h1 className="text-3xl md:text-5xl font-extrabold italic tracking-tighter uppercase leading-none text-white">
+                                BATTLE ZONE
+                            </h1>
+                            <p className="text-xs text-fuchsia-100 font-bold leading-tight max-w-[240px]">
+                                Engage in real-time academic warfare. Expand cognitive metrics!
+                            </p>
+                        </div>
+                        
+                        <div className="relative shrink-0 z-10 w-[100px] -mr-2">
+                            <img 
+                                src="/11429-removebg-preview.png" 
+                                alt="Battle Sword and Shield Illustration" 
+                                className="w-full h-auto drop-shadow-3xl animate-bounce duration-5000"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'block';
+                                }}
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-3 md:space-y-4">
-                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
-                            {(Object.keys(SUBJECTS_CONFIG) as SubjectType[])
-                                .filter(sub => sub !== 'Economics' && sub !== 'Health')
-                                .map((sub) => {
-                                    const cfg = SUBJECTS_CONFIG[sub];
-                                return (
+                    {/* Combat Card Panel containing active rating */}
+                    <div className="bg-white p-5 rounded-[2.5rem] border border-slate-100 shadow-[0_4px_25px_rgba(0,0,0,0.015)] space-y-4">
+                        <div className="flex items-center justify-between font-black">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center shrink-0">
+                                    <Trophy className="w-5.5 h-5.5 fill-current" />
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider leading-none">Cerebral ELO</p>
+                                    <span className="text-xl font-black text-slate-800 italic">{battleRating} Rating</span>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider leading-none">Battles Played</p>
+                                <span className="text-sm font-black text-fuchsia-600 italic">{matchesPlayed} Matches</span>
+                            </div>
+                        </div>
+
+                        {/* Progress meter bar */}
+                        <div className="space-y-1.5 text-left">
+                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                <span>Current: Grand Cerebral Knight</span>
+                                <span className="text-violet-600">Level up: 1,500</span>
+                            </div>
+                            <div className="h-3 bg-violet-50 border border-violet-100 rounded-full overflow-hidden p-0.5">
+                                <div 
+                                    className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full shadow-xs"
+                                    style={{ width: `${Math.min(100, (battleRating - 1000) / 5)}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Quick micro stats badges */}
+                        <div className="grid grid-cols-3 gap-2 pt-1 font-black shadow-none">
+                            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center">
+                                <span className="text-[8px] font-black text-slate-400 uppercase block">Daily Streak</span>
+                                <span className="text-xs font-black text-slate-800">⚡ 5 Days</span>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center">
+                                <span className="text-[8px] font-black text-slate-400 uppercase block">Win Ratio</span>
+                                <span className="text-xs font-black text-emerald-600">📈 84.5%</span>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center">
+                                <span className="text-[8px] font-black text-slate-400 uppercase block">Global Rank</span>
+                                <span className="text-xs font-black text-amber-500">🏆 #412</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Tons of Games Grid */}
+                    <div className="space-y-4 text-left font-black">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Academic Challenge</h2>
+                            <div className="h-[1px] flex-1 bg-slate-100" />
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                            
+                            {/* GAME 1: BOARD TRIAL ARENA */}
+                            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-5 rounded-3xl text-white relative overflow-hidden group shadow-lg flex justify-between gap-4 border border-indigo-400/20 bg-indigo-500">
+                                <div className="space-y-3 z-10 max-w-[200px] sm:max-w-xs flex flex-col justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[8px] bg-indigo-700 text-indigo-100 px-2 py-0.5 rounded-md uppercase font-black tracking-widest">COGNITIVE SYMPOSIUM</span>
+                                            <span className="text-xs">🔥</span>
+                                        </div>
+                                        <h3 className="text-lg font-black tracking-tight leading-none uppercase">AI Board Trial Arena</h3>
+                                        <p className="text-[10px] text-indigo-100/80 font-semibold leading-tight">Deploy our synthetic neural tutors to construct realistic board exam trials.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveSection('board-trial');
+                                            setStatus('setup');
+                                        }}
+                                        className="bg-white text-indigo-650 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-slate-50 transition-colors w-max"
+                                    >
+                                        Ignite Arena
+                                    </button>
+                                </div>
+                                <div className="relative w-28 h-28 transform group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center animate-pulse">
+                                    <ListChecks className="w-20 h-20 text-indigo-400 opacity-40 absolute" />
+                                    <img src="/11427-removebg-preview.png" alt="books illustration" className="w-16 h-auto drop-shadow-xl select-none" />
+                                </div>
+                            </div>
+
+                            {/* GAME 2: FORMULA RUN */}
+                            <div className="bg-gradient-to-br from-rose-500 to-pink-600 p-5 rounded-3xl text-white relative overflow-hidden group shadow-lg flex justify-between gap-4 border border-rose-400/20 bg-rose-500">
+                                <div className="space-y-3 z-10 max-w-[200px] sm:max-w-xs flex flex-col justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[8px] bg-rose-700 text-rose-100 px-2 py-0.5 rounded-md uppercase font-black tracking-widest">RACING SPEED</span>
+                                            <span className="text-xs">⚡</span>
+                                        </div>
+                                        <h3 className="text-lg font-black tracking-tight leading-none uppercase">Formula Match Rush</h3>
+                                        <p className="text-[10px] text-rose-100/80 font-semibold leading-tight">Match chemistry, math and physical formulas under a 30s collapsing storm.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveSection('formula-rush');
+                                            startFormulaGame();
+                                        }}
+                                        className="bg-white text-rose-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-slate-50 transition-colors w-max"
+                                    >
+                                        Initiate Rush
+                                    </button>
+                                </div>
+                                <div className="relative w-28 h-28 transform group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center animate-bounce duration-4000">
+                                    <Sigma className="w-20 h-20 text-rose-450 opacity-40 absolute" />
+                                    <img src="/11425-removebg-preview.png" alt="Formula illustration" className="w-16 h-auto drop-shadow-xl select-none" />
+                                </div>
+                            </div>
+
+                            {/* GAME 3: MOLECULAR BUILDER */}
+                            <div className="bg-gradient-to-br from-teal-500 to-emerald-600 p-5 rounded-3xl text-white relative overflow-hidden group shadow-lg flex justify-between gap-4 border border-teal-400/20 bg-teal-500">
+                                <div className="space-y-3 z-10 max-w-[200px] sm:max-w-xs flex flex-col justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[8px] bg-teal-700 text-teal-100 px-2 py-0.5 rounded-md uppercase font-black tracking-widest">EXPERIMENT LAB</span>
+                                            <span className="text-xs">🧪</span>
+                                        </div>
+                                        <h3 className="text-lg font-black tracking-tight leading-none uppercase">Molecular Fusion Lab</h3>
+                                        <p className="text-[10px] text-teal-100/80 font-semibold leading-tight">Synthesize compounds by assembling atoms with clean stoichiometric accuracy.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveSection('molecule-fusion');
+                                            startMoleculeGame();
+                                        }}
+                                        className="bg-white text-teal-605 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-slate-50 transition-colors w-max"
+                                    >
+                                        Ignite Fusion
+                                    </button>
+                                </div>
+                                <div className="relative w-28 h-28 transform group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center">
+                                    <FlaskConical className="w-20 h-20 text-teal-450 opacity-40 absolute" />
+                                    <img src="/11428-removebg-preview.png" alt="Microscope illustration" className="w-16 h-auto drop-shadow-xl select-none" />
+                                </div>
+                            </div>
+
+                            {/* GAME 4: GRAMMAR SPRINT */}
+                            <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-5 rounded-3xl text-white relative overflow-hidden group shadow-lg flex justify-between gap-4 border border-purple-400/20 bg-purple-550">
+                                <div className="space-y-3 z-10 max-w-[200px] sm:max-w-xs flex flex-col justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[8px] bg-purple-700 text-purple-100 px-2 py-0.5 rounded-md uppercase font-black tracking-widest">LANGUAGE CLASH</span>
+                                            <span className="text-xs">📚</span>
+                                        </div>
+                                        <h3 className="text-lg font-black tracking-tight leading-none uppercase">Grammar Jigsaw Rush</h3>
+                                        <p className="text-[10px] text-purple-100/80 font-semibold leading-tight">Race through English and Nepali grammar puzzles to conquer the leaderboard.</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => {
+                                            setActiveSection('grammar-rush');
+                                            startGrammarGame();
+                                        }}
+                                        className="bg-white text-purple-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md hover:bg-purple-50 transition-colors w-max"
+                                    >
+                                        Ignite Sprint
+                                    </button>
+                                </div>
+                                <div className="relative w-28 h-28 transform group-hover:scale-105 transition-transform shrink-0 flex items-center justify-center animate-bounce duration-5000">
+                                    <Languages className="w-20 h-20 text-purple-400 opacity-40 absolute" />
+                                    <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30 z-10">
+                                        <Languages className="w-8 h-8 text-white mt-0" />
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* INTERMEDIATE ROUTE WRAPPER */}
+            {activeSection === 'board-trial' && status === 'setup' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-2 pt-2 text-left">
+                        <button 
+                            onClick={() => {
+                                setActiveSection('lobby');
+                                clearMockTest();
+                            }} 
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 active:scale-95 transition-all shrink-0"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600 stroke-[2.25]" />
+                        </button>
+                        <h2 className="font-extrabold text-[#0D0E10] text-[11px] tracking-widest uppercase font-black">BOARD TRIAL PREP ARSENAL</h2>
+                        <div className="w-10 h-10" />
+                    </div>
+
+                    <div className="bg-white p-5 md:p-8 rounded-[2.5rem] md:rounded-[3rem] border border-slate-100 shadow-xl space-y-6 md:space-y-8 relative overflow-hidden">
+                        <div className={cn("absolute top-0 right-0 w-64 h-64 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl opacity-10 transition-colors duration-700", `bg-${currentSubjectConfig.color}-500`)} />
+                        
+                        <div className={cn("p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] text-center text-white relative shadow-2xl transition-all duration-700 bg-linear-to-br shadow-emerald-500/20", currentSubjectConfig.gradient)}>
+                            <Sparkles className="w-10 h-10 md:w-16 md:h-16 text-white/50 mx-auto mb-2 md:mb-4 animate-pulse" />
+                            <h2 className="text-xl md:text-3xl font-black italic tracking-tighter uppercase">Board Trial Ready</h2>
+                            <p className="text-[0.6rem] md:text-[0.65rem] font-bold text-white/60 uppercase mt-2 tracking-[0.2em] leading-relaxed">Synthesizing {settings.subject} Challenges</p>
+                        </div>
+
+                        <div className="space-y-3 md:space-y-4">
+                            <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Choose Trial Realm</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
+                                {(Object.keys(SUBJECTS_CONFIG) as SubjectType[])
+                                    .filter(sub => sub !== 'Economics' && sub !== 'Health')
+                                    .map((sub) => {
+                                        const cfg = SUBJECTS_CONFIG[sub];
+                                    return (
+                                        <button
+                                            key={sub}
+                                            onClick={() => setSettings({ ...settings, subject: sub })}
+                                            className={cn(
+                                                "py-3 md:py-4 px-3 md:px-4 rounded-[1rem] md:rounded-2xl border-2 font-black text-[0.65rem] md:text-[0.7rem] transition-all uppercase tracking-tight",
+                                                settings.subject === sub 
+                                                    ? `text-white border-transparent bg-linear-to-br ${cfg.gradient} shadow-lg scale-105` 
+                                                    : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
+                                            )}
+                                        >
+                                            {sub}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 md:space-y-4">
+                            <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Challenge Intensity</label>
+                            <div className="flex gap-2 md:gap-3">
+                                {[5, 10, 20, 30].map((c) => (
                                     <button
-                                        key={sub}
-                                        onClick={() => setSettings({ ...settings, subject: sub })}
+                                        key={c}
+                                        onClick={() => setSettings({ ...settings, count: c })}
                                         className={cn(
-                                            "py-3 md:py-4 px-3 md:px-4 rounded-[1rem] md:rounded-2xl border-2 font-black text-[0.65rem] md:text-[0.7rem] transition-all uppercase tracking-tight",
-                                            settings.subject === sub 
-                                                ? `text-white border-transparent bg-linear-to-br ${cfg.gradient} shadow-lg scale-105` 
+                                            "flex-1 py-3 md:py-5 rounded-[1rem] md:rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
+                                            settings.count === c 
+                                                ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-lg shadow-${currentSubjectConfig.color}-500/20` 
                                                 : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
                                         )}
                                     >
-                                        {sub}
+                                        {c}Q
                                     </button>
-                                );
-                            })}
+                                ))}
+                            </div>
                         </div>
+
+                        <div className="space-y-3 md:space-y-4">
+                            <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">AI Scholar Core</label>
+                            <div className="flex gap-2 md:gap-3">
+                                {[
+                                    { id: 'miso', label: 'MISO', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
+                                    { id: 'nova', label: 'NOVA', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
+                                ].map((m) => (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => setSettings({ ...settings, model: m.id as any })}
+                                        className={cn(
+                                            "flex-1 py-4 md:py-6 rounded-[2rem] border-2 font-black transition-all flex flex-col items-center gap-2 group relative overflow-hidden",
+                                            settings.model === m.id 
+                                                ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-xl` 
+                                                : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
+                                        )}
+                                    >
+                                        <div className={cn(
+                                            "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
+                                            settings.model === m.id ? "bg-white/20" : "bg-slate-50 text-slate-300"
+                                        )}>
+                                            <m.icon className="w-5 h-5" />
+                                        </div>
+                                        <div className="text-center">
+                                            <span className="text-xs md:text-sm uppercase block tracking-wider">{m.label}</span>
+                                            <span className="text-[0.5rem] md:text-[0.55rem] font-bold opacity-60 uppercase tracking-widest">{m.desc}</span>
+                                        </div>
+                                        {settings.model === m.id && (
+                                            <motion.div layoutId="active-tick" className="absolute top-2 right-2">
+                                                <div className="p-1 bg-white/20 rounded-full">
+                                                    <CheckCircle2 className="w-3 h-3" />
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={startTest}
+                            disabled={loading}
+                            className={cn(
+                                "w-full text-white py-5 md:py-7 rounded-[1.5rem] md:rounded-[2rem] font-black text-sm md:text-lg shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 bg-linear-to-r",
+                                currentSubjectConfig.gradient
+                            )}
+                        >
+                            {loading ? <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" /> : <Zap className="w-6 h-6" />}
+                            {loading ? 'CALIBRATING CORE...' : 'IGNITE EXAM'}
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* GAME 2: Formula Match Rush View */}
+            {activeSection === 'formula-rush' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-2 pt-2 text-left">
+                        <button 
+                            onClick={() => setActiveSection('lobby')} 
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 active:scale-95 transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600 stroke-[2.25]" />
+                        </button>
+                        <h2 className="font-extrabold text-[#0D0E10] text-[11px] tracking-widest uppercase font-black">FORMULA MATCH RUSH</h2>
+                        <div className="w-10 h-10" />
                     </div>
 
-                    <div className="space-y-3 md:space-y-4">
-                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">Challenge Intensity</label>
-                        <div className="flex gap-2 md:gap-3">
-                            {[5, 10, 20, 30].map((c) => (
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl space-y-6 text-left relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl" />
+
+                        {formulaGameStatus === 'idle' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-rose-100 animate-bounce">
+                                    <Sigma className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-slate-800 uppercase italic">Ready to Race?</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed text-center">
+                                        Match chemistry compound names, physics laws, and math formulas with their equation under a strict timer collapse system!
+                                    </p>
+                                </div>
                                 <button
-                                    key={c}
-                                    onClick={() => setSettings({ ...settings, count: c })}
-                                    className={cn(
-                                        "flex-1 py-3 md:py-5 rounded-[1rem] md:rounded-2xl border-2 font-black text-xs md:text-sm transition-all",
-                                        settings.count === c 
-                                            ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-lg shadow-${currentSubjectConfig.color}-500/20` 
-                                            : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
-                                    )}
+                                    onClick={startFormulaGame}
+                                    className="w-full bg-gradient-to-r from-rose-500 to-pink-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-transform animate-pulse"
                                 >
-                                    {c}Q
+                                    Ignite Reactor
                                 </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-3 md:space-y-4">
-                        <label className="text-[0.6rem] md:text-[0.65rem] font-black uppercase text-slate-400 block tracking-widest px-1">AI Scholar Core</label>
-                        <div className="flex gap-2 md:gap-3">
-                            {[
-                                { id: 'miso', label: 'MISO', desc: 'Detailed Expert', color: 'rose-500', icon: Bot },
-                                { id: 'nova', label: 'NOVA', desc: 'Reliable Backup', color: 'amber-500', icon: Sparkles }
-                            ].map((m) => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => setSettings({ ...settings, model: m.id as any })}
-                                    className={cn(
-                                        "flex-1 py-4 md:py-6 rounded-[2rem] border-2 font-black transition-all flex flex-col items-center gap-2 group relative overflow-hidden",
-                                        settings.model === m.id 
-                                            ? `text-white border-transparent bg-linear-to-br ${currentSubjectConfig.gradient} shadow-xl` 
-                                            : "bg-white text-slate-400 border-slate-50 hover:border-slate-200"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "w-8 h-8 rounded-lg flex items-center justify-center transition-all",
-                                        settings.model === m.id ? "bg-white/20" : "bg-slate-50 text-slate-300"
-                                    )}>
-                                        <m.icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="text-center">
-                                        <span className="text-xs md:text-sm uppercase block tracking-wider">{m.label}</span>
-                                        <span className="text-[0.5rem] md:text-[0.55rem] font-bold opacity-60 uppercase tracking-widest">{m.desc}</span>
-                                    </div>
-                                    {settings.model === m.id && (
-                                        <motion.div layoutId="active-tick" className="absolute top-2 right-2">
-                                            <div className="p-1 bg-white/20 rounded-full">
-                                                <CheckCircle2 className="w-3 h-3" />
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={startTest}
-                        disabled={loading}
-                        className={cn(
-                            "w-full text-white py-5 md:py-7 rounded-[1.5rem] md:rounded-[2rem] font-black text-sm md:text-lg shadow-2xl active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 bg-linear-to-r",
-                            currentSubjectConfig.gradient
+                            </div>
                         )}
-                    >
-                        {loading ? <div className="w-6 h-6 border-4 border-white/20 border-t-white rounded-full animate-spin" /> : <Zap className="w-6 h-6" />}
-                        {loading ? 'CALIBRATING CORE...' : 'IGNITE EXAM'}
-                    </button>
+
+                        {formulaGameStatus === 'playing' && formulaQuestions.length > 0 && (
+                            <div className="space-y-6">
+                                <div className="flex justify-between items-center bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                                    <div>
+                                        <span className="text-[9px] text-rose-400 font-black uppercase tracking-wider block">Progression</span>
+                                        <span className="text-sm font-black text-rose-600">{formulaIdx + 1} / 5 Formulations</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[9px] text-rose-400 font-black uppercase tracking-wider block">Timer Collapse</span>
+                                        <span className={`text-sm font-black italic ${formulaTimer < 10 ? 'text-rose-600 animate-pulse' : 'text-slate-800'}`}>
+                                            ⏱️ {formulaTimer} seconds
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full bg-rose-50 h-2 rounded-full overflow-hidden p-0.5">
+                                    <div 
+                                        className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                                        style={{ width: `${(formulaTimer / 30) * 100}%` }}
+                                    />
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-100 p-8 rounded-3xl text-center shadow-inner relative">
+                                    <span className="text-[8px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded font-black tracking-widest absolute top-3 left-3 uppercase">PROMPT</span>
+                                    <h4 className="text-xl font-extrabold text-slate-800 italic mt-2 tracking-tight">
+                                        {formulaQuestions[formulaIdx]?.prompt}
+                                    </h4>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3">
+                                    {formulaQuestions[formulaIdx]?.choices.map((choice: string, i: number) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => selectFormulaAnswer(choice)}
+                                            className="w-full text-left p-4 rounded-2xl font-black text-xs md:text-sm bg-white border-2 border-slate-100 hover:border-rose-400 hover:bg-rose-50/20 transition-all flex items-center justify-between group active:scale-98"
+                                        >
+                                            <span className="text-slate-700 tracking-tight">{choice}</span>
+                                            <span className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center text-[10px] group-hover:bg-rose-500 group-hover:text-white group-hover:border-rose-500 transition-colors shrink-0 ml-2">
+                                                {i + 1}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {formulaGameStatus === 'completed' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-100">
+                                    <Trophy className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-slate-800 uppercase italic">Speed Run Finished!</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
+                                        Matched <span className="text-slate-800 font-black">{formulaScore} / 5</span> correct formulas correctly.
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-3xl max-w-xs mx-auto text-center">
+                                    <span className="text-[9px] text-emerald-500 font-black uppercase tracking-wider block">Rating Gained</span>
+                                    <span className="text-2xl font-black text-emerald-600">+{formulaScore * 10} Cerebral ELO</span>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={startFormulaGame}
+                                        className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-md hover:bg-slate-800 transition-all active:scale-95"
+                                    >
+                                        Re-run Sprint
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('lobby')}
+                                        className="w-full bg-slate-50 text-slate-500 py-4 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-100 hover:bg-slate-100 transition-all active:scale-95"
+                                    >
+                                        Return to Lobby
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* GAME 3: Molecular Fusion Lab View */}
+            {activeSection === 'molecule-fusion' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-2 pt-2 text-left">
+                        <button 
+                            onClick={() => setActiveSection('lobby')} 
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 active:scale-95 transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600 stroke-[2.25]" />
+                        </button>
+                        <h2 className="font-extrabold text-[#0D0E10] text-[11px] tracking-widest uppercase font-black">MOLECULAR FUSION LAB</h2>
+                        <div className="w-10 h-10" />
+                    </div>
+
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl space-y-6 text-left relative overflow-hidden">
+                        
+                        {moleculeGameStatus === 'idle' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-teal-50 text-teal-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-teal-100 animate-bounce">
+                                    <FlaskConical className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-slate-800 uppercase italic">Ignite Fusion Chambers</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed text-center">
+                                        Synthesize chemicals by tapping raw atoms (H, O, N, C, Na, Cl) in exact stoichiometric ratio! Avoid compound collapse!
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={startMoleculeGame}
+                                    className="w-full bg-gradient-to-r from-teal-500 to-emerald-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-teal-500/20 active:scale-95 transition-transform"
+                                >
+                                    Activate Core
+                                </button>
+                            </div>
+                        )}
+
+                        {moleculeGameStatus === 'playing' && (
+                            <div className="space-y-6">
+                                <div className="bg-teal-50 border border-teal-100 p-4 rounded-2xl flex justify-between items-center">
+                                    <div>
+                                        <span className="text-[9px] text-teal-400 font-black uppercase tracking-wider block">Reaction Level</span>
+                                        <span className="text-sm font-black text-teal-700">{moleculeIdx + 1} / 5 Compounds</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[9px] text-teal-400 font-black uppercase tracking-wider block">Power Output</span>
+                                        <span className="text-sm font-black text-teal-600">⚡ Stable Refraction</span>
+                                    </div>
+                                </div>
+
+                                {/* Compound Target Info */}
+                                <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-2 relative">
+                                    <span className="text-[7px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-black tracking-widest uppercase">Target Chemistry</span>
+                                    <div className="flex items-baseline justify-between mt-1">
+                                        <h4 className="text-lg font-black text-slate-800">{compoundLibrary[moleculeIdx]?.name}</h4>
+                                        <span className="text-xl font-black text-teal-600 italic tracking-wider">{compoundLibrary[moleculeIdx]?.chemical}</span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 font-bold leading-tight">
+                                        💡 Recipe Guide: {compoundLibrary[moleculeIdx]?.tip}
+                                    </p>
+                                </div>
+
+                                {/* Synthesizer Output Display */}
+                                <div className="border-2 border-dashed border-slate-200 rounded-3xl p-6 text-center space-y-4 bg-slate-50/50 min-h-[110px] flex flex-col justify-center items-center">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Current Reaction Pod Atoms</p>
+                                    
+                                    <div className="flex flex-wrap gap-2 justify-center">
+                                        {Object.entries(selectedAtoms).map(([atom, count]) => count > 0 && (
+                                            <div key={atom} className="bg-white border border-teal-100 shadow-sm px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                                                <span className="text-xs font-black text-teal-600">{atom}</span>
+                                                <span className="font-mono text-xs font-black bg-teal-50 px-1.5 py-0.5 rounded text-teal-850">{count}</span>
+                                            </div>
+                                        ))}
+                                        {Object.values(selectedAtoms).every(v => v === 0) && (
+                                            <span className="text-xs text-slate-350 font-bold italic">Chamber is Empty. Inject Atoms!</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Interactive Atoms inject grid */}
+                                <div className="space-y-2">
+                                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Atom Injectors</p>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['H', 'O', 'N', 'C', 'Na', 'Cl'].map((symbol) => (
+                                            <button
+                                                key={symbol}
+                                                onClick={() => tapAtom(symbol)}
+                                                className="bg-white border-2 border-slate-200 hover:border-teal-400 hover:bg-teal-50/10 p-3 rounded-2xl font-black text-base text-slate-800 hover:scale-105 active:scale-95 transition-all text-center"
+                                            >
+                                                {symbol}
+                                                <span className="block text-[8px] text-slate-400 uppercase font-black tracking-widest mt-0.5">Inject</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Synthesis feedback banner */}
+                                {moleculeMessage && (
+                                    <div className={`p-3.5 rounded-2xl text-[10px] md:text-xs font-bold leading-tight ${moleculeMessage.includes('SUCCESS') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                                        {moleculeMessage}
+                                    </div>
+                                )}
+
+                                {/* Action button controls */}
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <button
+                                        onClick={clearAtoms}
+                                        className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider active:scale-95 transition-all"
+                                    >
+                                        Clean Pod
+                                    </button>
+                                    <button
+                                        onClick={evaluateSynthesis}
+                                        className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3.5 rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shadow-teal-500/20 active:scale-95 transition-all"
+                                    >
+                                        Fuse Atom
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {moleculeGameStatus === 'completed' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-100">
+                                    <Trophy className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-slate-800 uppercase italic">Fusion Chamber Locked!</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
+                                        Synthesized <span className="text-slate-800 font-black">{moleculeScore} / 5</span> compound cores.
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-3xl max-w-xs mx-auto text-center">
+                                    <span className="text-[9px] text-emerald-500 font-black uppercase tracking-wider block">Rating Gained</span>
+                                    <span className="text-2xl font-black text-emerald-600">+{moleculeScore * 15} Cerebral ELO</span>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={startMoleculeGame}
+                                        className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-md hover:bg-slate-800 transition-all active:scale-95"
+                                    >
+                                        Restart Core
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('lobby')}
+                                        className="w-full bg-slate-50 text-slate-500 py-4 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-100 hover:bg-slate-100 transition-all active:scale-95"
+                                    >
+                                        Return to Lobby
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* GAME 4: Grammar Jigsaw View */}
+            {activeSection === 'grammar-rush' && (
+                <div className="space-y-6">
+                    <div className="flex items-center justify-between pb-2 pt-2 text-left">
+                        <button 
+                            onClick={() => setActiveSection('lobby')} 
+                            className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 active:scale-95 transition-all"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600 stroke-[2.25]" />
+                        </button>
+                        <h2 className="font-extrabold text-[#0D0E10] text-[11px] tracking-widest uppercase font-black">GRAMMAR JIGSAW RUSH</h2>
+                        <div className="w-10 h-10" />
+                    </div>
+
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-xl space-y-6 text-left relative overflow-hidden">
+                        
+                        {grammarGameStatus === 'idle' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-purple-50 text-purple-600 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-purple-100 animate-bounce">
+                                    <Languages className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-xl font-black text-slate-800 uppercase italic">Initiate Grammar Clash</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed text-center">
+                                        Excel in high-intensity verbal combat! Select missing grammar pieces, translation triggers, and verb elements in record time.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={startGrammarGame}
+                                    className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-purple-500/20 active:scale-95 transition-transform"
+                                >
+                                    Ignite Verb Core
+                                </button>
+                            </div>
+                        )}
+
+                        {grammarGameStatus === 'playing' && grammarQuestionsList.length > 0 && (
+                            <div className="space-y-6">
+                                <div className="bg-purple-50/50 border border-purple-100 p-4 rounded-2xl flex justify-between items-center">
+                                    <div>
+                                        <span className="text-[9px] text-purple-400 font-black uppercase tracking-wider block">Lexical Node</span>
+                                        <span className="text-sm font-black text-purple-700">{grammarIdx + 1} / 5 Challenges</span>
+                                    </div>
+                                    <div className="text-right">
+                                        <span className="text-[9px] text-purple-400 font-black uppercase tracking-wider block">Decay Count</span>
+                                        <span className={`text-sm font-black italic ${grammarTimer < 10 ? 'text-rose-600 animate-pulse' : 'text-slate-800'}`}>
+                                            ⏱️ {grammarTimer}s
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full bg-purple-50 h-2 rounded-full overflow-hidden p-0.5">
+                                    <div 
+                                        className="h-full bg-purple-500 rounded-full transition-all duration-1000"
+                                        style={{ width: `${(grammarTimer / 30) * 100}%` }}
+                                    />
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-100 p-8 rounded-3xl text-center relative shadow-inner animate-fade-in">
+                                    <span className="text-[7px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-black tracking-widest uppercase absolute top-3 left-3">GRAMMAR TASK</span>
+                                    <h4 className="text-base font-extrabold text-slate-800 leading-relaxed mt-2 uppercase tracking-tight italic">
+                                        {grammarQuestionsList[grammarIdx]?.q}
+                                    </h4>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2 md:gap-3">
+                                    {grammarQuestionsList[grammarIdx]?.choices.map((choice: string, i: number) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => selectGrammarAnswer(choice)}
+                                            className="w-full text-left p-3.5 rounded-2xl font-black text-xs bg-white border-2 border-slate-100 hover:border-purple-400 hover:bg-purple-50/15 transition-all flex items-center justify-between group active:scale-98"
+                                        >
+                                            <span className="text-slate-700 font-black">{choice}</span>
+                                            <span className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-100 text-slate-400 flex items-center justify-center text-[9px] group-hover:bg-purple-500 group-hover:text-white group-hover:border-purple-500 transition-colors shrink-0 ml-2">
+                                                {i + 1}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {grammarGameStatus === 'completed' && (
+                            <div className="space-y-6 text-center py-6">
+                                <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-emerald-100">
+                                    <Trophy className="w-10 h-10" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h3 className="text-2xl font-black text-slate-800 uppercase italic">Sprint Evaluated!</h3>
+                                    <p className="text-xs text-slate-400 font-bold max-w-xs mx-auto leading-relaxed">
+                                        Tackled <span className="text-slate-800 font-black">{grammarScore} / 5</span> syntax challenges perfectly.
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-3xl max-w-xs mx-auto text-center">
+                                    <span className="text-[9px] text-emerald-500 font-black uppercase tracking-wider block">Rating Gained</span>
+                                    <span className="text-2xl font-black text-emerald-600">+{grammarScore * 10} Cerebral ELO</span>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={startGrammarGame}
+                                        className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-md hover:bg-slate-800 transition-all active:scale-95"
+                                    >
+                                        Re-clash Grammar
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveSection('lobby')}
+                                        className="w-full bg-slate-50 text-slate-500 py-4 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-100 hover:bg-slate-100 transition-all active:scale-95"
+                                    >
+                                        Return to Lobby
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
@@ -2619,200 +3713,304 @@ const HomePage = () => {
         return () => clearInterval(timer);
     }, []);
 
-    const bannerColors = ["bg-indigo-500", "bg-emerald-500", "bg-amber-500", "bg-rose-500", "bg-violet-500", "bg-blue-500", "bg-pink-500", "bg-teal-500", "bg-cyan-500", "bg-purple-500"];
-    const [bannerColorIndex, setBannerColorIndex] = useState(0);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setBannerColorIndex(prev => (prev + 1) % bannerColors.length);
-        }, 3000);
-        return () => clearInterval(interval);
-    }, []);
+    // Greeting based on hour
+    const getGreeting = () => {
+        const hour = currentTime.getHours();
+        if (hour < 12) return "Good Morning!";
+        if (hour < 17) return "Good Afternoon!";
+        return "Good Evening!";
+    };
 
     return (
-        <div className="space-y-6 pb-20 px-1 text-slate-800">
-            {/* Welcome Banner - Rectangular and Large like Subject Hub */}
-            <AnimatePresence mode="wait">
-                <motion.div 
-                    key={bannerColorIndex}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    className={cn("text-white p-7 rounded-[2.5rem] shadow-2xl relative overflow-hidden transition-colors duration-700 min-h-[150px] flex flex-col justify-center border border-white/10", Object.values(SUBJECTS_CONFIG)[bannerColorIndex].gradient.replace('from-', 'bg-gradient-to-tr from-').replace('to-', 'to-'))}
-                >
-                    <div className="absolute top-4 right-6 opacity-20 transition-transform duration-700">
-                         {React.createElement(Object.values(SUBJECTS_CONFIG)[bannerColorIndex].icon, { className: "w-24 h-24" })}
-                    </div>
-                    <div className="relative z-10 space-y-1">
-                        <p className="text-[0.55rem] font-black uppercase tracking-[0.4em] opacity-80">Sync Status: Peak Performance</p>
-                        <h1 className="text-xl md:text-2xl lg:text-3xl font-black uppercase tracking-tight italic leading-tight max-w-[90%]">
-                            {["MASTER THE ART OF LEARNING", "PRECISION IN EVERY EQUATION", "UNLOCK YOUR POTENTIAL", "THINK BIG, LEARN BIGGER", "SCIENCE IS EVERYWHERE", "BUILD YOUR FOUNDATION", "ANALYZE, UNDERSTAND, SUCCEED", "COMPUTING THE FUTURE"][bannerColorIndex % 8]}
-                        </h1>
-                    </div>
-                </motion.div>
-            </AnimatePresence>
-
-            {/* Summary Stats */}
-            <div className="grid grid-cols-2 gap-3">
-                <div className="p-5 rounded-[2rem] shadow-sm border flex flex-col items-center bg-white border-slate-100">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-inner bg-amber-50 text-amber-500">
-                        <Trophy className="w-5 h-5" />
-                    </div>
-                    <div className="text-xl font-black leading-none tabular-nums text-slate-800">{user?.xp || 0}</div>
-                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">{user?.email ? 'Academic Mastery' : 'Academic Standing'}</div>
+        <div className="space-y-3 pb-6 text-slate-800 font-sans max-w-sm md:max-w-md mx-auto px-2">
+            {/* 1. Hero Blue Banner Card */}
+            <div className="relative bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#4F46E5] text-white rounded-2xl p-4.5 overflow-hidden min-h-[160px] flex flex-col justify-between shadow-[0_8px_24px_rgba(37,99,235,0.12)]">
+                {/* Visual Accent/Glows to match premium feel */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+                
+                {/* Stars and diamond SVGs like the sparkles in the picture */}
+                <div className="absolute top-6 right-1/3 opacity-25 animate-pulse pointer-events-none">
+                    <Sparkles className="w-4 h-4 text-indigo-100" />
                 </div>
-                <div className="p-5 rounded-[2rem] shadow-sm border flex flex-col items-center bg-white border-slate-100">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-2 shadow-inner bg-rose-50 text-rose-500">
-                        <Flame className="w-5 h-5" />
-                    </div>
-                    <div className="text-xl font-black leading-none tabular-nums text-slate-800">{user?.streak || 1}</div>
-                    <div className="text-[0.6rem] text-slate-400 font-black uppercase tracking-widest mt-2">Active Day Streak</div>
-                </div>
-            </div>
-            
-            {/* Aadhar Toolkit - 4 Buttons with Tools Page Design */}
-            <div className="space-y-4 pt-2">
-                <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-xl bg-blue-100 text-blue-600"><ToolLayout className="w-4 h-4" /></div>
-                        <h2 className="text-xl font-black tracking-tight italic text-slate-800">Quick Tools</h2>
-                    </div>
-                    <Link to="/tools" className="font-black text-[0.65rem] uppercase tracking-[0.2em] hover:underline text-blue-600">Full Toolkit</Link>
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {[
-                        { id: 'timer', label: 'Focus Timer', icon: Timer, path: '/tools/timer', color: 'rose' },
-                        { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'purple' },
-                        { id: 'dictionary', label: 'Dictionary', icon: Book, path: '/tools/dictionary', color: 'emerald' },
-                        { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, path: '/tools/nepali-dictionary', color: 'amber' },
-                    ].map((t) => (
-                        <Link 
-                            key={t.id} 
-                            to={t.path} 
-                            className="p-6 rounded-[2.5rem] border flex flex-col items-center justify-center gap-4 transition-all active:scale-95 text-center min-h-[140px] group bg-white border-slate-100 shadow-[0_8px_20px_rgba(0,0,0,0.03)] hover:shadow-xl hover:border-blue/20"
-                        >
-                            <div className={cn(
-                                "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform shrink-0 shadow-sm group-hover:scale-110",
-                                t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
-                                t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
-                                t.color === 'orange' ? "bg-orange-50 text-orange-600" :
-                                t.color === 'purple' ? "bg-purple-50 text-purple-600" :
-                                "bg-rose-50 text-rose-600"
-                            )}>
-                                <t.icon className="w-7 h-7" />
-                            </div>
-                            <h3 className="font-black text-[0.8rem] tracking-tighter uppercase italic text-slate-800">{t.label}</h3>
-                        </Link>
-                    ))}
-                </div>
-            </div>
-
-            {/* Syllabus Countdown Card - Improved with more features and better clock */}
-            <div className="bg-white p-7 rounded-[2.5rem] shadow-sm border border-slate-100 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none">
-                    <Target className="w-48 h-48 text-blue group-hover:rotate-12 transition-transform duration-1000" />
+                <div className="absolute top-16 left-1/3 opacity-20 pointer-events-none">
+                    <svg className="w-3.5 h-3.5 text-white fill-current" viewBox="0 0 24 24">
+                        <path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" />
+                    </svg>
                 </div>
                 
-                <div className="relative z-10 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shadow-inner relative">
-                                <Clock className="w-6 h-6 animate-spin-slow" />
-                                <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-ping" />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-[0.8rem] text-slate-900 uppercase tracking-widest leading-none">Exam Countdown</h3>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <p className="text-[0.6rem] font-bold text-slate-400 uppercase tracking-widest">SEE 2083 Live Tracker</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center min-w-[80px]">
-                            <span className="text-[0.5rem] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Live UTC</span>
-                            <div className="text-sm font-black text-slate-800 tabular-nums">
-                                {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                            </div>
-                        </div>
+                {/* Silhouette Vector Sketches/Illustrations matching image: lamp, book outlines */}
+                <div className="absolute bottom-4 right-28 opacity-[0.06] pointer-events-none select-none">
+                    <svg className="w-16 h-16 text-white fill-none stroke-current stroke-1.5" viewBox="0 0 24 24">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                </div>
+
+                {/* The Cartoon Boy illustration in the blue card - larger size requested by user */}
+                <img 
+                    src="/boy.png" 
+                    alt="Learning Champion" 
+                    className="absolute right-[-10px] bottom-[-5px] w-[170px] sm:w-[195px] h-auto object-contain pointer-events-none z-10 transition-transform duration-500 hover:scale-[1.05]"
+                />
+
+                {/* Hero Top Label and Header content */}
+                <div className="relative z-20 space-y-1.5 max-w-[65%] text-left">
+                    <div className="flex items-center gap-1">
+                        <span className="text-xs">👋</span>
+                        <p className="text-[10px] font-extrabold uppercase tracking-widest opacity-90 text-indigo-100">{getGreeting()}</p>
                     </div>
                     
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-end">
-                            <div className="space-y-1">
-                                <span className="text-4xl md:text-5xl font-black text-slate-900 italic tracking-tighter uppercase leading-none block">245 Days</span>
-                                <span className="text-[0.65rem] font-black text-emerald-600 uppercase tracking-[0.2em] bg-emerald-50 px-3 py-1 rounded-full inline-block mt-2">Active Prep Zone</span>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-[0.55rem] font-black text-slate-400 uppercase tracking-widest mb-1">Completion</p>
-                                <p className="text-xl font-black text-blue-600 italic">32.4%</p>
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-2">
-                             <div className="h-4 bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100 shadow-inner">
-                                <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: "32.4%" }}
-                                    transition={{ duration: 2, ease: "circOut" }}
-                                    className="h-full bg-linear-to-r from-blue-500 via-indigo-500 to-rose-500 rounded-full shadow-[0_0_20px_rgba(59,130,246,0.5)] relative"
-                                >
-                                    <div className="absolute inset-0 bg-white/20 animate-pulse" />
-                                    <div className="absolute top-0 right-0 h-full w-4 bg-white/40 blur-sm skew-x-12" />
-                                </motion.div>
-                            </div>
-                            <div className="flex justify-between px-1">
-                                <span className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest">Beginning</span>
-                                <span className="text-[0.5rem] font-black text-slate-400 uppercase tracking-widest italic">Target: SEE 2083</span>
-                            </div>
-                        </div>
-                    </div>
+                    <h1 className="text-lg md:text-xl font-black text-white leading-tight tracking-tight whitespace-pre-line font-sans">
+                        {`Master the\nArt of Learning`}
+                    </h1>
+                </div>
 
-                    <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-blue-50 transition-colors">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Consistency</p>
-                             <div className="flex items-end gap-1">
-                                <p className="text-lg font-black text-slate-800 leading-none">98</p>
-                                <span className="text-[0.6rem] font-bold text-slate-400 mb-0.5">%</span>
-                             </div>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-rose-50 transition-colors">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Syllabus</p>
-                             <div className="flex items-end gap-1">
-                                <p className="text-lg font-black text-slate-800 leading-none">42</p>
-                                <span className="text-[0.6rem] font-bold text-slate-400 mb-0.5">%</span>
-                             </div>
-                        </div>
-                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 group-hover:bg-amber-50 transition-colors">
-                             <p className="text-[0.5rem] font-black text-slate-400 uppercase mb-1">Test Given</p>
-                             <div className="flex items-end gap-1">
-                                <p className="text-lg font-black text-slate-800 leading-none">12</p>
-                             </div>
-                        </div>
-                    </div>
+                {/* Hero Action Pill Button */}
+                <div className="relative z-20 pt-2 text-left">
+                    <button 
+                        onClick={() => navigate('/hub')}
+                        className="bg-white hover:bg-slate-50 text-blue-600 rounded-full px-3.5 py-1.5 text-[10px] font-black tracking-tight shadow-sm flex items-center gap-1 transition-all duration-300 hover:translate-x-1 active:scale-95 cursor-pointer border border-transparent"
+                    >
+                        Continue Learning
+                        <ChevronRight className="w-3 h-3 text-blue-600 stroke-[3]" />
+                    </button>
                 </div>
             </div>
 
-
-            {/* Quick Access */}
-            <div className="space-y-4 pt-2">
-                 <div className="flex items-center gap-2 px-2">
-                    <div className="bg-rose-100 text-rose-700 p-2 rounded-lg"><Megaphone className="w-4 h-4" /></div>
-                    <h2 className="text-xl font-black text-slate-800 tracking-tight italic">Board Pulse</h2>
+            {/* 2. Today's Progress White Card Overlay (aligned overlapping the blue card bottom) */}
+            <div className="relative z-20 bg-white p-3 rounded-2xl border border-slate-100/80 shadow-[0_8px_20px_rgba(0,0,0,0.02)] flex items-center gap-3 -mt-6 mx-1">
+                {/* Circular indicator showing 80% */}
+                <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+                    <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="22" cy="22" r="17" className="stroke-slate-100 fill-none" strokeWidth="4" />
+                        <circle 
+                            cx="22" 
+                            cy="22" 
+                            r="17" 
+                            className="stroke-blue-500 fill-none" 
+                            strokeWidth="4" 
+                            strokeDasharray={`${2 * Math.PI * 17}`} 
+                            strokeDashoffset={`${2 * Math.PI * 17 * (1 - 0.8)}`} 
+                            strokeLinecap="round" 
+                        />
+                    </svg>
+                    <span className="absolute text-[10px] font-black text-slate-800">80%</span>
                 </div>
-                 <Link to="/news" className="bg-white p-5 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center gap-5">
-                         <div className="bg-rose-50 text-rose-500 p-4 rounded-2xl shadow-inner"><Megaphone className="w-6 h-6" /></div>
-                         <div>
-                            <h3 className="font-black text-slate-800 text-base leading-none">Official CDC Updates</h3>
-                            <p className="text-[0.65rem] text-slate-400 font-bold uppercase tracking-widest mt-1">SEE 2083 Live Broadcast</p>
-                         </div>
+
+                {/* Text progress specs */}
+                <div className="flex-1 min-w-0 text-left">
+                    <p className="text-[8px] font-black uppercase tracking-wider text-slate-400">Today's Progress</p>
+                    <div className="flex items-baseline gap-1 mt-0.5">
+                        <span className="text-xs font-black text-slate-800 leading-none">8 / 10</span>
+                        <span className="text-[9px] text-slate-400 font-bold">Lessons</span>
                     </div>
-                    <ChevronRight className="w-6 h-6 text-slate-200" />
-                 </Link>
+                    {/* Linear slider matching image */}
+                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-blue-500 rounded-full w-[80%]" />
+                    </div>
+                    <p className="text-[8px] font-bold text-slate-400 tracking-tight mt-0.5 italic">
+                        Keep going! You're doing great 🚀
+                    </p>
+                </div>
+
+                {/* Target design block to the extreme right */}
+                <div className="w-8 h-8 rounded-xl bg-rose-50 border border-rose-100/50 flex items-center justify-center text-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer relative shrink-0">
+                    <Target className="w-4 h-4 stroke-[2]" />
+                    {/* Tiny visual dynamic target hits */}
+                    <span className="absolute top-0 right-0 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                </div>
             </div>
 
-            {/* Notice Board */}
-            <NoticeBoard />
+            {/* 3. Metric Bento Stats */}
+            <div className="grid grid-cols-4 gap-1.5">
+                {[
+                    { 
+                        id: 'completed', 
+                        val: user?.completedChapters?.length ? user.completedChapters.length * 15 : 125, 
+                        label: 'Lessons Completed', 
+                        icon: BookOpen, 
+                        color: 'text-indigo-500 bg-indigo-50/50' 
+                    },
+                    { 
+                        id: 'xp', 
+                        val: user?.xp || 1250, 
+                        label: 'XP Points', 
+                        icon: Trophy, 
+                        color: 'text-amber-500 bg-amber-50/55' 
+                    },
+                    { 
+                        id: 'streak', 
+                        val: user?.streak || 5, 
+                        label: 'Day Streak', 
+                        icon: Flame, 
+                        color: 'text-rose-500 bg-rose-50/50' 
+                    },
+                    { 
+                        id: 'rank', 
+                        val: 'Top 15%', 
+                        label: 'Your Rank', 
+                        icon: TrendingUp, 
+                        color: 'text-emerald-500 bg-emerald-50/70' 
+                    }
+                ].map((stat) => {
+                    const StatIcon = stat.icon;
+                    return (
+                        <motion.div 
+                            key={stat.id}
+                            whileHover={{ 
+                                y: -4, 
+                                scale: 1.03, 
+                                boxShadow: "0 10px 20px rgba(37,99,235,0.08)",
+                            }}
+                            whileTap={{ scale: 0.97 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                            className="bg-white p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center min-h-[85px] hover:border-blue-200 transition-all cursor-pointer relative overflow-hidden group"
+                        >
+                            {/* Animated colored highlight behind when hovered */}
+                            <div className="absolute inset-x-0 bottom-0 h-0.75 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                            {/* Colorful round icon - made larger and extra vibrant */}
+                            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-1.5 transition-all group-hover:scale-110 group-hover:rotate-6", stat.color, "shadow-[0_4px_10px_rgba(0,0,0,0.03)]")}>
+                                <StatIcon className="w-4.5 h-4.5 stroke-[2.5]" />
+                            </div>
+                            
+                            <div className="flex flex-col justify-center relative z-10">
+                                <span className="text-xs md:text-sm font-black text-slate-850 block tracking-tight leading-none tabular-nums group-hover:text-blue-600 transition-colors">{stat.val}</span>
+                                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-tight leading-tight mt-1 ml-0.5 block max-w-[65px] mx-auto">
+                                    {stat.label}
+                                </span>
+                            </div>
+                        </motion.div>
+                    );
+                })}
+            </div>
+
+            {/* 4. Continue Learning Subject Card */}
+            <div className="space-y-1.5 text-left">
+                <div className="flex items-center justify-between px-0.5">
+                    <h2 className="text-xs font-black text-slate-850 tracking-tight uppercase">Continue Learning</h2>
+                    <button 
+                        onClick={() => navigate('/hub')} 
+                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                    >
+                        View All
+                    </button>
+                </div>
+                
+                <div className="bg-white p-2.5 rounded-xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-2.5 relative overflow-hidden">
+                    {/* Left vertical book/physics icon badge */}
+                    <div className="w-11 h-11 rounded-xl bg-blue-900 border border-blue-950 text-white flex flex-col items-center justify-center p-1 shrink-0 shadow-xs relative overflow-hidden">
+                        <div className="absolute inset-0 bg-blue-800/25 opacity-50 blur-xs" />
+                        <span className="text-[8px] font-black tracking-tight leading-none text-blue-200 z-10">Physics</span>
+                        <span className="text-xs font-black tracking-tighter leading-none text-white mt-0.5 z-10">+2</span>
+                        {/* Physics Atomic outline in vector inside the badge */}
+                        <div className="absolute -bottom-1 -right-1 opacity-25 z-0">
+                            <Orbit className="w-5 h-5 text-blue-300" />
+                        </div>
+                    </div>
+
+                    {/* Middle Section title and sub heading specs */}
+                    <div className="flex-1 min-w-0">
+                        <h3 className="text-[11px] font-black text-slate-850 truncate">
+                            Physics – Motion in a Straight Line
+                        </h3>
+                        {/* Thin progression bar */}
+                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden mt-1.5">
+                            <div className="h-full bg-blue-500 rounded-full w-[75%]" />
+                        </div>
+                        <p className="text-[8px] font-bold text-slate-400 mt-0.5">
+                            75% Completed
+                        </p>
+                    </div>
+
+                    {/* Action pill button on the right */}
+                    <button 
+                        onClick={() => navigate('/hub')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-2.5 py-1 flex items-center gap-0.5 text-[9px] font-black shadow-xs active:scale-95 transition-all text-center cursor-pointer shrink-0"
+                    >
+                        <Play className="w-3 h-3 fill-current" />
+                        Resume
+                    </button>
+                </div>
+            </div>
+
+            {/* 5. Custom Redesigned 8 Quick Tools Grid */}
+            <div className="space-y-1.5 text-left">
+                <div className="flex items-center justify-between px-0.5">
+                    <h2 className="text-xs font-black text-slate-850 tracking-tight uppercase">Quick Tools</h2>
+                    <button 
+                        onClick={() => navigate('/tools')} 
+                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                    >
+                        See All
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                        { id: 'timer', label: 'Focus Timer', icon: Timer, path: '/tools/timer', color: 'bg-rose-50/80 text-rose-600 border border-rose-100 hover:bg-rose-100/40' },
+                        { id: 'formulas', label: 'Formula Bank', icon: Sigma, path: '/tools/formulas', color: 'bg-purple-50/80 text-purple-600 border border-purple-100 hover:bg-purple-100/40' },
+                        { id: 'notes', label: 'Notes', icon: BookOpen, path: '/tools/notes', color: 'bg-amber-50/80 text-amber-600 border border-amber-100 hover:bg-amber-100/40' },
+                        { id: 'ai', label: 'AI Tutor', icon: Bot, path: '/ai', color: 'bg-blue-50/80 text-blue-600 border border-blue-100 hover:bg-blue-100/40' },
+                        { id: 'quiz', label: 'Practice Quiz', icon: ListChecks, path: '/mock', color: 'bg-emerald-50/80 text-emerald-600 border border-emerald-100 hover:bg-emerald-100/40' },
+                        { id: 'goals', label: 'Daily Goals', icon: Target, path: '/profile', color: 'bg-rose-50/80 text-rose-600 border border-rose-100 hover:bg-rose-100/40' },
+                        { id: 'library', label: 'My Library', icon: Book, path: '/tools/visuals', color: 'bg-sky-50/80 text-sky-600 border border-sky-100 hover:bg-sky-100/40' },
+                        { id: 'flash', label: 'Flash Cards', icon: Layers, path: '/hub', color: 'bg-violet-50/80 text-violet-600 border border-violet-100 hover:bg-violet-100/40' }
+                    ].map((tool) => {
+                        const ToolIcon = tool.icon;
+                        return (
+                            <motion.button
+                                key={tool.id}
+                                whileHover={{ 
+                                    y: -4, 
+                                    scale: 1.05, 
+                                    boxShadow: "0 6px 15px rgba(0,0,0,0.04)",
+                                }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 450, damping: 14 }}
+                                onClick={() => navigate(tool.path)}
+                                className="bg-white p-1.5 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center min-h-[76px] transition-all group cursor-pointer relative overflow-hidden"
+                            >
+                                {/* Pastel color container - ultra vibrant */}
+                                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mb-1.5 transition-transform group-hover:scale-110 group-hover:rotate-3 shadow-xs", tool.color)}>
+                                    <ToolIcon className="w-4.5 h-4.5 stroke-[2.5]" />
+                                </div>
+                                <span className="text-[8.5px] font-black text-slate-700 tracking-tight leading-tight block max-w-[62px] mx-auto text-center group-hover:text-blue-600 transition-colors">
+                                    {tool.label}
+                                </span>
+                            </motion.button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 6. Stay Consistent CTA Banner */}
+            <div className="bg-gradient-to-r from-blue-50/50 via-sky-50/30 to-indigo-50/40 rounded-xl border border-blue-50/80 p-2.5 mt-1 flex items-center justify-between relative overflow-hidden group">
+                <div className="flex items-center gap-2.5 relative z-10 flex-1 min-w-0 pr-1 text-left">
+                    {/* Trophy icon */}
+                    <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100/50 flex items-center justify-center text-amber-500 shadow-xs shrink-0">
+                        <Trophy className="w-4 h-4 stroke-[2]" />
+                    </div>
+
+                    <div className="min-w-0">
+                        <h4 className="font-extrabold text-[#020617] text-[10px] leading-snug">
+                            Stay Consistent, Stay Ahead!
+                        </h4>
+                        <p className="text-[8.5px] text-slate-400 font-bold leading-normal mt-0.5 block truncate max-w-[200px]">
+                            Small progress every day leads to big results.
+                        </p>
+                    </div>
+                </div>
+
+                {/* View stats button */}
+                <button 
+                    onClick={() => navigate('/profile')}
+                    className="bg-white border border-slate-100 text-slate-705 font-black text-[9px] px-2.5 py-1.5 rounded-full shadow-xs active:scale-95 hover:bg-slate-50 transition-all cursor-pointer shrink-0 z-10"
+                >
+                    View Stats
+                </button>
+            </div>
         </div>
     );
 };
@@ -2824,18 +4022,18 @@ const AadharToolkit = () => {
     const isToolsPage = location.pathname === '/tools';
 
     const tools = [
-        { id: 'hub', label: 'Study Hub', icon: BookOpen, color: 'indigo', path: '/hub' },
-        { id: 'visuals', label: 'Visuals', icon: Palette, color: 'pink', path: '/tools/visuals' },
-        { id: 'dictionary', label: 'Dictionary', icon: Book, color: 'rose', path: '/tools/dictionary' },
-        { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', icon: Languages, color: 'amber', path: '/tools/nepali-dictionary' },
-        { id: 'notepad', label: 'Mind Log', icon: Edit3, color: 'orange', path: '/tools/notes' },
-        { id: 'timer', label: 'Focus Timer', icon: Timer, color: 'rose', path: '/tools/timer' },
-        { id: 'formulas', label: 'Formula Bank', icon: Sigma, color: 'purple', path: '/tools/formulas' },
-        { id: 'graphs', label: 'Graphs', icon: LineChart, color: 'emerald', path: '/tools/graphs' },
-        { id: 'calendar', label: 'Exam Calendar', icon: Calendar, color: 'blue', path: '/tools/calendar' },
+        { id: 'hub', label: 'Study Hub', desc: 'Notes, PDFs, Videos and more in one place', icon: BookOpen, color: 'indigo', path: '/hub' },
+        { id: 'visuals', label: 'Visuals', desc: 'Diagrams, Charts and Concept Visuals', icon: Palette, color: 'pink', path: '/tools/visuals' },
+        { id: 'dictionary', label: 'Dictionary', desc: 'Find meanings, pronunciations and usage', icon: Book, color: 'rose', path: '/tools/dictionary' },
+        { id: 'nepali-dictionary', label: 'नेपाली शब्दकोश', desc: 'Nepali to English and English to Nepali', icon: Languages, color: 'amber', path: '/tools/nepali-dictionary' },
+        { id: 'notepad', label: 'Mind Log', desc: 'Write your thoughts and organize ideas', icon: Edit3, color: 'orange', path: '/tools/notes' },
+        { id: 'timer', label: 'Focus Timer', desc: 'Stay focused with Pomodoro timer', icon: Timer, color: 'rose', path: '/tools/timer' },
+        { id: 'formulas', label: 'Formula Bank', desc: 'Important formulas at your fingertips', icon: Sigma, color: 'purple', path: '/tools/formulas' },
+        { id: 'graphs', label: 'Graphs', desc: 'Plot and explore math graphs', icon: LineChart, color: 'emerald', path: '/tools/graphs' },
+        { id: 'calendar', label: 'Exam Calendar', desc: 'Track upcoming exams and deadlines', icon: Calendar, color: 'blue', path: '/tools/calendar' },
         ...(isToolsPage ? [
-            { id: 'smart-calculator', label: 'Smart Calculator', icon: Calculator, color: 'violet', path: '/tools/calculator' },
-            { id: 'periodic', label: 'Periodic Table', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
+            { id: 'smart-calculator', label: 'Smart Calculator', desc: 'Calculate smarter for quicker results', icon: Calculator, color: 'violet', path: '/tools/calculator' },
+            { id: 'periodic', label: 'Periodic Table', desc: 'Interactive periodic table of elements', icon: Grid3X3, color: 'purple', path: '/tools/periodic-table' },
         ] : []),
     ];
 
@@ -2848,43 +4046,139 @@ const AadharToolkit = () => {
                     <div className="flex-1 h-[1px] bg-slate-100 ml-2" />
                 </div>
             )}
+            
             {isToolsPage && (
-                <header className="mb-8 pt-4">
-                    <div className="space-y-1">
-                        <h1 className="text-4xl font-black text-[#020617] italic tracking-tighter uppercase leading-none">The Toolkit</h1>
+                <div className="space-y-6">
+                    {/* Welcome Banner Card */}
+                    <div className="bg-linear-to-r from-[#EAF5FF] via-[#F4F9FF] to-white p-6 md:p-8 rounded-[2.5rem] border border-slate-100 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 min-h-[160px] shadow-sm">
+                        <div className="space-y-2 text-left z-10 max-w-lg">
+                            <span className="text-xs font-black uppercase text-slate-400 tracking-widest block">Welcome to</span>
+                            <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter uppercase leading-none bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                THE TOOLKIT
+                            </h1>
+                            <p className="text-xs md:text-sm text-slate-500 font-bold leading-relaxed max-w-[280px] md:max-w-none">
+                                Smart tools to help you learn better and achieve more.
+                            </p>
+                        </div>
+                        <div className="relative shrink-0 z-10 w-[140px] md:w-[150px] mr-2">
+                            <img 
+                                src="/11425-removebg-preview.png" 
+                                alt="Toolkit illustration" 
+                                referrerPolicy="no-referrer"
+                                className="w-full h-auto drop-shadow-2xl animate-pulse duration-3000"
+                                onError={(e) => {
+                                    // fallback if image fails, use some solid styling but student uploaded matches beautifully
+                                    e.currentTarget.style.display = 'block';
+                                }}
+                            />
+                        </div>
+                        {/* Soft ambient backgrounds */}
+                        <div className="absolute top-0 right-0 w-36 h-36 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-indigo-400/5 rounded-full blur-xl pointer-events-none" />
                     </div>
-                </header>
+
+                    {/* Stats grid row */}
+                    <div className="bg-white p-4 rounded-[2.5rem] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] grid grid-cols-2 lg:grid-cols-4 gap-4 divide-y divide-slate-50 lg:divide-y-0 lg:divide-x divide-slate-100">
+                        {/* Stat 1 */}
+                        <div className="flex items-center gap-3 p-2 text-left">
+                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center shrink-0">
+                                <Flame className="w-5 h-5 text-indigo-600" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-1">Daily Streak</p>
+                                <span className="text-xs font-black text-indigo-600">7 Days</span>
+                            </div>
+                        </div>
+                        {/* Stat 2 */}
+                        <div className="flex items-center gap-3 p-2 text-left pt-3 lg:pt-2">
+                            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
+                                <Briefcase className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-1">Tools Used</p>
+                                <span className="text-xs font-black text-orange-500">12</span>
+                            </div>
+                        </div>
+                        {/* Stat 3 */}
+                        <div className="flex items-center gap-3 p-2 text-left pt-3 lg:pt-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+                                <Star className="w-5 h-5 text-emerald-500 fill-emerald-500" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-1">Saved Items</p>
+                                <span className="text-xs font-black text-emerald-500">24</span>
+                            </div>
+                        </div>
+                        {/* Stat 4 */}
+                        <div className="flex items-center gap-3 p-2 text-left pt-3 lg:pt-2 font-black">
+                            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                                <Trophy className="w-5 h-5 text-blue" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight leading-none mb-1">Points Earned</p>
+                                <span className="text-xs font-black text-blue">1250</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {/* List of tools in elegant grid matching Photo 1 exactly */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 font-black">
                 {tools.map((t) => {
                     const Icon = t.icon;
                     return (
                         <button
                             key={t.id}
                             onClick={() => navigate(t.path)}
-                            className="bg-white p-3 md:p-6 rounded-xl md:rounded-[2rem] border border-slate-50 shadow-[0_5px_15px_rgba(0,0,0,0.02)] flex items-center md:flex-col md:items-center justify-start md:justify-center gap-3 hover:shadow-md hover:border-blue/20 transition-all group active:scale-95 text-left md:text-center min-h-[0] md:min-h-[140px]"
+                            className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_3px_10px_rgba(0,0,0,0.01)] flex items-center justify-between gap-4 hover:shadow-lg hover:border-blue-100 transition-all group active:scale-95 text-left w-full relative overflow-hidden"
                         >
-                            <div className={cn(
-                                "w-9 h-9 md:w-14 md:h-14 rounded-lg md:rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shrink-0",
-                                t.color === 'pink' ? "bg-pink-50 text-pink-600" :
-                                t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
-                                t.color === 'blue' ? "bg-blue-50 text-blue" :
-                                t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
-                                t.color === 'rose' ? "bg-rose-50 text-rose-500" :
-                                t.color === 'amber' ? "bg-amber-50 text-amber-600" :
-                                t.color === 'purple' ? "bg-purple-50 text-purple-600" :
-                                t.color === 'violet' ? "bg-violet-50 text-violet-600" :
-                                t.color === 'orange' ? "bg-orange-50 text-orange-600" :
-                                "bg-teal-50 text-teal-600"
-                            )}>
-                                <Icon className="w-5 h-5 md:w-7 md:h-7" strokeWidth={2.5} />
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className={cn(
+                                    "w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 group-hover:rotate-3 shrink-0 shadow-xs",
+                                    t.color === 'pink' ? "bg-pink-50 text-pink-600" :
+                                    t.color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
+                                    t.color === 'blue' ? "bg-blue-50 text-blue" :
+                                    t.color === 'indigo' ? "bg-indigo-50 text-indigo-600" :
+                                    t.color === 'rose' ? "bg-rose-50 text-rose-500" :
+                                    t.color === 'amber' ? "bg-amber-50 text-amber-600" :
+                                    t.color === 'purple' ? "bg-purple-50 text-purple-600" :
+                                    t.color === 'violet' ? "bg-violet-50 text-violet-600" :
+                                    t.color === 'orange' ? "bg-orange-50 text-orange-600" :
+                                    "bg-teal-50 text-teal-600"
+                                )}>
+                                    <Icon className="w-5 h-5" strokeWidth={2.25} />
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="font-extrabold text-[#0F172A] text-sm tracking-tight leading-none group-hover:text-blue-600 transition-colors">{t.label}</h3>
+                                    <p className="text-[10px] md:text-[10.5px] text-slate-400 font-bold leading-snug max-w-[200px] sm:max-w-none">{t.desc}</p>
+                                </div>
                             </div>
-                            <p className="font-extrabold text-[#020617] text-[0.8rem] md:text-[1rem] tracking-tight leading-normal w-full px-1 pb-[2px] group-hover:scale-105 transition-transform">{t.label}</p>
+                            <div className="w-7 h-7 bg-slate-50 rounded-lg flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
+                                <ChevronRight className="w-4 h-4" />
+                            </div>
                         </button>
                     );
                 })}
             </div>
+
+            {/* Bottom promo alert action banner */}
+            {isToolsPage && (
+                <div className="bg-gradient-to-r from-indigo-50/70 to-blue-50/70 p-5 rounded-[2rem] border border-indigo-100/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-left shadow-xs mt-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 shrink-0 shadow-inner">
+                            <Sparkles className="w-5 h-5 fill-indigo-400" />
+                        </div>
+                        <div>
+                            <h4 className="font-black text-slate-800 text-sm leading-tight">Explore. Learn. Excel.</h4>
+                            <p className="text-[10.5px] font-bold text-slate-400 mt-0.5 leading-snug">Use these smart tools regularly and boost your learning journey!</p>
+                        </div>
+                    </div>
+                    <button onClick={() => navigate('/hub')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-2.5 px-4 rounded-xl flex items-center gap-1.5 shadow-md shadow-indigo-600/10 active:scale-95 transition-all shrink-0">
+                        View My Activity <ChevronRight className="w-4 h-4" />
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
@@ -3129,91 +4423,201 @@ const NewsPage = () => {
         );
     }
 
-    return (
-        <div className="space-y-12 animate-fade-up pb-32">
-            <header className="flex flex-col md:flex-row md:items-end justify-between px-1 gap-6">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                         <span className="w-8 h-8 bg-black rounded-lg flex items-center justify-center text-white font-black text-xs italic">A</span>
-                         <span className="text-[0.65rem] font-black uppercase tracking-[0.5em] text-slate-400">Intelligence Feed</span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-none italic uppercase">The Pulse</h1>
-                </div>
-                <div className="flex gap-3">
-                     <div className="h-14 px-6 rounded-2xl bg-white border border-slate-100 shadow-sm flex items-center gap-3 text-slate-400 group focus-within:ring-2 focus-within:ring-slate-900 transition-all">
-                         <Search className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                         <input type="text" placeholder="Search Intel..." className="bg-transparent border-none outline-none text-xs font-black uppercase tracking-widest text-slate-900 placeholder:text-slate-300 w-32 md:w-48" />
-                     </div>
-                </div>
-            </header>
+    // We can merge liveNews with a couple of high-quality mock items so that the news page looks fully filled and beautiful even on cold start
+    const finalNewsList = allNews.length > 0 ? allNews : [
+        {
+            id: 'n1',
+            title: 'CBSE Board Exam Dates 2025 Released',
+            category: 'Exams',
+            image_url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=350',
+            created_at: '2024-05-19T10:00:00Z',
+            author: 'Admin',
+            content: 'Check the complete schedule for Class 10 and 12 board exams.'
+        },
+        {
+            id: 'n2',
+            title: 'Top 10 Scholarships for Students in 2024',
+            category: 'Scholarships',
+            image_url: 'https://images.unsplash.com/photo-1523050335456-c384474b3353?q=80&w=350',
+            created_at: '2024-05-18T10:00:00Z',
+            author: 'Admin',
+            content: 'Explore government and private scholarships to fund your education.'
+        },
+        {
+            id: 'n3',
+            title: 'New Online Courses Added to Aadhar Pathshala',
+            category: 'Academic',
+            image_url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=350',
+            created_at: '2024-05-17T10:00:00Z',
+            author: 'Admin',
+            content: 'Boost your learning with our new interactive skill-based courses.'
+        },
+        {
+            id: 'n4',
+            title: 'NEET UG 2024 Results Declared',
+            category: 'Results',
+            image_url: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=350',
+            created_at: '2024-05-16T10:00:00Z',
+            author: 'Admin',
+            content: 'Check your results now on the official website.'
+        }
+    ];
 
-            <div className="flex items-center gap-8 overflow-x-auto px-1 no-scrollbar pb-2">
-                {tabs.map((tab) => (
-                    <button 
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                            "text-[0.7rem] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap relative pb-4",
-                            activeTab === tab ? "text-slate-900 scale-110" : "text-slate-400 hover:text-slate-600"
-                        )}
-                    >
-                        {tab}
-                        {activeTab === tab && (
-                            <motion.div layoutId="news-tab" className="absolute bottom-0 left-0 right-0 h-1.5 bg-slate-900 rounded-full" />
-                        )}
-                    </button>
-                ))}
+    const displayNews = (activeTab === 'For You' || activeTab === 'All')
+        ? finalNewsList 
+        : finalNewsList.filter(n => n.category.toLowerCase() === activeTab.toLowerCase());
+
+    const featuredArticle = finalNewsList[0] || {
+        id: 'featured-1',
+        title: 'CBSE Introduces New Skill Education Framework for Schools',
+        content: 'The new framework aims to enhance practical learning and career readiness among students.',
+        created_at: '2024-05-20T10:00:00Z',
+        category: 'Academic',
+        image_url: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=800',
+        author: 'Admin'
+    };
+
+    return (
+        <div className="space-y-4 pb-20 animate-fade-up text-left max-w-sm md:max-w-md mx-auto px-2">
+            {/* Header Title with elegant Search icon on the right */}
+            <div className="flex items-center justify-between pt-2">
+                <div>
+                    <h1 className="text-xl font-black text-slate-850 tracking-tight">News & Updates</h1>
+                    <p className="text-[10px] text-slate-400 font-bold tracking-tight mt-0.5">Stay informed. Stay ahead.</p>
+                </div>
+                <button className="w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-500 shadow-xs active:scale-95 transition-all">
+                    <Search className="w-4 h-4 stroke-[2.25]" />
+                </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {filteredNews.map((news, i) => (
-                    <motion.div 
-                        key={news.id}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1 }}
-                        onClick={() => setSelectedNews(news)}
-                        className="group bg-white rounded-[3rem] border border-slate-100 shadow-2xl overflow-hidden cursor-pointer hover:shadow-slate-200/50 transition-all relative active:scale-[0.98]"
-                    >
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                            <img 
-                                src={news.image_url || 'https://images.unsplash.com/photo-1504711432869-5d39a1103c0e?q=80&w=1470&auto=format&fit=crop'} 
-                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
-                                alt="" 
-                            />
-                            <div className="absolute inset-0 bg-linear-to-t from-black/90 via-transparent to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
-                            
-                            <div className="absolute top-8 left-8">
-                                <span className={cn(
-                                    "px-5 py-2 text-white text-[0.65rem] font-black uppercase tracking-widest rounded-2xl shadow-2xl backdrop-blur-md",
-                                    news.category === 'Exams' ? "bg-rose-500" : news.category === 'Study Tips' ? "bg-indigo-500" : "bg-emerald-500"
-                                )}>
-                                    {news.category}
-                                </span>
-                            </div>
+            {/* Horizontal Scroll Pill Filters */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-2 px-2">
+                {['All', 'Academic', 'Exams', 'Scholarships', 'Results', 'Events', 'More'].map((tab) => {
+                    const isActive = (tab === 'All' && (activeTab === 'For You' || activeTab === 'All')) || activeTab === tab;
+                    return (
+                        <button 
+                            key={tab}
+                            onClick={() => {
+                                if (tab === 'More') {
+                                    // simple visual toggle or default
+                                } else {
+                                    setActiveTab(tab === 'All' ? 'For You' : tab);
+                                }
+                            }}
+                            className={cn(
+                                "text-[10.5px] px-3.5 py-1.5 rounded-full transition-all whitespace-nowrap font-black border uppercase tracking-wide",
+                                isActive 
+                                    ? "bg-[#1D4ED8] text-white border-transparent shadow-xs" 
+                                    : "bg-white text-slate-500 border-slate-100 hover:text-slate-800"
+                            )}
+                        >
+                            <span className="flex items-center gap-1 leading-none">
+                                {tab}
+                                {tab === 'More' && <ChevronDown className="w-3 h-3 stroke-[2.5]" />}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
 
-                            <div className="absolute bottom-6 left-6 right-6 md:bottom-8 md:left-8 md:right-8">
-                                <h3 className="text-xl md:text-3xl font-black text-white leading-tight tracking-tighter italic uppercase drop-shadow-xl mb-4 md:mb-6 group-hover:translate-x-3 transition-transform line-clamp-3">
-                                    {news.title}
-                                </h3>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3 min-w-0 pr-2">
-                                        <div className="w-10 h-10 rounded-xl border-2 border-white/20 overflow-hidden shadow-lg rotate-2 shrink-0">
-                                            <img src={`https://ui-avatars.com/api/?name=${news.author}&background=fff&color=000`} alt="" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex flex-col min-w-0">
-                                            <span className="text-[0.65rem] font-black text-white uppercase tracking-widest leading-none truncate">{news.author}</span>
-                                            <span className="text-[0.55rem] font-bold text-white/50 uppercase tracking-widest mt-1 truncate">{new Date(news.created_at).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                    <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-black transition-all shrink-0">
-                                        <ArrowRight className="w-6 h-6" />
-                                    </div>
+            {/* 1. Large Featured Carousel Banner */}
+            <div 
+                onClick={() => setSelectedNews(featuredArticle)}
+                className="relative rounded-xl overflow-hidden aspect-[16/10] bg-slate-900 text-white shadow-xs select-none group cursor-pointer"
+            >
+                <img 
+                    src={featuredArticle.image_url || 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?q=80&w=800'} 
+                    className="w-full h-full object-cover opacity-85 group-hover:scale-[1.02] transition-transform duration-700" 
+                    alt="" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+                
+                <div className="absolute inset-x-0 bottom-0 p-3.5 pb-4 flex flex-col justify-end text-left">
+                    <div>
+                        <span className="bg-[#1D4ED8] text-white text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1 shadow-xs">
+                            Featured
+                        </span>
+                    </div>
+                    
+                    <h2 className="text-xs md:text-sm font-black text-white leading-snug tracking-tight line-clamp-2">
+                        {featuredArticle.title}
+                    </h2>
+                    <p className="text-[9.5px] text-white/70 mt-1 line-clamp-2 font-medium leading-snug">
+                        The new framework aims to enhance practical learning and career readiness among students.
+                    </p>
+                    
+                    <div className="flex items-center gap-2 mt-2.5 text-[8.5px] text-white/50 font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-0.5">
+                            <Calendar className="w-3 h-3" />
+                            20 May 2024
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-0.5">
+                            <Clock className="w-3 h-3" />
+                            5 min read
+                        </span>
+                    </div>
+                    
+                    {/* Tiny visual slider indicator dots matching screen */}
+                    <div className="flex justify-center gap-1.5 mt-2.5">
+                        <span className="w-1.25 h-1.25 rounded-full bg-white" />
+                        <span className="w-1.25 h-1.25 rounded-full bg-white/30" />
+                        <span className="w-1.25 h-1.25 rounded-full bg-white/30" />
+                        <span className="w-1.25 h-1.25 rounded-full bg-white/30" />
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. Latest News standard list section */}
+            <div className="space-y-2">
+                <div className="flex items-center justify-between px-0.5 pt-2">
+                    <h2 className="text-xs font-black text-slate-850 tracking-tight uppercase">Latest News</h2>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline">View All</button>
+                </div>
+
+                <div className="space-y-2.5">
+                    {displayNews.map((news) => (
+                        <div 
+                            key={news.id} 
+                            onClick={() => setSelectedNews(news)}
+                            className="bg-white p-1.5 border border-slate-100 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex gap-2.5 h-[92px] items-center cursor-pointer hover:border-slate-200 transition-all active:scale-[0.99] relative text-left"
+                        >
+                            {/* Left clean image crop */}
+                            <div className="w-[105px] h-[75px] rounded-lg overflow-hidden shrink-0 bg-slate-50 relative select-none">
+                                <img src={news.image_url} className="w-full h-full object-cover" alt="" />
+                            </div>
+                            
+                            {/* Text details content */}
+                            <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5 pr-6">
+                                <div>
+                                    <span className={cn(
+                                        "text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wide",
+                                        news.category === 'Exams' ? "bg-rose-50 text-rose-500" :
+                                        news.category === 'Scholarships' ? "bg-emerald-50 text-emerald-500" :
+                                        "bg-blue-50 text-blue-500"
+                                    )}>
+                                        {news.category}
+                                    </span>
+                                    
+                                    <h3 className="text-[11px] font-black text-slate-805 tracking-tight leading-snug line-clamp-2 mt-1">
+                                        {news.title}
+                                    </h3>
+                                </div>
+                                
+                                <div className="text-[8.5px] font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-wide">
+                                    <span>{new Date(news.created_at).toLocaleDateString()}</span>
+                                    <span>·</span>
+                                    <span>2 min read</span>
                                 </div>
                             </div>
+                            
+                            {/* Right edge Bookmark icon */}
+                            <button className="absolute right-2 top-2 px-1.5 py-1.5 text-slate-350 hover:text-slate-600 transition-colors">
+                                <Bookmark className="w-3.5 h-3.5 stroke-[2]" />
+                            </button>
                         </div>
-                    </motion.div>
-                ))}
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -4302,7 +5706,7 @@ const WordCounterPage = () => {
             <div className="grid grid-cols-3 gap-4">
                 <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[2rem] text-center shadow-xs">
                     <div className="text-3xl font-black text-emerald-600 leading-none mb-1">{words}</div>
-                    <div className="text-[0.6rem] font-black uppercase tracking-widest text-emerald-400">Words</div>
+                    <div className="text-[0.6rem] font-black uppercase tracking-widest text-[#00c8ff]">Words</div>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 p-6 rounded-[2rem] text-center shadow-xs">
                     <div className="text-3xl font-black text-blue leading-none mb-1">{chars}</div>
@@ -4335,83 +5739,115 @@ const SubjectDetail = () => {
     const brand = getBrandColors(config.color);
 
     const sections = [
-        { id: 'chapters', label: 'Study Chapters', icon: BookOpen, color: 'bg-emerald-50 text-emerald-600', count: 'Core Specification' },
-        { id: 'textbooks', label: 'Digital Library', icon: Library, color: 'bg-cyan-50 text-cyan-600', count: 'Official Books' },
-        { id: 'videos', label: 'Video Classes', icon: PlayCircle, color: 'bg-rose-50 text-rose-600', count: 'Smart Tutorials' },
-        { id: 'pdfs', label: 'Note Archive', icon: FileText, color: 'bg-blue-50 text-blue-600', count: 'Exam Materials' },
-        { id: 'model', label: 'Board Trial', icon: ListChecks, color: 'bg-indigo-50 text-indigo-600', count: '2083 Pattern' }
+        { id: 'chapters', label: 'Study Chapters', desc: 'Read and learn all chapters with detailed explanations', icon: BookOpen, color: 'bg-emerald-50 text-emerald-600 border border-emerald-100/30' },
+        { id: 'textbooks', label: 'Digital Library', desc: 'Access official textbooks and reference books', icon: Library, color: 'bg-cyan-50 text-cyan-600 border border-cyan-100/30' },
+        { id: 'videos', label: 'Video Classes', desc: 'Watch concept videos and smart tutorials', icon: PlayCircle, color: 'bg-rose-50 text-rose-600 border border-rose-100/30' },
+        { id: 'pdfs', label: 'Notes Archive', desc: 'Revision notes and important quick reference sheets', icon: FileText, color: 'bg-indigo-50 text-indigo-600 border border-indigo-100/30' },
+        { id: 'model', label: 'Model Question Sets', desc: 'Practice chapter wise and full syllabus query trials', icon: ClipboardList, color: 'text-amber-500 bg-amber-50 border border-amber-100/30' },
+        { id: 'mcq-sets', label: 'MCQ Practice Arena', desc: 'Battle through multiple choice questionnaire protocols', icon: ListChecks, color: 'bg-blue-50 text-blue-500 border border-blue-100/30' }
     ];
 
     return (
-        <div className="space-y-6 animate-fade-up pb-32 text-slate-900 px-1">
-            <header className="flex items-center justify-between">
+        <div className="space-y-5 pb-20 animate-fade-up text-left max-w-sm md:max-w-md mx-auto px-1.5 md:px-0">
+            {/* Top Branded App Header */}
+            <div className="flex items-center justify-between pt-2">
                 <button 
                     onClick={() => navigate('/hub')} 
-                    className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-400 active:scale-95 transition-all"
+                    className="w-10 h-10 rounded-xl bg-white border border-slate-100 shadow-sm flex items-center justify-center text-slate-500 active:scale-95 transition-all shrink-0"
                 >
-                    <ArrowLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-5 h-5 text-slate-600 stroke-[2.25]" />
                 </button>
-                <div className={cn("px-4 py-1.5 rounded-full text-[0.6rem] font-black uppercase tracking-widest", brand.paleBg, brand.text)}>
-                    Verified Module
+                <div className="flex items-center gap-1.5">
+                    <span className="text-xs">🛡️</span>
+                    <span className="font-black text-[11px] uppercase tracking-wider text-slate-700 leading-none">AADHAR PATHSHALA</span>
                 </div>
-            </header>
-
-            <div className={cn("p-8 rounded-[2.5rem] text-white overflow-hidden relative shadow-xl min-h-[180px] flex flex-col justify-end border-2 border-white/30 bg-linear-to-br", config.gradient)}>
-                <div className="relative z-10">
-                    <h1 className="text-4xl font-black italic tracking-tighter uppercase leading-none mb-1">{decodedName}</h1>
-                    <p className="text-[0.6rem] font-black text-white/70 uppercase tracking-[0.2em]">Syllabus Synchronization: Active</p>
-                </div>
-                <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Icon className="w-32 h-32 -rotate-12 translate-x-8 -translate-y-8" />
-                </div>
-                <div className="absolute top-4 left-4">
-                     <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center border border-white/20">
-                        <Icon className="w-5 h-5 text-white" />
-                    </div>
+                <div className={cn("px-3 py-1.5 rounded-full text-[8.5px] font-black uppercase tracking-wider", brand.paleBg, brand.text)}>
+                    Verified Core
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            {/* Subject Identity Banner Card with 3D illustration matching Photo 4 */}
+            <div className="bg-linear-to-r from-blue-600 via-indigo-600 to-indigo-700 p-6 rounded-[2.5rem] text-white overflow-hidden relative shadow-lg min-h-[160px] flex items-center justify-between gap-4 border border-white/10">
+                {/* Floating particles */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none" />
+                
+                <div className="space-y-2 text-left z-10 max-w-[200px] sm:max-w-xs">
+                    {/* Circle icon on top left */}
+                    <div className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 mb-1">
+                        <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none mb-1">{decodedName}</h1>
+                        <p className="text-[10px] font-bold text-blue-100/80 leading-relaxed uppercase">
+                            Syllabus Sync: Active ✨
+                        </p>
+                    </div>
+                </div>
+
+                <div className="relative shrink-0 z-10 w-[100px] sm:w-[125px] mr-0">
+                    <img 
+                        src="/11428-removebg-preview.png" 
+                        alt="Science subject illustration" 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-auto drop-shadow-2xl animate-pulse duration-4000"
+                        onError={(e) => {
+                            e.currentTarget.style.display = 'block';
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* Metric board for detailed counts */}
+            <div className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] flex items-center justify-between divide-x divide-slate-150 text-center font-black">
+                {[
+                    { label: 'Chapters', val: '12', icon: BookOpen, color: 'text-emerald-500 bg-emerald-50' },
+                    { label: 'Books', val: '8', icon: Library, color: 'text-cyan-500 bg-cyan-50' },
+                    { label: 'Videos', val: '35', icon: PlayCircle, color: 'text-rose-500 bg-rose-50' },
+                    { label: 'Notes', val: '24', icon: FileText, color: 'text-indigo-500 bg-indigo-50' }
+                ].map((stat, i) => {
+                    const StatIcon = stat.icon;
+                    return (
+                        <div key={i} className="flex-1 flex flex-col items-center justify-center px-0.5">
+                            <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mb-1.5", stat.color)}>
+                                <StatIcon className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-black text-[#0F172A] leading-none mb-1">{stat.val}</span>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wide leading-none">{stat.label}</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* List of Module Options */}
+            <div className="space-y-3 font-black">
                 {sections.map(section => (
                     <button 
                         key={section.id} 
-                        onClick={() => navigate(`/hub/${name}/${section.id}`)}
-                        className="bg-white p-4 px-5 rounded-[1.75rem] border border-slate-50 shadow-sm flex items-center justify-between group active:scale-[0.98] transition-all hover:border-slate-200"
+                        onClick={() => {
+                            if (section.id === 'mcq-sets') {
+                                navigate(`/hub/${decodedName}/mcq-sets`);
+                            } else {
+                                navigate(`/hub/${decodedName}/${section.id}`);
+                            }
+                        }}
+                        className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-[0_3px_12px_rgba(0,0,0,0.015)] flex items-center justify-between group active:scale-[0.98] transition-all hover:border-blue-100 text-left w-full relative"
                     >
-                        <div className="flex items-center gap-4">
-                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform", section.color)}>
-                                <section.icon className="w-6 h-6" />
+                        <div className="flex items-center gap-4.5">
+                            <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-105 group-hover:rotate-3 transition-transform shrink-0 shadow-xs", section.color)}>
+                                <section.icon className="w-5.5 h-5.5" strokeWidth={2} />
                             </div>
-                            <div className="text-left">
-                                <h3 className="font-black text-slate-900 text-base tracking-tight uppercase italic leading-none">{section.label}</h3>
-                                <p className="text-[0.55rem] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{section.count}</p>
+                            <div className="space-y-1">
+                                <h3 className="font-extrabold text-[#0F172A] text-xs tracking-tight uppercase leading-none group-hover:text-blue-600 transition-colors">{section.label}</h3>
+                                <p className="text-[10px] text-slate-400 font-bold leading-tight max-w-[210px]">{section.desc}</p>
                             </div>
                         </div>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 group-hover:text-slate-900 transition-all">
+                        <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
                             <ChevronRight className="w-4 h-4" />
                         </div>
                     </button>
                 ))}
             </div>
-            
-            <button 
-                onClick={() => navigate(`/hub/${name}/mcq-sets`)}
-                className={cn(
-                    "w-full p-6 rounded-[2rem] shadow-xl flex items-center justify-between group active:scale-[0.98] transition-all text-white bg-linear-to-br",
-                    config.gradient
-                )}
-            >
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center border border-white/20">
-                        <PenTool className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="text-left">
-                        <h3 className="text-lg font-black italic tracking-tighter uppercase leading-none">MCQ's Battle</h3>
-                        <p className="text-[0.55rem] font-black text-white/70 uppercase tracking-widest mt-1">Official Test Protocol</p>
-                    </div>
-                </div>
-                <Zap className="w-5 h-5 text-white animate-pulse" />
-            </button>
         </div>
     );
 };
@@ -5347,6 +6783,10 @@ const LoginPage = () => {
     const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [rememberMe, setRememberMe] = useState(true);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    
     const [error, setError] = useState<string | null>(null);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -5446,213 +6886,340 @@ const LoginPage = () => {
         }
     };
 
+    // Helper dot pattern grid
+    const DotGridMatrix = ({ rows = 5, cols = 5, className = "" }: { rows?: number; cols?: number; className?: string }) => (
+        <div className={cn("grid gap-1.5 opacity-80", className)} style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+            {Array.from({ length: rows * cols }).map((_, i) => (
+                <div key={i} className="w-1.25 h-1.25 rounded-full bg-blue-300/40" />
+            ))}
+        </div>
+    );
+
     return (
-        <div className="fixed inset-0 z-[3000] overflow-hidden flex flex-col bg-[#F0F9FF]">
-            {/* Soft Blue Gradient Background */}
-            <div className="absolute inset-0 bg-linear-to-br from-sky-100/50 via-white to-blue-50/50" />
-            
-            {/* Header Area */}
-            <div className="relative pt-8 sm:pt-16 px-10 pb-4 sm:pb-8 flex flex-col items-start z-10">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
-                    <AppSymbol size="lg" className="mb-2 border-none bg-transparent shadow-none" />
-                </motion.div>
-                <motion.h1 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-4xl sm:text-5xl font-black text-slate-800 tracking-tight leading-none mb-1"
-                >
-                    Hello!
-                </motion.h1>
-                <motion.p 
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-slate-500 font-bold text-base sm:text-lg"
-                >
-                    Welcome Student
-                </motion.p>
-            </div>
-            
-            {/* Login/Signup Card */}
-            <motion.div 
-                key={view}
-                initial={{ y: "100%", opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 120 }}
-                className="relative z-20 flex-1 bg-white rounded-t-[3rem] sm:rounded-t-[4rem] shadow-[0_-20px_40px_rgba(0,0,0,0.05)] px-6 sm:px-8 pt-8 sm:pt-12 flex flex-col overflow-hidden"
-            >
-                <div className="max-w-md mx-auto w-full flex-1 flex flex-col overflow-y-auto custom-scrollbar pb-6">
-                    <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="flex items-center justify-between mb-6 sm:mb-8"
-                    >
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-900">{view === 'login' ? 'Login' : 'Sign Up'}</h2>
-                        {view === 'signup' && (
-                            <button 
-                                onClick={() => {
-                                    setView('login');
-                                    setError(null);
-                                    setSuccessMessage(null);
-                                }} 
-                                className="flex items-center gap-2 text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
-                            >
-                                <ChevronLeft className="w-4 h-4" />
-                                Back to login
-                            </button>
-                        )}
-                    </motion.div>
+        <div className="fixed inset-0 z-[3000] bg-slate-50 overflow-y-auto sm:flex sm:items-center sm:justify-center p-0 sm:p-4 text-left font-sans">
+            {/* Main responsive device aspect card - scrollable on short phones, centered on desktop */}
+            <div className="w-full max-w-md bg-gradient-to-b from-[#E7F5FF] via-[#F4FAFF] to-[#FFFFFF] min-h-screen sm:min-h-[850px] sm:max-h-[95vh] sm:rounded-[2.5rem] shadow-[0_24px_64px_rgba(37,99,235,0.06)] relative flex flex-col justify-between overflow-y-auto sm:overflow-hidden border border-slate-100">
+                
+                {/* Decorative Background vectors */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-[#D0E9FF]/30 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute top-24 left-1/2 -translate-x-1/2 w-72 h-36 bg-gradient-to-b from-white/10 to-white/90 rounded-full blur-2xl pointer-events-none" />
                     
-                    <div className="space-y-4 sm:space-y-6 flex-1">
+                    {/* Top-Left Dots Grid */}
+                    <DotGridMatrix rows={5} cols={5} className="absolute left-6 top-8" />
+                    
+                    {/* Top Graphic Illustration Space */}
+                    <div className="relative pt-6 px-7 pb-4 flex items-center justify-between z-10 min-h-[190px]">
+                        {/* Floating little graphics */}
+                        <div className="absolute top-8 left-1/3 animate-bounce shadow-xs" style={{ animationDuration: '3.5s' }}>
+                            <div className="w-7 h-7 rounded-lg bg-white/70 backdrop-blur-xs flex items-center justify-center border border-white/50 text-[10px] transform -rotate-12">📖</div>
+                        </div>
+                        <div className="absolute top-16 right-1/4 animate-bounce shadow-xs" style={{ animationDuration: '5s' }}>
+                            <div className="w-8 h-8 rounded-lg bg-white/70 backdrop-blur-xs flex items-center justify-center border border-white/50 text-xs transform rotate-12">🎓</div>
+                        </div>
+                        <div className="absolute left-8 bottom-4 text-blue-400 text-xs animate-pulse">✦</div>
+                        <div className="absolute right-12 top-4 text-blue-400 text-[10px] animate-pulse" style={{ animationDelay: '1s' }}>✦</div>
+
+                        {/* Logo (Left side) styled as circular emblem in photo */}
                         <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.6 }}
-                            className="space-y-3 sm:space-y-4"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.5 }}
+                            className="relative z-10 p-0.5"
                         >
-                            {error && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-xs font-black"
-                                >
-                                    {error}
-                                </motion.div>
-                            )}
-                            {successMessage && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-3 rounded-2xl text-xs font-black"
-                                >
-                                    {successMessage}
-                                </motion.div>
-                            )}
-                            {view === 'signup' && (
-                                <div className="relative">
-                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><UserIcon className="w-5 h-5" /></span>
-                                    <input 
-                                        type="text" 
-                                        placeholder="Full Name" 
-                                        value={fullName}
-                                        onChange={(e) => setFullName(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
-                                    />
-                                </div>
-                            )}
-                            <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Languages className="w-5 h-5" /></span>
-                                <input 
-                                    type="email" 
-                                    placeholder="Email" 
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
+                            <div className="w-[110px] h-[110px] rounded-full bg-white border-2 border-white/80 shadow-[0_8px_20px_rgba(29,78,216,0.08)] flex items-center justify-center p-3 select-none">
+                                <img 
+                                    src="/logo.png" 
+                                    alt="Aadhar Logo" 
+                                    className="w-full h-full object-contain" 
+                                    onError={(e) => {
+                                        e.currentTarget.src = `https://ui-avatars.com/api/?name=AP&background=1D4ED8&color=fff&size=128`;
+                                    }}
                                 />
                             </div>
-                            <div className="relative">
-                                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><Lock className="w-5 h-5" /></span>
-                                <input 
-                                    type="password" 
-                                    placeholder="Password" 
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
-                                />
-                            </div>
-                            {view === 'signup' && (
-                                <div className="relative">
-                                    <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400"><ShieldCheck className="w-5 h-5" /></span>
-                                    <input 
-                                        type="password" 
-                                        placeholder="Confirm Password" 
-                                        value={confirmPassword}
-                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl sm:rounded-3xl py-4 sm:py-5 pl-14 sm:pl-16 pr-6 text-slate-800 placeholder:text-slate-400 font-bold focus:outline-none focus:ring-2 focus:ring-slate-100 transition-all text-sm sm:text-base"
-                                    />
-                                </div>
-                            )}
-                            {view === 'login' && (
-                                <div className="flex justify-between items-center px-2">
-                                    <button 
-                                        onClick={() => {
-                                            setView('signup');
-                                            setError(null);
-                                            setSuccessMessage(null);
-                                        }} 
-                                        className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600"
-                                    >
-                                        New here? Sign Up
-                                    </button>
-                                    <button className="text-[0.6rem] sm:text-[0.7rem] font-black uppercase tracking-widest text-[#1D4ED8]">Forgot Password?</button>
-                                </div>
-                            )}
                         </motion.div>
 
-                        <motion.button 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.7 }}
-                            onClick={() => handleAuth()}
-                            disabled={loading}
-                            className="w-full py-5 sm:py-6 bg-[#16423C] text-white rounded-[1.5rem] sm:rounded-[2rem] font-black uppercase tracking-[0.2em] text-[0.65rem] sm:text-xs shadow-xl shadow-[#16423C]/20 active:scale-95 transition-all disabled:opacity-50 disabled:active:scale-100"
-                        >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    {view === 'login' ? 'Logging in...' : 'Signing up...'}
-                                </span>
-                            ) : (
-                                view === 'login' ? 'Login' : 'Sign Up'
-                            )}
-                        </motion.button>
-
-                        <button 
-                            onClick={() => {
-                                localStorage.clear();
-                                sessionStorage.clear();
-                                window.location.href = '/';
-                            }}
-                            className="text-[0.6rem] font-black text-slate-400 uppercase tracking-widest hover:text-[#16423C] transition-colors mt-2 text-center w-full"
-                        >
-                            Stuck? Reset Session
-                        </button>
-
+                        {/* Cartoon boy (Right side) - size matching home page for harmony */}
                         <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.8 }}
-                            className="relative flex items-center gap-4 py-2 sm:py-4"
+                            initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            transition={{ type: 'spring', damping: 20 }}
+                            className="w-[160px] h-[160px] shrink-0 relative select-none flex items-center justify-center"
                         >
-                            <div className="flex-1 h-[1px] bg-slate-100" />
-                            <span className="text-[0.55rem] sm:text-[0.6rem] font-black text-slate-300 uppercase tracking-widest whitespace-nowrap">Or {view === 'login' ? 'login' : 'sign up'} with</span>
-                            <div className="flex-1 h-[1px] bg-slate-100" />
-                        </motion.div>
-
-                        {/* Social Icons */}
-                        <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.9 }}
-                            className="flex justify-center"
-                        >
-                            <button 
-                                onClick={handleGoogleLogin}
-                                className="w-full sm:max-w-xs h-14 sm:h-16 bg-white border border-slate-100 rounded-2xl sm:rounded-3xl flex items-center justify-center gap-3 shadow-sm hover:shadow-md transition-all active:scale-95 group"
-                            >
-                                <svg viewBox="0 0 24 24" className="w-6 h-6 sm:w-7 sm:h-7"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067C3.186 21.302 7.275 24 12 24c3.11 0 5.924-1.006 8.054-2.813l-4.014-3.174z"/><path fill="#4285F4" d="M23.49 12.275c0-.868-.079-1.53-.236-2.25H12v4.526h6.488c-.133.864-.813 2.146-2.054 2.997l4.013 3.174c2.338-2.157 3.682-5.335 3.682-8.447z"/><path fill="#FBBC05" d="M5.277 14.268a7.12 7.12 0 000-4.503L1.24 6.65a11.962 11.962 0 000 10.7l4.037-3.082z"/></svg>
-                                <span className="text-slate-600 font-black uppercase tracking-widest text-[0.65rem] sm:text-xs">Continue with Google</span>
-                            </button>
+                            <img 
+                                src="/boy.png" 
+                                alt="Student Mascot" 
+                                className="w-full h-full object-contain relative z-10" 
+                                onError={(e) => {
+                                    // Soft fallback instead of display none to ensure beautiful illustration is always shown
+                                    e.currentTarget.src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150";
+                                }}
+                            />
                         </motion.div>
                     </div>
+
+                {/* Greeting headers */}
+                <div className="px-8 pt-1 pb-4 z-10">
+                    <motion.h1 
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-[34px] font-black text-[#0F172A] tracking-tight leading-none font-sans"
+                    >
+                        Welcome Back!
+                    </motion.h1>
+                    <motion.p 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-slate-500 font-bold text-sm tracking-tight mt-1 flex items-center gap-1"
+                    >
+                        Glad to see you again 🖐
+                    </motion.p>
                 </div>
-            </motion.div>
+
+                {/* White Container Card */}
+                <motion.div 
+                    initial={{ y: 80, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: 'spring', damping: 25, stiffness: 100 }}
+                    className="relative z-20 flex-1 bg-white rounded-t-[2.25rem] shadow-[0_-12px_44px_rgba(15,23,42,0.04)] px-7 pt-7 pb-8 flex flex-col justify-between"
+                >
+                    <div className="w-full">
+                        {/* Card Sub-heading */}
+                        <div className="mb-6">
+                            <h2 className="text-[17px] font-black text-slate-900 tracking-tight">
+                                {view === 'login' ? 'Login to your account' : 'Register your account'}
+                            </h2>
+                            <p className="text-[11px] text-slate-400 font-bold tracking-tight mt-0.5">
+                                {view === 'login' ? 'Access your learning dashboard' : 'Begin your smart academic learning journey'}
+                            </p>
+                        </div>
+
+                        {/* Error or Success notification blocks */}
+                        {error && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-red-50 border border-red-100 text-red-600 px-4 py-2.5 rounded-xl text-[11px] font-black mb-4 leading-normal flex items-center gap-2"
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                                {error}
+                            </motion.div>
+                        )}
+                        {successMessage && (
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="bg-emerald-50 border border-emerald-100 text-emerald-600 px-4 py-2.5 rounded-xl text-[11px] font-black mb-4 leading-normal flex items-center gap-2"
+                            >
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                {successMessage}
+                            </motion.div>
+                        )}
+
+                        {/* Form elements matches photo exactly */}
+                        <form onSubmit={(e) => { e.preventDefault(); handleAuth(); }} className="space-y-4">
+                            
+                            {/* Full name input for sign up */}
+                            {view === 'signup' && (
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest pl-1">Full Name</label>
+                                    <div className="relative border border-slate-100 bg-white shadow-xs rounded-xl p-1.5 pl-2 flex items-center focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100/50 transition-all h-13.5">
+                                        <div className="w-10 h-10 bg-blue-50/80 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                            <UserIcon className="w-4.5 h-4.5 stroke-[2.25]" />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Enter your full name" 
+                                            value={fullName}
+                                            onChange={(e) => setFullName(e.target.value)}
+                                            className="flex-1 ml-3 bg-transparent text-xs font-bold outline-none py-1.5 text-slate-800 placeholder:text-slate-300"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Email Address */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest pl-1">Email Address</label>
+                                <div className="relative border border-slate-100 bg-white shadow-xs rounded-xl p-1.5 pl-2 flex items-center focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100/50 transition-all h-13.5">
+                                    <div className="w-10 h-10 bg-blue-50/80 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                        <Mail className="w-4.5 h-4.5 stroke-[2.25]" />
+                                    </div>
+                                    <input 
+                                        type="email" 
+                                        placeholder="Enter your email" 
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="flex-1 ml-3 bg-transparent text-xs font-bold outline-none py-1.5 text-slate-800 placeholder:text-slate-300"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Password input */}
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest pl-1">Password</label>
+                                <div className="relative border border-slate-100 bg-white shadow-xs rounded-xl p-1.5 pl-2 flex items-center focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100/50 transition-all h-13.5">
+                                    <div className="w-10 h-10 bg-blue-50/80 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                        <Lock className="w-4.5 h-4.5 stroke-[2.25]" />
+                                    </div>
+                                    <input 
+                                        type={showPassword ? "text" : "password"} 
+                                        placeholder="Enter your password" 
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="flex-1 ml-3 bg-transparent text-xs font-bold outline-none py-1.5 text-slate-800 placeholder:text-slate-300"
+                                    />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => setShowPassword(!showPassword)} 
+                                        className="px-2.5 text-slate-350 hover:text-slate-600 outline-none transition-colors"
+                                    >
+                                        {showPassword ? <EyeOff className="w-4 h-4 stroke-[2.25]" /> : <Eye className="w-4 h-4 stroke-[2.25]" />}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Confirm Password inputs for Register */}
+                            {view === 'signup' && (
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] font-black text-slate-600 uppercase tracking-widest pl-1">Confirm Password</label>
+                                    <div className="relative border border-slate-100 bg-white shadow-xs rounded-xl p-1.5 pl-2 flex items-center focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100/50 transition-all h-13.5">
+                                        <div className="w-10 h-10 bg-blue-50/80 text-blue-600 rounded-lg flex items-center justify-center shrink-0">
+                                            <ShieldCheck className="w-4.5 h-4.5 stroke-[2.25]" />
+                                        </div>
+                                        <input 
+                                            type={showConfirmPassword ? "text" : "password"} 
+                                            placeholder="Re-enter your password" 
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="flex-1 ml-3 bg-transparent text-xs font-bold outline-none py-1.5 text-slate-800 placeholder:text-slate-300"
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                                            className="px-2.5 text-slate-350 hover:text-slate-600 outline-none transition-colors"
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="w-4 h-4 stroke-[2.25]" /> : <Eye className="w-4 h-4 stroke-[2.25]" />}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Remember me & Forgot Password */}
+                            {view === 'login' && (
+                                <div className="flex justify-between items-center pt-1.5 px-0.5 text-xs text-slate-500">
+                                    <label className="flex items-center gap-2 select-none cursor-pointer text-[11px] font-bold">
+                                        <input 
+                                            type="checkbox" 
+                                            checked={rememberMe}
+                                            onChange={(e) => setRememberMe(e.target.checked)}
+                                            className="w-4 h-4 accent-blue-600 rounded border-slate-200 cursor-pointer" 
+                                        />
+                                        Remember me
+                                    </label>
+                                    <button 
+                                        type="button"
+                                        onClick={() => alert("Please check your email instruction to reset, or contact your school system admins.")}
+                                        className="text-[11px] font-black text-blue-600 hover:underline hover:text-blue-700 h-6"
+                                    >
+                                        Forgot Password?
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Submit Login core Button - styled precisely like photograph */}
+                            <div className="pt-2">
+                                <motion.button 
+                                    whileTap={{ scale: 0.98 }}
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full relative flex items-center h-14 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl px-5 select-none cursor-pointer shadow-[0_8px_24px_rgba(37,99,235,0.18)] active:scale-[0.98] transition-all font-black text-xs uppercase tracking-widest"
+                                >
+                                    <div className="w-full text-center">
+                                        {loading ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Processing...
+                                            </span>
+                                        ) : (
+                                            view === 'login' ? 'Login' : 'Sign Up'
+                                        )}
+                                    </div>
+                                    <div className="absolute right-3.5 w-8.5 h-8.5 rounded-full bg-white flex items-center justify-center text-blue-600 shadow-xs">
+                                        <ArrowRight className="w-4.5 h-4.5 stroke-[2.5]" />
+                                    </div>
+                                </motion.button>
+                            </div>
+                        </form>
+
+                        {/* Or Line Divider */}
+                        <div className="relative flex items-center gap-3 py-6">
+                            <div className="flex-1 h-[1px] bg-slate-100" />
+                            <span className="text-[9.5px] font-black text-slate-300 uppercase tracking-widest whitespace-nowrap">OR</span>
+                            <div className="flex-1 h-[1px] bg-slate-100" />
+                        </div>
+
+                        {/* Continue with Google button as requested */}
+                        <div className="flex justify-center">
+                            <button 
+                                onClick={handleGoogleLogin}
+                                className="w-full h-13.5 bg-white border border-slate-150 hover:border-slate-200 rounded-xl flex items-center justify-center gap-3 shadow-xs hover:shadow-sm transition-all active:scale-[0.98] group"
+                            >
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0 select-none"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0112 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.698 1.24 6.65l4.026 3.115z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 01-6.723-4.823l-4.04 3.067C3.186 21.302 7.275 24 12 24c3.11 0 5.924-1.006 8.054-2.813l-4.014-3.174z"/><path fill="#4285F4" d="M23.49 12.275c0-.868-.079-1.53-.236-2.25H12v4.526h6.488c-.133.864-.813 2.146-2.054 2.997l4.013 3.174c2.338-2.157 3.682-5.335 3.682-8.447z"/><path fill="#FBBC05" d="M5.277 14.268a7.12 7.12 0 000-4.503L1.24 6.65a11.962 11.962 0 000 10.7l4.037-3.082z"/></svg>
+                                <span className="text-slate-750 font-extrabold text-xs tracking-tight">Continue with Google</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Bottom link to toggle between signin/signup & footer info */}
+                    <div className="mt-8 text-center space-y-4">
+                        <button 
+                            type="button"
+                            onClick={() => {
+                                setView(view === 'login' ? 'signup' : 'login');
+                                setError(null);
+                                setSuccessMessage(null);
+                            }} 
+                            className="text-[11px] font-bold text-slate-500 hover:text-slate-800 transition-colors uppercase tracking-wider"
+                        >
+                            {view === 'login' ? (
+                                <span className="flex items-center justify-center gap-1.5 leading-none">
+                                    New here? <span className="text-blue-600 font-extrabold text-xs tracking-tight normal-case pl-0.5">Sign up</span>
+                                </span>
+                            ) : (
+                                <span className="flex items-center justify-center gap-1.5 leading-none">
+                                    Already here? <span className="text-blue-600 font-extrabold text-xs tracking-tight normal-case pl-0.5">Sign in</span>
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Reset Session stuck safeguard link */}
+                        <div>
+                            <button 
+                                onClick={() => {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
+                                    alert("Session and locally stored database caches cleared! Page reloading...");
+                                    window.location.href = '/';
+                                }}
+                                className="text-[9px] font-bold text-slate-300 hover:text-slate-400 uppercase tracking-widest mt-1 transition-colors"
+                            >
+                                Reset cached session profiles
+                            </button>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* Footer safe verification bar with Shield Icon and Centered Dots Alignment */}
+                <div className="py-4 pb-6 bg-white flex flex-col items-center justify-center relative select-none">
+                    <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-400">
+                        <ShieldCheck className="w-4.5 h-4.5 text-blue-505 stroke-[2.25]" />
+                        <span>Your data is safe and secure</span>
+                    </div>
+                    {/* Bottom-Right Dots Grid matching photograph */}
+                    <DotGridMatrix rows={4} cols={5} className="absolute right-6 -bottom-1 select-none" />
+                </div>
+            </div>
         </div>
     );
 };
@@ -5685,13 +7252,6 @@ const ProfilePage = () => {
             setUpdating(false);
         }
     };
-    
-    const stats = [
-        { label: 'Total XP', value: user?.xp || 0, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
-        { label: 'Day Streak', value: user?.streak || 0, icon: Zap, color: 'text-rose-500', bg: 'bg-rose-50' },
-        { label: 'Chapters', value: user?.completedChapters?.length || 0, icon: BookOpen, color: 'text-blue-500', bg: 'bg-blue-50' },
-        { label: 'Test Given', value: '12', icon: Target, color: 'text-emerald-500', bg: 'bg-emerald-50' }
-    ];
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
@@ -5699,186 +7259,373 @@ const ProfilePage = () => {
     };
 
     return (
-        <div className="min-h-screen pb-24 animate-fade-up bg-[#F8FAFC]">
-            <div className="relative h-48 bg-linear-to-br from-[#1D4ED8] to-[#1E40AF] overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl" />
-                    <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-400 rounded-full translate-x-1/3 translate-y-1/3 blur-3xl" />
+        <div className="space-y-4 pb-20 animate-fade-up text-left max-w-sm md:max-w-md mx-auto px-2">
+            {/* Top header block with a sleek back button */}
+            <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-2.5">
+                    <button 
+                        onClick={() => navigate('/')} 
+                        className="w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-slate-700 shadow-xs active:scale-95 transition-all cursor-pointer hover:bg-slate-50"
+                    >
+                        <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+                    </button>
+                    <div>
+                        <h1 className="text-lg font-black text-slate-850 tracking-tight leading-none">Student Profile</h1>
+                        <p className="text-[9px] text-slate-400 font-bold tracking-tight mt-1">Manage your learning identity</p>
+                    </div>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-linear-to-t from-[#F8FAFC] to-transparent" />
-                <button onClick={() => navigate(-1)} className="absolute top-6 left-6 w-10 h-10 bg-white/10 backdrop-blur-md rounded-xl flex items-center justify-center text-white border border-white/10 active:scale-95 transition-all">
-                    <ChevronLeft className="w-6 h-6" />
+                <button 
+                    onClick={handleLogout} 
+                    className="w-9 h-9 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-rose-500 shadow-xs active:scale-95 transition-all hover:bg-rose-50"
+                >
+                    <LogOut className="w-4 h-4 stroke-[2.25]" />
                 </button>
             </div>
 
-            <div className="max-w-md mx-auto px-6 -mt-24 relative z-10">
-                <div className="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 p-8 text-center border border-slate-100 mb-6">
-                    <div className="relative inline-block mb-4">
-                        <div className="w-28 h-28 rounded-[2.5rem] border-4 border-white shadow-xl overflow-hidden bg-slate-50 mx-auto">
+            {/* Blue Banner Gradient with Profile Avatar and quick stats */}
+            <div className="relative bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#4F46E5] text-white rounded-2xl p-4.5 overflow-hidden shadow-[0_8px_24px_rgba(37,99,235,0.12)]">
+                {/* Visual design elements */}
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-xl pointer-events-none" />
+                
+                <div className="flex items-center gap-3.5 text-left pb-4 border-b border-white/10 relative z-10">
+                    {/* Circle Avatar Crop */}
+                    <div className="relative shrink-0 select-none group">
+                        <div className="w-16 h-16 rounded-full border-2 border-white/90 overflow-hidden shadow-md bg-white/10 flex items-center justify-center">
                             <img 
-                                src={LogoImg} 
-                                alt="Profile" 
-                                className="w-full h-full object-cover p-2"
+                                src="/boy.png" 
+                                alt="Profile Avatar" 
+                                className="w-full h-full object-contain"
                                 onError={(e) => {
-                                    e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + (user?.name || 'Scholar') + '&background=random';
+                                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${user?.name || 'Aayush'}&background=fff&color=1D4ED8`;
                                 }}
                             />
                         </div>
-                        <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-emerald-500 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-lg">
-                            <ShieldCheck className="w-5 h-5" />
-                        </div>
-                    </div>
-
-                    {isEditing ? (
-                        <div className="flex flex-col items-center gap-3 mb-6">
-                            <input 
-                                value={newName}
-                                onChange={e => setNewName(e.target.value)}
-                                className="w-full max-w-xs p-3 border-2 border-indigo-100 rounded-2xl text-center font-black text-xl outline-none focus:border-indigo-500"
-                                placeholder="Enter Name"
-                            />
-                            <div className="flex gap-2">
-                                <button onClick={() => setIsEditing(false)} className="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-black text-xs uppercase tracking-widest">Cancel</button>
-                                <button onClick={handleUpdateName} disabled={updating} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-indigo-200">
-                                    {updating ? 'Saving...' : 'Save Name'}
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            <h1 className="text-3xl font-black tracking-tight mb-1 text-slate-900">{user?.name || 'Scholar'}</h1>
-                            <button onClick={() => setIsEditing(true)} className="text-[0.6rem] font-black text-indigo-500 uppercase tracking-widest mb-4 hover:underline">Edit Name</button>
-                        </>
-                    )}
-                    <p className="text-sm font-semibold text-slate-500 mb-6 truncate px-4">{user?.email || 'student@aadhar.edu.np'}</p>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        {stats.map((stat) => (
-                            <div key={stat.label} className={cn("p-4 rounded-3xl border flex flex-col items-center bg-slate-50 border-slate-100", stat.bg)}>
-                                <stat.icon className={cn("w-5 h-5 mb-2", stat.color)} />
-                                <span className="text-[0.6rem] font-black uppercase tracking-widest text-slate-400 mb-0.5">{stat.label}</span>
-                                <span className={cn("text-lg font-black", stat.color)}>{stat.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <h2 className="text-[0.7rem] font-black text-slate-400 uppercase tracking-[0.3em] px-4 mb-2">Learning Profile</h2>
-                    
-                    <div className="rounded-[2rem] border shadow-sm overflow-hidden bg-white border-slate-100">
-                        {[
-                            { label: 'Academic Year', value: '2083 BS', icon: Calendar },
-                            { label: 'Current Grade', value: user?.grade || 'Class 10', icon: GraduationCap },
-                            { label: 'Account Identity', value: 'Verified Student', icon: UserCheck },
-                            { label: 'School Network', value: 'Aadhar Pathshala', icon: Globe },
-                        ].map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between p-5 transition-colors border-b last:border-0 group border-slate-50 hover:bg-slate-50">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-50 text-slate-400 group-hover:text-blue group-hover:bg-blue/5">
-                                        <item.icon className="w-5 h-5" />
-                                    </div>
-                                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest">{item.label}</span>
-                                </div>
-                                <span className="text-[0.75rem] font-black text-slate-900">{item.value}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                        <div className="flex flex-col gap-3 pt-6">
-                        {userProfile?.role === 'admin' && (
-                            <button 
-                                onClick={() => navigate('/admin-portal')} 
-                                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3"
-                            >
-                                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                                Admin Dashboard
-                            </button>
-                        )}
+                        {/* Tiny Edit Pencil */}
                         <button 
-                            onClick={handleLogout}
-                            className="w-full py-5 bg-rose-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[0.7rem] shadow-xl shadow-rose-200 active:scale-95 transition-all flex items-center justify-center gap-3"
+                            onClick={() => setIsEditing(!isEditing)}
+                            className="absolute -bottom-0.5 -right-0.5 w-6 h-6 bg-white hover:bg-slate-50 text-slate-700 rounded-full flex items-center justify-center border border-slate-100 shadow-md transform hover:scale-105 active:scale-95 transition-all"
                         >
-                            <LogOut className="w-4 h-4" />
-                            Sign Out Account
+                            <PenTool className="w-3 h-3 text-blue-600 stroke-[2.5]" />
                         </button>
                     </div>
+
+                    {/* User identifier details */}
+                    <div className="min-w-0 flex-1">
+                        {isEditing ? (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                                <input 
+                                    value={newName}
+                                    onChange={e => setNewName(e.target.value)}
+                                    className="px-2 py-1 text-slate-900 bg-white border border-slate-200 rounded-lg text-xs font-bold font-sans tracking-tight focus:outline-none w-28"
+                                    placeholder="Enter Name"
+                                    autoFocus
+                                />
+                                <button 
+                                    onClick={handleUpdateName}
+                                    disabled={updating}
+                                    className="px-2 py-1 bg-white text-blue-600 text-[10px] font-black rounded-md uppercase tracking-wider"
+                                >
+                                    {updating ? '..' : 'OK'}
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5">
+                                <h2 className="text-sm font-black tracking-tight leading-none truncate max-w-[140px]">
+                                    {user?.name || 'Aayush Sharma'}
+                                </h2>
+                                <span className="px-2 py-0.5 bg-white/15 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-wider text-indigo-50 border border-white/5">
+                                    {user?.grade || 'Class 10'}
+                                </span>
+                            </div>
+                        )}
+                        
+                        <div className="flex items-center gap-1 mt-1 text-[9px] text-indigo-100 font-extrabold uppercase tracking-wide">
+                            <span className="text-yellow-400">★</span>
+                            <span>Level 7</span>
+                            <span className="opacity-40">•</span>
+                            <span>{user?.xp || 1250} XP</span>
+                        </div>
+                        
+                        <p className="text-[9.5px] text-indigo-200 mt-1 truncate font-medium max-w-[210px]">
+                            Keep learning, keep growing! 🚀
+                        </p>
+                    </div>
+                    
+                    <ChevronRight className="w-4 h-4 text-white/40 rank-decoration" />
+                </div>
+
+                {/* Stat Column Alignment */}
+                <div className="grid grid-cols-4 gap-1.5 pt-3.5 text-center relative z-10">
+                    {[
+                        { label: 'Units Done', val: user?.completedChapters?.length || '5' },
+                        { label: 'Overall Progress', val: '80%' },
+                        { label: 'Lessons Done', val: '125' },
+                        { label: 'Your Rank', val: 'Top 15%' }
+                    ].map((met, i) => (
+                        <div key={i} className="flex flex-col items-center justify-center border-r last:border-0 border-white/10 pr-0.5">
+                            <span className="text-xs font-black text-white leading-none tracking-tight">{met.val}</span>
+                            <span className="text-[7.5px] font-bold text-indigo-100/70 uppercase tracking-tight leading-tight mt-1 max-w-[55px] mx-auto block">{met.label}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
+
+            {/* My Learning Quick Access Panel Grid */}
+            <div className="space-y-1.5 text-left mt-5">
+                <h2 className="text-xs font-black text-slate-850 tracking-tight uppercase">My Learning</h2>
+                <div className="grid grid-cols-4 gap-2">
+                    {[
+                        { id: 'courses', label: 'My Courses', val: '5 Active', icon: BookOpen, color: 'bg-blue-50 text-blue-500 hover:bg-blue-100' },
+                        { id: 'quizzes', label: 'My Quizzes', val: '12 Done', icon: ClipboardCheck, color: 'bg-indigo-50 text-indigo-500 hover:bg-indigo-100' },
+                        { id: 'achievements', label: 'Achievements', val: '8 Badges', icon: Star, color: 'text-amber-500 bg-amber-50 hover:bg-amber-100' },
+                        { id: 'saved', label: 'Saved', val: '24 Items', icon: Bookmark, color: 'bg-emerald-50 text-emerald-500 hover:bg-emerald-100' }
+                    ].map((item) => {
+                        const ItemIcon = item.icon;
+                        return (
+                            <div 
+                                key={item.id}
+                                className="bg-white p-1.5 rounded-xl border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex flex-col items-center justify-center text-center min-h-[72px] cursor-pointer hover:shadow-xs transition-all active:scale-[0.98]"
+                            >
+                                <div className={cn("w-7.5 h-7.5 rounded-lg flex items-center justify-center shrink-0 mb-1 transition-transform", item.color)}>
+                                    <ItemIcon className="w-3.5 h-3.5 stroke-[2.25]" />
+                                </div>
+                                <span className="text-[8.5px] font-black text-slate-850 tracking-tight leading-none mt-0.5 block">{item.label}</span>
+                                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-tight mt-1 block">{item.val}</span>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Account Information Settings section */}
+            <div className="space-y-1.5 text-left mt-5">
+                <h2 className="text-xs font-black text-slate-850 tracking-tight uppercase">Account Security</h2>
+                
+                <div className="bg-white rounded-xl border border-slate-100 overflow-hidden divide-y divide-slate-50 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                    {[
+                        { id: 'info', label: 'Personal Information', val: user?.email || 'Aayush@gmail.com', icon: UserIcon },
+                        { id: 'security', label: 'Privacy & Security', val: 'Fingerprint & PIN', icon: ShieldCheck },
+                        { id: 'settings', label: 'In-App Settings', val: 'v1.4.2 Production', icon: Settings },
+                        { id: 'help', label: 'Help & Live Support', val: 'Active 24/7', icon: FileQuestion }
+                    ].map((row) => {
+                        const RowIcon = row.icon;
+                        return (
+                            <div 
+                                key={row.id} 
+                                className="w-full flex items-center justify-between p-3 hover:bg-slate-50/50 transition-colors text-left"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500">
+                                        <RowIcon className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-slate-805 uppercase tracking-wide block leading-none">{row.label}</span>
+                                        <span className="text-[8.5px] font-bold text-slate-400 mt-1 block leading-none">{row.val}</span>
+                                    </div>
+                                </div>
+                                <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Aadhar Professional Level Premium CTA Banner Card */}
+            <div className="bg-white border border-slate-100 rounded-xl p-3.5 mt-5 flex items-center justify-between shadow-[0_2px_8px_rgba(0,0,0,0.01)] group text-left cursor-pointer active:scale-[0.99] transition-all">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-900 border border-blue-950 text-white flex items-center justify-center shadow-xs">
+                        <ShieldCheck className="w-5.5 h-5.5 stroke-[2] text-blue-200" />
+                    </div>
+
+                    <div>
+                        <div className="flex items-center gap-1.5">
+                            <h4 className="font-extrabold text-[#020617] text-[10px] leading-snug">
+                                Aadhar Pro Plus
+                            </h4>
+                            <span className="bg-blue-600 text-white text-[7.5px] font-black px-1.5 py-0.2 rounded-full uppercase tracking-wider">
+                                Upgrade
+                            </span>
+                        </div>
+                        <p className="text-[8.5px] text-slate-400 font-bold leading-normal mt-0.5 max-w-[200px]">
+                            Unlock micro-learning simulators and certified modules instantly.
+                        </p>
+                    </div>
+                </div>
+
+                <ChevronRight className="w-4 h-4 text-blue-600 font-bold shrink-0" />
+            </div>
+
+            {/* Admin visual dashboard support block */}
+            {userProfile?.role === 'admin' && (
+                <button 
+                    onClick={() => navigate('/admin-portal')} 
+                    className="w-full py-4.5 bg-slate-905 text-white rounded-xl font-black uppercase tracking-[0.2em] text-[10px] shadow-md hover:bg-slate-850 active:scale-95 transition-all flex items-center justify-center gap-2 mt-4"
+                >
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    Open Admin Workspace
+                </button>
+            )}
         </div>
     );
 };
 
 /* ── STUDY HUB & SUBJECTS ── */
 const StudyHub = () => {
-    const { data, userProfile } = useApp();
+    const { data } = useApp();
     const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
 
-    const compulsory = ['English', 'नेपाली', 'Maths', 'Science', 'सामाजिक'];
-    
-    const renderSubject = (name: string, sub: any, i: number) => {
-        const config = SUBJECTS_CONFIG[name as SubjectType] || { color: 'slate', icon: BookOpen, gradient: 'from-slate-500 to-slate-700' };
-        const Icon = config.icon;
-        const brand = getBrandColors(config.color);
+    const compulsory = [
+        { name: 'English', desc: 'Improve your language and communication skills', initials: 'Aa', indexNum: 1, color: 'bg-blue-600 text-white', icon: null },
+        { name: 'नेपाली', desc: 'Learn and understand the beauty of Nepali language', initials: 'क', indexNum: 2, color: 'bg-indigo-600 text-white', icon: null },
+        { name: 'Maths', desc: 'Build strong problem solving and analytical skills', initials: 'Σ', indexNum: 3, color: 'bg-orange-500 text-white', icon: null },
+        { name: 'Science', desc: 'Explore the world through concepts and experiments', initials: '', indexNum: 4, color: 'bg-emerald-500 text-white', icon: FlaskConical },
+        { name: 'सामाजिक', desc: 'Understand society, history, and our world better', initials: '', indexNum: 5, color: 'bg-amber-500 text-white', icon: Globe }
+    ];
+
+    const filteredCompulsory = compulsory.filter(item => {
+        const query = searchQuery.toLowerCase();
+        return item.name.toLowerCase().includes(query) || item.desc.toLowerCase().includes(query);
+    });
+
+    const optionalSubjects = Object.entries(data.subjects)
+        .filter(([name]) => !compulsory.some(c => c.name === name))
+        .filter(([name]) => name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const renderSubjectCard = (item: typeof compulsory[0], sub: any, i: number) => {
+        const config = SUBJECTS_CONFIG[item.name as SubjectType] || { color: 'slate', icon: BookOpen, gradient: 'from-slate-500 to-slate-700' };
+        const Icon = item.icon || config.icon;
+        
         return (
             <motion.button
-                key={name}
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                onClick={() => navigate(`/hub/${name}`)}
-                className="bg-white p-4 rounded-[1.75rem] border border-slate-100 shadow-xs flex items-center gap-4 group hover:shadow-lg transition-all text-left relative overflow-hidden active:scale-[0.98]"
+                key={item.name}
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => navigate(`/hub/${item.name}`)}
+                className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_3px_12px_rgba(0,0,0,0.015)] flex items-center justify-between gap-4 group hover:border-blue-100 hover:shadow-md transition-all text-left relative overflow-hidden active:scale-[0.98] w-full"
             >
-                <div className={cn("w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover:rotate-3 transition-all duration-500 bg-linear-to-br text-white", config.gradient)}>
-                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
-                </div>
-                <div className="flex-1 min-w-0 pr-1">
-                    <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tighter uppercase italic leading-none truncate mb-1">{name}</h3>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-[0.5rem] font-bold uppercase tracking-widest text-slate-400">{sub.chapters.length} Units</span>
-                        <div className="w-1 h-1 rounded-full bg-slate-200" />
-                        <span className={cn("text-[0.45rem] font-black uppercase tracking-widest", brand.text)}>Archive</span>
+                {/* Left side Content layout */}
+                <div className="flex items-center gap-4 flex-1">
+                    {/* Visual representative circle */}
+                    <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 font-extrabold text-xl shadow-xs relative transition-transform group-hover:scale-105", item.color)}>
+                        {item.initials ? (
+                            <span>{item.initials}</span>
+                        ) : (
+                            <Icon className="w-6 h-6 text-white" />
+                        )}
+                    </div>
+
+                    {/* Numeric and name text fields */}
+                    <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                            <span className="w-5 h-5 bg-blue-50 text-blue-600 rounded-md text-[10px] font-black flex items-center justify-center">
+                                {item.indexNum}
+                            </span>
+                            <h3 className="font-extrabold text-[#0F172A] text-sm tracking-tight leading-none uppercase">
+                                {item.name}
+                            </h3>
+                        </div>
+                        <p className="text-[10.5px] font-bold text-slate-400 leading-snug">
+                            {item.desc}
+                        </p>
                     </div>
                 </div>
-                <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-900 transition-colors shrink-0" />
+
+                {/* Right side interactive button indicator */}
+                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
+                    <ChevronRight className="w-4 h-4" />
+                </div>
             </motion.button>
         );
     };
 
     return (
-        <div className="space-y-6 animate-fade-up pb-32 px-1">
-            <header className="space-y-0.5 pt-4">
-                <p className="text-[0.55rem] font-black text-blue uppercase tracking-[0.5em] italic opacity-60">Aadhar Ecosystem</p>
-                <h1 className="text-4xl md:text-5xl font-black text-black italic tracking-tighter uppercase leading-none">Learning Hub</h1>
-            </header>
-
-            <div className="space-y-6">
-                <section className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest italic whitespace-nowrap">Compulsory Subjects</h2>
-                        <div className="h-px flex-1 bg-slate-100" />
+        <div className="space-y-6 animate-fade-up pb-20 text-left max-w-sm md:max-w-md mx-auto px-1.5 md:px-0">
+            {/* Header Learning Ecosytem Banner matching Photo 5 */}
+            <div className="bg-linear-to-r from-blue-600 to-indigo-700 p-6 rounded-[2.5rem] relative overflow-hidden flex items-center justify-between gap-4 text-white shadow-lg border border-white/10 min-h-[170px]">
+                <div className="space-y-2 z-10 max-w-[210px] sm:max-w-xs text-left">
+                    <span className="text-[9.5px] font-black uppercase text-white/60 tracking-widest block">Aadhar Ecosystem</span>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase leading-none italic text-white">
+                        Learning Hub
+                    </h1>
+                    <p className="text-[10px] font-bold text-blue-100/80 leading-relaxed max-w-[180px]">
+                        Explore, learn and grow with your favorite subjects.
+                    </p>
+                    <div className="bg-white/10 backdrop-blur-md rounded-xl py-1.5 px-3 block w-fit border border-white/15 text-[9.5px] font-bold">
+                        📖 5 Compulsory Subjects
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {compulsory.map((name, i) => {
-                            const sub = data.subjects[name];
+                </div>
+                <div className="relative shrink-0 z-10 w-[110px] sm:w-[130px] -mr-2">
+                    <img 
+                        src="/11427-removebg-preview.png" 
+                        alt="Learning Hub books pile" 
+                        referrerPolicy="no-referrer"
+                        className="w-full h-auto drop-shadow-2xl animate-bounce duration-3000"
+                        onError={(e) => {
+                            e.currentTarget.style.display = 'block';
+                        }}
+                    />
+                </div>
+                {/* Visual particles */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+            </div>
+
+            {/* Interactive Search Bar matching screen details */}
+            <div className="relative font-bold">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search Subject..."
+                    className="w-full bg-white pl-11 pr-4 py-3.5 rounded-2xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.01)] placeholder:text-slate-400 focus:outline-hidden focus:border-blue-200 transition-colors text-xs text-slate-700 font-extrabold"
+                />
+            </div>
+
+            {/* Compulsory subjects section */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Compulsory Subjects</h2>
+                    <div className="h-[1px] flex-1 bg-slate-100" />
+                </div>
+                {filteredCompulsory.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3.5">
+                        {filteredCompulsory.map((item, i) => {
+                            const sub = data.subjects[item.name];
                             if (!sub) return null;
-                            return renderSubject(name, sub, i);
+                            return renderSubjectCard(item, sub, i);
                         })}
                     </div>
-                </section>
-
-                <section className="space-y-3">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-[0.65rem] font-black text-slate-400 uppercase tracking-widest italic whitespace-nowrap">Optional Subjects</h2>
-                        <div className="h-px flex-1 bg-slate-100" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(data.subjects)
-                            .filter(([name]) => !compulsory.includes(name))
-                            .map(([name, sub], i) => renderSubject(name, sub, i))}
-                    </div>
-                </section>
+                ) : (
+                    <p className="text-[10px] font-bold text-slate-400 text-center py-4">No compulsory subjects match your search.</p>
+                )}
             </div>
+
+            {/* Optional subjects section */}
+            {optionalSubjects.length > 0 && (
+                <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Optional Subjects</h2>
+                        <div className="h-[1px] flex-1 bg-slate-100" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3.5">
+                        {optionalSubjects.map(([name, sub], i) => {
+                            const optMockItem = {
+                                name,
+                                desc: `Practice chapters and practice arrays for ${name}`,
+                                initials: name[0].toUpperCase(),
+                                indexNum: i + 6,
+                                color: 'bg-purple-500 text-white',
+                                icon: BookOpen
+                            };
+                            return renderSubjectCard(optMockItem, sub, i);
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -8038,6 +9785,8 @@ const FormulaBankPage = () => {
     const [view, setView] = useState<'subjects' | 'chapters' | 'formulas'>('subjects');
     const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
     const [selectedChapter, setSelectedChapter] = useState<any | null>(null);
+    const [formulaSearchQuery, setFormulaSearchQuery] = useState('');
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
 
     const subjects = [
         { 
@@ -8292,69 +10041,217 @@ const FormulaBankPage = () => {
             />
 
             {view === 'subjects' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {subjects.map((sub, i) => (
-                        <motion.button
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            whileHover={{ y: -8 }}
-                            whileTap={{ scale: 0.98 }}
-                            transition={{ 
-                                delay: i * 0.05,
-                                duration: 0.5,
-                                ease: [0.23, 1, 0.32, 1]
-                            }}
-                            key={sub.id}
-                            onClick={() => handleSubjectClick(sub)}
-                            className={cn(
-                                "group relative min-h-[220px] p-6 rounded-[2.5rem] bg-white border border-slate-100 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex flex-col justify-between overflow-hidden transition-all text-left"
-                            )}
-                        >
-                            {/* Accent Background */}
-                            <div className={cn(
-                                "absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-[0.08] group-hover:opacity-[0.12] transition-opacity rounded-full translate-x-1/3 -translate-y-1/3",
-                                sub.gradient
-                            )} />
+                <div className="space-y-6">
+                    {/* Welcome Banner Card showing Formula logo and Photo 2 style */}
+                    <div className="bg-gradient-to-r from-teal-500 via-emerald-600 to-indigo-600 p-6 md:p-8 rounded-[2.5rem] text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 min-h-[160px] border border-white/10 shadow-lg text-left">
+                        <div className="space-y-2 z-10 max-w-lg">
+                            <span className="text-[10px] font-black uppercase text-teal-100/70 tracking-widest block">Aadhar Core</span>
+                            <h1 className="text-3xl md:text-4xl font-black italic tracking-tighter uppercase leading-none text-white">
+                                FORMULA BANK
+                            </h1>
+                            <p className="text-xs text-teal-50/80 font-bold leading-relaxed max-w-[280px]">
+                                All important formulas, derivations and identities at your fingertips.
+                            </p>
+                        </div>
+                        <div className="relative shrink-0 z-10 w-[120px] md:w-[145px] -mr-3 md:mr-2">
+                            <img 
+                                src="/11429-removebg-preview.png" 
+                                alt="Formula Bank Illustration" 
+                                referrerPolicy="no-referrer"
+                                className="w-full h-auto drop-shadow-2xl animate-pulse duration-4000"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = 'block';
+                                }}
+                            />
+                        </div>
+                        {/* Lighting particle effects */}
+                        <div className="absolute top-0 right-0 w-36 h-36 bg-white/5 rounded-full blur-2xl" />
+                        <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+                    </div>
 
-                            <div className="flex gap-5 relative z-10">
-                                <div className={cn(
-                                    "w-14 h-14 bg-gradient-to-br rounded-2xl flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-500",
-                                    sub.gradient
-                                )}>
-                                    <sub.icon className="w-7 h-7" strokeWidth={2} />
+                    {/* Interactive Search Bar and Filters */}
+                    <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.01)] space-y-4">
+                        <div className="relative font-bold">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                type="text"
+                                placeholder="Search formulas, laws, terms..."
+                                value={formulaSearchQuery || ''}
+                                onChange={(e) => setFormulaSearchQuery(e.target.value)}
+                                className="w-full bg-slate-50 pl-11 pr-12 py-3.5 rounded-2xl border border-slate-100 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-200 transition-colors text-xs text-slate-700 font-extrabold"
+                            />
+                            <button className="absolute right-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors">
+                                <SlidersHorizontal className="w-4 h-4" />
+                            </button>
+                        </div>
+
+                        {/* Horizontal Subject Selection Row */}
+                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                            {['All', 'Maths', 'Physics', 'Chemistry', 'Biology', 'Computer', 'More'].map((cat, idx) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setSelectedCategoryFilter(cat)}
+                                    className={cn(
+                                        "px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all uppercase tracking-wider",
+                                        (selectedCategoryFilter === cat || (!selectedCategoryFilter && cat === 'All'))
+                                            ? "bg-slate-900 border-transparent text-white shadow-md"
+                                            : "bg-slate-50 border border-slate-100 text-slate-500 hover:bg-slate-100"
+                                    )}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Conditional rendering for matching formula search results */}
+                    {(formulaSearchQuery && formulaSearchQuery.trim()) ? (
+                        <div className="space-y-4 text-left">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Results</h2>
+                                <div className="h-[1px] flex-1 bg-slate-105" />
+                            </div>
+                            <div className="grid grid-cols-1 gap-3">
+                                {Object.entries(allFormulas).flatMap(([chId, fList]) => 
+                                    fList.filter(f => 
+                                        f.title.toLowerCase().includes(formulaSearchQuery.toLowerCase()) || 
+                                        f.formula.toLowerCase().includes(formulaSearchQuery.toLowerCase())
+                                    ).map((f, fIdx) => (
+                                        <div key={`${chId}-${fIdx}`} className="bg-white p-5 rounded-2xl border border-slate-105 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div>
+                                                <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider mb-2 inline-block">
+                                                    {chId.toUpperCase()}
+                                                </span>
+                                                <h4 className="font-extrabold text-slate-800 text-sm">{f.title}</h4>
+                                            </div>
+                                            <div className="bg-slate-50 px-4 py-2.5 rounded-xl font-mono text-xs overflow-x-auto text-slate-700 font-bold border border-slate-100">
+                                                <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeRaw]}>{`$${f.formula}$`}</Markdown>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* Quick Access horizontal cards */}
+                            <div className="space-y-3 text-left">
+                                <div className="flex items-center gap-2 px-1">
+                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Quick Access Bank</h2>
+                                    <div className="h-[1px] flex-1 bg-slate-100" />
                                 </div>
-                                <div className="space-y-0.5">
-                                    <h3 className="text-2xl font-black text-slate-800 tracking-tight leading-tight italic">{sub.name}</h3>
-                                    <p className="text-slate-400 font-bold text-[0.65rem] tracking-widest uppercase italic">{sub.description}</p>
+                                <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-none">
+                                    {[
+                                        { id: 'maths-imp', title: 'Maths Important', count: 32, icon: Sigma, color: 'text-indigo-600 bg-indigo-50 border-indigo-150' },
+                                        { id: 'phys-imp', title: 'Physics Important', count: 28, icon: Zap, color: 'text-rose-500 bg-rose-50 border-rose-150' },
+                                        { id: 'chem-imp', title: 'Chemistry Important', count: 30, icon: FlaskConical, color: 'text-emerald-500 bg-emerald-50 border-emerald-150' },
+                                        { id: 'gov-eq', title: 'Governing Equations', count: 16, icon: GitMerge, color: 'text-blue bg-blue-50 border-blue-150' },
+                                        { id: 'short-form', title: 'Short Formulas', count: 50, icon: HelpCircle, color: 'text-amber-500 bg-amber-50 border-amber-150' }
+                                    ].map((card) => {
+                                        const CardIcon = card.icon;
+                                        return (
+                                            <div
+                                                key={card.id}
+                                                onClick={() => {
+                                                    setSelectedSubject(card.title.split(' ')[0]);
+                                                    setView('chapters');
+                                                }}
+                                                className={cn(
+                                                    "w-[145px] h-[115px] shrink-0 p-4 rounded-3xl border flex flex-col justify-between cursor-pointer hover:shadow-md hover:scale-102 transition-all text-left",
+                                                    card.color
+                                                )}
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-white/80 flex items-center justify-center shrink-0">
+                                                    <CardIcon className="w-4 h-4" />
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <h4 className="font-extrabold text-[11px] leading-tight text-slate-800">{card.title}</h4>
+                                                    <p className="text-[9px] font-semibold text-slate-400 leading-none">{card.count} Formulas</p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
-                            <div className="space-y-4 relative z-10 w-full">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                    {sub.subIcons.map((Icon, idx) => (
-                                        <div key={idx} className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-100 transition-all">
-                                            <Icon className="w-4 h-4" />
+                            {/* Recent Formulas Stack matching design requirements */}
+                            <div className="space-y-3 text-left">
+                                <div className="flex items-center gap-2 px-1">
+                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recent Saved Formulas</h2>
+                                    <div className="h-[1px] flex-1 bg-slate-100" />
+                                </div>
+                                <div className="bg-white rounded-[2rem] border border-slate-100 p-4 space-y-3 shadow-[0_2px_8px_rgba(0,0,0,0.015)]">
+                                    {[
+                                        { title: 'Quadratic Equation', formula: 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', bookmarkColor: 'text-emerald-500' },
+                                        { title: "Ohm's Law", formula: 'V = IR', bookmarkColor: 'text-indigo-600' },
+                                        { title: 'Ideal Gas Law', formula: 'PV = nRT', bookmarkColor: 'text-amber-500' },
+                                        { title: 'Photosynthesis Principle', formula: '6CO_2 + 6H_2O \\rightarrow C_6H_{12}O_6 + 6O_2', bookmarkColor: 'text-blue' }
+                                    ].map((rec, rIdx) => (
+                                        <div key={rIdx} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between gap-4 hover:border-slate-200 transition-colors">
+                                            <div className="space-y-1">
+                                                <h4 className="font-extrabold text-xs text-slate-800">{rec.title}</h4>
+                                                <div className="font-mono text-[11px] text-slate-500">
+                                                    <Markdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeRaw]}>{`$${rec.formula}$`}</Markdown>
+                                                </div>
+                                            </div>
+                                            <button className="w-8 h-8 rounded-lg bg-white shadow-xs border border-slate-100 flex items-center justify-center">
+                                                <Bookmark className={cn("w-3.5 h-3.5 fill-current", rec.bookmarkColor)} />
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-[0.6rem] font-black text-slate-400 uppercase tracking-tighter italic">Progress</span>
-                                        <span className={cn("text-sm font-black italic", sub.accentColor)}>{sub.progress}%</span>
-                                    </div>
-                                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                        <motion.div 
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${sub.progress}%` }}
-                                            transition={{ duration: 1, delay: 0.4 }}
-                                            className={cn("h-full rounded-full bg-gradient-to-r shadow-sm", sub.gradient)}
-                                        />
-                                    </div>
+                            {/* Core Subjects Grid */}
+                            <div className="space-y-3 text-left pt-2">
+                                <div className="flex items-center gap-2 px-1">
+                                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Browse by Subjects</h2>
+                                    <div className="h-[1px] flex-1 bg-slate-100" />
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                    {subjects.map((sub, i) => (
+                                        <motion.button
+                                            whileHover={{ y: -3 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            transition={{ duration: 0.2 }}
+                                            key={sub.id}
+                                            onClick={() => handleSubjectClick(sub)}
+                                            className="group p-5 rounded-3xl bg-white border border-slate-100 shadow-[0_3px_12px_rgba(0,0,0,0.015)] flex flex-col justify-between overflow-hidden transition-all text-left min-h-[140px] relative w-full"
+                                        >
+                                            <div className="flex gap-4 relative z-10 w-full mb-4">
+                                                <div className={cn(
+                                                    "w-11 h-11 bg-gradient-to-br rounded-xl flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform duration-500",
+                                                    sub.gradient
+                                                )}>
+                                                    <sub.icon className="w-5.5 h-5.5" strokeWidth={2} />
+                                                </div>
+                                                <div className="space-y-0.5 flex-1 min-w-0">
+                                                    <h3 className="text-base font-extrabold text-slate-800 tracking-tight leading-none group-hover:text-blue-600 transition-colors">{sub.name}</h3>
+                                                    <p className="text-slate-400 font-bold text-[9px] tracking-widest uppercase mb-1">{sub.description}</p>
+                                                    <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-md bg-opacity-10", sub.accentColor, "bg-current")}>
+                                                        {sub.progress}% Syllabus
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full relative z-10 flex items-center justify-between">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {sub.subIcons.slice(0, 3).map((Icon, idx) => (
+                                                        <div key={idx} className="w-6 h-6 bg-slate-50 border border-slate-100/50 rounded-lg flex items-center justify-center text-slate-400 group-hover:text-slate-600 group-hover:bg-slate-100 transition-all">
+                                                            <Icon className="w-3.5 h-3.5" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div className="w-7 h-7 bg-slate-50 rounded-lg flex items-center justify-center text-slate-305 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all shrink-0">
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </div>
+                                            </div>
+                                        </motion.button>
+                                    ))}
                                 </div>
                             </div>
-                        </motion.button>
-                    ))}
+                        </>
+                    )}
                 </div>
             )}
 
